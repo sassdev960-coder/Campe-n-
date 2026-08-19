@@ -346,10 +346,10 @@
         const SUPABASE_URL = 'https://uwdojchfwmaczgdthtfr.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3ZG9qY2hmd21hY3pnZHRodGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDQ4NDEsImV4cCI6MjEwMjcyMDg0MX0.jafGOwlItnzSoZ6yYlpaae16S2nlSDpPIS2316ZPJak';
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Usamos un nombre de variable distinto para evitar conflictos
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
         // ID del conductor de prueba (debes insertar uno en la tabla drivers y copiar su UUID)
-        // Reemplaza '00000000-0000-0000-0000-000000000000' con el UUID real de tu conductor
         const DRIVER_ID = '00000000-0000-0000-0000-000000000000';
 
         // ==================== RELOJ ====================
@@ -442,7 +442,7 @@
         // ==================== FUNCIÓN PARA ACTUALIZAR ESTADO EN SUPABASE ====================
         async function updateDriverStatusInSupabase(isOnline, lat, lng) {
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('driver_status')
                     .upsert({
                         driver_id: DRIVER_ID,
@@ -540,7 +540,7 @@
         // ==================== CARGAR ESTADÍSTICAS DESDE SUPABASE (OPCIONAL) ====================
         async function loadStatsFromSupabase() {
             try {
-                const { count: tripsCount, error: tripsError } = await supabase
+                const { count: tripsCount, error: tripsError } = await supabaseClient
                     .from('trips')
                     .select('*', { count: 'exact', head: true })
                     .eq('driver_id', DRIVER_ID)
