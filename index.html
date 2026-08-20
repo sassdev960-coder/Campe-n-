@@ -253,55 +253,124 @@
         }
         .destination-marker i { transform: rotate(45deg); color: white; font-size: 14px; }
 
-        /* Auth */
+        /* Auth Rediseñado */
         #view-login {
-            display: flex;
+            display: none; /* SOLUCIÓN AL PROBLEMA DE CARGA APLICADA AQUÍ */
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100%;
             padding: 20px;
+            background: linear-gradient(135deg, #0b0b0b 0%, #1a1005 100%);
         }
         #view-login.active { display: flex; }
+        
         .login-box {
             background: var(--bg-dark-gray);
-            border-radius: 20px;
-            padding: 30px 20px;
+            border-radius: 24px;
+            padding: 40px 30px;
             width: 100%;
             max-width: 400px;
-            box-shadow: var(--shadow);
+            box-shadow: 0 10px 30px rgba(255, 122, 0, 0.08), 0 15px 40px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255, 122, 0, 0.1);
         }
-        .login-box h2 { text-align: center; margin-bottom: 20px; }
+        
+        .login-logo-container {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .login-logo-container i {
+            font-size: 42px;
+            color: var(--primary-orange);
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px rgba(255,122,0,0.3));
+        }
+        
+        .login-box h2 { 
+            text-align: center; 
+            margin-bottom: 25px;
+            font-size: 22px;
+            font-weight: 700;
+        }
+        
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .input-wrapper i {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-text);
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+        
+        .input-wrapper input:focus + i {
+            color: var(--primary-orange);
+        }
+        
         .login-input {
             width: 100%;
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: 10px;
-            border: 1px solid #333;
+            padding: 16px 16px 16px 45px;
+            border-radius: 14px;
+            border: 1.5px solid #2a2a2a;
             background: #0b0b0b;
             color: white;
-            font-size: 16px;
+            font-size: 15px;
+            transition: all 0.3s ease;
         }
-        .login-input:focus { outline: none; border-color: var(--primary-orange); }
+        
+        .login-input:focus { 
+            outline: none; 
+            border-color: var(--primary-orange);
+            box-shadow: 0 0 0 4px rgba(255, 122, 0, 0.1);
+        }
+        
         .login-btn {
             width: 100%;
-            padding: 15px;
-            background: var(--primary-orange);
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary-orange) 0%, #e66e00 100%);
             color: white;
             border: none;
-            border-radius: 10px;
+            border-radius: 14px;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(255, 122, 0, 0.2);
+            margin-top: 5px;
         }
-        .login-btn:hover { opacity: 0.9; }
+        
+        .login-btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 122, 0, 0.3);
+        }
+        
+        .login-btn:active {
+            transform: translateY(1px);
+        }
+        
         .register-link {
             text-align: center;
-            margin-top: 15px;
+            margin-top: 25px;
             color: var(--gray-text);
             cursor: pointer;
+            font-size: 14px;
+            transition: color 0.2s;
         }
-        .register-link span { color: var(--primary-orange); font-weight: 600; }
+        
+        .register-link:hover { color: #d1d5db; }
+        .register-link span { color: var(--primary-orange); font-weight: 600; margin-left: 5px; }
+
+        /* Ajustes específicos para el modal de registro (para que no afecte el nuevo padding del input) */
+        .register-card .login-input {
+            padding: 16px;
+            margin-bottom: 12px;
+        }
 
         /* Wallet */
         .wallet-card {
@@ -500,7 +569,6 @@
             max-width: 400px;
         }
         .register-card h3 { text-align: center; margin-bottom: 20px; }
-        .register-card .login-input { margin-bottom: 12px; }
         .register-card .ride-actions { margin-top: 20px; }
     </style>
 </head>
@@ -512,16 +580,29 @@
         <div class="loading-text" id="loadingText">Cargando...</div>
     </div>
 
-    <!-- Login View -->
+    <!-- Login View (REDISEÑADO) -->
     <div id="view-login" class="view active">
         <div class="login-box">
-            <div class="logo-text" style="text-align:center; margin-bottom:30px;">
-                MOTO MÓVIL<br><span>EL CAMPEÓN</span>
+            <div class="login-logo-container">
+                <i class="fas fa-motorcycle"></i>
+                <div class="logo-text">
+                    MOTO MÓVIL<br><span>EL CAMPEÓN</span>
+                </div>
             </div>
-            <h2>Iniciar sesión</h2>
-            <input type="tel" id="loginPhone" class="login-input" placeholder="Número de teléfono" autocomplete="tel">
-            <input type="password" id="loginPassword" class="login-input" placeholder="Contraseña" autocomplete="current-password">
-            <button class="login-btn" onclick="login()">Entrar</button>
+            <h2>Bienvenido</h2>
+            
+            <div class="input-wrapper">
+                <input type="tel" id="loginPhone" class="login-input" placeholder="Número de teléfono" autocomplete="tel">
+                <i class="fas fa-phone"></i>
+            </div>
+            
+            <div class="input-wrapper">
+                <input type="password" id="loginPassword" class="login-input" placeholder="Contraseña" autocomplete="current-password">
+                <i class="fas fa-lock"></i>
+            </div>
+            
+            <button class="login-btn" onclick="login()">Iniciar Sesión</button>
+            
             <div class="register-link" onclick="showRegisterModal()">
                 ¿No tienes cuenta? <span>Solicitar registro</span>
             </div>
