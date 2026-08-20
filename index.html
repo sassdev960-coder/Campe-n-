@@ -770,19 +770,24 @@
                 });
                 if (error) throw error;
                 currentDriverId = data.user.id;
+                console.log('Login exitoso, ID:', currentDriverId);
                 await loadDriverData();
+                console.log('Datos del conductor cargados');
                 document.getElementById('view-login').classList.remove('active');
                 document.getElementById('mainApp').style.display = 'flex';
+                console.log('Interfaz mostrada');
                 initializeRealtimeSubscriptions();
-                hideLoading();
+                console.log('Suscripciones inicializadas');
             } catch (error) {
                 console.error('Error en login:', error);
-                hideLoading();
                 alert('Error de inicio de sesión: ' + error.message);
                 await supabaseClient.auth.signOut().catch(() => {});
                 currentDriverId = null;
                 document.getElementById('mainApp').style.display = 'none';
                 document.getElementById('view-login').classList.add('active');
+            } finally {
+                hideLoading();
+                console.log('Loading oculto');
             }
         }
 
@@ -837,6 +842,7 @@
         // ==================== CARGA DE DATOS ====================
         async function loadDriverData() {
             try {
+                console.log('Consultando tabla drivers...');
                 const { data: driver, error: driverError } = await supabaseClient
                     .from('drivers')
                     .select('*')
@@ -849,6 +855,7 @@
                 }
 
                 currentDriverData = driver;
+                console.log('Conductor encontrado:', driver.full_name);
                 document.getElementById('profileName').textContent = driver.full_name || 'Sin nombre';
                 document.getElementById('profilePhone').textContent = driver.phone || '';
                 if (driver.avatar_url) {
@@ -858,7 +865,7 @@
                 await updateStats();
             } catch (error) {
                 console.error('Error en loadDriverData:', error);
-                throw error;
+                throw error; // Se lanza para que lo capture login() o la carga automática
             }
         }
 
@@ -1197,48 +1204,55 @@
         }
 
         function initializeRealtimeSubscriptions() {
-            cleanupRealtimeSubscriptions();
+            try {
+                cleanupRealtimeSubscriptions();
 
-            ridesSubscription = supabaseClient
-                .channel('rides_channel')
-                .on('postgres_changes', {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'rides',
-                    filter: `driver_id=eq.${currentDriverId}`
-                }, (payload) => {
-                    const newRide = payload.new;
-                    if (newRide.status === 'pendiente') {
-                        showRideRequest(newRide);
-                    }
-                })
-                .subscribe();
+                ridesSubscription = supabaseClient
+                    .channel('rides_channel')
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'rides',
+                        filter: `driver_id=eq.${currentDriverId}`
+                    }, (payload) => {
+                        const newRide = payload.new;
+                        if (newRide.status === 'pendiente') {
+                            showRideRequest(newRide);
+                        }
+                    })
+                    .subscribe();
 
-            rideChatSubscription = supabaseClient
-                .channel('ride_chat_channel')
-                .on('postgres_changes', {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'chat_messages',
-                    filter: `ride_id=eq.${activeRideId || 'null'}`
-                }, (payload) => {
-                    if (currentChatType === 'ride' && activeRideId === payload.new.ride_id) {
-                        appendMessage(payload.new);
-                    }
-                })
-                .subscribe();
+                rideChatSubscription = supabaseClient
+                    .channel('ride_chat_channel')
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'chat_messages',
+                        filter: `ride_id=eq.${activeRideId || 'null'}`
+                    }, (payload) => {
+                        if (currentChatType === 'ride' && activeRideId === payload.new.ride_id) {
+                            appendMessage(payload.new);
+                        }
+                    })
+                    .subscribe();
 
-            centralChatSubscription = supabaseClient
-                .channel('central_chat_channel')
-                .on('postgres_changes', {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'central_messages',
-                    filter: `driver_id=eq.${currentDriverId}`
-                }, (payload) => {
-                    if (currentChatType === 'central') appendCentralMessage(payload.new);
-                })
-                .subscribe();
+                centralChatSubscription = supabaseClient
+                    .channel('central_chat_channel')
+                    .on('postgres_changes', {
+                        event: 'INSERT',
+                        schema: 'public',
+                        table: 'central_messages',
+                        filter: `driver_id=eq.${currentDriverId}`
+                    }, (payload) => {
+                        if (currentChatType === 'central') appendCentralMessage(payload.new);
+                    })
+                    .subscribe();
+
+                console.log('Suscripciones de Realtime activadas');
+            } catch (error) {
+                console.error('Error en initializeRealtimeSubscriptions:', error);
+                // No bloqueamos la interfaz por error en suscripciones
+            }
         }
 
         function showRideRequest(ride) {
@@ -1388,27 +1402,28 @@
 
         // ==================== INICIAR SESIÓN AUTOMÁTICA ====================
         window.addEventListener('load', async () => {
-            hideLoading(); // Asegurar que el overlay esté oculto al inicio
-            const { data: { session }, error } = await supabaseClient.auth.getSession();
-            if (session) {
-                currentDriverId = session.user.id;
-                showLoading('Cargando tu perfil...');
-                try {
+            hideLoading();
+            try {
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                if (session) {
+                    currentDriverId = session.user.id;
+                    console.log('Sesión existente, cargando perfil...');
+                    showLoading('Cargando tu perfil...');
                     await loadDriverData();
                     document.getElementById('view-login').classList.remove('active');
                     document.getElementById('mainApp').style.display = 'flex';
                     initializeRealtimeSubscriptions();
-                    hideLoading();
-                } catch (error) {
-                    console.error('Error en carga automática:', error);
-                    hideLoading();
-                    await supabaseClient.auth.signOut().catch(() => {});
+                } else {
                     document.getElementById('view-login').classList.add('active');
-                    alert('No se pudo cargar el perfil. Por favor inicia sesión nuevamente.');
                 }
-            } else {
-                hideLoading();
+            } catch (error) {
+                console.error('Error en carga automática:', error);
+                await supabaseClient.auth.signOut().catch(() => {});
+                document.getElementById('mainApp').style.display = 'none';
                 document.getElementById('view-login').classList.add('active');
+                alert('No se pudo cargar el perfil. Por favor inicia sesión nuevamente.');
+            } finally {
+                hideLoading();
             }
         });
 
