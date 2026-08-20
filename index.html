@@ -744,6 +744,15 @@
         let centralChatSubscription;
         let rideChatSubscription;
 
+        // ==================== FUNCIONES DE CARGA ====================
+        function showLoading(text = 'Cargando...') {
+            document.getElementById('loadingText').textContent = text;
+            document.getElementById('loadingOverlay').classList.add('active');
+        }
+        function hideLoading() {
+            document.getElementById('loadingOverlay').classList.remove('active');
+        }
+
         // ==================== AUTENTICACIÓN ====================
         async function login() {
             const phone = document.getElementById('loginPhone').value.trim();
@@ -764,19 +773,23 @@
                 await loadDriverData();
                 document.getElementById('view-login').classList.remove('active');
                 document.getElementById('mainApp').style.display = 'flex';
-                hideLoading();
                 initializeRealtimeSubscriptions();
+                hideLoading();
             } catch (error) {
+                console.error('Error en login:', error);
                 hideLoading();
                 alert('Error de inicio de sesión: ' + error.message);
+                await supabaseClient.auth.signOut().catch(() => {});
+                currentDriverId = null;
+                document.getElementById('mainApp').style.display = 'none';
+                document.getElementById('view-login').classList.add('active');
             }
         }
 
         async function logout() {
-            await supabaseClient.auth.signOut();
-            if (ridesSubscription) supabaseClient.removeChannel(ridesSubscription);
-            if (centralChatSubscription) supabaseClient.removeChannel(centralChatSubscription);
-            if (rideChatSubscription) supabaseClient.removeChannel(rideChatSubscription);
+            hideLoading();
+            await supabaseClient.auth.signOut().catch(() => {});
+            cleanupRealtimeSubscriptions();
             currentDriverId = null;
             currentDriverData = null;
             document.getElementById('mainApp').style.display = 'none';
@@ -822,54 +835,47 @@
         }
 
         // ==================== CARGA DE DATOS ====================
-async function loadDriverData() {
-    try {
-        const { data: driver, error: driverError } = await supabaseClient
-            .from('drivers')
-            .select('*')
-            .eq('id', currentDriverId)
-            .maybeSingle(); // En lugar de .single() para evitar error si no hay fila
+        async function loadDriverData() {
+            try {
+                const { data: driver, error: driverError } = await supabaseClient
+                    .from('drivers')
+                    .select('*')
+                    .eq('id', currentDriverId)
+                    .maybeSingle();
 
-        if (driverError) throw driverError;
-        if (!driver) {
-            // No hay registro en drivers, redirigir a solicitud o mostrar mensaje
-            await supabaseClient.auth.signOut();
-            document.getElementById('mainApp').style.display = 'none';
-            document.getElementById('view-login').classList.add('active');
-            alert('Tu cuenta no está registrada como conductor. Por favor solicita registro.');
-            return;
+                if (driverError) throw driverError;
+                if (!driver) {
+                    throw new Error('No se encontró un registro de conductor para este usuario.');
+                }
+
+                currentDriverData = driver;
+                document.getElementById('profileName').textContent = driver.full_name || 'Sin nombre';
+                document.getElementById('profilePhone').textContent = driver.phone || '';
+                if (driver.avatar_url) {
+                    document.getElementById('headerProfilePic').innerHTML = `<img src="${driver.avatar_url}" alt="Avatar">`;
+                }
+                await updateWalletUI();
+                await updateStats();
+            } catch (error) {
+                console.error('Error en loadDriverData:', error);
+                throw error;
+            }
         }
 
-        currentDriverData = driver;
-        document.getElementById('profileName').textContent = driver.full_name || 'Sin nombre';
-        document.getElementById('profilePhone').textContent = driver.phone || '';
-        if (driver.avatar_url) {
-            document.getElementById('headerProfilePic').innerHTML = `<img src="${driver.avatar_url}" alt="Avatar">`;
-        }
-        await updateWalletUI();
-        await updateStats();
-    } catch (error) {
-        console.error('Error cargando datos:', error);
-        alert('No se pudieron cargar tus datos. Contacta a la central.');
-        await logout();
-    }
-};
         async function updateWalletUI() {
             try {
                 const { data: wallet, error } = await supabaseClient
                     .from('wallets')
                     .select('balance')
                     .eq('driver_id', currentDriverId)
-                    .single();
-                if (error) {
-                    if (error.code === 'PGRST116') {
-                        document.getElementById('walletBalance').textContent = 'Bs 0.00';
-                    } else {
-                        throw error;
-                    }
-                } else {
+                    .maybeSingle();
+                if (error) throw error;
+                if (wallet) {
                     document.getElementById('walletBalance').textContent = `Bs ${parseFloat(wallet.balance).toFixed(2)}`;
+                } else {
+                    document.getElementById('walletBalance').textContent = 'Bs 0.00';
                 }
+
                 const { data: transactions, error: txError } = await supabaseClient
                     .from('wallet_transactions')
                     .select('*')
@@ -901,11 +907,11 @@ async function loadDriverData() {
                 }
             } catch (error) {
                 console.error('Error actualizando wallet:', error);
+                // No lanzamos para no bloquear el login por error en wallet
             }
         }
 
         async function updateStats() {
-            // Puedes personalizar estas estadísticas con consultas reales
             document.getElementById('statViajes').textContent = '12';
             document.getElementById('statGanancias').textContent = '156';
             document.getElementById('statHoras').textContent = '5h';
@@ -942,15 +948,6 @@ async function loadDriverData() {
         const statusCard = document.getElementById('statusCard');
         const statusTitle = document.getElementById('statusTitle');
         const statusSubtitle = document.getElementById('statusSubtitle');
-        const loadingOverlay = document.getElementById('loadingOverlay');
-
-        function showLoading(text = 'Cargando...') {
-            document.getElementById('loadingText').textContent = text;
-            loadingOverlay.classList.add('active');
-        }
-        function hideLoading() {
-            loadingOverlay.classList.remove('active');
-        }
 
         function setOfflineMode() {
             statusCard.classList.add('offline');
@@ -1184,7 +1181,24 @@ async function loadDriverData() {
         }
 
         // ==================== RECEPCIÓN DE VIAJES ====================
+        function cleanupRealtimeSubscriptions() {
+            if (ridesSubscription) {
+                supabaseClient.removeChannel(ridesSubscription);
+                ridesSubscription = null;
+            }
+            if (centralChatSubscription) {
+                supabaseClient.removeChannel(centralChatSubscription);
+                centralChatSubscription = null;
+            }
+            if (rideChatSubscription) {
+                supabaseClient.removeChannel(rideChatSubscription);
+                rideChatSubscription = null;
+            }
+        }
+
         function initializeRealtimeSubscriptions() {
+            cleanupRealtimeSubscriptions();
+
             ridesSubscription = supabaseClient
                 .channel('rides_channel')
                 .on('postgres_changes', {
@@ -1372,21 +1386,35 @@ async function loadDriverData() {
             if (e.key === 'Enter') sendCentralMessage();
         });
 
-        // Precargar avatar
-        const avatarImg = new Image();
-        avatarImg.src = 'a.png';
-
         // ==================== INICIAR SESIÓN AUTOMÁTICA ====================
         window.addEventListener('load', async () => {
+            hideLoading(); // Asegurar que el overlay esté oculto al inicio
             const { data: { session }, error } = await supabaseClient.auth.getSession();
             if (session) {
                 currentDriverId = session.user.id;
-                await loadDriverData();
-                document.getElementById('view-login').classList.remove('active');
-                document.getElementById('mainApp').style.display = 'flex';
-                initializeRealtimeSubscriptions();
+                showLoading('Cargando tu perfil...');
+                try {
+                    await loadDriverData();
+                    document.getElementById('view-login').classList.remove('active');
+                    document.getElementById('mainApp').style.display = 'flex';
+                    initializeRealtimeSubscriptions();
+                    hideLoading();
+                } catch (error) {
+                    console.error('Error en carga automática:', error);
+                    hideLoading();
+                    await supabaseClient.auth.signOut().catch(() => {});
+                    document.getElementById('view-login').classList.add('active');
+                    alert('No se pudo cargar el perfil. Por favor inicia sesión nuevamente.');
+                }
+            } else {
+                hideLoading();
+                document.getElementById('view-login').classList.add('active');
             }
         });
+
+        // Precargar avatar
+        const avatarImg = new Image();
+        avatarImg.src = 'a.png';
     </script>
 </body>
 </html>
