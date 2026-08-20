@@ -27,22 +27,27 @@
         .view { display: none; }
         .view.active { display: block; }
 
-        /* Efecto de luz elegante de fondo */
-        #view-inicio > * { position: relative; z-index: 1; }
+        /* Efecto de luz elegante de fondo CORREGIDO */
         .online-glow {
-            z-index: 0 !important;
-            position: absolute;
+            position: absolute; /* Esto asegura que se quede en el fondo sin empujar elementos */
             top: 0; 
             left: 0; 
             right: 0;
-            height: 65vh; /* Ocupa un poco más de la mitad de la pantalla hacia abajo */
+            height: 65vh;
             background: linear-gradient(180deg, rgba(255, 122, 0, 0.25) 0%, rgba(11, 11, 11, 0) 100%);
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.6s ease-in-out;
+            z-index: 0; /* Lo manda por detrás */
         }
         .online-glow.active {
             opacity: 1;
+        }
+
+        /* Para asegurar que los demás elementos se vean por encima de la luz */
+        .header, .status-card, .stats-grid, .online-card, .logout-btn {
+            position: relative;
+            z-index: 1;
         }
 
         #view-viajes { padding: 0; display: none; flex: 1; position: relative; }
@@ -74,7 +79,6 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .loading-text { color: var(--white); font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
 
-        .status-bar { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; padding: 5px 0 15px 0; color: #d1d5db; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .header-left { display: flex; align-items: center; gap: 15px; }
         .menu-icon { font-size: 24px; color: #d1d5db; cursor: pointer; }
@@ -92,12 +96,11 @@
             justify-content: space-between;
             align-items: center;
             transition: all 0.4s ease;
-            /* Resplandor naranja cuando está activo */
             box-shadow: 0 8px 25px rgba(255, 122, 0, 0.35); 
         }
         .status-card.offline { 
             background-color: var(--bg-offline); 
-            box-shadow: var(--shadow); /* Sombra normal */
+            box-shadow: var(--shadow); 
         }
         
         .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
@@ -654,14 +657,6 @@
             <!-- Div para la luz elegante naranja por detrás -->
             <div class="online-glow" id="onlineGlow"></div>
             
-            <div class="status-bar">
-                <span id="clock">9:41</span>
-                <div class="status-icons">
-                    <i class="fas fa-signal"></i>
-                    <i class="fas fa-wifi"></i>
-                    <i class="fas fa-battery-full"></i>
-                </div>
-            </div>
             <header class="header">
                 <div class="header-left">
                     <div class="menu-icon"><i class="fas fa-bars"></i></div>
@@ -1033,14 +1028,6 @@
             document.getElementById('statHoras').textContent = '5h';
         }
 
-        // ==================== RELOJ ====================
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clock').textContent = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-        }
-        updateClock();
-        setInterval(updateClock, 30000);
-
         // ==================== CAMBIO DE PESTAÑA ====================
         function switchTab(tabId, element) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
@@ -1064,7 +1051,7 @@
         const statusCard = document.getElementById('statusCard');
         const statusTitle = document.getElementById('statusTitle');
         const statusSubtitle = document.getElementById('statusSubtitle');
-        const onlineGlow = document.getElementById('onlineGlow'); // Obtenemos el contenedor de luz
+        const onlineGlow = document.getElementById('onlineGlow'); 
 
         function setOfflineMode() {
             statusCard.classList.add('offline');
