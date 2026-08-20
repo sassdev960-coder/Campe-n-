@@ -27,7 +27,7 @@
         .view { display: none; }
         .view.active { display: block; }
 
-        /* Efecto de luz elegante de fondo CORREGIDO */
+        /* Efecto de luz elegante de fondo */
         .online-glow {
             position: absolute; 
             top: 0; 
@@ -44,8 +44,8 @@
             opacity: 1;
         }
 
-        /* Para asegurar que los demás elementos se vean por encima de la luz */
-        .header, .status-card, .stats-grid, .online-card, .logout-btn {
+        /* Asegurar elementos por encima de la luz */
+        .header, .status-card, .stats-grid, .online-card {
             position: relative;
             z-index: 1;
         }
@@ -79,11 +79,16 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         .loading-text { color: var(--white); font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
 
+        /* HEADER & CERRAR SESION */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .header-left { display: flex; align-items: center; gap: 15px; }
         .menu-icon { font-size: 24px; color: #d1d5db; cursor: pointer; }
         .logo-text { font-weight: 800; letter-spacing: 1px; text-transform: uppercase; line-height: 1.1; text-align: center; }
         .logo-text span { color: var(--primary-orange); }
+        
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .logout-icon { font-size: 22px; color: var(--primary-orange); cursor: pointer; transition: opacity 0.2s; }
+        .logout-icon:hover { opacity: 0.8; }
         .profile-pic { width: 45px; height: 45px; border-radius: 50%; background-color: #333; overflow: hidden; }
         .profile-pic img { width: 100%; height: 100%; object-fit: cover; }
 
@@ -138,26 +143,6 @@
 
         .online-card { border-radius: 16px; margin-bottom: 20px; overflow: hidden; height: 150px; box-shadow: var(--shadow); }
         .banner-img { width: 100%; height: 100%; object-fit: cover; }
-
-        .quick-actions { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-        .action-btn {
-            background-color: var(--bg-dark-gray); border-radius: 16px; padding: 15px 5px;
-            display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer;
-            transition: transform 0.2s ease;
-        }
-        .action-btn:hover { transform: translateY(-3px); }
-        .action-icon {
-            width: 45px; height: 45px; border: 2px solid #2a2a2a; border-radius: 12px;
-            display: flex; justify-content: center; align-items: center; color: var(--primary-orange); font-size: 20px;
-        }
-        .action-text { font-size: 11px; font-weight: 500; }
-
-        .logout-btn {
-            width: 100%; background-color: var(--primary-orange); color: white; border: none;
-            padding: 18px; border-radius: 30px; font-size: 16px; font-weight: 700; margin-bottom: 20px;
-            cursor: pointer; transition: opacity 0.2s ease;
-        }
-        .logout-btn:hover { opacity: 0.9; }
 
         .bottom-nav {
             background-color: var(--bg-dark-gray); padding: 10px 0 25px 0;
@@ -279,15 +264,15 @@
         }
         .destination-marker i { transform: rotate(45deg); color: white; font-size: 14px; }
 
-        /* Auth Elegante y Minimalista (Estilo iOS) */
+        /* LOGIN: Ajustado al Tema Naranja/Negro y Menos Espacio */
         #view-login {
             display: none; 
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100%;
-            padding: 30px;
-            background: #000000; /* Fondo negro puro */
+            padding: 20px;
+            background: var(--bg-black);
             animation: fadeSlideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1);
         }
         #view-login.active { display: flex; }
@@ -302,17 +287,16 @@
             max-width: 340px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 12px; /* Reducido para evitar el exceso de espacio */
         }
         
         .login-logo-container {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 5px; /* Reducido */
         }
         
-        /* Ajuste para tu logo.png */
         .login-logo-container img {
-            width: 140px;
+            width: 240px; /* Aumentado para que resalte más y ocupe espacio */
             height: auto;
             object-fit: contain;
             animation: scaleIn 0.8s cubic-bezier(0.22, 1, 0.36, 1);
@@ -325,11 +309,11 @@
         
         .login-box h2 { 
             text-align: center; 
-            margin-bottom: 15px;
-            font-size: 26px;
+            margin-bottom: 10px; /* Reducido */
+            font-size: 24px;
             font-weight: 600;
             letter-spacing: -0.5px;
-            color: #ffffff;
+            color: var(--white);
         }
         
         .input-wrapper {
@@ -342,7 +326,7 @@
             left: 20px;
             top: 50%;
             transform: translateY(-50%);
-            color: #ffffff; /* Íconos en blanco */
+            color: var(--primary-orange); /* Naranja del tema */
             font-size: 18px;
             transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
             pointer-events: none;
@@ -355,22 +339,22 @@
             transform: translateY(-50%);
             color: #888888;
             font-size: 18px;
-            padding: 10px; /* Área de clic más amplia */
+            padding: 10px; 
             cursor: pointer;
             transition: color 0.3s ease;
         }
 
         .input-wrapper .icon-right:hover {
-            color: #ffffff;
+            color: var(--primary-orange);
         }
         
         .login-input {
             width: 100%;
-            padding: 18px 55px; /* Espacio para los íconos */
-            border-radius: 30px; /* Bordes totalmente redondeados */
-            border: 1.5px solid transparent;
-            background: #1c1c1e; /* Gris oscuro elegante tipo iOS */
-            color: #ffffff;
+            padding: 18px 55px; 
+            border-radius: 30px; 
+            border: 1.5px solid #333;
+            background: var(--bg-dark-gray); /* Gris oscuro del tema */
+            color: var(--white);
             font-size: 16px;
             font-weight: 500;
             outline: none;
@@ -380,8 +364,8 @@
         .login-input::placeholder { color: #8e8e93; }
         
         .login-input:focus { 
-            background: #2c2c2e;
-            border-color: #ffffff; /* Contraste minimalista al enfocar */
+            background: #1f1f1f;
+            border-color: var(--primary-orange); /* Borde naranja al enfocar */
         }
         
         .login-input:focus + .icon-left {
@@ -391,8 +375,8 @@
         .login-btn {
             width: 100%;
             padding: 18px;
-            background: #ffffff; /* Botón blanco para contraste elegante */
-            color: #000000;
+            background: var(--primary-orange); /* Botón Naranja */
+            color: var(--white);
             border: none;
             border-radius: 30px;
             font-size: 17px;
@@ -403,11 +387,11 @@
         }
         
         .login-btn:hover { 
-            background: #e5e5e5;
+            background: #e66e00; /* Naranja más oscuro */
         }
         
         .login-btn:active {
-            transform: scale(0.96); /* Efecto pulsación suave tipo iOS */
+            transform: scale(0.96); 
         }
         
         .register-link {
@@ -419,9 +403,9 @@
             transition: color 0.3s ease;
         }
         
-        .register-link:hover { color: #ffffff; }
+        .register-link:hover { color: var(--white); }
         .register-link span { 
-            color: #ffffff; 
+            color: var(--primary-orange); /* Texto destacado en Naranja */
             font-weight: 600; 
             margin-left: 5px; 
             text-decoration: underline;
@@ -429,10 +413,9 @@
             transition: text-decoration-color 0.3s ease;
         }
         .register-link:hover span {
-            text-decoration-color: #ffffff;
+            text-decoration-color: var(--primary-orange);
         }
 
-        /* Ajustes específicos para el modal de registro para que coincida */
         .register-card .login-input {
             padding: 16px 25px;
             margin-bottom: 12px;
@@ -647,11 +630,10 @@
         <div class="loading-text" id="loadingText">Cargando...</div>
     </div>
 
-    <!-- Login View (Minimalista iOS) -->
+    <!-- Login View (Integrado al Tema) -->
     <div id="view-login" class="view active">
         <div class="login-box">
             <div class="login-logo-container">
-                <!-- Aquí está la imagen logo.png que solicitaste -->
                 <img src="logo.png" alt="Moto Móvil">
             </div>
             <h2>Bienvenido</h2>
@@ -664,7 +646,6 @@
             <div class="input-wrapper">
                 <input type="password" id="loginPassword" class="login-input" placeholder="Contraseña" autocomplete="current-password">
                 <i class="fas fa-lock icon-left"></i>
-                <!-- Ícono del ojo para la contraseña -->
                 <i class="fas fa-eye icon-right" id="togglePasswordIcon" onclick="togglePassword()"></i>
             </div>
             
@@ -703,12 +684,16 @@
                     <div class="menu-icon"><i class="fas fa-bars"></i></div>
                 </div>
                 <div class="logo-text">MOTO MÓVIL<br><span>EL CAMPEÓN</span></div>
-                <div class="profile-pic" id="headerProfilePic">
-                    <img src="a.png" alt="Avatar">
+                
+                <!-- Ícono de Cerrar Sesión y Perfil en Cabecera -->
+                <div class="header-right">
+                    <i class="fas fa-sign-out-alt logout-icon" onclick="logout()" title="Cerrar Sesión"></i>
+                    <div class="profile-pic" id="headerProfilePic">
+                        <img src="a.png" alt="Avatar">
+                    </div>
                 </div>
             </header>
             
-            <!-- Inicia apagado (con clase 'offline') -->
             <section class="status-card offline" id="statusCard">
                 <div class="status-card-content">
                     <h4>Estado actual</h4>
@@ -716,7 +701,6 @@
                     <p id="statusSubtitle">No estás recibiendo viajes</p>
                 </div>
                 <label class="switch">
-                    <!-- Ya no tiene la etiqueta 'checked' -->
                     <input type="checkbox" id="toggleSwitch">
                     <span class="slider"></span>
                 </label>
@@ -743,7 +727,6 @@
             <section class="online-card">
                 <img src="banne.png" class="banner-img" alt="Banner">
             </section>
-            <button class="logout-btn" onclick="logout()">CERRAR SESIÓN</button>
         </div>
 
         <!-- Viajes View (Mapa) -->
@@ -812,7 +795,6 @@
                     <span class="profile-item-value">Montero</span>
                 </div>
             </div>
-            <button class="logout-btn" onclick="logout()">CERRAR SESIÓN</button>
         </div>
 
         <!-- Bottom Navigation -->
