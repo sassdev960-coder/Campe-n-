@@ -1,0 +1,791 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Panel Admin - Moto Móvil</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-body: #0b0f19;
+            --bg-surface: #151c2c;
+            --bg-surface-hover: #1e2638;
+            --border-color: #2a3441;
+            
+            --primary: #f97316;
+            --primary-hover: #ea580c;
+            --primary-glow: 0 0 15px rgba(249, 115, 22, 0.3);
+            
+            --text-main: #ffffff;
+            --text-secondary: #94a3b8;
+            
+            --sidebar-width: 260px;
+            --topbar-height: 70px;
+        }
+
+        * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+        
+        body { 
+            background-color: var(--bg-body); 
+            color: var(--text-main); 
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        h1, h2, h3, h4, h5, h6 { color: var(--text-main); font-weight: 700; }
+        p, span, div { color: inherit; }
+        
+        .section-title { 
+            position: relative; padding-left: 16px; border-left: 4px solid var(--primary); 
+            color: var(--text-main); letter-spacing: -0.5px;
+        }
+
+        .text-accent { color: var(--primary) !important; }
+        .text-secondary-custom { color: var(--text-secondary) !important; font-weight: 500; }
+
+        /* Formularios */
+        .form-control, .form-select {
+            background-color: #0f1523 !important;
+            border: 1px solid var(--border-color) !important;
+            color: #ffffff !important;
+            padding: 12px 16px; border-radius: 10px; font-size: 14px; transition: all 0.3s ease;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2) !important;
+        }
+        .form-control::placeholder { color: #64748b !important; }
+        option { background-color: var(--bg-surface); color: #ffffff; }
+        label, .form-label { color: var(--text-secondary) !important; font-weight: 600; font-size: 13px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Topbar */
+        .topbar {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: var(--topbar-height); 
+            background: rgba(21, 28, 44, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px; z-index: 1030; border-bottom: 1px solid var(--border-color);
+        }
+        .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 20px; color: var(--text-main); letter-spacing: -0.5px; }
+        .brand i { color: var(--primary); font-size: 24px; }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed; top: 0; left: -300px; bottom: 0;
+            width: var(--sidebar-width); background: var(--bg-surface);
+            padding: 24px 16px; z-index: 1040; overflow-y: auto;
+            border-right: 1px solid var(--border-color); transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @media (min-width: 992px) {
+            .sidebar { left: 0; top: var(--topbar-height); }
+            .main-content { margin-left: var(--sidebar-width); margin-top: var(--topbar-height); padding: 32px; }
+        }
+        @media (max-width: 991.98px) {
+            .sidebar.show { left: 0; }
+            .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1035; display: none; backdrop-filter: blur(4px); }
+            .sidebar-overlay.show { display: block; }
+            .main-content { margin-top: var(--topbar-height); padding: 20px; }
+        }
+        
+        .sidebar .nav-link {
+            color: var(--text-secondary); text-decoration: none; display: flex; align-items: center; gap: 14px;
+            padding: 14px 18px; border-radius: 10px; margin-bottom: 8px; transition: all 0.2s ease; font-size: 15px; font-weight: 600;
+        }
+        .sidebar .nav-link:hover { background: rgba(249, 115, 22, 0.1); color: var(--primary); }
+        .sidebar .nav-link.active { background: var(--primary); color: #ffffff; box-shadow: var(--primary-glow); }
+        .sidebar .nav-link i { font-size: 18px; width: 24px; text-align: center; }
+
+        /* Tarjetas Generales */
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .data-card {
+            background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 14px;
+            padding: 20px; display: flex; flex-direction: column; gap: 14px;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+        .data-card:hover {
+            border-color: var(--primary); box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateY(-4px);
+        }
+        
+        .data-card-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 4px;
+        }
+        .data-card-title { font-size: 16px; font-weight: 700; margin: 0; }
+        .data-card-subtitle { font-size: 12px; color: var(--text-secondary); font-weight: 500; display: block; margin-top: 4px; }
+        
+        .info-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-secondary); }
+        .info-row i { color: var(--primary); width: 18px; text-align: center; font-size: 15px; }
+        .info-row strong { color: var(--text-main); font-weight: 600; }
+        
+        .data-card-actions {
+            margin-top: auto; padding-top: 15px; border-top: 1px solid var(--border-color);
+            display: flex; gap: 8px; flex-wrap: wrap;
+        }
+
+        /* Tablas */
+        .table-container { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; overflow-x: auto; }
+        .table-custom { width: 100%; border-collapse: collapse; margin: 0; }
+        .table-custom th { background-color: #1a2235; color: var(--text-secondary); padding: 14px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid var(--border-color); }
+        .table-custom td { padding: 14px; font-size: 14px; border-bottom: 1px solid var(--border-color); }
+        .table-custom tbody tr:hover { background-color: rgba(255,255,255,0.02); }
+
+        /* Badges */
+        .badge-custom { font-size: 11px; font-weight: 700; padding: 6px 12px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px; }
+        .badge-pendiente { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge-aprobada { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge-rechazada { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .badge-info { background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+        .badge-neutral { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); }
+
+        /* Botones */
+        .btn { font-weight: 600; border-radius: 8px; font-size: 13px; padding: 10px 16px; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background: var(--primary); border: none; color: #ffffff; box-shadow: var(--primary-glow); }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
+        .btn-outline-light { border: 1px solid var(--border-color); color: var(--text-main); background: transparent; }
+        .btn-outline-light:hover { background: rgba(255,255,255,0.05); color: var(--text-main); border-color: var(--text-secondary); }
+        .btn-danger-custom { background: rgba(239, 68, 68, 0.1); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .btn-danger-custom:hover { background: #ef4444; color: white; }
+
+        /* Modales */
+        .modal-content { background: var(--bg-surface); border: 1px solid var(--border-color); border-top: 4px solid var(--primary); border-radius: 14px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); }
+        .modal-header { border-bottom: 1px solid var(--border-color); padding: 16px 20px; }
+        .modal-body { padding: 20px; }
+        .modal-footer { border-top: 1px solid var(--border-color); padding: 16px 20px; }
+        .data-box-highlight { background: rgba(249, 115, 22, 0.05); border: 1px solid rgba(249, 115, 22, 0.2); border-radius: 12px; padding: 16px; }
+
+        /* Loader & Login */
+        #loadingScreen, #authScreen { position: fixed; inset: 0; background: var(--bg-body); z-index: 9999; }
+        #authScreen { display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .auth-box { background: var(--bg-surface); padding: 40px; border-radius: 20px; width: 100%; max-width: 420px; border: 1px solid var(--border-color); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(249, 115, 22, 0.2); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 24px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* NUEVO: Stats Dashboard Compactos */
+        .stat-card { padding: 15px 12px; text-align: center; } /* Padding reducido */
+        .stat-card i { font-size: 24px; margin-bottom: 10px; color: var(--primary); } /* Icono más pequeño */
+        .stat-card h6 { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; } /* Texto reducido */
+        .stat-card h2 { font-size: 24px; margin: 0; letter-spacing: -0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); } /* Número más pequeño */
+        
+        /* Animación para el icono de campana */
+        @keyframes ring {
+            0% { transform: rotate(0); }
+            10% { transform: rotate(15deg); }
+            20% { transform: rotate(-15deg); }
+            30% { transform: rotate(10deg); }
+            40% { transform: rotate(-10deg); }
+            50% { transform: rotate(5deg); }
+            60% { transform: rotate(-5deg); }
+            70% { transform: rotate(0); }
+        }
+        .ringing { animation: ring 0.5s ease-in-out; color: var(--primary) !important; }
+    </style>
+</head>
+<body>
+
+    <!-- Pantalla de Carga -->
+    <div id="loadingScreen" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <div class="spinner"></div>
+        <div class="fw-bold fs-5 text-accent">Iniciando sistema...</div>
+    </div>
+
+    <!-- Pantalla Auth -->
+    <div id="authScreen" style="display: none;"></div>
+
+    <!-- Overlay móvil -->
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+    <!-- Panel Principal -->
+    <div id="adminPanel" style="display:none;">
+        
+        <!-- Topbar -->
+        <div class="topbar">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link p-0 me-3 d-lg-none" style="color: var(--text-main); font-size: 22px;" onclick="openSidebar()">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="brand"><i class="fas fa-motorcycle"></i> MOTO MÓVIL</div>
+            </div>
+            
+            <!-- Grupo de botones derecha: Notificaciones + Salir -->
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-link text-white p-0 position-relative" onclick="goToPendingApps()" title="Notificaciones" style="text-decoration: none;">
+                    <i class="fas fa-bell fs-5" id="bellIcon"></i>
+                    <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-dark" style="display: none; font-size: 10px; padding: 3px 6px;">
+                        0
+                    </span>
+                </button>
+                <button class="btn btn-outline-light btn-sm" onclick="logoutAdmin()">
+                    <i class="fas fa-sign-out-alt text-danger"></i> Salir
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="d-flex align-items-center justify-content-between mb-4 px-2">
+                <span class="fw-bold text-accent" style="font-size:13px; text-transform:uppercase; letter-spacing:1px;">Menú Principal</span>
+                <button class="btn-close btn-close-white d-lg-none" onclick="closeSidebar()"></button>
+            </div>
+            <a href="#" class="nav-link active" data-section="dashboard" onclick="navigateTo('dashboard')"><i class="fas fa-chart-pie"></i> Dashboard</a>
+            <a href="#" class="nav-link" data-section="aplicaciones" onclick="navigateTo('aplicaciones')"><i class="fas fa-id-card"></i> Solicitudes</a>
+            <a href="#" class="nav-link" data-section="conductores" onclick="navigateTo('conductores')"><i class="fas fa-users"></i> Conductores</a>
+            <a href="#" class="nav-link" data-section="billetera" onclick="navigateTo('billetera')"><i class="fas fa-wallet"></i> Billetera</a>
+            <a href="#" class="nav-link" data-section="central" onclick="navigateTo('central')"><i class="fas fa-bullhorn"></i> Central</a>
+            <a href="#" class="nav-link" data-section="viajes" onclick="navigateTo('viajes')"><i class="fas fa-route"></i> Viajes</a>
+        </div>
+
+        <!-- Contenido principal -->
+        <div class="main-content">
+            
+            <!-- Dashboard -->
+            <div id="section-dashboard" class="section">
+                <h2 class="section-title mb-4 fs-4">Resumen General</h2>
+                
+                <!-- AQUÍ SE AJUSTA EL GRID: col-6 para móvil (mitad), col-lg-3 para PC (1/4 de pantalla) -->
+                <div class="row g-3">
+                    <div class="col-6 col-lg-3">
+                        <div class="data-card stat-card">
+                            <i class="fas fa-user-check"></i>
+                            <h6>Conductores</h6>
+                            <h2 id="statDrivers" class="text-white">0</h2>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="data-card stat-card">
+                            <i class="fas fa-clock"></i>
+                            <h6>Pendientes</h6>
+                            <h2 id="statPendingApps" class="text-white">0</h2>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="data-card stat-card">
+                            <i class="fas fa-motorcycle"></i>
+                            <h6>Viajes Hoy</h6>
+                            <h2 id="statRidesToday" class="text-white">0</h2>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="data-card stat-card border-0" style="background: linear-gradient(145deg, #1e293b, #0f172a);">
+                            <i class="fas fa-coins text-success"></i>
+                            <h6>Ganancias Totales</h6>
+                            <h2 id="statTotalEarnings" class="text-success">Bs 0</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Solicitudes -->
+            <div id="section-aplicaciones" class="section" style="display:none;">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                    <h2 class="section-title m-0 fs-4">Solicitudes de Ingreso</h2>
+                    <select class="form-select w-auto py-1" id="filterStatus" onchange="loadApplications()">
+                        <option value="pendiente" selected>En Pendiente</option>
+                        <option value="aprobada">Aprobadas</option>
+                        <option value="rechazada">Rechazadas</option>
+                        <option value="todas">Ver Todas</option>
+                    </select>
+                </div>
+                <div class="cards-grid" id="applicationsGrid"></div>
+            </div>
+
+            <!-- Conductores -->
+            <div id="section-conductores" class="section" style="display:none;">
+                <h2 class="section-title mb-4 fs-4">Flota Activa</h2>
+                <div class="cards-grid" id="driversGrid"></div>
+            </div>
+
+            <!-- Billetera -->
+            <div id="section-billetera" class="section" style="display:none;">
+                <h2 class="section-title mb-4 fs-4">Gestión de Finanzas</h2>
+                <div class="data-card mb-4">
+                    <h5 class="mb-3 text-white fs-6"><i class="fas fa-bolt text-accent me-2"></i> Recarga Rápida</h5>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label>Conductor</label>
+                            <select class="form-select" id="walletDriverSelect"></select>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label>Monto (Bs)</label>
+                            <input type="number" class="form-control" id="walletAmount" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <label>Concepto</label>
+                            <input type="text" class="form-control" id="walletDescription" placeholder="Ej: Recarga...">
+                        </div>
+                        <div class="col-12 col-md-2 d-flex align-items-end">
+                            <button class="btn btn-primary w-100 py-2" onclick="rechargeWallet()">Recargar</button>
+                        </div>
+                    </div>
+                </div>
+                <h4 class="mb-3 fs-6 text-white">Historial de Movimientos</h4>
+                <div class="table-container">
+                    <table class="table-custom">
+                        <thead><tr><th>Conductor</th><th>Monto</th><th>Tipo</th><th>Concepto</th><th>Fecha</th></tr></thead>
+                        <tbody id="transactionsTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Central -->
+            <div id="section-central" class="section" style="display:none;">
+                <h2 class="section-title mb-4 fs-4">Comunicaciones Centrales</h2>
+                <div class="data-card mb-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-4">
+                            <label>Destinatario</label>
+                            <select class="form-select" id="centralTarget">
+                                <option value="all">Toda la Flota (Global)</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <label>Mensaje a transmitir</label>
+                            <input type="text" class="form-control" id="centralMessage" placeholder="Redacta el aviso aquí...">
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-primary" onclick="sendCentralMessage()"><i class="fas fa-paper-plane"></i> Emitir Comunicado</button>
+                    </div>
+                </div>
+                <h4 class="mb-3 fs-6 text-white">Historial de Avisos</h4>
+                <div class="table-container">
+                    <table class="table-custom">
+                        <thead><tr><th>Destinatario</th><th>Mensaje</th><th>Fecha y Hora</th></tr></thead>
+                        <tbody id="centralMessagesTable"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Viajes -->
+            <div id="section-viajes" class="section" style="display:none;">
+                <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                    <h2 class="section-title m-0 fs-4">Monitoreo de Viajes</h2>
+                    <select class="form-select w-auto py-1" id="rideFilter" onchange="loadRides()">
+                        <option value="todos">Todos los Estados</option>
+                        <option value="pendiente">Pendientes</option>
+                        <option value="aceptado">Aceptados</option>
+                        <option value="en_curso">En Ruta</option>
+                        <option value="completado">Finalizados</option>
+                        <option value="cancelado">Cancelados</option>
+                    </select>
+                </div>
+                <div class="cards-grid" id="ridesGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Ver Credenciales (Edge Function) -->
+    <div class="modal fade" id="credentialsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-white fw-bold fs-6"><i class="fas fa-shield-alt text-accent me-2"></i> Credenciales</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="credentialsContent" class="d-flex flex-column gap-3">
+                        <!-- Contenido inyectado por JS -->
+                    </div>
+                </div>
+                <div class="modal-footer p-2">
+                    <button class="btn btn-outline-light w-100" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // CONFIGURACIÓN SUPABASE
+        const supabaseUrl = 'https://uwdojchfwmaczgdthtfr.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3ZG9qY2hmd21hY3pnZHRodGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDQ4NDEsImV4cCI6MjEwMjcyMDg0MX0.jafGOwlItnzSoZ6yYlpaae16S2nlSDpPIS2316ZPJak';
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        let currentAdmin = null;
+        let allApplicationsData = [];
+        let unreadNotifications = 0; // Contador de notificaciones
+
+        /* NAVEGACIÓN */
+        function openSidebar() {
+            if (window.innerWidth < 992) {
+                document.getElementById('sidebar').classList.add('show');
+                document.getElementById('sidebarOverlay').classList.add('show');
+            }
+        }
+        function closeSidebar() {
+            document.getElementById('sidebar').classList.remove('show');
+            document.getElementById('sidebarOverlay').classList.remove('show');
+        }
+        function navigateTo(section) {
+            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+            document.getElementById('section-' + section).style.display = 'block';
+            document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+            document.querySelector(`.nav-link[data-section="${section}"]`).classList.add('active');
+            closeSidebar();
+            
+            switch(section) {
+                case 'dashboard': loadDashboard(); break;
+                case 'aplicaciones': loadApplications(); break;
+                case 'conductores': loadDrivers(); break;
+                case 'billetera': break;
+                case 'central': break;
+                case 'viajes': loadRides(); break;
+            }
+        }
+
+        /* NOTIFICACIONES Y CLICK EN LA CAMPANA */
+        function goToPendingApps() {
+            // Reinicia el contador visualmente
+            unreadNotifications = 0;
+            updateNotificationBadge();
+            
+            // Navega a la sección, fuerza el filtro a 'pendiente' y carga
+            navigateTo('aplicaciones');
+            document.getElementById('filterStatus').value = 'pendiente';
+            loadApplications();
+        }
+
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notifBadge');
+            const bell = document.getElementById('bellIcon');
+            
+            if (unreadNotifications > 0) {
+                badge.style.display = 'block';
+                badge.textContent = unreadNotifications > 99 ? '99+' : unreadNotifications;
+                bell.classList.add('ringing'); // Añade animación
+                setTimeout(() => bell.classList.remove('ringing'), 500); // Quita animación después
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+
+        /* SUSCRIPCIÓN TIEMPO REAL (SUPABASE) */
+        function setupRealtimeSubscriptions() {
+            supabaseClient
+                .channel('admin-realtime')
+                // Escucha nuevos registros en driver_applications
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'driver_applications' }, payload => {
+                    console.log("Nueva solicitud recibida:", payload.new);
+                    
+                    // Aumenta contador y actualiza campanita
+                    unreadNotifications++;
+                    updateNotificationBadge();
+                    
+                    // Si la persona está viendo el dashboard, actualiza los números invisibles
+                    loadDashboard(); 
+
+                    // Si está dentro de la pantalla de aplicaciones viendo los pendientes, refresca la tabla
+                    const isAppsSection = document.getElementById('section-aplicaciones').style.display === 'block';
+                    const isPendingFilter = document.getElementById('filterStatus').value === 'pendiente';
+                    
+                    if (isAppsSection && isPendingFilter) {
+                        loadApplications();
+                    }
+                })
+                .subscribe((status) => {
+                    console.log('Estado de conexión Realtime:', status);
+                });
+        }
+
+        /* AUTH & INIT */
+        async function initApp() {
+            const { data: sessionData } = await supabaseClient.auth.getSession();
+            if (sessionData?.session) {
+                currentAdmin = sessionData.session.user;
+                document.getElementById('loadingScreen').style.display = 'none';
+                document.getElementById('adminPanel').style.display = 'block';
+                
+                // Iniciar escucha en tiempo real
+                setupRealtimeSubscriptions();
+                
+                navigateTo('dashboard');
+            } else {
+                showLoginForm();
+            }
+        }
+
+        function showLoginForm() {
+            document.getElementById('loadingScreen').style.display = 'none';
+            document.getElementById('authScreen').style.display = 'flex';
+            document.getElementById('authScreen').innerHTML = `
+                <div class="auth-box text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-motorcycle text-accent" style="font-size: 40px;"></i>
+                        <h3 class="fw-bold text-white mt-3">Panel Admin</h3>
+                        <p class="text-secondary-custom">Ingresa tus credenciales para continuar</p>
+                    </div>
+                    <input type="email" id="loginEmail" class="form-control mb-3" placeholder="Correo electrónico">
+                    <input type="password" id="loginPassword" class="form-control mb-4" placeholder="Contraseña">
+                    <button class="btn btn-primary w-100 py-3" onclick="loginAdmin()">Iniciar Sesión</button>
+                </div>
+            `;
+        }
+
+        async function loginAdmin() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            if (!email || !password) return alert('Completa los campos.');
+            
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) return alert('Error: ' + error.message);
+            
+            currentAdmin = data.user;
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'block';
+            
+            // Iniciar escucha en tiempo real al loguearse
+            setupRealtimeSubscriptions();
+            
+            navigateTo('dashboard');
+        }
+
+        async function logoutAdmin() {
+            await supabaseClient.auth.signOut();
+            location.reload();
+        }
+
+        /* DASHBOARD */
+        async function loadDashboard() {
+            try {
+                const { count: driversCount } = await supabaseClient.from('drivers').select('*', { count: 'exact', head: true }).eq('is_active', true);
+                document.getElementById('statDrivers').textContent = driversCount || 0;
+
+                const { count: pendingApps } = await supabaseClient.from('driver_applications').select('*', { count: 'exact', head: true }).eq('status', 'pendiente');
+                document.getElementById('statPendingApps').textContent = pendingApps || 0;
+
+                const today = new Date().toISOString().split('T')[0];
+                const { count: ridesToday } = await supabaseClient.from('rides').select('*', { count: 'exact', head: true }).gte('created_at', today);
+                document.getElementById('statRidesToday').textContent = ridesToday || 0;
+
+                const { data: completedRides } = await supabaseClient.from('rides').select('price').eq('status', 'completado');
+                if (completedRides) {
+                    const total = completedRides.reduce((sum, r) => sum + parseFloat(r.price || 0), 0);
+                    document.getElementById('statTotalEarnings').textContent = `Bs ${total.toFixed(2)}`;
+                }
+            } catch (err) { console.error('Error dashboard:', err); }
+        }
+
+        /* SOLICITUDES */
+        async function loadApplications() {
+            const filter = document.getElementById('filterStatus').value;
+            let query = supabaseClient.from('driver_applications').select('*').order('created_at', { ascending: false });
+            if (filter !== 'todas') query = query.eq('status', filter);
+            
+            const { data, error } = await query;
+            if (error) return;
+            
+            allApplicationsData = data || [];
+            const grid = document.getElementById('applicationsGrid');
+            grid.innerHTML = '';
+
+            if (allApplicationsData.length === 0) {
+                grid.innerHTML = `
+                    <div class="data-card w-100 text-center py-5" style="grid-column: 1 / -1;">
+                        <i class="fas fa-inbox mb-3 text-secondary-custom" style="font-size: 35px;"></i>
+                        <h6 class="text-white">Bandeja Vacía</h6>
+                        <p class="text-secondary-custom mb-0 fs-6">No hay solicitudes que coincidan con este filtro.</p>
+                    </div>`;
+                return;
+            }
+
+            allApplicationsData.forEach(app => {
+                let badgeClass = 'badge-neutral';
+                if(app.status === 'pendiente') badgeClass = 'badge-pendiente';
+                if(app.status === 'aprobada') badgeClass = 'badge-aprobada';
+                if(app.status === 'rechazada') badgeClass = 'badge-rechazada';
+
+                grid.innerHTML += `
+                    <div class="data-card p-3">
+                        <div class="data-card-header border-0 pb-0">
+                            <div>
+                                <h4 class="data-card-title">${app.full_name}</h4>
+                                <span class="data-card-subtitle"><i class="far fa-calendar-alt me-1"></i> ${new Date(app.created_at).toLocaleDateString()}</span>
+                            </div>
+                            <span class="badge-custom ${badgeClass}">${app.status}</span>
+                        </div>
+                        <hr style="border-color: var(--border-color); margin: 8px 0;">
+                        <div class="info-row">
+                            <i class="fas fa-phone-alt"></i> <span><strong>${app.phone}</strong></span>
+                        </div>
+                        <div class="info-row">
+                            <i class="fas fa-align-left"></i> <span><strong>${app.notes || 'Sin notas'}</strong></span>
+                        </div>
+                        <div class="data-card-actions pt-2 mt-2">
+                            ${app.status === 'pendiente' ? `
+                                <button class="btn btn-primary flex-grow-1 py-1" onclick="viewCredentials('${app.id}')">
+                                    <i class="fas fa-check"></i> Aprobar
+                                </button>
+                                <button class="btn btn-danger-custom py-1" onclick="rejectApplication('${app.id}')">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            ` : `
+                                <button class="btn btn-outline-light w-100 py-1" onclick="viewCredentials('${app.id}')">
+                                    <i class="fas fa-id-card-clip"></i> Credenciales
+                                </button>
+                            `}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        async function viewCredentials(appId) {
+            const app = allApplicationsData.find(a => a.id === appId);
+            if (!app) return;
+
+            const modal = new bootstrap.Modal(document.getElementById('credentialsModal'));
+            const contentDiv = document.getElementById('credentialsContent');
+
+            contentDiv.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner mx-auto" style="width:40px; height:40px;"></div>
+                    <h6 class="text-white fw-bold">Procesando...</h6>
+                </div>
+            `;
+            modal.show();
+
+            try {
+                const requestBody = { application_id: app.id, full_name: app.full_name, phone: app.phone };
+
+                const { data, error } = await supabaseClient.functions.invoke('create-driver-user', {
+                    body: requestBody
+                });
+
+                if (error || (data && data.success === false)) {
+                    contentDiv.innerHTML = `<div class="alert bg-danger text-white border-0"><small>${error ? error.message : data.error}</small></div>`;
+                    return;
+                }
+
+                const tempPassword = data.temp_password;
+                const displayPhone = data.phone; 
+
+                contentDiv.innerHTML = `
+                    <div class="d-flex align-items-center gap-3 mb-2 p-2 rounded-3" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);">
+                        <div class="bg-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: 2px solid #34d399;">
+                            <i class="fas fa-check text-success"></i>
+                        </div>
+                        <div>
+                            <h5 class="text-white fw-bold mb-0">${app.full_name}</h5>
+                            <span class="text-success" style="font-size: 11px;">Cuenta Aprobada Exitosamente</span>
+                        </div>
+                    </div>
+                    
+                    <div class="data-box-highlight mt-2 p-3">
+                        <div class="mb-3">
+                            <span class="text-secondary-custom d-block" style="font-size: 11px;">USUARIO / TELÉFONO</span>
+                            <strong class="text-white fs-6">${displayPhone}</strong>
+                        </div>
+                        <div>
+                            <span class="text-secondary-custom d-block mb-1" style="font-size: 11px;">CONTRASEÑA</span>
+                            <div class="d-flex justify-content-between align-items-center bg-dark p-2 rounded-3 border">
+                                <strong class="text-white fs-5" style="letter-spacing: 2px;">${tempPassword}</strong>
+                                <button class="btn btn-outline-light btn-sm py-1" onclick="navigator.clipboard.writeText('${tempPassword}'); alert('Copiado!');">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                loadApplications();
+                loadDrivers();
+                loadDashboard();
+
+            } catch (err) {
+                contentDiv.innerHTML = `<div class="alert bg-danger text-white border-0"><small>${err.message}</small></div>`;
+            }
+        }
+
+        async function rejectApplication(appId) {
+            if(confirm("¿Rechazar esta solicitud?")) {
+                await supabaseClient.from('driver_applications').update({ status: 'rechazada' }).eq('id', appId);
+                loadApplications();
+                loadDashboard();
+            }
+        }
+
+        /* CONDUCTORES */
+        async function loadDrivers() {
+            const { data: drivers } = await supabaseClient
+                .from('drivers')
+                .select(`*, driver_status (is_online), wallets (balance)`)
+                .order('created_at', { ascending: false });
+                
+            const grid = document.getElementById('driversGrid');
+            grid.innerHTML = '';
+            
+            if (!drivers || drivers.length === 0) return;
+            
+            drivers.forEach(d => {
+                const isOnline = d.driver_status?.is_online || false;
+                
+                grid.innerHTML += `
+                    <div class="data-card p-3">
+                        <div class="data-card-header border-0 pb-0">
+                            <div>
+                                <h4 class="data-card-title">${d.full_name}</h4>
+                                <span class="data-card-subtitle"><i class="fas fa-mobile-alt me-1"></i> ${d.phone}</span>
+                            </div>
+                        </div>
+                        <hr style="border-color: var(--border-color); margin: 8px 0;">
+                        <div class="info-row">
+                            <i class="fas fa-signal ${isOnline ? 'text-success' : 'text-secondary-custom'}"></i> 
+                            <span>${isOnline ? '<span class="text-success">Conectado</span>' : 'Desconectado'}</span>
+                        </div>
+                        <div class="info-row">
+                            <i class="fas fa-wallet text-accent"></i> 
+                            <span>Bs ${parseFloat(d.wallets?.balance || 0).toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        /* VIAJES */
+        async function loadRides() {
+            const filter = document.getElementById('rideFilter').value;
+            let query = supabaseClient.from('rides').select(`*, drivers (full_name)`).order('created_at', { ascending: false }).limit(50);
+            if (filter !== 'todos') query = query.eq('status', filter);
+            
+            const { data: rides } = await query;
+            const grid = document.getElementById('ridesGrid');
+            grid.innerHTML = '';
+            
+            if (!rides || rides.length === 0) return;
+
+            rides.forEach(ride => {
+                let badgeClass = 'badge-neutral';
+                if(ride.status === 'completado') badgeClass = 'badge-aprobada';
+                else if(ride.status === 'en_curso') badgeClass = 'badge-info';
+                else if(ride.status === 'cancelado') badgeClass = 'badge-rechazada';
+
+                grid.innerHTML += `
+                    <div class="data-card p-3">
+                        <div class="data-card-header border-0 pb-0">
+                            <h4 class="data-card-title">Viaje #${ride.id.slice(0,5).toUpperCase()}</h4>
+                            <span class="badge-custom ${badgeClass}">${ride.status.replace('_', ' ')}</span>
+                        </div>
+                        <hr style="border-color: var(--border-color); margin: 8px 0;">
+                        <div class="info-row mb-1"><i class="fas fa-motorcycle text-accent"></i> <span>${ride.drivers?.full_name || 'Sin Asignar'}</span></div>
+                        <div class="info-row mb-1"><i class="fas fa-map-marker-alt text-danger"></i> <span class="text-truncate">${ride.origin_address}</span></div>
+                        <div class="info-row mb-2"><i class="fas fa-flag-checkered text-success"></i> <span class="text-truncate">${ride.destination_address}</span></div>
+                        <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2 border-secondary">
+                            <span class="text-secondary-custom" style="font-size:11px;">TARIFA</span>
+                            <strong class="text-accent fs-5">Bs ${parseFloat(ride.price).toFixed(2)}</strong>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.addEventListener('load', initApp);
+    </script>
+</body>
+</html>
+
