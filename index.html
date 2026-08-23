@@ -1,4 +1,4 @@
-
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -21,605 +21,323 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; user-select: none; }
-        html, body { background-color: var(--bg-black); width: 100vw; height: 100vh; overflow: hidden; }
+        
+        html, body { 
+            background-color: var(--bg-black); 
+            width: 100vw; 
+            height: 100vh;
+            height: 100dvh; 
+            overflow: hidden; 
+            overscroll-behavior-y: none;
+        }
+        
         .app-container { width: 100%; height: 100%; display: flex; flex-direction: column; color: var(--white); }
         .content-area { flex: 1; overflow-y: auto; padding: 15px 15px 0 15px; position: relative; }
         .view { display: none; }
         .view.active { display: block; }
 
-        /* Efecto de luz elegante de fondo */
         .online-glow {
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            right: 0;
-            height: 65vh;
+            position: absolute; top: 0; left: 0; right: 0; height: 65vh;
             background: linear-gradient(180deg, rgba(255, 122, 0, 0.25) 0%, rgba(11, 11, 11, 0) 100%);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.6s ease-in-out;
-            z-index: 0; 
+            opacity: 0; pointer-events: none; transition: opacity 0.6s ease-in-out; z-index: 0; 
         }
-        .online-glow.active {
-            opacity: 1;
-        }
-
-        /* Asegurar elementos por encima de la luz */
-        .header, .status-card, .stats-grid, .online-card {
-            position: relative;
-            z-index: 1;
-        }
+        .online-glow.active { opacity: 1; }
+        .header, .status-card, .stats-grid, .online-card { position: relative; z-index: 1; }
 
         #view-viajes { padding: 0; display: none; flex: 1; position: relative; }
         #view-viajes.active { display: block; }
         #map { width: 100%; height: 100%; background: #1a1a1a; }
 
         .loading-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0,0,0,0.8);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(11, 11, 11, 0.5);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 9999;
+            opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0.4s ease;
         }
         .loading-overlay.active { opacity: 1; visibility: visible; }
+        
         .spinner {
-            width: 50px; height: 50px;
-            border: 5px solid var(--primary-orange);
-            border-top-color: transparent;
+            width: 55px; height: 55px; 
+            border: 4px solid rgba(255, 122, 0, 0.15);
+            border-top-color: var(--primary-orange); 
             border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+            animation: spin 1s ease-in-out infinite; 
             margin-bottom: 20px;
+            box-shadow: 0 0 15px rgba(255, 122, 0, 0.4);
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .loading-text { color: var(--white); font-size: 18px; font-weight: 600; letter-spacing: 0.5px; }
+        .loading-text { color: var(--white); font-size: 16px; font-weight: 500; letter-spacing: 0.5px; }
 
-        /* HEADER & CERRAR SESION */
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .header-left { display: flex; align-items: center; gap: 15px; }
         .menu-icon { font-size: 24px; color: #d1d5db; cursor: pointer; }
         .logo-text { font-weight: 800; letter-spacing: 1px; text-transform: uppercase; line-height: 1.1; text-align: center; }
         .logo-text span { color: var(--primary-orange); }
-        
         .header-right { display: flex; align-items: center; gap: 15px; }
         .logout-icon { font-size: 22px; color: var(--primary-orange); cursor: pointer; transition: opacity 0.2s; }
-        .logout-icon:hover { opacity: 0.8; }
         .profile-pic { width: 45px; height: 45px; border-radius: 50%; background-color: #333; overflow: hidden; }
         .profile-pic img { width: 100%; height: 100%; object-fit: cover; }
 
-        .status-card {
-            background-color: var(--primary-orange);
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.4s ease;
-            box-shadow: 0 8px 25px rgba(255, 122, 0, 0.35); 
-        }
-        .status-card.offline { 
-            background-color: var(--bg-offline); 
-            box-shadow: var(--shadow); 
-        }
+        .status-card { background-color: var(--primary-orange); border-radius: 20px; padding: 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; transition: all 0.4s ease; box-shadow: 0 8px 25px rgba(255, 122, 0, 0.35); }
+        .status-card.offline { background-color: var(--bg-offline); box-shadow: var(--shadow); }
         
         .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(255,255,255,0.3);
-            transition: .4s; border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px;
-            background-color: white; transition: .4s; border-radius: 50%;
-        }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.3); transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: white; }
         input:checked + .slider:before { transform: translateX(26px); background-color: var(--primary-orange); }
 
-        .stats-grid {
-            background-color: var(--bg-dark-gray);
-            border-radius: 16px;
-            padding: 20px 10px;
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            margin-bottom: 20px;
-            box-shadow: var(--shadow);
-        }
+        .stats-grid { background-color: var(--bg-dark-gray); border-radius: 16px; padding: 20px 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; margin-bottom: 20px; box-shadow: var(--shadow); }
         .stat-item { text-align: center; }
-        .stat-icon-circle {
-            display: inline-flex; justify-content: center; align-items: center;
-            width: 40px; height: 40px; border-radius: 50%;
-            border: 2px solid var(--primary-orange); color: var(--primary-orange);
-            font-size: 18px; margin-bottom: 8px;
-        }
+        .stat-icon-circle { display: inline-flex; justify-content: center; align-items: center; width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary-orange); color: var(--primary-orange); font-size: 18px; margin-bottom: 8px; }
         .stat-label { font-size: 12px; color: var(--gray-text); margin-bottom: 5px; }
         .stat-value { font-size: 20px; font-weight: 700; }
-
         .online-card { border-radius: 16px; margin-bottom: 20px; overflow: hidden; height: 150px; box-shadow: var(--shadow); }
         .banner-img { width: 100%; height: 100%; object-fit: cover; }
 
-        .bottom-nav {
-            background-color: var(--bg-dark-gray); padding: 10px 0 25px 0;
-            border-top: 1px solid #222; display: flex; justify-content: space-around;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
-        }
-        .nav-item {
-            color: var(--gray-text); display: flex; flex-direction: column; align-items: center;
-            font-size: 12px; gap: 4px; transition: color 0.2s ease; cursor: pointer;
-        }
-        .nav-item.active { color: var(--primary-orange); }
-        .nav-icon { font-size: 20px; }
-
-        .leaflet-tile { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
-        .leaflet-control-zoom { border: none !important; box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important; }
-        .leaflet-control-zoom a {
-            background-color: var(--bg-dark-gray) !important;
-            color: var(--white) !important;
-            border-bottom: 1px solid #333 !important;
-        }
-        .leaflet-control-zoom a:hover { background-color: #2a2a2a !important; }
-        .leaflet-control-locate {
-            background-color: var(--bg-dark-gray);
-            color: var(--primary-orange);
-            border: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 4px;
-            margin-top: 10px;
-        }
-        .leaflet-control-locate i { font-size: 18px; }
-
-        .avatar-marker {
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 3px solid var(--primary-orange);
-            box-shadow: 0 0 0 3px rgba(255,122,0,0.4), 0 4px 10px rgba(0,0,0,0.5);
-            background: #fff;
-        }
-        .avatar-marker img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-        .pulse-ring {
-            position: absolute;
-            width: 50px; height: 50px;
-            border-radius: 50%;
-            border: 3px solid var(--primary-orange);
-            animation: pulse 1.5s ease-out infinite;
-            pointer-events: none;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(2.5); opacity: 0; }
-        }
-
-        .search-container {
-            position: absolute;
-            top: 15px;
-            left: 15px;
-            right: 15px;
-            z-index: 1000;
-            max-width: 500px;
-            margin: 0 auto;
-        }
-        .search-box {
-            background-color: var(--bg-dark-gray);
-            border-radius: 30px;
-            padding: 10px 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            border: 1px solid #333;
-            transition: border-color 0.2s ease;
-        }
-        .search-box:focus-within { border-color: var(--primary-orange); }
-        .search-box i { color: var(--gray-text); font-size: 16px; }
-        .search-box input {
-            flex: 1; background: transparent; border: none; outline: none;
-            color: var(--white); font-size: 14px; font-weight: 500; letter-spacing: 0.3px;
-        }
-        .search-box input::placeholder { color: var(--gray-text); opacity: 0.8; }
-        .clear-search { cursor: pointer; display: none; }
-        .clear-search.visible { display: block; }
-        .suggestions {
-            background-color: var(--bg-dark-gray);
-            border-radius: 16px;
-            margin-top: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            overflow: hidden;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-        .suggestion-item {
-            padding: 12px 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border-bottom: 1px solid #222;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-        .suggestion-item:last-child { border-bottom: none; }
-        .suggestion-item:hover { background-color: #2a2a2a; }
-        .suggestion-item i { color: var(--primary-orange); font-size: 14px; width: 20px; text-align: center; }
-        .suggestion-text { flex: 1; }
-        .suggestion-name { font-weight: 600; font-size: 14px; color: var(--white); }
-        .suggestion-details { font-size: 12px; color: var(--gray-text); margin-top: 2px; }
-
-        .destination-marker {
-            width: 30px; height: 30px;
-            background-color: var(--primary-orange);
-            border-radius: 50% 50% 50% 0;
-            transform: rotate(-45deg);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        }
-        .destination-marker i { transform: rotate(45deg); color: white; font-size: 14px; }
-
-        /* LOGIN: Ajustado al Tema Naranja/Negro y Menos Espacio */
-        #view-login {
-            display: none; 
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            padding: 20px;
-            background: var(--bg-black);
-            animation: fadeSlideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-        #view-login.active { display: flex; }
-
-        @keyframes fadeSlideUp {
-            0% { opacity: 0; transform: translateY(30px); }
-            100% { opacity: 1; transform: translateY(0); }
-        }
-        
-        .login-box {
-            width: 100%;
-            max-width: 340px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px; /* Reducido para evitar el exceso de espacio */
-        }
-        
-        .login-logo-container {
-            text-align: center;
-            margin-bottom: 5px; /* Reducido */
-        }
-        
-        .login-logo-container img {
-            width: 240px; /* Aumentado para que resalte más y ocupe espacio */
-            height: auto;
-            object-fit: contain;
-            animation: scaleIn 0.8s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-
-        @keyframes scaleIn {
-            0% { opacity: 0; transform: scale(0.9); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-        
-        .login-box h2 { 
-            text-align: center; 
-            margin-bottom: 10px; /* Reducido */
-            font-size: 24px;
-            font-weight: 600;
-            letter-spacing: -0.5px;
-            color: var(--white);
-        }
-        
-        .input-wrapper {
-            position: relative;
-            width: 100%;
-        }
-        
-        .input-wrapper .icon-left {
-            position: absolute;
-            left: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--primary-orange); /* Naranja del tema */
-            font-size: 18px;
-            transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-            pointer-events: none;
-        }
-
-        .input-wrapper .icon-right {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #888888;
-            font-size: 18px;
-            padding: 10px; 
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-
-        .input-wrapper .icon-right:hover {
-            color: var(--primary-orange);
-        }
-        
-        .login-input {
-            width: 100%;
-            padding: 18px 55px; 
-            border-radius: 30px; 
-            border: 1.5px solid #333;
-            background: var(--bg-dark-gray); /* Gris oscuro del tema */
-            color: var(--white);
-            font-size: 16px;
-            font-weight: 500;
-            outline: none;
-            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-        
-        .login-input::placeholder { color: #8e8e93; }
-        
-        .login-input:focus { 
-            background: #1f1f1f;
-            border-color: var(--primary-orange); /* Borde naranja al enfocar */
-        }
-        
-        .login-input:focus + .icon-left {
-            transform: translateY(-50%) scale(1.1);
-        }
-        
-        .login-btn {
-            width: 100%;
-            padding: 18px;
-            background: var(--primary-orange); /* Botón Naranja */
-            color: var(--white);
-            border: none;
-            border-radius: 30px;
-            font-size: 17px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), background 0.2s ease;
-            margin-top: 10px;
-        }
-        
-        .login-btn:hover { 
-            background: #e66e00; /* Naranja más oscuro */
-        }
-        
-        .login-btn:active {
-            transform: scale(0.96); 
-        }
-        
-        .register-link {
-            text-align: center;
-            margin-top: 10px;
-            color: #8e8e93;
-            cursor: pointer;
-            font-size: 14px;
-            transition: color 0.3s ease;
-        }
-        
-        .register-link:hover { color: var(--white); }
-        .register-link span { 
-            color: var(--primary-orange); /* Texto destacado en Naranja */
-            font-weight: 600; 
-            margin-left: 5px; 
-            text-decoration: underline;
-            text-decoration-color: transparent;
-            transition: text-decoration-color 0.3s ease;
-        }
-        .register-link:hover span {
-            text-decoration-color: var(--primary-orange);
-        }
-
-        .register-card .login-input {
-            padding: 16px 25px;
-            margin-bottom: 12px;
-            border-radius: 30px;
-        }
-
-        /* Wallet */
-        .wallet-card {
-            background: var(--bg-dark-gray);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: var(--shadow);
-        }
-        .wallet-balance {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--primary-orange);
-            margin-bottom: 5px;
-        }
+        .wallet-card { background: var(--bg-dark-gray); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow); }
+        .wallet-balance { font-size: 32px; font-weight: 700; color: var(--primary-orange); margin-bottom: 5px; }
         .wallet-label { color: var(--gray-text); font-size: 14px; }
-        .transaction-list {
-            background: var(--bg-dark-gray);
-            border-radius: 16px;
-            padding: 15px;
-            box-shadow: var(--shadow);
-        }
-        .transaction-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #222;
-        }
+        .transaction-list { background: var(--bg-dark-gray); border-radius: 16px; padding: 15px; box-shadow: var(--shadow); }
+        .transaction-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; }
         .transaction-item:last-child { border-bottom: none; }
-        .transaction-desc { font-size: 14px; }
-        .transaction-amount { font-weight: 600; }
         .transaction-amount.positive { color: var(--green-online); }
         .transaction-amount.negative { color: var(--red); }
-        .transaction-date { color: var(--gray-text); font-size: 12px; }
 
-        /* Chat */
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            background: var(--bg-dark-gray);
+        #view-chat.active { 
+            display: flex; 
+            flex-direction: column; 
+            flex: 1; 
+            overflow: hidden; 
         }
-        .chat-header {
-            padding: 15px;
-            background: #1a1a1a;
-            text-align: center;
-            font-weight: 600;
-            border-bottom: 1px solid #222;
-        }
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 15px;
-        }
-        .message {
-            max-width: 80%;
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 15px;
+        
+        .chat-container { display: flex; flex-direction: column; flex: 1; background: var(--bg-dark-gray); width: 100%; }
+        .chat-header { padding: 15px; background: #1a1a1a; text-align: center; font-weight: 600; border-bottom: 1px solid #222; }
+        .chat-messages { flex: 1; overflow-y: auto; padding: 15px; }
+        .message { max-width: 80%; margin-bottom: 10px; padding: 10px; border-radius: 15px; position: relative; }
+        .message.sent { background: var(--primary-orange); color: white; margin-left: auto; border-bottom-right-radius: 5px; }
+        .message.received { background: #333; margin-right: auto; border-bottom-left-radius: 5px; }
+        .chat-input-area { display: flex; padding: 10px; background: #1a1a1a; border-top: 1px solid #222; }
+        .chat-input { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid #333; background: #0b0b0b; color: white; outline: none;}
+        .chat-send-btn { width: 50px; margin-left: 10px; background: var(--primary-orange); border: none; border-radius: 50%; color: white; cursor: pointer; }
+
+        .profile-section { background: var(--bg-dark-gray); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        .profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .profile-avatar { width: 70px; height: 70px; border-radius: 50%; background: #333; overflow: hidden; }
+        .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; }
+
+        .bottom-nav { 
+            background-color: rgba(22, 22, 22, 0.85); 
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px)) 0; 
+            border-top: 1px solid rgba(255, 255, 255, 0.08); 
+            display: flex; 
+            justify-content: space-around; 
+            box-shadow: 0 -4px 25px rgba(0,0,0,0.6); 
             position: relative;
-        }
-        .message.sent {
-            background: var(--primary-orange);
-            color: white;
-            margin-left: auto;
-            border-bottom-right-radius: 5px;
-        }
-        .message.received {
-            background: #333;
-            margin-right: auto;
-            border-bottom-left-radius: 5px;
-        }
-        .message-time { font-size: 10px; color: rgba(255,255,255,0.6); display: block; margin-top: 4px; }
-        .chat-input-area {
-            display: flex;
-            padding: 10px;
-            background: #1a1a1a;
-            border-top: 1px solid #222;
-        }
-        .chat-input {
-            flex: 1;
-            padding: 12px;
-            border-radius: 20px;
-            border: 1px solid #333;
-            background: #0b0b0b;
-            color: white;
-            font-size: 14px;
-        }
-        .chat-send-btn {
-            width: 50px;
-            margin-left: 10px;
-            background: var(--primary-orange);
-            border: none;
-            border-radius: 50%;
-            color: white;
-            font-size: 18px;
-            cursor: pointer;
+            z-index: 1000;
         }
 
-        /* Ride request modal */
-        .ride-modal {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.8);
-            z-index: 5000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+        .nav-item { 
+            color: var(--gray-text); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            font-size: 11px; 
+            font-weight: 500;
+            gap: 6px; 
+            transition: all 0.3s ease; 
+            cursor: pointer; 
+            width: 60px;
+        }
+
+        .nav-icon { 
+            font-size: 20px; 
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
+
+        .nav-item.active { 
+            color: var(--primary-orange); 
+        }
+
+        .nav-item.active .nav-icon {
+            transform: translateY(-4px) scale(1.15);
+            text-shadow: 0 4px 12px rgba(255, 122, 0, 0.6);
+        }
+
+        .leaflet-tile { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
+        .avatar-marker { width: 50px; height: 50px; border-radius: 50%; overflow: hidden; border: 3px solid var(--primary-orange); box-shadow: 0 0 0 3px rgba(255,122,0,0.4), 0 4px 10px rgba(0,0,0,0.5); background: #fff; }
+        .avatar-marker img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+        .pulse-ring { position: absolute; width: 50px; height: 50px; border-radius: 50%; border: 3px solid var(--primary-orange); animation: pulse 1.5s ease-out infinite; pointer-events: none; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
+        
+        .search-container { position: absolute; top: 15px; left: 15px; right: 15px; z-index: 1000; max-width: 500px; margin: 0 auto; }
+        .search-box { background-color: var(--bg-dark-gray); border-radius: 30px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid #333; }
+        .search-box input { flex: 1; background: transparent; border: none; outline: none; color: var(--white); font-size: 14px; }
+        .suggestions { background-color: var(--bg-dark-gray); border-radius: 16px; margin-top: 8px; max-height: 300px; overflow-y: auto; display: none; }
+        .suggestion-item { padding: 12px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #222; cursor: pointer; }
+        
+        /* Estilos mejorados para el modal de solicitud */
+        .ride-modal { 
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
+            background: rgba(0,0,0,0.85); 
+            z-index: 5000; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            opacity: 0; 
+            visibility: hidden; 
+            transition: opacity 0.3s ease, visibility 0.3s ease; 
+            backdrop-filter: blur(5px);
         }
         .ride-modal.active { opacity: 1; visibility: visible; }
-        .ride-card {
-            background: var(--bg-dark-gray);
-            border-radius: 20px;
-            padding: 25px;
-            width: 90%;
-            max-width: 400px;
+        .ride-card { 
+            background: linear-gradient(145deg, #1e293b, #0f172a); 
+            border: 2px solid var(--primary-orange); 
+            border-radius: 24px; 
+            padding: 25px; 
+            width: 90%; 
+            max-width: 400px; 
+            box-shadow: 0 0 30px rgba(255, 122, 0, 0.3); 
+            color: var(--white);
+            animation: slideUp 0.3s ease;
         }
-        .ride-card h3 { text-align: center; margin-bottom: 20px; }
-        .ride-detail {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
-        .ride-detail i { color: var(--primary-orange); font-size: 18px; }
-        .ride-detail .detail-text { flex: 1; }
-        .ride-detail .detail-label { font-size: 12px; color: var(--gray-text); }
-        .ride-detail .detail-value { font-size: 14px; font-weight: 500; }
-        .ride-actions { display: flex; gap: 10px; margin-top: 20px; }
-        .ride-btn {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
+        .ride-card h3 { 
+            text-align: center; 
+            margin-bottom: 20px; 
+            color: var(--primary-orange); 
+            font-weight: 700; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 10px; 
         }
-        .ride-btn.accept { background: var(--primary-orange); color: white; }
-        .ride-btn.reject { background: #333; color: white; }
+        .ride-card h3 i { font-size: 28px; }
+        .ride-info { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 15px; 
+            margin-bottom: 25px; 
+        }
+        .ride-info-item { 
+            background: rgba(0,0,0,0.3); 
+            border-radius: 12px; 
+            padding: 12px 15px; 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+        }
+        .ride-info-item i { 
+            font-size: 20px; 
+            color: var(--primary-orange); 
+            width: 24px; 
+            text-align: center; 
+        }
+        .ride-info-item .label { 
+            font-size: 12px; 
+            color: var(--gray-text); 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+        }
+        .ride-info-item .value { 
+            font-size: 16px; 
+            font-weight: 600; 
+            color: var(--white); 
+            margin-left: auto; 
+            text-align: right;
+        }
+        .ride-info-item .value.price { 
+            color: var(--green-online); 
+            font-size: 22px; 
+        }
+        .ride-actions { 
+            display: flex; 
+            gap: 15px; 
+            margin-top: 10px; 
+        }
+        .ride-btn { 
+            flex: 1; 
+            padding: 15px; 
+            border: none; 
+            border-radius: 14px; 
+            font-size: 16px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: transform 0.2s, box-shadow 0.2s; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px; 
+        }
+        .ride-btn.accept { 
+            background: var(--primary-orange); 
+            color: white; 
+            box-shadow: 0 6px 15px rgba(255, 122, 0, 0.4); 
+        }
+        .ride-btn.accept:hover { 
+            background: #e66a00; 
+            transform: translateY(-2px); 
+        }
+        .ride-btn.reject { 
+            background: rgba(255,255,255,0.1); 
+            color: var(--white); 
+            border: 1px solid rgba(255,255,255,0.2); 
+        }
+        .ride-btn.reject:hover { 
+            background: rgba(255,255,255,0.2); 
+            transform: translateY(-2px); 
+        }
 
-        /* Profile */
-        .profile-section {
-            background: var(--bg-dark-gray);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .profile-header {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        .profile-avatar {
-            width: 70px; height: 70px;
-            border-radius: 50%;
-            background: #333;
-            overflow: hidden;
-        }
-        .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .profile-info h3 { font-size: 18px; margin-bottom: 5px; }
-        .profile-info p { color: var(--gray-text); font-size: 14px; }
-        .profile-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #222;
-        }
-        .profile-item:last-child { border-bottom: none; }
-        .profile-item-label { color: var(--gray-text); }
-        .profile-item-value { font-weight: 500; }
+        .input-wrapper { position: relative; width: 100%; }
+        .input-wrapper .icon-left { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--primary-orange); font-size: 18px; pointer-events: none; }
+        .input-wrapper .icon-right { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #888888; font-size: 18px; padding: 10px; cursor: pointer; transition: color 0.3s ease; }
+        .login-input { width: 100%; padding: 18px 25px; border-radius: 30px; border: 1.5px solid #333; background: var(--bg-dark-gray); color: var(--white); font-size: 16px; font-weight: 500; outline: none; transition: all 0.3s; margin-bottom: 10px;}
+        .input-wrapper .login-input { padding-left: 55px; margin-bottom: 0;}
+        .login-input:focus { background: #1f1f1f; border-color: var(--primary-orange); }
+        
+        .login-btn { width: 100%; padding: 18px; background: var(--primary-orange); color: var(--white); border: none; border-radius: 30px; font-size: 17px; font-weight: 700; cursor: pointer; transition: transform 0.2s, background 0.2s ease; margin-top: 10px; }
+        .login-btn:active { transform: scale(0.96); }
+        .btn-outline { background: transparent; border: 2px solid var(--primary-orange); color: var(--primary-orange); }
+        .btn-outline:hover { background: rgba(255,122,0,0.1); }
+        
+        .btn-row { display: flex; gap: 10px; margin-top: 15px; width: 100%; }
+        .btn-row .login-btn { margin-top: 0; flex: 1; font-size: 15px; padding: 15px; }
 
-        /* Register modal */
-        .register-modal {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.8);
-            z-index: 6000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-        .register-modal.active { opacity: 1; visibility: visible; }
-        .register-card {
-            background: var(--bg-dark-gray);
-            border-radius: 20px;
-            padding: 25px;
-            width: 90%;
-            max-width: 400px;
-        }
-        .register-card h3 { text-align: center; margin-bottom: 20px; }
-        .register-card .ride-actions { margin-top: 20px; }
+        #view-login { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; background: var(--bg-black); }
+        #view-login.active { display: flex; }
+        .login-box { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 12px; }
+        .login-logo-container { text-align: center; margin-bottom: 5px; }
+        .login-logo-container img { width: 240px; height: auto; object-fit: contain; }
+        .login-box h2 { text-align: center; margin-bottom: 10px; font-size: 24px; color: var(--white); }
+        
+        #view-onboarding { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; background: var(--bg-black); overflow-y: auto;}
+        #view-onboarding.active { display: flex; }
+        .onboarding-box { width: 100%; max-width: 340px; padding: 20px 0; }
+        .ob-step { display: none; flex-direction: column; gap: 15px; animation: slideInRight 0.4s ease forwards; }
+        .ob-step.active { display: flex; }
+        .ob-step h2 { text-align: center; color: var(--primary-orange); font-size: 24px; margin-bottom: 5px; }
+        .ob-step p { text-align: center; color: var(--gray-text); font-size: 14px; margin-bottom: 15px; line-height: 1.4;}
+        
+        @keyframes slideInRight { 0% { opacity: 0; transform: translateX(30px); } 100% { opacity: 1; transform: translateX(0); } }
+        
+        .mt-15 { margin-top: 15px; }
+        .status-text { text-align: center; font-size: 13px; color: var(--gray-text); font-weight: 500;}
+        .file-upload-box { background: var(--bg-dark-gray); padding: 20px; border-radius: 20px; border: 2px dashed #444; text-align: center; display: flex; flex-direction: column; gap: 10px; }
+        .file-upload-box i { font-size: 30px; color: var(--primary-orange); }
+        .file-upload-box input[type="file"] { width: 100%; color: var(--gray-text); font-size: 14px; }
+        
+        .photo-options { display: flex; flex-direction: column; gap: 10px; }
+        #selfiePreview { display: none; width: 120px; height: 120px; border-radius: 50%; margin: 10px auto; object-fit: cover; border: 3px solid var(--primary-orange); box-shadow: 0 4px 15px rgba(255,122,0,0.3); }
     </style>
 </head>
 <body>
@@ -630,44 +348,113 @@
         <div class="loading-text" id="loadingText">Cargando...</div>
     </div>
 
-    <!-- Login View (Integrado al Tema) -->
+    <!-- Login View -->
     <div id="view-login" class="view active">
         <div class="login-box">
             <div class="login-logo-container">
                 <img src="logo.png" alt="Moto Móvil">
             </div>
             <h2>Bienvenido</h2>
-            
-            <div class="input-wrapper">
+            <div class="input-wrapper" style="margin-bottom:12px;">
                 <input type="tel" id="loginPhone" class="login-input" placeholder="Número de teléfono" autocomplete="tel">
                 <i class="fas fa-phone icon-left"></i>
             </div>
-            
             <div class="input-wrapper">
-                <input type="password" id="loginPassword" class="login-input" placeholder="Contraseña" autocomplete="current-password">
+                <input type="password" id="loginPassword" class="login-input" placeholder="Contraseña">
                 <i class="fas fa-lock icon-left"></i>
                 <i class="fas fa-eye icon-right" id="togglePasswordIcon" onclick="togglePassword()"></i>
             </div>
-            
             <button class="login-btn" onclick="login()">Iniciar Sesión</button>
-            
-            <div class="register-link" onclick="showRegisterModal()">
-                ¿No tienes cuenta? <span>Regístrate</span>
-            </div>
         </div>
     </div>
 
-    <!-- Registration Request Modal -->
-    <div class="register-modal" id="registerModal">
-        <div class="register-card">
-            <h3>Solicitar registro</h3>
-            <input type="text" id="regName" class="login-input" placeholder="Nombre completo">
-            <input type="tel" id="regPhone" class="login-input" placeholder="Número de teléfono">
-            <textarea id="regNotes" class="login-input" placeholder="Notas adicionales (opcional)" rows="3"></textarea>
-            <div class="ride-actions">
-                <button class="ride-btn accept" onclick="submitRegistration()">Enviar solicitud</button>
-                <button class="ride-btn reject" onclick="hideRegisterModal()">Cancelar</button>
+    <!-- ONBOARDING FLOW VIEW -->
+    <div id="view-onboarding" class="view">
+        <div class="onboarding-box">
+            
+            <!-- Step 1: Welcome -->
+            <div class="ob-step active" id="obStep1">
+                <h2>¡Gracias por unirte!</h2>
+                <p>Estás a unos pasos de ser el campeón de las calles. Vamos a crear tu perfil de conductor.</p>
+                <button class="login-btn mt-15" onclick="nextObStep(2)">Continuar</button>
             </div>
+
+            <!-- Step 2: Personal -->
+            <div class="ob-step" id="obStep2">
+                <h2>Tus Datos</h2>
+                <p>Por favor, ingresa tu nombre completo y documento de identidad.</p>
+                <input type="text" id="obFullName" class="login-input" placeholder="Nombres y Apellidos">
+                <input type="text" id="obIdentity" class="login-input" placeholder="Cédula / Carnet de Identidad">
+                
+                <div class="btn-row">
+                    <button class="login-btn btn-outline" onclick="nextObStep(1)">Volver</button>
+                    <button class="login-btn" onclick="nextObStep(3)">Siguiente</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Vehicle -->
+            <div class="ob-step" id="obStep3">
+                <h2>Tu Vehículo</h2>
+                <p>Registra los datos de la motocicleta con la que trabajarás.</p>
+                <input type="text" id="obMotoModel" class="login-input" placeholder="Modelo (Ej: Suzuki GN 125)">
+                <input type="text" id="obMotoPlate" class="login-input" placeholder="Placa (Ej: 1234-ABC)">
+                
+                <div class="btn-row">
+                    <button class="login-btn btn-outline" onclick="nextObStep(2)">Volver</button>
+                    <button class="login-btn" onclick="nextObStep(3)">Siguiente</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Domicilio y Verificación -->
+            <div class="ob-step" id="obStep4">
+                <h2>Domicilio</h2>
+                <p>Para tu seguridad y la de los pasajeros, necesitamos validar tu domicilio real.</p>
+                
+                <input type="text" id="obAddress" class="login-input" placeholder="Dirección escrita (Zona, Calle)">
+                
+                <button class="login-btn btn-outline" onclick="getOnboardingGPS()">
+                    <i class="fas fa-map-marker-alt"></i> Fijar GPS Actual
+                </button>
+                <div id="obGpsStatus" class="status-text">Ubicación GPS no registrada</div>
+
+                <div class="file-upload-box mt-15">
+                    <i class="fas fa-file-invoice"></i>
+                    <label>Sube una foto de factura (Luz, Agua o Gas) que compruebe la dirección</label>
+                    <input type="file" id="obBillFile" accept="image/*,application/pdf">
+                </div>
+
+                <div class="btn-row">
+                    <button class="login-btn btn-outline" onclick="nextObStep(3)">Volver</button>
+                    <button class="login-btn" onclick="nextObStep(5)">Siguiente</button>
+                </div>
+            </div>
+
+            <!-- Step 5: Foto de Perfil (Selfie) -->
+            <div class="ob-step" id="obStep5">
+                <h2>Foto de Perfil</h2>
+                <p>Sube una foto tuya clara (selfie) para que los pasajeros te reconozcan. Esto da mayor confianza.</p>
+
+                <div class="photo-options mt-15">
+                    <input type="file" id="obSelfieCamera" accept="image/*" capture="user" style="display: none;" onchange="handleSelfieSelect(this)">
+                    <input type="file" id="obSelfieGallery" accept="image/*" style="display: none;" onchange="handleSelfieSelect(this)">
+
+                    <button class="login-btn btn-outline" onclick="document.getElementById('obSelfieCamera').click()">
+                        <i class="fas fa-camera"></i> Tomar una foto
+                    </button>
+                    <button class="login-btn btn-outline" style="margin-top:5px;" onclick="document.getElementById('obSelfieGallery').click()">
+                        <i class="fas fa-images"></i> Subir desde Galería
+                    </button>
+                </div>
+                
+                <div id="selfieStatus" class="status-text mt-15">Ninguna foto seleccionada</div>
+                <img id="selfiePreview" src="" alt="Previsualización de selfie">
+
+                <div class="btn-row">
+                    <button class="login-btn btn-outline" onclick="nextObStep(4)">Volver</button>
+                    <button class="login-btn" onclick="finishOnboarding()">Guardar Perfil</button>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -676,7 +463,6 @@
         
         <!-- Inicio View -->
         <div id="view-inicio" class="content-area view active">
-            <!-- Div para la luz elegante naranja por detrás -->
             <div class="online-glow" id="onlineGlow"></div>
             
             <header class="header">
@@ -685,7 +471,6 @@
                 </div>
                 <div class="logo-text">MOTO MÓVIL<br><span>EL CAMPEÓN</span></div>
                 
-                <!-- Ícono de Cerrar Sesión y Perfil en Cabecera -->
                 <div class="header-right">
                     <i class="fas fa-sign-out-alt logout-icon" onclick="logout()" title="Cerrar Sesión"></i>
                     <div class="profile-pic" id="headerProfilePic">
@@ -725,7 +510,7 @@
             </section>
 
             <section class="online-card">
-                <img src="banne.png" class="banner-img" alt="Banner">
+                <img src="banne.png" class="banner-img" alt="Banner" onerror="this.src='https://via.placeholder.com/400x150/161616/ff7a00?text=Moto+Movil'">
             </section>
         </div>
 
@@ -735,10 +520,9 @@
             <div class="search-container">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Buscar dirección, calle, lugar..." autocomplete="off">
-                    <i class="fas fa-times clear-search" id="clearSearch"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar dirección..." autocomplete="off">
                 </div>
-                <div class="suggestions" id="suggestions" style="display: none;"></div>
+                <div class="suggestions" id="suggestions"></div>
             </div>
         </div>
 
@@ -751,7 +535,7 @@
             </div>
             <h3 style="margin-bottom:10px;">Movimientos recientes</h3>
             <div class="transaction-list" id="transactionList">
-                <p style="color: var(--gray-text); text-align:center;">Cargando...</p>
+                <p style="color: var(--gray-text); text-align:center;">No hay movimientos</p>
             </div>
         </div>
 
@@ -762,9 +546,7 @@
                 <div class="chat-messages" id="chatMessages"></div>
                 <div class="chat-input-area">
                     <input type="text" class="chat-input" id="chatInput" placeholder="Escribe un mensaje...">
-                    <button class="chat-send-btn" onclick="sendCentralMessage()">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
+                    <button class="chat-send-btn" onclick="sendCentralMessage()"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
@@ -774,7 +556,7 @@
             <h2 style="margin-bottom:20px;">Mi Perfil</h2>
             <div class="profile-section">
                 <div class="profile-header">
-                    <div class="profile-avatar">
+                    <div class="profile-avatar" id="pageProfilePic">
                         <img src="a.png" alt="Avatar">
                     </div>
                     <div class="profile-info">
@@ -783,16 +565,12 @@
                     </div>
                 </div>
                 <div class="profile-item">
-                    <span class="profile-item-label">Estado</span>
-                    <span class="profile-item-value" id="profileStatus">Activo</span>
-                </div>
-                <div class="profile-item">
                     <span class="profile-item-label">Vehículo</span>
-                    <span class="profile-item-value">Motocicleta</span>
+                    <span class="profile-item-value" id="profileVehicle">Motocicleta</span>
                 </div>
                 <div class="profile-item">
-                    <span class="profile-item-label">Ciudad</span>
-                    <span class="profile-item-value">Montero</span>
+                    <span class="profile-item-label">Placa</span>
+                    <span class="profile-item-value" id="profilePlate">---</span>
                 </div>
             </div>
         </div>
@@ -820,31 +598,33 @@
     <!-- Ride Request Modal -->
     <div class="ride-modal" id="rideModal">
         <div class="ride-card">
-            <h3>Nueva solicitud de viaje</h3>
-            <div class="ride-detail">
-                <i class="fas fa-map-marker-alt"></i>
-                <div class="detail-text">
-                    <div class="detail-label">Origen</div>
-                    <div class="detail-value" id="rideOrigin">Cargando...</div>
+            <h3><i class="fas fa-bell"></i> Nueva solicitud de viaje</h3>
+            <div class="ride-info">
+                <div class="ride-info-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <div>
+                        <div class="label">Origen</div>
+                        <div class="value" id="rideOrigin">Cargando...</div>
+                    </div>
                 </div>
-            </div>
-            <div class="ride-detail">
-                <i class="fas fa-flag-checkered"></i>
-                <div class="detail-text">
-                    <div class="detail-label">Destino</div>
-                    <div class="detail-value" id="rideDestination">Cargando...</div>
+                <div class="ride-info-item">
+                    <i class="fas fa-flag-checkered"></i>
+                    <div>
+                        <div class="label">Destino</div>
+                        <div class="value" id="rideDestination">Cargando...</div>
+                    </div>
                 </div>
-            </div>
-            <div class="ride-detail">
-                <i class="fas fa-dollar-sign"></i>
-                <div class="detail-text">
-                    <div class="detail-label">Precio</div>
-                    <div class="detail-value" id="ridePrice">Bs 0</div>
+                <div class="ride-info-item">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <div>
+                        <div class="label">Precio</div>
+                        <div class="value price" id="ridePrice">Bs 0.00</div>
+                    </div>
                 </div>
             </div>
             <div class="ride-actions">
-                <button class="ride-btn accept" onclick="acceptRide()">Aceptar</button>
-                <button class="ride-btn reject" onclick="rejectRide()">Rechazar</button>
+                <button class="ride-btn accept" onclick="acceptRide()"><i class="fas fa-check"></i> Aceptar</button>
+                <button class="ride-btn reject" onclick="rejectRide()"><i class="fas fa-times"></i> Rechazar</button>
             </div>
         </div>
     </div>
@@ -860,18 +640,19 @@
 
         let currentDriverId = null;
         let currentDriverData = null;
+        let map;
         let currentPosition = null;
         let driverMarker = null;
         let pulseLayer = null;
-        let destinationMarker = null;
-        let activeRideId = null;
-        let currentChatType = 'central';
-        let map;
-        let ridesSubscription;
-        let centralChatSubscription;
-        let rideChatSubscription;
+        let currentRideId = null;  // ID del viaje actual en solicitud
+        let isDriverOnline = false; // Estado online del conductor
 
-        // ==================== FUNCIONES DE CARGA ====================
+        // Variables Onboarding
+        let obLat = null;
+        let obLng = null;
+        let currentSelfieFile = null;
+
+        // ==================== FUNCIONES UI ====================
         function showLoading(text = 'Cargando...') {
             document.getElementById('loadingText').textContent = text;
             document.getElementById('loadingOverlay').classList.add('active');
@@ -880,697 +661,477 @@
             document.getElementById('loadingOverlay').classList.remove('active');
         }
 
-        // ==================== AUTENTICACIÓN ====================
+        // ==================== AUTENTICACIÓN Y ENRUTAMIENTO ====================
         async function login() {
             const phone = document.getElementById('loginPhone').value.trim();
             const password = document.getElementById('loginPassword').value;
-            if (!phone || !password) {
-                alert('Ingresa tu teléfono y contraseña');
-                return;
-            }
+            if (!phone || !password) return alert('Ingresa tu teléfono y contraseña');
+            
             const email = `${phone}@montero.app`;
             showLoading('Iniciando sesión...');
             try {
-                const { data, error } = await supabaseClient.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                 if (error) throw error;
                 currentDriverId = data.user.id;
-                console.log('Login exitoso, ID:', currentDriverId);
                 await loadDriverData();
-                console.log('Datos del conductor cargados');
-                document.getElementById('view-login').classList.remove('active');
-                document.getElementById('mainApp').style.display = 'flex';
-                console.log('Interfaz mostrada');
-                initializeRealtimeSubscriptions();
-                console.log('Suscripciones inicializadas');
+                // Forzar estado offline al iniciar sesión
+                await forceOffline();
+                setupRideSubscription();
+                routeUserBasedOnProfile(); 
             } catch (error) {
-                console.error('Error en login:', error);
                 alert('Error de inicio de sesión: ' + error.message);
-                await supabaseClient.auth.signOut().catch(() => {});
-                currentDriverId = null;
-                document.getElementById('mainApp').style.display = 'none';
+                await logout();
+            } finally {
+                hideLoading();
+            }
+        }
+
+        window.addEventListener('load', async () => {
+            showLoading('Iniciando...');
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session) {
+                    currentDriverId = session.user.id;
+                    await loadDriverData();
+                    // Forzar estado offline al cargar la app
+                    await forceOffline();
+                    setupRideSubscription();
+                    routeUserBasedOnProfile();
+                } else {
+                    document.getElementById('view-login').classList.add('active');
+                }
+            } catch (error) {
                 document.getElementById('view-login').classList.add('active');
             } finally {
                 hideLoading();
-                console.log('Loading oculto');
+            }
+        });
+
+        function routeUserBasedOnProfile() {
+            if (currentDriverData.profile_completed) {
+                document.getElementById('view-login').classList.remove('active');
+                document.getElementById('view-onboarding').classList.remove('active');
+                document.getElementById('mainApp').style.display = 'flex';
+                initMap();
+                // No llamamos loadPendingRides aquí porque aún está offline; se llamará al activar toggle
+            } else {
+                document.getElementById('obFullName').value = currentDriverData.full_name || '';
+                document.getElementById('view-login').classList.remove('active');
+                document.getElementById('mainApp').style.display = 'none';
+                document.getElementById('view-onboarding').classList.add('active');
+            }
+        }
+
+        // Función para forzar estado offline en la base de datos y local
+        async function forceOffline() {
+            try {
+                await supabaseClient.from('driver_status').upsert({
+                    driver_id: currentDriverId,
+                    is_online: false,
+                    latitude: null,
+                    longitude: null,
+                    last_updated: new Date().toISOString()
+                }, { onConflict: 'driver_id' });
+            } catch (error) {
+                console.error('Error al forzar offline:', error);
+            }
+            isDriverOnline = false;
+            document.getElementById('toggleSwitch').checked = false;
+            document.getElementById('statusCard').classList.add('offline');
+            document.getElementById('statusTitle').textContent = 'No disponible';
+            document.getElementById('statusSubtitle').textContent = 'No estás recibiendo viajes';
+        }
+
+        // ==================== LÓGICA DE ONBOARDING ====================
+        function nextObStep(stepNumber) {
+            document.querySelectorAll('.ob-step').forEach(el => el.classList.remove('active'));
+            document.getElementById('obStep' + stepNumber).classList.add('active');
+        }
+
+        function getOnboardingGPS() {
+            const statusLabel = document.getElementById('obGpsStatus');
+            statusLabel.textContent = "Buscando satélites...";
+            statusLabel.style.color = "var(--primary-orange)";
+            
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    obLat = pos.coords.latitude;
+                    obLng = pos.coords.longitude;
+                    statusLabel.innerHTML = `<i class="fas fa-check-circle"></i> Ubicación guardada con éxito`;
+                    statusLabel.style.color = "var(--green-online)";
+                },
+                (err) => {
+                    statusLabel.textContent = "Error al leer GPS. Revisa los permisos del teléfono.";
+                    statusLabel.style.color = "var(--red)";
+                },
+                { enableHighAccuracy: true, timeout: 15000 }
+            );
+        }
+
+        function handleSelfieSelect(inputElement) {
+            if (inputElement.files && inputElement.files[0]) {
+                currentSelfieFile = inputElement.files[0];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('selfiePreview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    
+                    const status = document.getElementById('selfieStatus');
+                    status.innerHTML = `<i class="fas fa-check-circle"></i> ¡Foto lista!`;
+                    status.style.color = "var(--green-online)";
+                }
+                reader.readAsDataURL(currentSelfieFile);
+            }
+        }
+
+        async function finishOnboarding() {
+            const fullName = document.getElementById('obFullName').value.trim();
+            const identity = document.getElementById('obIdentity').value.trim();
+            const motoModel = document.getElementById('obMotoModel').value.trim();
+            const motoPlate = document.getElementById('obMotoPlate').value.trim();
+            const address = document.getElementById('obAddress').value.trim();
+            const billFile = document.getElementById('obBillFile').files[0];
+
+            if(!fullName || !identity || !motoModel || !motoPlate || !address) {
+                return alert("Por favor completa todos los campos de texto.");
+            }
+            if(!obLat || !obLng) {
+                return alert("Por favor usa el botón de Fijar GPS Actual en el paso anterior.");
+            }
+            if(!billFile) {
+                return alert("Por favor adjunta la foto de tu factura de servicios básicos.");
+            }
+            if(!currentSelfieFile) {
+                return alert("Por favor tómate una selfie o sube una foto de la galería.");
+            }
+
+            showLoading("Guardando tu perfil...");
+            
+            try {
+                const billExt = billFile.name.split('.').pop();
+                const billPath = `${currentDriverId}/factura_${Date.now()}.${billExt}`;
+                const { error: billError } = await supabaseClient.storage.from('driver_documents').upload(billPath, billFile);
+                if (billError) throw billError;
+                const { data: billUrlData } = supabaseClient.storage.from('driver_documents').getPublicUrl(billPath);
+
+                const selfieExt = currentSelfieFile.name.split('.').pop() || 'jpg';
+                const selfiePath = `${currentDriverId}/avatar_${Date.now()}.${selfieExt}`;
+                const { error: selfieError } = await supabaseClient.storage.from('driver_documents').upload(selfiePath, currentSelfieFile);
+                if (selfieError) throw selfieError;
+                const { data: selfieUrlData } = supabaseClient.storage.from('driver_documents').getPublicUrl(selfiePath);
+
+                const { error: updateError } = await supabaseClient
+                    .from('drivers')
+                    .update({
+                        full_name: fullName,
+                        identity_card: identity,
+                        vehicle_model: motoModel,
+                        vehicle_plate: motoPlate,
+                        home_address: address,
+                        home_lat: obLat,
+                        home_lng: obLng,
+                        utility_bill_url: billUrlData.publicUrl,
+                        avatar_url: selfieUrlData.publicUrl, 
+                        profile_completed: true
+                    })
+                    .eq('id', currentDriverId);
+
+                if (updateError) throw updateError;
+
+                await loadDriverData();
+                alert("¡Perfil completado exitosamente! Ya estás listo para trabajar.");
+                routeUserBasedOnProfile();
+
+            } catch (error) {
+                console.error(error);
+                alert("Ocurrió un error al guardar tu perfil: " + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // ==================== DATOS DEL CONDUCTOR ====================
+        async function loadDriverData() {
+            const { data: driver, error } = await supabaseClient
+                .from('drivers')
+                .select('*')
+                .eq('id', currentDriverId)
+                .maybeSingle();
+                
+            if (error) throw error;
+            currentDriverData = driver;
+            
+            document.getElementById('profileName').textContent = driver.full_name || 'Sin nombre';
+            document.getElementById('profilePhone').textContent = driver.phone || '';
+            document.getElementById('profileVehicle').textContent = driver.vehicle_model || 'Motocicleta';
+            document.getElementById('profilePlate').textContent = driver.vehicle_plate || '---';
+            
+            if (driver.avatar_url) {
+                const headerImg = document.querySelector('#headerProfilePic img');
+                if (headerImg) headerImg.src = driver.avatar_url;
+                
+                const profileImg = document.querySelector('#pageProfilePic img');
+                if (profileImg) profileImg.src = driver.avatar_url;
             }
         }
 
         async function logout() {
             hideLoading();
+            // Poner offline antes de cerrar sesión
+            if (currentDriverId) {
+                await supabaseClient.from('driver_status').upsert({
+                    driver_id: currentDriverId,
+                    is_online: false,
+                    latitude: null,
+                    longitude: null,
+                    last_updated: new Date().toISOString()
+                }, { onConflict: 'driver_id' });
+            }
             await supabaseClient.auth.signOut().catch(() => {});
-            cleanupRealtimeSubscriptions();
             currentDriverId = null;
             currentDriverData = null;
             document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('view-onboarding').classList.remove('active');
             document.getElementById('view-login').classList.add('active');
-        }
-
-        function showRegisterModal() {
-            document.getElementById('registerModal').classList.add('active');
-        }
-        function hideRegisterModal() {
-            document.getElementById('registerModal').classList.remove('active');
-        }
-
-        async function submitRegistration() {
-            const name = document.getElementById('regName').value.trim();
-            const phone = document.getElementById('regPhone').value.trim();
-            const notes = document.getElementById('regNotes').value.trim();
-            if (!name || !phone) {
-                alert('Nombre y teléfono son obligatorios');
-                return;
-            }
-            showLoading('Enviando solicitud...');
-            try {
-                const { error } = await supabaseClient
-                    .from('driver_applications')
-                    .insert({
-                        full_name: name,
-                        phone: phone,
-                        notes: notes,
-                        status: 'pendiente'
-                    });
-                if (error) throw error;
-                hideLoading();
-                alert('Solicitud enviada correctamente. Serás contactado por la central.');
-                hideRegisterModal();
-                document.getElementById('regName').value = '';
-                document.getElementById('regPhone').value = '';
-                document.getElementById('regNotes').value = '';
-            } catch (error) {
-                hideLoading();
-                alert('Error al enviar solicitud: ' + error.message);
+            // Cerrar suscripción si existe
+            if (window.rideSubscription) {
+                supabaseClient.removeChannel(window.rideSubscription);
+                window.rideSubscription = null;
             }
         }
 
-        // ==================== CARGA DE DATOS ====================
-        async function loadDriverData() {
-            try {
-                console.log('Consultando tabla drivers...');
-                const { data: driver, error: driverError } = await supabaseClient
-                    .from('drivers')
-                    .select('*')
-                    .eq('id', currentDriverId)
-                    .maybeSingle();
-
-                if (driverError) throw driverError;
-                if (!driver) {
-                    throw new Error('No se encontró un registro de conductor para este usuario.');
-                }
-
-                currentDriverData = driver;
-                console.log('Conductor encontrado:', driver.full_name);
-                document.getElementById('profileName').textContent = driver.full_name || 'Sin nombre';
-                document.getElementById('profilePhone').textContent = driver.phone || '';
-                if (driver.avatar_url) {
-                    document.getElementById('headerProfilePic').innerHTML = `<img src="${driver.avatar_url}" alt="Avatar">`;
-                }
-                await updateWalletUI();
-                await updateStats();
-            } catch (error) {
-                console.error('Error en loadDriverData:', error);
-                throw error; 
+        function togglePassword() {
+            const passwordInput = document.getElementById('loginPassword');
+            const toggleIcon = document.getElementById('togglePasswordIcon');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.replace('fa-eye-slash', 'fa-eye');
             }
         }
 
-        async function updateWalletUI() {
-            try {
-                const { data: wallet, error } = await supabaseClient
-                    .from('wallets')
-                    .select('balance')
-                    .eq('driver_id', currentDriverId)
-                    .maybeSingle();
-                if (error) throw error;
-                if (wallet) {
-                    document.getElementById('walletBalance').textContent = `Bs ${parseFloat(wallet.balance).toFixed(2)}`;
-                } else {
-                    document.getElementById('walletBalance').textContent = 'Bs 0.00';
-                }
-
-                const { data: transactions, error: txError } = await supabaseClient
-                    .from('wallet_transactions')
-                    .select('*')
-                    .eq('driver_id', currentDriverId)
-                    .order('created_at', { ascending: false })
-                    .limit(20);
-                if (txError) throw txError;
-                const txList = document.getElementById('transactionList');
-                if (transactions.length === 0) {
-                    txList.innerHTML = '<p style="color: var(--gray-text); text-align:center;">No hay movimientos</p>';
-                } else {
-                    let html = '';
-                    transactions.forEach(tx => {
-                        const isPositive = tx.amount > 0;
-                        const sign = isPositive ? '+' : '';
-                        html += `
-                            <div class="transaction-item">
-                                <div>
-                                    <div class="transaction-desc">${tx.description || tx.type}</div>
-                                    <div class="transaction-date">${new Date(tx.created_at).toLocaleString()}</div>
-                                </div>
-                                <div class="transaction-amount ${isPositive ? 'positive' : 'negative'}">
-                                    ${sign}Bs ${Math.abs(parseFloat(tx.amount)).toFixed(2)}
-                                </div>
-                            </div>
-                        `;
-                    });
-                    txList.innerHTML = html;
-                }
-            } catch (error) {
-                console.error('Error actualizando wallet:', error);
-            }
-        }
-
-        async function updateStats() {
-            document.getElementById('statViajes').textContent = '12';
-            document.getElementById('statGanancias').textContent = '156';
-            document.getElementById('statHoras').textContent = '5h';
-        }
-
-        // ==================== CAMBIO DE PESTAÑA ====================
+        // ==================== TABS Y MAPA ====================
         function switchTab(tabId, element) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('view-' + tabId).classList.add('active');
             element.classList.add('active');
-            if (tabId === 'viajes') {
+            if (tabId === 'viajes' && map) {
                 map.invalidateSize();
                 if (currentPosition) map.setView(currentPosition, 16);
             }
-            if (tabId === 'chat') {
-                setChatMode('central');
-            }
-            if (tabId === 'billetera') {
-                updateWalletUI();
+        }
+
+        function initMap() {
+            if(map) return;
+            map = L.map('map', { zoomControl: false }).setView([-17.7833, -63.1821], 14);
+            L.control.zoom({ position: 'topleft' }).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+        }
+
+        // ==================== SUSCRIPCIÓN A VIAJES ====================
+        function setupRideSubscription() {
+            if (window.rideSubscription) return; // Evitar suscripciones duplicadas
+
+            window.rideSubscription = supabaseClient
+                .channel('driver-rides-' + currentDriverId) // Canal único por conductor
+                .on('postgres_changes', 
+                    { 
+                        event: 'INSERT', 
+                        schema: 'public', 
+                        table: 'rides', 
+                        filter: `driver_id=eq.${currentDriverId}` 
+                    }, 
+                    (payload) => {
+                        const ride = payload.new;
+                        // Solo mostrar si estamos online y el viaje está pendiente
+                        if (isDriverOnline && ride.status === 'pendiente') {
+                            showRideRequest(ride);
+                        }
+                    })
+                .on('postgres_changes', 
+                    { 
+                        event: 'UPDATE', 
+                        schema: 'public', 
+                        table: 'rides', 
+                        filter: `driver_id=eq.${currentDriverId}` 
+                    }, 
+                    (payload) => {
+                        const ride = payload.new;
+                        // Si el viaje se actualiza y ahora está pendiente y estamos online, mostrar
+                        if (isDriverOnline && ride.status === 'pendiente') {
+                            showRideRequest(ride);
+                        } 
+                        // Si el viaje actual deja de estar pendiente, ocultar modal
+                        else if (currentRideId === ride.id && ride.status !== 'pendiente') {
+                            hideRideModal();
+                        }
+                    })
+                .subscribe();
+        }
+
+        async function loadPendingRides() {
+            if (!currentDriverId || !isDriverOnline) return; // Solo si está online
+            const { data, error } = await supabaseClient
+                .from('rides')
+                .select('*')
+                .eq('driver_id', currentDriverId)
+                .eq('status', 'pendiente')
+                .maybeSingle(); // Asume solo un viaje pendiente a la vez
+            
+            if (data && !error) {
+                showRideRequest(data);
             }
         }
 
-        // ==================== TOGGLE DISPONIBILIDAD ====================
+        function showRideRequest(ride) {
+            currentRideId = ride.id;
+            document.getElementById('rideOrigin').textContent = ride.origin_address || 'No especificado';
+            document.getElementById('rideDestination').textContent = ride.destination_address || 'No especificado';
+            document.getElementById('ridePrice').textContent = `Bs ${parseFloat(ride.price || 0).toFixed(2)}`;
+            document.getElementById('rideModal').classList.add('active');
+        }
+
+        function hideRideModal() {
+            document.getElementById('rideModal').classList.remove('active');
+            currentRideId = null;
+        }
+
+        async function acceptRide() {
+            if (!currentRideId) return;
+            const { error } = await supabaseClient
+                .from('rides')
+                .update({ status: 'aceptado' })
+                .eq('id', currentRideId);
+            
+            if (error) {
+                alert('Error al aceptar: ' + error.message);
+                return;
+            }
+            hideRideModal();
+            alert('Viaje aceptado');
+        }
+
+        async function rejectRide() {
+            if (!currentRideId) return;
+            const { error } = await supabaseClient
+                .from('rides')
+                .update({ status: 'rechazado' })
+                .eq('id', currentRideId);
+            
+            if (error) {
+                alert('Error al rechazar: ' + error.message);
+                return;
+            }
+            hideRideModal();
+            alert('Viaje rechazado');
+        }
+
+        // ==================== ESTADO DEL CONDUCTOR ====================
         const toggleSwitch = document.getElementById('toggleSwitch');
         const statusCard = document.getElementById('statusCard');
         const statusTitle = document.getElementById('statusTitle');
         const statusSubtitle = document.getElementById('statusSubtitle');
-        const onlineGlow = document.getElementById('onlineGlow'); 
-
-        function setOfflineMode() {
-            statusCard.classList.add('offline');
-            statusTitle.textContent = 'No disponible';
-            statusSubtitle.textContent = 'No estás recibiendo viajes';
-            
-            if(onlineGlow) onlineGlow.classList.remove('active'); 
-            
-            if (driverMarker) { map.removeLayer(driverMarker); driverMarker = null; }
-            if (pulseLayer) { map.removeLayer(pulseLayer); pulseLayer = null; }
-            currentPosition = null;
-        }
+        const onlineGlow = document.getElementById('onlineGlow');
 
         toggleSwitch.addEventListener('change', function() {
             if (this.checked) {
+                // Intentar activar online
                 statusCard.classList.remove('offline');
                 statusTitle.textContent = 'Disponible';
                 statusSubtitle.textContent = 'Buscando ubicación...';
-                
                 if(onlineGlow) onlineGlow.classList.add('active');
 
                 showLoading('Obteniendo ubicación...');
-                const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const lat = position.coords.latitude;
                         const lng = position.coords.longitude;
                         currentPosition = [lat, lng];
-                        createAvatarMarker(lat, lng);
+                        
+                        const avatarImg = currentDriverData.avatar_url || 'a.png';
+                        const avatarIcon = L.divIcon({
+                            className: 'avatar-marker-container',
+                            html: `<div class="avatar-marker"><img src="${avatarImg}" alt="Avatar"></div>`,
+                            iconSize: [50, 50],
+                            iconAnchor: [25, 25]
+                        });
+                        
+                        if (driverMarker) {
+                            driverMarker.setLatLng([lat, lng]);
+                            driverMarker.setIcon(avatarIcon);
+                        } else {
+                            driverMarker = L.marker([lat, lng], { icon: avatarIcon }).addTo(map);
+                        }
+
+                        if (pulseLayer) map.removeLayer(pulseLayer);
+                        const pulseDiv = L.divIcon({
+                            className: '',
+                            html: '<div class="pulse-ring"></div>',
+                            iconSize: [50, 50],
+                            iconAnchor: [25, 25]
+                        });
+                        pulseLayer = L.marker([lat, lng], { icon: pulseDiv, interactive: false }).addTo(map);
+
                         map.setView(currentPosition, 16);
-                        const viajesNav = document.querySelector('.nav-item:nth-child(2)');
-                        switchTab('viajes', viajesNav);
                         hideLoading();
                         statusSubtitle.textContent = 'Recibe solicitudes de viaje';
+                        isDriverOnline = true;
                         updateDriverStatus(true, lat, lng);
+                        // Al conectarse, buscar viajes pendientes
+                        loadPendingRides();
+                        switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
                     },
                     (error) => {
                         hideLoading();
-                        setOfflineMode();
                         toggleSwitch.checked = false;
-                        let mensaje = 'No se pudo obtener tu ubicación.';
-                        if (error.code === error.PERMISSION_DENIED) mensaje = 'Permiso de ubicación denegado. Activa el GPS.';
-                        alert(mensaje);
+                        isDriverOnline = false;
+                        alert('No se pudo obtener tu ubicación. Activa el GPS.');
                     },
-                    options
+                    { enableHighAccuracy: true }
                 );
             } else {
-                setOfflineMode();
+                // Desactivar online
+                statusCard.classList.add('offline');
+                statusTitle.textContent = 'No disponible';
+                statusSubtitle.textContent = 'No estás recibiendo viajes';
+                if(onlineGlow) onlineGlow.classList.remove('active');
+                if (driverMarker) { map.removeLayer(driverMarker); driverMarker = null; }
+                if (pulseLayer) { map.removeLayer(pulseLayer); pulseLayer = null; }
+                isDriverOnline = false;
                 updateDriverStatus(false);
+                // Si hay un modal abierto, ocultarlo
+                hideRideModal();
             }
         });
 
         async function updateDriverStatus(isOnline, lat = null, lng = null) {
             try {
-                const { error } = await supabaseClient
-                    .from('driver_status')
-                    .upsert({
-                        driver_id: currentDriverId,
-                        is_online: isOnline,
-                        latitude: lat,
-                        longitude: lng,
-                        last_updated: new Date().toISOString()
-                    }, { onConflict: 'driver_id' });
-                if (error) throw error;
+                await supabaseClient.from('driver_status').upsert({
+                    driver_id: currentDriverId,
+                    is_online: isOnline,
+                    latitude: lat,
+                    longitude: lng,
+                    last_updated: new Date().toISOString()
+                }, { onConflict: 'driver_id' });
             } catch (error) {
                 console.error('Error guardando estado:', error);
-                alert('No se pudo guardar el estado: ' + error.message);
-                toggleSwitch.checked = !isOnline;
-                if (isOnline) setOfflineMode();
             }
         }
 
-        // ==================== MAPA ====================
-        map = L.map('map', { zoomControl: false }).setView([-17.7833, -63.1821], 14);
-        L.control.zoom({ position: 'topleft' }).addTo(map);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-
-        const locateControl = L.control({ position: 'topleft' });
-        locateControl.onAdd = function() {
-            const div = L.DomUtil.create('div', 'leaflet-control-locate');
-            div.innerHTML = '<i class="fas fa-location-arrow"></i>';
-            div.title = 'Centrar en mi ubicación';
-            div.onclick = function() {
-                if (currentPosition) map.setView(currentPosition, 16);
-                else alert('Aún no se ha obtenido tu ubicación.');
-            };
-            return div;
-        };
-        locateControl.addTo(map);
-
-        function createAvatarMarker(lat, lng) {
-            const avatarIcon = L.divIcon({
-                className: 'avatar-marker-container',
-                html: `<div class="avatar-marker"><img src="a.png" alt="Avatar"></div>`,
-                iconSize: [50, 50],
-                iconAnchor: [25, 25]
-            });
-            if (driverMarker) {
-                driverMarker.setLatLng([lat, lng]);
-                driverMarker.setIcon(avatarIcon);
-            } else {
-                driverMarker = L.marker([lat, lng], { icon: avatarIcon }).addTo(map);
-            }
-            if (pulseLayer) map.removeLayer(pulseLayer);
-            const pulseDiv = L.divIcon({
-                className: '',
-                html: '<div class="pulse-ring"></div>',
-                iconSize: [50, 50],
-                iconAnchor: [25, 25]
-            });
-            pulseLayer = L.marker([lat, lng], { icon: pulseDiv, interactive: false }).addTo(map);
-        }
-
-        // ==================== BUSCADOR ====================
-        const searchInput = document.getElementById('searchInput');
-        const clearSearch = document.getElementById('clearSearch');
-        const suggestionsDiv = document.getElementById('suggestions');
-        let debounceTimer;
-        let activeSuggestions = [];
-
-        searchInput.addEventListener('input', function() {
-            if (this.value.length > 0) clearSearch.classList.add('visible');
-            else {
-                clearSearch.classList.remove('visible');
-                suggestionsDiv.style.display = 'none';
-                activeSuggestions = [];
-            }
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                const query = this.value.trim();
-                if (query.length >= 2) fetchSuggestions(query);
-                else suggestionsDiv.style.display = 'none';
-            }, 400);
-        });
-
-        clearSearch.addEventListener('click', function() {
-            searchInput.value = '';
-            clearSearch.classList.remove('visible');
-            suggestionsDiv.style.display = 'none';
-            activeSuggestions = [];
-            if (destinationMarker) { map.removeLayer(destinationMarker); destinationMarker = null; }
-        });
-
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.search-container')) suggestionsDiv.style.display = 'none';
-        });
-
-        async function fetchSuggestions(query) {
-            suggestionsDiv.innerHTML = '<div class="suggestion-item"><i class="fas fa-spinner fa-spin"></i> Buscando...</div>';
-            suggestionsDiv.style.display = 'block';
-            try {
-                const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=6&lang=es`;
-                const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
-                if (!response.ok) throw new Error('Photon no responde');
-                const data = await response.json();
-                displaySuggestions(data.features);
-            } catch (error) {
-                try {
-                    const nominatimUrl = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&q=${encodeURIComponent(query)}`;
-                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(nominatimUrl)}`;
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error('Error con proxy');
-                    const data = await response.json();
-                    const features = data.map(item => ({
-                        geometry: { coordinates: [parseFloat(item.lon), parseFloat(item.lat)] },
-                        properties: {
-                            name: item.display_name.split(',')[0],
-                            street: item.address?.road || item.address?.pedestrian || '',
-                            city: item.address?.city || item.address?.town || item.address?.village || '',
-                            postcode: item.address?.postcode || ''
-                        }
-                    }));
-                    displaySuggestions(features);
-                } catch (error2) {
-                    suggestionsDiv.innerHTML = '<div class="suggestion-item"><i class="fas fa-exclamation-triangle"></i> No se pudo conectar con el servicio de búsqueda.</div>';
-                    suggestionsDiv.style.display = 'block';
-                }
-            }
-        }
-
-        function displaySuggestions(features) {
-            if (!features || features.length === 0) {
-                suggestionsDiv.innerHTML = '<div class="suggestion-item">Sin resultados</div>';
-                suggestionsDiv.style.display = 'block';
-                return;
-            }
-            activeSuggestions = features;
-            let html = '';
-            features.forEach((feature, index) => {
-                const props = feature.properties;
-                const name = props.name || 'Sin nombre';
-                const street = props.street || '';
-                const city = props.city || '';
-                const postcode = props.postcode || '';
-                const details = [street, city, postcode].filter(Boolean).join(', ');
-                html += `
-                    <div class="suggestion-item" data-index="${index}">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <div class="suggestion-text">
-                            <div class="suggestion-name">${name}</div>
-                            <div class="suggestion-details">${details || 'Ubicación'}</div>
-                        </div>
-                    </div>
-                `;
-            });
-            suggestionsDiv.innerHTML = html;
-            suggestionsDiv.style.display = 'block';
-            document.querySelectorAll('.suggestion-item').forEach(item => {
-                item.addEventListener('click', function() {
-                    const index = this.dataset.index;
-                    if (index !== undefined && activeSuggestions[index]) selectSuggestion(activeSuggestions[index]);
-                });
-            });
-        }
-
-        function selectSuggestion(feature) {
-            const coords = feature.geometry.coordinates;
-            const lat = coords[1];
-            const lng = coords[0];
-            const name = feature.properties.name || 'Destino';
-            searchInput.value = name;
-            clearSearch.classList.add('visible');
-            suggestionsDiv.style.display = 'none';
-            map.setView([lat, lng], 16);
-            const destIcon = L.divIcon({
-                className: '',
-                html: '<div class="destination-marker"><i class="fas fa-flag"></i></div>',
-                iconSize: [30, 30],
-                iconAnchor: [15, 30]
-            });
-            if (destinationMarker) {
-                destinationMarker.setLatLng([lat, lng]);
-                destinationMarker.setIcon(destIcon);
-            } else {
-                destinationMarker = L.marker([lat, lng], { icon: destIcon }).addTo(map);
-            }
-        }
-
-        // ==================== RECEPCIÓN DE VIAJES ====================
-        function cleanupRealtimeSubscriptions() {
-            if (ridesSubscription) {
-                supabaseClient.removeChannel(ridesSubscription);
-                ridesSubscription = null;
-            }
-            if (centralChatSubscription) {
-                supabaseClient.removeChannel(centralChatSubscription);
-                centralChatSubscription = null;
-            }
-            if (rideChatSubscription) {
-                supabaseClient.removeChannel(rideChatSubscription);
-                rideChatSubscription = null;
-            }
-        }
-
-        function initializeRealtimeSubscriptions() {
-            try {
-                cleanupRealtimeSubscriptions();
-
-                ridesSubscription = supabaseClient
-                    .channel('rides_channel')
-                    .on('postgres_changes', {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'rides',
-                        filter: `driver_id=eq.${currentDriverId}`
-                    }, (payload) => {
-                        const newRide = payload.new;
-                        if (newRide.status === 'pendiente') {
-                            showRideRequest(newRide);
-                        }
-                    })
-                    .subscribe();
-
-                rideChatSubscription = supabaseClient
-                    .channel('ride_chat_channel')
-                    .on('postgres_changes', {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'chat_messages',
-                        filter: `ride_id=eq.${activeRideId || 'null'}`
-                    }, (payload) => {
-                        if (currentChatType === 'ride' && activeRideId === payload.new.ride_id) {
-                            appendMessage(payload.new);
-                        }
-                    })
-                    .subscribe();
-
-                centralChatSubscription = supabaseClient
-                    .channel('central_chat_channel')
-                    .on('postgres_changes', {
-                        event: 'INSERT',
-                        schema: 'public',
-                        table: 'central_messages',
-                        filter: `driver_id=eq.${currentDriverId}`
-                    }, (payload) => {
-                        if (currentChatType === 'central') appendCentralMessage(payload.new);
-                    })
-                    .subscribe();
-
-                console.log('Suscripciones de Realtime activadas');
-            } catch (error) {
-                console.error('Error en initializeRealtimeSubscriptions:', error);
-            }
-        }
-
-        function showRideRequest(ride) {
-            document.getElementById('rideOrigin').textContent = ride.origin_address || 'Ubicación';
-            document.getElementById('rideDestination').textContent = ride.destination_address || 'Destino';
-            document.getElementById('ridePrice').textContent = `Bs ${parseFloat(ride.price).toFixed(2)}`;
-            window.pendingRide = ride;
-            document.getElementById('rideModal').classList.add('active');
-        }
-
-        async function acceptRide() {
-            if (!window.pendingRide) return;
-            const ride = window.pendingRide;
-            showLoading('Aceptando viaje...');
-            try {
-                const { error } = await supabaseClient
-                    .from('rides')
-                    .update({ status: 'aceptado', accepted_at: new Date().toISOString() })
-                    .eq('id', ride.id);
-                if (error) throw error;
-                activeRideId = ride.id;
-                document.getElementById('rideModal').classList.remove('active');
-                const viajesNav = document.querySelector('.nav-item:nth-child(2)');
-                switchTab('viajes', viajesNav);
-                map.setView([ride.origin_lat, ride.origin_lng], 15);
-                if (destinationMarker) map.removeLayer(destinationMarker);
-                destinationMarker = L.marker([ride.destination_lat, ride.destination_lng], {
-                    icon: L.divIcon({ className: '', html: '<div class="destination-marker"><i class="fas fa-flag"></i></div>', iconSize: [30,30], iconAnchor: [15,30] })
-                }).addTo(map);
-                alert('Viaje aceptado. Dirígete al origen.');
-                hideLoading();
-            } catch (error) {
-                hideLoading();
-                alert('Error al aceptar viaje: ' + error.message);
-            }
-        }
-
-        async function rejectRide() {
-            if (!window.pendingRide) return;
-            const ride = window.pendingRide;
-            showLoading('Rechazando viaje...');
-            try {
-                const { error } = await supabaseClient
-                    .from('rides')
-                    .update({ status: 'rechazado' })
-                    .eq('id', ride.id);
-                if (error) throw error;
-                document.getElementById('rideModal').classList.remove('active');
-                hideLoading();
-            } catch (error) {
-                hideLoading();
-                alert('Error al rechazar viaje: ' + error.message);
-            }
-        }
-
-        // ==================== CHAT ====================
-        function setChatMode(mode, rideId = null) {
-            currentChatType = mode;
-            if (mode === 'central') {
-                document.getElementById('chatHeader').textContent = 'Chat con Central';
-                document.getElementById('chatMessages').innerHTML = '';
-                loadCentralMessages();
-            } else if (mode === 'ride') {
-                document.getElementById('chatHeader').textContent = 'Chat con Pasajero';
-                document.getElementById('chatMessages').innerHTML = '';
-                if (rideId) activeRideId = rideId;
-                loadRideMessages(activeRideId);
-            }
-        }
-
-        async function loadCentralMessages() {
-            try {
-                const { data: messages, error } = await supabaseClient
-                    .from('central_messages')
-                    .select('*')
-                    .or(`driver_id.eq.${currentDriverId},driver_id.is.null`)
-                    .order('created_at', { ascending: true });
-                if (error) throw error;
-                const chatMessages = document.getElementById('chatMessages');
-                chatMessages.innerHTML = '';
-                messages.forEach(msg => appendCentralMessage(msg));
-            } catch (error) {
-                console.error('Error cargando mensajes central:', error);
-            }
-        }
-
-        async function loadRideMessages(rideId) {
-            if (!rideId) return;
-            try {
-                const { data: messages, error } = await supabaseClient
-                    .from('chat_messages')
-                    .select('*')
-                    .eq('ride_id', rideId)
-                    .order('created_at', { ascending: true });
-                if (error) throw error;
-                const chatMessages = document.getElementById('chatMessages');
-                chatMessages.innerHTML = '';
-                messages.forEach(msg => appendMessage(msg));
-            } catch (error) {
-                console.error('Error cargando mensajes del ride:', error);
-            }
-        }
-
-        function appendMessage(message) {
-            const chatMessages = document.getElementById('chatMessages');
-            const div = document.createElement('div');
-            const isSent = message.sender_type === 'driver';
-            div.className = `message ${isSent ? 'sent' : 'received'}`;
-            div.innerHTML = `${message.message}<span class="message-time">${new Date(message.created_at).toLocaleTimeString()}</span>`;
-            chatMessages.appendChild(div);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function appendCentralMessage(message) {
-            const chatMessages = document.getElementById('chatMessages');
-            const div = document.createElement('div');
-            const isSent = message.driver_id === currentDriverId ? true : false;
-            div.className = `message ${isSent ? 'sent' : 'received'}`;
-            div.innerHTML = `${message.message}<span class="message-time">${new Date(message.created_at).toLocaleTimeString()}</span>`;
-            chatMessages.appendChild(div);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        async function sendCentralMessage() {
-            const input = document.getElementById('chatInput');
-            const text = input.value.trim();
-            if (!text) return;
-            try {
-                const { error } = await supabaseClient
-                    .from('central_messages')
-                    .insert({
-                        driver_id: currentDriverId,
-                        message: text,
-                        is_read: false,
-                        created_by: currentDriverId
-                    });
-                if (error) throw error;
-                input.value = '';
-            } catch (error) {
-                alert('Error al enviar mensaje: ' + error.message);
-            }
-        }
-
-        document.getElementById('chatInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') sendCentralMessage();
-        });
-
-        // ==================== INICIAR SESIÓN AUTOMÁTICA ====================
-        window.addEventListener('load', async () => {
-            hideLoading();
-            try {
-                const { data: { session }, error } = await supabaseClient.auth.getSession();
-                if (session) {
-                    currentDriverId = session.user.id;
-                    console.log('Sesión existente, cargando perfil...');
-                    showLoading('Cargando tu perfil...');
-                    await loadDriverData();
-                    document.getElementById('view-login').classList.remove('active');
-                    document.getElementById('mainApp').style.display = 'flex';
-                    initializeRealtimeSubscriptions();
-                } else {
-                    document.getElementById('view-login').classList.add('active');
-                }
-            } catch (error) {
-                console.error('Error en carga automática:', error);
-                await supabaseClient.auth.signOut().catch(() => {});
-                document.getElementById('mainApp').style.display = 'none';
-                document.getElementById('view-login').classList.add('active');
-                alert('No se pudo cargar el perfil. Por favor inicia sesión nuevamente.');
-            } finally {
-                hideLoading();
+        // Al cerrar la ventana o recargar, poner offline (mejor esfuerzo)
+        window.addEventListener('beforeunload', () => {
+            if (currentDriverId) {
+                // Usamos sendBeacon o fetch para actualizar estado offline
+                navigator.sendBeacon?.(
+                    `${supabaseUrl}/rest/v1/driver_status?driver_id=eq.${currentDriverId}`,
+                    new Blob([JSON.stringify({ is_online: false, last_updated: new Date().toISOString() })], { type: 'application/json' })
+                );
             }
         });
-
-        // ==================== VISIBILIDAD DE CONTRASEÑA ====================
-        function togglePassword() {
-            const passwordInput = document.getElementById('loginPassword');
-            const toggleIcon = document.getElementById('togglePasswordIcon');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                toggleIcon.classList.remove('fa-eye');
-                toggleIcon.classList.add('fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                toggleIcon.classList.remove('fa-eye-slash');
-                toggleIcon.classList.add('fa-eye');
-            }
-        }
-
-        // Precargar avatar
-        const avatarImg = new Image();
-        avatarImg.src = 'a.png';
     </script>
 </body>
 </html>
-
