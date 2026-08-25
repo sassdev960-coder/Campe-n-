@@ -9,6 +9,7 @@
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
+    /* ====== ESTILOS ====== */
     :root {
       --primary: #FF7A00;
       --primary-active: #E06900;
@@ -168,7 +169,7 @@
     /* Botón confirmar destino */
     .btn-confirm-map {
       position: absolute;
-      bottom: 220px; /* Ajustado para que no se superponga con la hoja inferior */
+      bottom: 220px; 
       left: 50%;
       transform: translateX(-50%);
       background: var(--primary);
@@ -453,7 +454,7 @@
       <div class="search-container">
         <div class="search-box">
           <i class="fas fa-search"></i>
-          <input type="text" id="searchInput" placeholder="Buscar dirección..." autocomplete="off">
+          <input type="text" id="searchInput" placeholder="Buscar dirección o lugar..." autocomplete="off">
         </div>
         <div class="suggestions" id="suggestions"></div>
       </div>
@@ -620,6 +621,8 @@
     let activeRideId = null;
     let rideSubscription = null;
     let moveEndTimer = null;
+    let searchTimer = null; // Para búsqueda con debounce
+    let isSearching = false;
 
     // ========== ELEMENTOS UI ==========
     const mapView = document.getElementById('map-view');
@@ -679,12 +682,7 @@
           .eq('id', storedData.id)
           .maybeSingle();
         if (data) {
-          passenger = {
-            id: data.id,
-            full_name: data.full_name,
-            phone: data.phone,
-            ci: data.ci
-          };
+          passenger = { id: data.id, full_name: data.full_name, phone: data.phone, ci: data.ci };
           localStorage.setItem('passenger', JSON.stringify(passenger));
           return true;
         } else {
@@ -773,12 +771,7 @@
         errorText.textContent = 'Teléfono no coincide con el nombre proporcionado';
         return;
       }
-      passenger = {
-        id: matched.id,
-        full_name: matched.full_name,
-        phone: matched.phone,
-        ci: matched.ci
-      };
+      passenger = { id: matched.id, full_name: matched.full_name, phone: matched.phone, ci: matched.ci };
       localStorage.setItem('passenger', JSON.stringify(passenger));
       registerOverlay.classList.add('hidden');
       requestLocation();
@@ -834,7 +827,6 @@
           (err) => {
             document.getElementById('display-pickup-sub').textContent = 'No se pudo obtener ubicación';
             if (!map) initMap(currentLat, currentLng);
-            // Mostrar modal elegante para activar ubicación
             showLocationModal();
           },
           { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
@@ -882,7 +874,6 @@
         showUserHeading: true
       }), 'bottom-right');
 
-      // Marcador del pasajero
       const el = document.createElement('div');
       el.className = 'passenger-marker';
       el.innerHTML = '<div class="custom-pin"></div>';
@@ -900,7 +891,8 @@
             pinTooltipAddress.textContent = 'Calculando...';
             pinTooltipPrice.textContent = 'Bs --';
             pinTooltip.classList.add('show');
-            updatePriceAndAddress(destLat, destLng);
+            // Cálculo rápido (línea recta) para no gastar API en cada movimiento
+            updatePriceAndAddress(destLat, destLng, false);
           }, 300);
         }
       });
@@ -912,56 +904,91 @@
       map.fire('moveend');
     }
 
-    // ========== BÚSQUEDA DE DIRECCIONES ==========
-    searchInput.addEventListener('input', debounce(async (e) => {
+    // ========== BÚSQUEDA MEJORADA (Mapbox sin BBOX) ==========
+    searchInput.addEventListener('input', function(e) {
       const query = e.target.value.trim();
       if (query.length < 3) {
         suggestions.style.display = 'none';
         return;
       }
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&language=es&limit=5`;
-      const response = await fetch(url);
-      const data = await response.json();
-      suggestions.innerHTML = '';
-      if (data.features && data.features.length > 0) {
-        data.features.forEach(feature => {
-          const item = document.createElement('div');
-          item.className = 'suggestion-item';
-          item.innerHTML = `<i class="fas fa-map-marker-alt" style="color:var(--primary);"></i> ${feature.place_name}`;
-          item.addEventListener('click', () => {
-            const [lng, lat] = feature.center;
-            map.flyTo({ center: [lng, lat], zoom: 16 });
-            searchInput.value = feature.place_name;
-            suggestions.style.display = 'none';
-            isSelectingDestination = true;
-            centerPin.style.display = 'flex';
-            btnConfirmMap.style.display = 'flex';
-            rideOptionsContainer.classList.add('hidden');
-            btnRequestRide.classList.add('hidden');
-            destLat = lat;
-            destLng = lng;
-            updatePriceAndAddress(lat, lng);
-          });
-          suggestions.appendChild(item);
-        });
-        suggestions.style.display = 'block';
-      } else {
-        suggestions.style.display = 'none';
-      }
-    }, 300));
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => performSearch(query), 500); // debounce 500 ms
+    });
 
-    function debounce(func, delay) {
-      let timeout;
-      return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), delay);
-      };
+    async function performSearch(query) {
+      if (isSearching) return;
+      isSearching = true;
+      
+      const proximity = locationReady ? `${currentLng},${currentLat}` : '-63.1821,-17.7833';
+      
+      // Truco: Si el usuario no escribe "Santa Cruz" o "Bolivia", se lo agregamos ocultamente a la petición
+      // para darle más contexto a Mapbox y evitar resultados de otros países.
+      let searchQuery = query;
+      if (!query.toLowerCase().includes('bolivia')) {
+          searchQuery += ' Santa Cruz Bolivia';
+      }
+
+      // Quitamos el bbox y agregamos types=poi,place,address para priorizar lugares conocidos
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&language=es&limit=7&country=BO&proximity=${proximity}&types=poi,place,address`;
+      
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        const container = document.getElementById('suggestions');
+        container.innerHTML = '';
+        
+        if (data.features && data.features.length > 0) {
+          data.features.forEach(feature => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item';
+            
+            // Mejoramos la forma en que se muestra el nombre descartando el "Santa Cruz Bolivia" extra
+            const placeName = feature.place_name.replace(', Santa Cruz de la Sierra, Bolivia', '');
+            
+            item.innerHTML = `📍 ${placeName}`;
+            item.addEventListener('click', () => {
+              const [lng, lat] = feature.center;
+              
+              map.flyTo({ center: [lng, lat], zoom: 16 }); // Vuela al lugar
+              searchInput.value = feature.text; // Pone el nombre corto en el input
+              suggestions.style.display = 'none'; // Oculta sugerencias
+              
+              // Activa el modo "mover el mapa para ajustar"
+              isSelectingDestination = true;
+              centerPin.style.display = 'flex';
+              btnConfirmMap.style.display = 'flex';
+              rideOptionsContainer.classList.add('hidden');
+              btnRequestRide.classList.add('hidden');
+              
+              destLat = lat;
+              destLng = lng;
+              updatePriceAndAddress(lat, lng, true);
+            });
+            container.appendChild(item);
+          });
+          container.style.display = 'block';
+        } else {
+          container.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('Error en búsqueda:', error);
+        container.style.display = 'none';
+      } finally {
+        isSearching = false;
+      }
     }
 
     // ========== CÁLCULO DE PRECIO Y DIRECCIÓN ==========
-    async function updatePriceAndAddress(lat, lng) {
+    async function updatePriceAndAddress(lat, lng, useRealDistance = false) {
       const address = await obtenerDireccion(lat, lng);
-      const distanceInKm = calculateDistance(currentLat, currentLng, lat, lng);
+      let distanceInKm;
+      if (useRealDistance) {
+        // Mostrar "calculando ruta..." mientras se obtiene la ruta real
+        pinTooltipPrice.textContent = 'Calculando ruta...';
+        distanceInKm = await calcularDistanciaRuta(currentLat, currentLng, lat, lng);
+      } else {
+        distanceInKm = calculateDistance(currentLat, currentLng, lat, lng);
+      }
       const basePrice = 5.00;
       const pricePerKm = 2.50;
       const estimatedBase = basePrice + distanceInKm * pricePerKm;
@@ -981,14 +1008,30 @@
       const R = 6371;
       const dLat = deg2rad(lat2 - lat1);
       const dLon = deg2rad(lon2 - lon1);
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       return R * c;
     }
     function deg2rad(deg) { return deg * (Math.PI / 180); }
+
+    // Función para calcular distancia real por carretera usando Mapbox Directions
+    async function calcularDistanciaRuta(origenLat, origenLng, destinoLat, destinoLng) {
+      const coords = `${origenLng},${origenLat};${destinoLng},${destinoLat}`;
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?access_token=${mapboxgl.accessToken}&geometries=geojson`;
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.routes && data.routes.length > 0) {
+          return data.routes[0].distance / 1000; // km
+        }
+        return calculateDistance(origenLat, origenLng, destinoLat, destinoLng);
+      } catch (error) {
+        console.error('Error obteniendo ruta:', error);
+        return calculateDistance(origenLat, origenLng, destinoLat, destinoLng);
+      }
+    }
 
     // ========== CONFIRMAR DESTINO ==========
     btnConfirmMap.addEventListener('click', async () => {
@@ -998,7 +1041,7 @@
       btnConfirmMap.style.display = 'none';
       rideOptionsContainer.classList.remove('hidden');
       btnRequestRide.classList.remove('hidden');
-      document.getElementById('display-dropoff-sub').textContent = 'Ubicación en mapa';
+      document.getElementById('display-dropoff-sub').textContent = 'Calculando ruta exacta...';
       if (destinationMarker) destinationMarker.remove();
       const el = document.createElement('div');
       el.className = 'destination-marker';
@@ -1006,7 +1049,9 @@
       destinationMarker = new mapboxgl.Marker(el)
         .setLngLat([destLng, destLat])
         .addTo(map);
-      updatePriceAndAddress(destLat, destLng);
+      // Calcular precio con distancia real
+      await updatePriceAndAddress(destLat, destLng, true);
+      document.getElementById('display-dropoff-sub').textContent = 'Ubicación en mapa';
     });
 
     // ========== SOLICITAR VIAJE ==========
@@ -1184,7 +1229,7 @@
       document.querySelectorAll('.star-icon').forEach(s => s.classList.remove('active'));
     };
 
-    // ========== INICIALIZACIÓN ==========
+    // ========== INICIALIZAR UBICACIÓN Y EVENTOS DEL BUSCADOR ==========
     window.onload = async () => {
       switchView('viajes');
       const isRegistered = await checkPassengerRegistration();
