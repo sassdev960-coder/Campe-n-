@@ -10,7 +10,7 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <style>
-        /* ========== ESTILOS (sin cambios) ========== */
+        /* ========== ESTILOS (sin cambios mayores) ========== */
         :root {
             --bg-black: #0b0b0b;
             --bg-dark-gray: #161616;
@@ -205,6 +205,7 @@
         .action-btn:active { transform: scale(0.96); }
         .action-btn.pickup { background: var(--green-online); color: white; }
         .action-btn.finish { background: var(--primary-orange); color: white; }
+        .action-btn.not-completed { background: #6b7280; color: white; } /* Botón gris para no completado */
         .action-btn.hidden { display: none; }
 
         /* Modal */
@@ -288,6 +289,28 @@
         .file-upload-box input[type="file"] { width: 100%; color: var(--gray-text); font-size: 14px; }
         .photo-options { display: flex; flex-direction: column; gap: 10px; }
         #selfiePreview { display: none; width: 120px; height: 120px; border-radius: 50%; margin: 10px auto; object-fit: cover; border: 3px solid var(--primary-orange); box-shadow: 0 4px 15px rgba(255,122,0,0.3); }
+
+        /* Historial */
+        .history-section { margin-bottom: 30px; }
+        .history-section h3 { margin-bottom: 15px; font-size: 18px; font-weight: 700; }
+        .ride-card-history {
+            background: var(--bg-dark-gray);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .ride-card-history .info { flex: 1; }
+        .ride-card-history .origin-dest { font-size: 14px; color: var(--white); }
+        .ride-card-history .date { font-size: 11px; color: var(--gray-text); }
+        .ride-card-history .status-badge { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; }
+        .status-badge.completado { background: rgba(34,197,94,0.2); color: #22c55e; }
+        .status-badge.no_completado { background: rgba(239,68,68,0.2); color: #ef4444; }
+        .status-badge.activo { background: rgba(59,130,246,0.2); color: #3b82f6; }
     </style>
 </head>
 <body>
@@ -435,9 +458,31 @@
                 <button class="action-btn pickup hidden" id="pickupBtn" onclick="pickupPassenger()">
                     <i class="fas fa-user-check"></i> Recoger pasajero
                 </button>
-                <button class="action-btn finish hidden" id="finishBtn" onclick="finishRide()">
+                <button class="action-btn finish hidden" id="finishBtn" onclick="finishRide(true)">
                     <i class="fas fa-flag-checkered"></i> Finalizar viaje
                 </button>
+                <button class="action-btn not-completed hidden" id="notCompletedBtn" onclick="finishRide(false)">
+                    <i class="fas fa-times-circle"></i> No completado
+                </button>
+            </div>
+        </div>
+
+        <!-- Nueva pestaña: Historial -->
+        <div id="view-historial" class="content-area view">
+            <h2 style="margin-bottom:20px;">Mis Viajes</h2>
+            <!-- Viajes activos -->
+            <div class="history-section">
+                <h3><i class="fas fa-play-circle" style="color: #3b82f6;"></i> Viajes Activos</h3>
+                <div id="activeRidesList">
+                    <p style="color: var(--gray-text); text-align:center;">Cargando...</p>
+                </div>
+            </div>
+            <!-- Historial -->
+            <div class="history-section">
+                <h3><i class="fas fa-history" style="color: #9ca3af;"></i> Historial</h3>
+                <div id="completedRidesList">
+                    <p style="color: var(--gray-text); text-align:center;">Cargando...</p>
+                </div>
             </div>
         </div>
 
@@ -480,10 +525,11 @@
             </div>
         </div>
 
-        <!-- Bottom Navigation -->
+        <!-- Bottom Navigation (añadida pestaña Historial) -->
         <nav class="bottom-nav">
             <div class="nav-item active" onclick="switchTab('inicio', this)"><div class="nav-icon"><i class="fas fa-home"></i></div><span>Inicio</span></div>
             <div class="nav-item" onclick="switchTab('viajes', this)"><div class="nav-icon"><i class="fas fa-motorcycle"></i></div><span>Viajes</span></div>
+            <div class="nav-item" onclick="switchTab('historial', this)"><div class="nav-icon"><i class="fas fa-list-ul"></i></div><span>Historial</span></div>
             <div class="nav-item" onclick="switchTab('billetera', this)"><div class="nav-icon"><i class="fas fa-wallet"></i></div><span>Billetera</span></div>
             <div class="nav-item" onclick="switchTab('chat', this)"><div class="nav-icon"><i class="fas fa-comments"></i></div><span>Chat</span></div>
             <div class="nav-item" onclick="switchTab('perfil', this)"><div class="nav-icon"><i class="fas fa-user"></i></div><span>Perfil</span></div>
@@ -815,6 +861,7 @@
             }
             if (tabId === 'chat') loadChatMessages();
             if (tabId === 'billetera') loadWalletData();
+            if (tabId === 'historial') loadHistorial();
         }
 
         function initMap() {
@@ -879,6 +926,10 @@
                         } else if (isDriverOnline && !currentRideId && (ride.status === 'pendiente' || ride.status === 'aceptado')) {
                             showRideRequest(ride);
                         }
+                    }
+                    // Si estamos en la pestaña historial, recargar
+                    if (document.getElementById('view-historial').classList.contains('active')) {
+                        loadHistorial();
                     }
                 })
                 .subscribe((status) => console.log('📡 Estado suscripción viajes:', status));
@@ -967,36 +1018,44 @@
         }
 
         function updateRideUI(ride) {
+            // Botones flotantes
+            const pickupBtn = document.getElementById('pickupBtn');
+            const finishBtn = document.getElementById('finishBtn');
+            const notCompletedBtn = document.getElementById('notCompletedBtn');
+            
+            // Reset
+            pickupBtn.classList.add('hidden');
+            finishBtn.classList.add('hidden');
+            notCompletedBtn.classList.add('hidden');
+            
             if (ride.status === 'aceptado') {
                 hideRideModal();
-                document.getElementById('pickupBtn').classList.remove('hidden');
-                document.getElementById('finishBtn').classList.add('hidden');
+                pickupBtn.classList.remove('hidden');
             } else if (ride.status === 'en_curso') {
-                document.getElementById('pickupBtn').classList.add('hidden');
-                document.getElementById('finishBtn').classList.remove('hidden');
-                if (ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
-                    const bounds = new mapboxgl.LngLatBounds();
-                    bounds.extend([ride.origin_lng, ride.origin_lat]);
-                    bounds.extend([ride.destination_lng, ride.destination_lat]);
-                    map.fitBounds(bounds, { padding: 80, pitch: 60, bearing: 20 });
-                }
-            } else if (['completado','cancelado','rechazado'].includes(ride.status)) {
+                finishBtn.classList.remove('hidden');
+                notCompletedBtn.classList.remove('hidden');
+            } else if (['completado','no_completado','cancelado','rechazado'].includes(ride.status)) {
                 resetRideState();
+            }
+            
+            // Si estamos en historial, recargar
+            if (document.getElementById('view-historial').classList.contains('active')) {
+                loadHistorial();
             }
         }
 
         function updateActionButtons() {
             const pickupBtn = document.getElementById('pickupBtn');
             const finishBtn = document.getElementById('finishBtn');
+            const notCompletedBtn = document.getElementById('notCompletedBtn');
+            pickupBtn.classList.add('hidden');
+            finishBtn.classList.add('hidden');
+            notCompletedBtn.classList.add('hidden');
             if (currentRideStatus === 'aceptado') {
                 pickupBtn.classList.remove('hidden');
-                finishBtn.classList.add('hidden');
             } else if (currentRideStatus === 'en_curso') {
-                pickupBtn.classList.add('hidden');
                 finishBtn.classList.remove('hidden');
-            } else {
-                pickupBtn.classList.add('hidden');
-                finishBtn.classList.add('hidden');
+                notCompletedBtn.classList.remove('hidden');
             }
         }
 
@@ -1016,7 +1075,6 @@
             currentRideStatus = 'aceptado';
             hideRideModal();
 
-            // Obtener posición actual si no está disponible
             if (!currentPosition) {
                 try {
                     const pos = await new Promise((resolve, reject) => {
@@ -1033,7 +1091,6 @@
                 }
             }
 
-            // Esperar a que el mapa esté listo
             if (!map || !map.loaded()) {
                 await new Promise(resolve => {
                     if (map && map.loaded()) resolve();
@@ -1072,14 +1129,71 @@
             if (error) { alert('Error al confirmar recogida: ' + error.message); return; }
         }
 
-        async function finishRide() {
-            if (!currentRideId) return;
-            const { error } = await supabaseClient
-                .from('rides')
-                .update({ status: 'completado', completed_at: new Date().toISOString() })
-                .eq('id', currentRideId);
-            if (error) { alert('Error al finalizar viaje: ' + error.message); return; }
+        async function finishRide(completed) {
+    if (!currentRideId) return;
+    
+    if (completed) {
+        // Verificar que el conductor esté cerca del destino
+        if (!currentPosition) {
+            alert('No se pudo obtener tu ubicación actual. Activa el GPS para finalizar el viaje.');
+            return;
         }
+        
+        // Obtener datos del viaje
+        const { data: ride, error: rideError } = await supabaseClient
+            .from('rides')
+            .select('destination_lat, destination_lng')
+            .eq('id', currentRideId)
+            .single();
+        if (rideError || !ride) {
+            alert('Error al obtener información del viaje.');
+            return;
+        }
+        
+        if (ride.destination_lat && ride.destination_lng) {
+            const distance = getDistanceFromLatLonInMeters(
+                currentPosition[0], currentPosition[1],
+                ride.destination_lat, ride.destination_lng
+            );
+            const UMBRAL = 200; // metros
+            if (distance > UMBRAL) {
+                alert(`Estás a ${Math.round(distance)} m del destino. Acércate para poder completar el viaje. Si no puedes llegar, márcalo como "No completado".`);
+                return;
+            }
+        } else {
+            // Si no hay coordenadas de destino, no se puede verificar; continuar con advertencia
+            if (!confirm('No hay coordenadas de destino. ¿Seguro que deseas marcar como completado?')) return;
+        }
+    }
+    
+    const newStatus = completed ? 'completado' : 'no_completado';
+    const updates = {
+        status: newStatus,
+        completed_at: completed ? new Date().toISOString() : null,
+        cancelled_at: completed ? null : new Date().toISOString()
+    };
+    
+    const { error } = await supabaseClient
+        .from('rides')
+        .update(updates)
+        .eq('id', currentRideId);
+    if (error) { alert('Error al actualizar viaje: ' + error.message); return; }
+    
+    resetRideState();
+    alert(completed ? 'Viaje completado' : 'Viaje marcado como no completado');
+}
+
+// Función para calcular distancia en metros entre dos coordenadas (Fórmula de Haversine)
+function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+    const R = 6371000; // radio de la Tierra en metros
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+}
 
         // ==================== RUTA ====================
         async function drawRoute(originCoords, waypointCoords, destinationCoords) {
@@ -1188,7 +1302,7 @@
                         statusSubtitle.textContent = 'Recibe solicitudes de viaje';
                         if (!isDriverOnline) {
                             isDriverOnline = true;
-                            loadActiveRide();  // <-- Aquí se cargan los viajes activos
+                            loadActiveRide();
                             switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
                         }
                         const now = Date.now();
@@ -1276,6 +1390,76 @@
                 clearTimeout(timeout);
                 timeout = setTimeout(() => func.apply(this, args), delay);
             };
+        }
+
+        // ==================== HISTORIAL ====================
+        async function loadHistorial() {
+            if (!currentDriverId) return;
+            
+            // Cargar viajes activos (pendiente, aceptado, en_curso)
+            const { data: activeRides, error: activeError } = await supabaseClient
+                .from('rides')
+                .select('id, origin_address, destination_address, price, status, created_at')
+                .eq('driver_id', currentDriverId)
+                .in('status', ['pendiente', 'aceptado', 'en_curso'])
+                .order('created_at', { ascending: false });
+            
+            const activeContainer = document.getElementById('activeRidesList');
+            activeContainer.innerHTML = '';
+            
+            if (activeError) {
+                activeContainer.innerHTML = `<p style="color: var(--gray-text);">Error al cargar viajes activos</p>`;
+            } else if (!activeRides || activeRides.length === 0) {
+                activeContainer.innerHTML = `<p style="color: var(--gray-text); text-align:center;">No tienes viajes activos</p>`;
+            } else {
+                activeRides.forEach(ride => {
+                    activeContainer.innerHTML += `
+                        <div class="ride-card-history">
+                            <div class="info">
+                                <div class="origin-dest">${ride.origin_address || 'Origen'} → ${ride.destination_address || 'Destino'}</div>
+                                <div class="date">${new Date(ride.created_at).toLocaleString()}</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fs-6 fw-bold text-white">Bs ${parseFloat(ride.price || 0).toFixed(2)}</div>
+                                <span class="status-badge activo">${ride.status}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            // Cargar historial (completado, no_completado, cancelado, rechazado)
+            const { data: completedRides, error: completedError } = await supabaseClient
+                .from('rides')
+                .select('id, origin_address, destination_address, price, status, created_at')
+                .eq('driver_id', currentDriverId)
+                .in('status', ['completado', 'no_completado', 'cancelado', 'rechazado'])
+                .order('created_at', { ascending: false });
+            
+            const completedContainer = document.getElementById('completedRidesList');
+            completedContainer.innerHTML = '';
+            
+            if (completedError) {
+                completedContainer.innerHTML = `<p style="color: var(--gray-text);">Error al cargar historial</p>`;
+            } else if (!completedRides || completedRides.length === 0) {
+                completedContainer.innerHTML = `<p style="color: var(--gray-text); text-align:center;">No hay viajes en el historial</p>`;
+            } else {
+                completedRides.forEach(ride => {
+                    const badgeClass = ride.status === 'completado' ? 'completado' : (ride.status === 'no_completado' ? 'no_completado' : '');
+                    completedContainer.innerHTML += `
+                        <div class="ride-card-history">
+                            <div class="info">
+                                <div class="origin-dest">${ride.origin_address || 'Origen'} → ${ride.destination_address || 'Destino'}</div>
+                                <div class="date">${new Date(ride.created_at).toLocaleString()}</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="fs-6 fw-bold text-white">Bs ${parseFloat(ride.price || 0).toFixed(2)}</div>
+                                <span class="status-badge ${badgeClass}">${ride.status}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
         }
 
         // ==================== CHAT ====================
