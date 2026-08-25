@@ -6,7 +6,9 @@
     <title>Moto Móvil - Conductor</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Mapbox GL JS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <style>
         :root {
             --bg-black: #0b0b0b;
@@ -171,18 +173,77 @@
             text-shadow: 0 4px 12px rgba(255, 122, 0, 0.6);
         }
 
-        .leaflet-tile { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
-        .avatar-marker { width: 50px; height: 50px; border-radius: 50%; overflow: hidden; border: 3px solid var(--primary-orange); box-shadow: 0 0 0 3px rgba(255,122,0,0.4), 0 4px 10px rgba(0,0,0,0.5); background: #fff; }
-        .avatar-marker img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-        .pulse-ring { position: absolute; width: 50px; height: 50px; border-radius: 50%; border: 3px solid var(--primary-orange); animation: pulse 1.5s ease-out infinite; pointer-events: none; }
-        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
-        
+        /* Estilos para Mapbox */
+        .mapboxgl-ctrl-bottom-left,
+        .mapboxgl-ctrl-bottom-right {
+            display: none;
+        }
+        .avatar-marker {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 3px solid var(--primary-orange);
+            box-shadow: 0 0 0 3px rgba(255,122,0,0.4), 0 4px 10px rgba(0,0,0,0.5);
+            background: #fff;
+        }
+        .avatar-marker img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+        .pulse-ring {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid var(--primary-orange);
+            animation: pulse 1.5s ease-out infinite;
+            pointer-events: none;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
         .search-container { position: absolute; top: 15px; left: 15px; right: 15px; z-index: 1000; max-width: 500px; margin: 0 auto; }
         .search-box { background-color: var(--bg-dark-gray); border-radius: 30px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid #333; }
         .search-box input { flex: 1; background: transparent; border: none; outline: none; color: var(--white); font-size: 14px; }
         .suggestions { background-color: var(--bg-dark-gray); border-radius: 16px; margin-top: 8px; max-height: 300px; overflow-y: auto; display: none; }
         .suggestion-item { padding: 12px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #222; cursor: pointer; }
         
+        /* Botones flotantes para acción del conductor */
+        .ride-actions-float {
+            position: absolute;
+            bottom: 25px;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            padding: 0 15px;
+            pointer-events: none;
+        }
+        .action-btn {
+            pointer-events: auto;
+            padding: 12px 25px;
+            border-radius: 30px;
+            border: none;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .action-btn:active { transform: scale(0.96); }
+        .action-btn.pickup { background: var(--green-online); color: white; }
+        .action-btn.finish { background: var(--primary-orange); color: white; }
+        .action-btn.hidden { display: none; }
+
         /* Estilos mejorados para el modal de solicitud */
         .ride-modal { 
             position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
@@ -524,6 +585,15 @@
                 </div>
                 <div class="suggestions" id="suggestions"></div>
             </div>
+            <!-- Botones de acción flotantes -->
+            <div class="ride-actions-float" id="rideActionsFloat">
+                <button class="action-btn pickup hidden" id="pickupBtn" onclick="pickupPassenger()">
+                    <i class="fas fa-user-check"></i> Recoger pasajero
+                </button>
+                <button class="action-btn finish hidden" id="finishBtn" onclick="finishRide()">
+                    <i class="fas fa-flag-checkered"></i> Finalizar viaje
+                </button>
+            </div>
         </div>
 
         <!-- Billetera View -->
@@ -603,14 +673,14 @@
                 <div class="ride-info-item">
                     <i class="fas fa-map-marker-alt"></i>
                     <div>
-                        <div class="label">Origen</div>
+                        <div class="label">Origen (recoger)</div>
                         <div class="value" id="rideOrigin">Cargando...</div>
                     </div>
                 </div>
                 <div class="ride-info-item">
                     <i class="fas fa-flag-checkered"></i>
                     <div>
-                        <div class="label">Destino</div>
+                        <div class="label">Destino final</div>
                         <div class="value" id="rideDestination">Cargando...</div>
                     </div>
                 </div>
@@ -630,7 +700,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // ==================== CONFIGURACIÓN SUPABASE ====================
@@ -638,14 +707,26 @@
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3ZG9qY2hmd21hY3pnZHRodGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDQ4NDEsImV4cCI6MjEwMjcyMDg0MX0.jafGOwlItnzSoZ6yYlpaae16S2nlSDpPIS2316ZPJak';
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
+        // ==================== CONFIGURACIÓN MAPBOX ====================
+        mapboxgl.accessToken = 'pk.eyJ1IjoiYXJuZWx2emwiLCJhIjoiY21zd2p2bmc3MW0xODJ4b284d3Zld3g4ZiJ9.zYnczMSu1o0ZaWKdRIo-Ww'; // Token actual
+
+        // Variables globales
         let currentDriverId = null;
         let currentDriverData = null;
-        let map;
+        let map = null;
         let currentPosition = null;
         let driverMarker = null;
         let pulseLayer = null;
-        let currentRideId = null;  // ID del viaje actual en solicitud
-        let isDriverOnline = false; // Estado online del conductor
+        let currentRideId = null;
+        let currentRideStatus = null; // 'aceptado', 'en_curso', etc.
+        let isDriverOnline = false;
+        let routeLayers = [];
+        let mapInitialized = false;
+        let watchId = null;
+        let pickupMarker = null;
+        let dropoffMarker = null;
+        let lastUpdateTime = 0;
+        const UPDATE_INTERVAL = 5000; // ms
 
         // Variables Onboarding
         let obLat = null;
@@ -674,7 +755,6 @@
                 if (error) throw error;
                 currentDriverId = data.user.id;
                 await loadDriverData();
-                // Forzar estado offline al iniciar sesión
                 await forceOffline();
                 setupRideSubscription();
                 routeUserBasedOnProfile(); 
@@ -693,7 +773,6 @@
                 if (session) {
                     currentDriverId = session.user.id;
                     await loadDriverData();
-                    // Forzar estado offline al cargar la app
                     await forceOffline();
                     setupRideSubscription();
                     routeUserBasedOnProfile();
@@ -712,8 +791,6 @@
                 document.getElementById('view-login').classList.remove('active');
                 document.getElementById('view-onboarding').classList.remove('active');
                 document.getElementById('mainApp').style.display = 'flex';
-                initMap();
-                // No llamamos loadPendingRides aquí porque aún está offline; se llamará al activar toggle
             } else {
                 document.getElementById('obFullName').value = currentDriverData.full_name || '';
                 document.getElementById('view-login').classList.remove('active');
@@ -722,7 +799,6 @@
             }
         }
 
-        // Función para forzar estado offline en la base de datos y local
         async function forceOffline() {
             try {
                 await supabaseClient.from('driver_status').upsert({
@@ -878,7 +954,10 @@
 
         async function logout() {
             hideLoading();
-            // Poner offline antes de cerrar sesión
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
             if (currentDriverId) {
                 await supabaseClient.from('driver_status').upsert({
                     driver_id: currentDriverId,
@@ -894,10 +973,16 @@
             document.getElementById('mainApp').style.display = 'none';
             document.getElementById('view-onboarding').classList.remove('active');
             document.getElementById('view-login').classList.add('active');
-            // Cerrar suscripción si existe
             if (window.rideSubscription) {
                 supabaseClient.removeChannel(window.rideSubscription);
                 window.rideSubscription = null;
+            }
+            if (map) {
+                map.remove();
+                map = null;
+                mapInitialized = false;
+                driverMarker = null;
+                pulseLayer = null;
             }
         }
 
@@ -919,68 +1004,109 @@
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('view-' + tabId).classList.add('active');
             element.classList.add('active');
-            if (tabId === 'viajes' && map) {
-                map.invalidateSize();
-                if (currentPosition) map.setView(currentPosition, 16);
+            
+            if (tabId === 'viajes') {
+                if (!map && isDriverOnline) {
+                    initMap();
+                }
+                if (map) {
+                    setTimeout(() => {
+                        map.resize();
+                        if (currentPosition) {
+                            map.jumpTo({ center: [currentPosition[1], currentPosition[0]], zoom: 16 });
+                        }
+                    }, 50);
+                }
             }
         }
 
         function initMap() {
-            if(map) return;
-            map = L.map('map', { zoomControl: false }).setView([-17.7833, -63.1821], 14);
-            L.control.zoom({ position: 'topleft' }).addTo(map);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+            if (mapInitialized) return;
+            mapInitialized = true;
+            map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/streets-v12',
+                center: [-63.1821, -17.7833],
+                zoom: 14,
+                pitch: 0,
+                bearing: 0
+            });
+            map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+            map.on('load', () => {
+                const layers = map.getStyle().layers;
+                const labelLayerId = layers.find(layer => layer.type === 'symbol' && layer.layout['text-field']).id;
+                map.addLayer({
+                    'id': 'add-3d-buildings',
+                    'source': 'composite',
+                    'source-layer': 'building',
+                    'filter': ['==', 'extrude', 'true'],
+                    'type': 'fill-extrusion',
+                    'minzoom': 15,
+                    'paint': {
+                        'fill-extrusion-color': '#aaa',
+                        'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.05, ['get', 'height']],
+                        'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.05, ['get', 'min_height']],
+                        'fill-extrusion-opacity': 0.6
+                    }
+                }, labelLayerId);
+            });
+        }
+
+        // ==================== MARCADOR DEL CONDUCTOR ====================
+        function createDriverMarker(lat, lng) {
+            const avatarImg = currentDriverData?.avatar_url || 'a.png';
+            const el = document.createElement('div');
+            el.className = 'avatar-marker-container';
+            el.innerHTML = `<div class="avatar-marker"><img src="${avatarImg}" alt="Avatar"></div>`;
+            const marker = new mapboxgl.Marker(el)
+                .setLngLat([lng, lat])
+                .addTo(map);
+            
+            const pulseEl = document.createElement('div');
+            pulseEl.className = 'pulse-ring';
+            const pulseMarker = new mapboxgl.Marker(pulseEl)
+                .setLngLat([lng, lat])
+                .addTo(map);
+            
+            return { marker, pulseMarker };
         }
 
         // ==================== SUSCRIPCIÓN A VIAJES ====================
         function setupRideSubscription() {
-            if (window.rideSubscription) return; // Evitar suscripciones duplicadas
+            if (window.rideSubscription) return;
 
             window.rideSubscription = supabaseClient
-                .channel('driver-rides-' + currentDriverId) // Canal único por conductor
+                .channel('driver-rides-' + currentDriverId)
                 .on('postgres_changes', 
-                    { 
-                        event: 'INSERT', 
-                        schema: 'public', 
-                        table: 'rides', 
-                        filter: `driver_id=eq.${currentDriverId}` 
-                    }, 
+                    { event: 'INSERT', schema: 'public', table: 'rides', filter: `driver_id=eq.${currentDriverId}` }, 
                     (payload) => {
                         const ride = payload.new;
-                        // Solo mostrar si estamos online y el viaje está pendiente
                         if (isDriverOnline && ride.status === 'pendiente') {
                             showRideRequest(ride);
                         }
                     })
                 .on('postgres_changes', 
-                    { 
-                        event: 'UPDATE', 
-                        schema: 'public', 
-                        table: 'rides', 
-                        filter: `driver_id=eq.${currentDriverId}` 
-                    }, 
+                    { event: 'UPDATE', schema: 'public', table: 'rides', filter: `driver_id=eq.${currentDriverId}` }, 
                     (payload) => {
                         const ride = payload.new;
-                        // Si el viaje se actualiza y ahora está pendiente y estamos online, mostrar
                         if (isDriverOnline && ride.status === 'pendiente') {
                             showRideRequest(ride);
-                        } 
-                        // Si el viaje actual deja de estar pendiente, ocultar modal
-                        else if (currentRideId === ride.id && ride.status !== 'pendiente') {
-                            hideRideModal();
+                        } else if (currentRideId === ride.id) {
+                            currentRideStatus = ride.status;
+                            updateRideUI(ride);
                         }
                     })
                 .subscribe();
         }
 
         async function loadPendingRides() {
-            if (!currentDriverId || !isDriverOnline) return; // Solo si está online
+            if (!currentDriverId || !isDriverOnline) return;
             const { data, error } = await supabaseClient
                 .from('rides')
                 .select('*')
                 .eq('driver_id', currentDriverId)
                 .eq('status', 'pendiente')
-                .maybeSingle(); // Asume solo un viaje pendiente a la vez
+                .maybeSingle();
             
             if (data && !error) {
                 showRideRequest(data);
@@ -989,6 +1115,7 @@
 
         function showRideRequest(ride) {
             currentRideId = ride.id;
+            currentRideStatus = ride.status;
             document.getElementById('rideOrigin').textContent = ride.origin_address || 'No especificado';
             document.getElementById('rideDestination').textContent = ride.destination_address || 'No especificado';
             document.getElementById('ridePrice').textContent = `Bs ${parseFloat(ride.price || 0).toFixed(2)}`;
@@ -998,20 +1125,77 @@
         function hideRideModal() {
             document.getElementById('rideModal').classList.remove('active');
             currentRideId = null;
+            currentRideStatus = null;
+            clearRoute();
+            updateActionButtons();
+        }
+
+        function updateRideUI(ride) {
+            // Actualizar botones flotantes según estado
+            if (ride.status === 'aceptado') {
+                // Ocultar modal si estuviera abierto
+                hideRideModal();
+                // Mostrar botón "Recoger pasajero"
+                document.getElementById('pickupBtn').classList.remove('hidden');
+                document.getElementById('finishBtn').classList.add('hidden');
+            } else if (ride.status === 'en_curso') {
+                document.getElementById('pickupBtn').classList.add('hidden');
+                document.getElementById('finishBtn').classList.remove('hidden');
+                // Reenfocar cámara al tramo restante
+                if (ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
+                    const bounds = new mapboxgl.LngLatBounds();
+                    bounds.extend([ride.origin_lng, ride.origin_lat]);
+                    bounds.extend([ride.destination_lng, ride.destination_lat]);
+                    map.fitBounds(bounds, { padding: 80, pitch: 60, bearing: 20 });
+                }
+            } else if (ride.status === 'completado' || ride.status === 'cancelado' || ride.status === 'rechazado') {
+                // Limpiar todo
+                currentRideId = null;
+                currentRideStatus = null;
+                clearRoute();
+                updateActionButtons();
+            }
+        }
+
+        function updateActionButtons() {
+            const pickupBtn = document.getElementById('pickupBtn');
+            const finishBtn = document.getElementById('finishBtn');
+            if (currentRideStatus === 'aceptado') {
+                pickupBtn.classList.remove('hidden');
+                finishBtn.classList.add('hidden');
+            } else if (currentRideStatus === 'en_curso') {
+                pickupBtn.classList.add('hidden');
+                finishBtn.classList.remove('hidden');
+            } else {
+                pickupBtn.classList.add('hidden');
+                finishBtn.classList.add('hidden');
+            }
         }
 
         async function acceptRide() {
             if (!currentRideId) return;
-            const { error } = await supabaseClient
+            const { data: ride, error } = await supabaseClient
+                .from('rides')
+                .select('*')
+                .eq('id', currentRideId)
+                .single();
+            if (error) { alert('Error al obtener viaje: ' + error.message); return; }
+            const { error: updateError } = await supabaseClient
                 .from('rides')
                 .update({ status: 'aceptado' })
                 .eq('id', currentRideId);
-            
-            if (error) {
-                alert('Error al aceptar: ' + error.message);
-                return;
-            }
+            if (updateError) { alert('Error al aceptar: ' + updateError.message); return; }
+            currentRideStatus = 'aceptado';
             hideRideModal();
+            // Dibujar ruta completa con marcadores
+            if (currentPosition && ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
+                drawRoute(
+                    currentPosition,
+                    [ride.origin_lat, ride.origin_lng],
+                    [ride.destination_lat, ride.destination_lng]
+                );
+            }
+            updateActionButtons();
             alert('Viaje aceptado');
         }
 
@@ -1021,13 +1205,122 @@
                 .from('rides')
                 .update({ status: 'rechazado' })
                 .eq('id', currentRideId);
-            
-            if (error) {
-                alert('Error al rechazar: ' + error.message);
-                return;
-            }
+            if (error) { alert('Error al rechazar: ' + error.message); return; }
             hideRideModal();
+            clearRoute();
             alert('Viaje rechazado');
+        }
+
+        async function pickupPassenger() {
+            if (!currentRideId) return;
+            const { error } = await supabaseClient
+                .from('rides')
+                .update({ status: 'en_curso', accepted_at: new Date().toISOString() })
+                .eq('id', currentRideId);
+            if (error) { alert('Error al confirmar recogida: ' + error.message); return; }
+            // La suscripción Realtime actualizará la UI automáticamente
+        }
+
+        async function finishRide() {
+            if (!currentRideId) return;
+            const { error } = await supabaseClient
+                .from('rides')
+                .update({ status: 'completado', completed_at: new Date().toISOString() })
+                .eq('id', currentRideId);
+            if (error) { alert('Error al finalizar viaje: ' + error.message); return; }
+            // La suscripción Realtime limpiará la UI
+        }
+
+        // ==================== FUNCIONES DE RUTA ====================
+        async function drawRoute(originCoords, waypointCoords, destinationCoords) {
+            if (!map) return;
+            clearRoute();
+
+            // Crear marcador de recogida (verde)
+            const pickupEl = document.createElement('div');
+            pickupEl.innerHTML = `<i class="fas fa-user-circle" style="font-size:35px;color:#22c55e;text-shadow:0 0 8px #22c55e;"></i>`;
+            pickupMarker = new mapboxgl.Marker(pickupEl)
+                .setLngLat([waypointCoords[1], waypointCoords[0]])
+                .addTo(map);
+
+            // Crear marcador de destino (rojo)
+            const dropoffEl = document.createElement('div');
+            dropoffEl.innerHTML = `<i class="fas fa-flag-checkered" style="font-size:35px;color:#ef4444;text-shadow:0 0 8px #ef4444;"></i>`;
+            dropoffMarker = new mapboxgl.Marker(dropoffEl)
+                .setLngLat([destinationCoords[1], destinationCoords[0]])
+                .addTo(map);
+
+            // Llamar a la API de direcciones
+            const coordinates = [
+                [originCoords[1], originCoords[0]],
+                [waypointCoords[1], waypointCoords[0]],
+                [destinationCoords[1], destinationCoords[0]]
+            ];
+            const coordsString = coordinates.map(c => c.join(',')).join(';');
+            const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordsString}?geometries=geojson&access_token=${mapboxgl.accessToken}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                if (data.routes && data.routes.length > 0) {
+                    const route = data.routes[0].geometry.coordinates;
+                    const geojson = {
+                        type: 'Feature',
+                        properties: {},
+                        geometry: { type: 'LineString', coordinates: route }
+                    };
+                    map.addSource('route', { type: 'geojson', data: geojson });
+                    map.addLayer({
+                        id: 'route-line',
+                        type: 'line',
+                        source: 'route',
+                        layout: { 'line-join': 'round', 'line-cap': 'round' },
+                        paint: {
+                            'line-color': ['interpolate', ['linear'], ['line-progress'],
+                                0, '#3b82f6',   // azul conductor -> pasajero
+                                0.5, '#3b82f6',
+                                0.5, '#ff7a00', // naranja pasajero -> destino
+                                1, '#ff7a00'
+                            ],
+                            'line-width': 6,
+                            'line-opacity': 0.9
+                        }
+                    });
+                    routeLayers.push('route', 'route-line');
+
+                    // Ajustar cámara inicial a toda la ruta
+                    const bounds = new mapboxgl.LngLatBounds();
+                    route.forEach(coord => bounds.extend(coord));
+                    map.fitBounds(bounds, { padding: 80, pitch: 60, bearing: 20, duration: 2000 });
+                }
+            } catch (error) {
+                console.error('Error al obtener ruta:', error);
+                // Fallback línea recta
+                const geojson = {
+                    type: 'Feature',
+                    geometry: { type: 'LineString', coordinates: coordinates }
+                };
+                map.addSource('route', { type: 'geojson', data: geojson });
+                map.addLayer({
+                    id: 'route-line',
+                    type: 'line',
+                    source: 'route',
+                    paint: { 'line-color': '#ff7a00', 'line-width': 4 }
+                });
+                routeLayers.push('route', 'route-line');
+                map.easeTo({ center: coordinates[2], zoom: 14, pitch: 60, bearing: 20 });
+            }
+        }
+
+        function clearRoute() {
+            if (!map) return;
+            routeLayers.forEach(layer => {
+                if (map.getLayer(layer)) map.removeLayer(layer);
+                if (map.getSource(layer)) map.removeSource(layer);
+            });
+            routeLayers = [];
+            if (pickupMarker) { pickupMarker.remove(); pickupMarker = null; }
+            if (dropoffMarker) { dropoffMarker.remove(); dropoffMarker = null; }
         }
 
         // ==================== ESTADO DEL CONDUCTOR ====================
@@ -1039,72 +1332,73 @@
 
         toggleSwitch.addEventListener('change', function() {
             if (this.checked) {
-                // Intentar activar online
                 statusCard.classList.remove('offline');
                 statusTitle.textContent = 'Disponible';
                 statusSubtitle.textContent = 'Buscando ubicación...';
                 if(onlineGlow) onlineGlow.classList.add('active');
 
-                showLoading('Obteniendo ubicación...');
-                navigator.geolocation.getCurrentPosition(
+                showLoading('Obteniendo ubicación exacta...');
+                watchId = navigator.geolocation.watchPosition(
                     (position) => {
                         const lat = position.coords.latitude;
                         const lng = position.coords.longitude;
                         currentPosition = [lat, lng];
-                        
-                        const avatarImg = currentDriverData.avatar_url || 'a.png';
-                        const avatarIcon = L.divIcon({
-                            className: 'avatar-marker-container',
-                            html: `<div class="avatar-marker"><img src="${avatarImg}" alt="Avatar"></div>`,
-                            iconSize: [50, 50],
-                            iconAnchor: [25, 25]
-                        });
+
+                        if (!map) initMap();
                         
                         if (driverMarker) {
-                            driverMarker.setLatLng([lat, lng]);
-                            driverMarker.setIcon(avatarIcon);
+                            driverMarker.marker.setLngLat([lng, lat]);
+                            driverMarker.pulseMarker.setLngLat([lng, lat]);
                         } else {
-                            driverMarker = L.marker([lat, lng], { icon: avatarIcon }).addTo(map);
+                            driverMarker = createDriverMarker(lat, lng);
+                            map.jumpTo({ center: [lng, lat], zoom: 16 });
                         }
+                        map.easeTo({ center: [lng, lat] });
 
-                        if (pulseLayer) map.removeLayer(pulseLayer);
-                        const pulseDiv = L.divIcon({
-                            className: '',
-                            html: '<div class="pulse-ring"></div>',
-                            iconSize: [50, 50],
-                            iconAnchor: [25, 25]
-                        });
-                        pulseLayer = L.marker([lat, lng], { icon: pulseDiv, interactive: false }).addTo(map);
-
-                        map.setView(currentPosition, 16);
                         hideLoading();
                         statusSubtitle.textContent = 'Recibe solicitudes de viaje';
-                        isDriverOnline = true;
-                        updateDriverStatus(true, lat, lng);
-                        // Al conectarse, buscar viajes pendientes
-                        loadPendingRides();
-                        switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
+
+                        if (!isDriverOnline) {
+                            isDriverOnline = true;
+                            loadPendingRides();
+                            switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
+                        }
+
+                        // Throttle para actualizar BD
+                        const now = Date.now();
+                        if (now - lastUpdateTime > UPDATE_INTERVAL) {
+                            lastUpdateTime = now;
+                            updateDriverStatus(true, lat, lng);
+                        }
                     },
                     (error) => {
                         hideLoading();
                         toggleSwitch.checked = false;
                         isDriverOnline = false;
-                        alert('No se pudo obtener tu ubicación. Activa el GPS.');
+                        alert('No se pudo obtener tu ubicación. Asegúrate de tener el GPS activado en Alta Precisión.');
                     },
-                    { enableHighAccuracy: true }
+                    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
                 );
             } else {
-                // Desactivar online
                 statusCard.classList.add('offline');
                 statusTitle.textContent = 'No disponible';
                 statusSubtitle.textContent = 'No estás recibiendo viajes';
                 if(onlineGlow) onlineGlow.classList.remove('active');
-                if (driverMarker) { map.removeLayer(driverMarker); driverMarker = null; }
-                if (pulseLayer) { map.removeLayer(pulseLayer); pulseLayer = null; }
+                
+                if (watchId !== null) {
+                    navigator.geolocation.clearWatch(watchId);
+                    watchId = null;
+                }
+
+                if (driverMarker) {
+                    driverMarker.marker.remove();
+                    driverMarker.pulseMarker.remove();
+                    driverMarker = null;
+                }
                 isDriverOnline = false;
                 updateDriverStatus(false);
-                // Si hay un modal abierto, ocultarlo
                 hideRideModal();
+                clearRoute();
             }
         });
 
@@ -1122,10 +1416,65 @@
             }
         }
 
-        // Al cerrar la ventana o recargar, poner offline (mejor esfuerzo)
+        // ==================== BÚSQUEDA DE DIRECCIONES ====================
+        document.getElementById('searchInput').addEventListener('input', debounce(async (e) => {
+            const query = e.target.value.trim();
+            if (query.length < 3) {
+                document.getElementById('suggestions').style.display = 'none';
+                return;
+            }
+            const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&language=es&limit=5`;
+            const response = await fetch(url);
+            const data = await response.json();
+            const container = document.getElementById('suggestions');
+            container.innerHTML = '';
+            if (data.features && data.features.length > 0) {
+                data.features.forEach(feature => {
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item';
+                    item.innerHTML = `<i class="fas fa-map-marker-alt" style="color: var(--primary-orange)"></i> ${feature.place_name}`;
+                    item.addEventListener('click', () => {
+                        const [lng, lat] = feature.center;
+                        map.flyTo({ center: [lng, lat], zoom: 16 });
+                        document.getElementById('searchInput').value = feature.place_name;
+                        container.style.display = 'none';
+                    });
+                    container.appendChild(item);
+                });
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+            }
+        }, 300));
+
+        function debounce(func, delay) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), delay);
+            };
+        }
+
+        // ==================== CHAT (simplificado) ====================
+        async function sendCentralMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+            const messagesDiv = document.getElementById('chatMessages');
+            const msgEl = document.createElement('div');
+            msgEl.className = 'message sent';
+            msgEl.textContent = message;
+            messagesDiv.appendChild(msgEl);
+            input.value = '';
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Al cerrar la ventana, poner offline
         window.addEventListener('beforeunload', () => {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+            }
             if (currentDriverId) {
-                // Usamos sendBeacon o fetch para actualizar estado offline
                 navigator.sendBeacon?.(
                     `${supabaseUrl}/rest/v1/driver_status?driver_id=eq.${currentDriverId}`,
                     new Blob([JSON.stringify({ is_online: false, last_updated: new Date().toISOString() })], { type: 'application/json' })
