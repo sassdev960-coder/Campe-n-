@@ -1,1486 +1,1198 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Moto Móvil - Conductor</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Mapbox GL JS -->
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-    <style>
-        :root {
-            --bg-black: #0b0b0b;
-            --bg-dark-gray: #161616;
-            --bg-offline: #2a2a2a;
-            --primary-orange: #ff7a00;
-            --white: #ffffff;
-            --gray-text: #9ca3af;
-            --green-online: #22c55e;
-            --red: #ef4444;
-            --shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Moto Campeón - App de Transporte</title>
+  <!-- Mapbox GL JS -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --primary: #FF7A00;
+      --primary-active: #E06900;
+      --bg-light: #121212;
+      --white: #1E1E1E;
+      --text-dark: #FFFFFF;
+      --text-muted: #A0A0A0;
+      --border-color: #2C2C2C;
+      --shadow-sm: 0 2px 10px rgba(0,0,0,0.3);
+      --shadow-md: 0 -4px 20px rgba(0,0,0,0.5);
+      --shadow-lg: 0 10px 30px rgba(0,0,0,0.7);
+      --nav-height: 70px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #000000;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100dvh;
+      color: var(--text-dark);
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .app-container {
+      width: 100%;
+      max-width: 420px;
+      height: 100dvh;
+      max-height: 900px;
+      background: var(--bg-light);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    .hidden { display: none !important; }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; user-select: none; }
-        
-        html, body { 
-            background-color: var(--bg-black); 
-            width: 100vw; 
-            height: 100vh;
-            height: 100dvh; 
-            overflow: hidden; 
-            overscroll-behavior-y: none;
-        }
-        
-        .app-container { width: 100%; height: 100%; display: flex; flex-direction: column; color: var(--white); }
-        .content-area { flex: 1; overflow-y: auto; padding: 15px 15px 0 15px; position: relative; }
-        .view { display: none; }
-        .view.active { display: block; }
+    /* Vista mapa */
+    .map-view-container { flex: 1; display: flex; flex-direction: column; position: relative; height: 100%; }
+    #map { width: 100%; height: 100%; z-index: 1; background-color: #222; }
 
-        .online-glow {
-            position: absolute; top: 0; left: 0; right: 0; height: 65vh;
-            background: linear-gradient(180deg, rgba(255, 122, 0, 0.25) 0%, rgba(11, 11, 11, 0) 100%);
-            opacity: 0; pointer-events: none; transition: opacity 0.6s ease-in-out; z-index: 0; 
-        }
-        .online-glow.active { opacity: 1; }
-        .header, .status-card, .stats-grid, .online-card { position: relative; z-index: 1; }
+    /* Barra de búsqueda */
+    .search-container {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      right: 15px;
+      z-index: 1000;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    .search-box {
+      background-color: var(--white);
+      border-radius: 30px;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      border: 1px solid var(--border-color);
+    }
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-dark);
+      font-size: 14px;
+    }
+    .search-box i { color: var(--primary); }
+    .suggestions {
+      background-color: var(--white);
+      border-radius: 16px;
+      margin-top: 8px;
+      max-height: 300px;
+      overflow-y: auto;
+      display: none;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    .suggestion-item {
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      color: var(--text-dark);
+    }
+    .suggestion-item:hover { background: rgba(255,122,0,0.1); }
 
-        #view-viajes { padding: 0; display: none; flex: 1; position: relative; }
-        #view-viajes.active { display: block; }
-        #map { width: 100%; height: 100%; background: #1a1a1a; }
+    /* Pin central y tooltip */
+    .center-fixed-pin {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -100%);
+      z-index: 1000;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .pin-head {
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      border: 2px solid #FFF;
+    }
+    .pin-shadow {
+      width: 10px;
+      height: 3px;
+      background: rgba(0,0,0,0.5);
+      border-radius: 50%;
+      margin-top: 4px;
+    }
+    .pin-tooltip {
+      position: absolute;
+      bottom: 100%;
+      margin-bottom: 22px;
+      background: var(--white);
+      color: var(--text-dark);
+      padding: 0.6rem 1rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      opacity: 0;
+      transform: translateX(-50%) translateY(20px) scale(0.95);
+      left: 50%;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      pointer-events: none;
+      z-index: 100;
+    }
+    .pin-tooltip.show { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    .pin-tooltip-address {
+      font-weight: 700;
+      font-size: 0.85rem;
+      max-width: 180px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-align: center;
+    }
+    .pin-tooltip-price { color: var(--primary); font-weight: 800; font-size: 1rem; }
 
-        .loading-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(11, 11, 11, 0.5);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            display: flex; flex-direction: column;
-            justify-content: center; align-items: center; z-index: 9999;
-            opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0.4s ease;
-        }
-        .loading-overlay.active { opacity: 1; visibility: visible; }
-        
-        .spinner {
-            width: 55px; height: 55px; 
-            border: 4px solid rgba(255, 122, 0, 0.15);
-            border-top-color: var(--primary-orange); 
-            border-radius: 50%;
-            animation: spin 1s ease-in-out infinite; 
-            margin-bottom: 20px;
-            box-shadow: 0 0 15px rgba(255, 122, 0, 0.4);
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .loading-text { color: var(--white); font-size: 16px; font-weight: 500; letter-spacing: 0.5px; }
+    /* Botón confirmar destino */
+    .btn-confirm-map {
+      position: absolute;
+      bottom: 220px; /* Ajustado para que no se superponga con la hoja inferior */
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--primary);
+      color: #FFFFFF;
+      border: none;
+      padding: 0.9rem 1.8rem;
+      border-radius: 25px;
+      font-weight: 700;
+      font-size: 1rem;
+      box-shadow: var(--shadow-md);
+      z-index: 999;
+      display: none;
+      cursor: pointer;
+      white-space: nowrap;
+      align-items: center;
+      gap: 8px;
+    }
 
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .header-left { display: flex; align-items: center; gap: 15px; }
-        .menu-icon { font-size: 24px; color: #d1d5db; cursor: pointer; }
-        .logo-text { font-weight: 800; letter-spacing: 1px; text-transform: uppercase; line-height: 1.1; text-align: center; }
-        .logo-text span { color: var(--primary-orange); }
-        .header-right { display: flex; align-items: center; gap: 15px; }
-        .logout-icon { font-size: 22px; color: var(--primary-orange); cursor: pointer; transition: opacity 0.2s; }
-        .profile-pic { width: 45px; height: 45px; border-radius: 50%; background-color: #333; overflow: hidden; }
-        .profile-pic img { width: 100%; height: 100%; object-fit: cover; }
+    /* Bottom sheet */
+    .bottom-sheet {
+      background: var(--bg-light);
+      border-top-left-radius: 25px;
+      border-top-right-radius: 25px;
+      padding: 1rem 1.2rem calc(var(--nav-height) + var(--safe-bottom) + 10px) 1.2rem;
+      z-index: 1000;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+      position: relative;
+      margin-top: -20px;
+    }
+    .location-card {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 0.3rem 1rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .input-row { display: flex; align-items: center; padding: 0.5rem 0; gap: 0.8rem; cursor: pointer; }
+    .input-row:first-child { border-bottom: 1px solid var(--border-color); }
+    .dot-icon { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .dot-primary { background: var(--primary); }
+    .dot-black { background: var(--text-dark); }
+    .address-info { flex: 1; overflow: hidden; }
+    .address-title { font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-dark); }
+    .address-sub { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ride-options { display: flex; flex-direction: column; gap: 0.4rem; max-height: 240px; overflow-y: auto; padding-right: 4px; }
+    .ride-options::-webkit-scrollbar { width: 4px; }
+    .ride-options::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+    .ride-card-option {
+      background: var(--white);
+      border: 2px solid transparent;
+      border-radius: 14px;
+      padding: 0.5rem 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .ride-card-option.active { background: rgba(255, 122, 0, 0.1); border-color: var(--primary); }
+    .ride-details { flex: 1; }
+    .ride-title { font-weight: 700; font-size: 1rem; color: var(--text-dark); }
+    .ride-desc { font-size: 0.75rem; color: var(--text-muted); }
+    .ride-price { font-weight: 800; font-size: 1rem; text-align: right; color: var(--primary); }
+    .btn-request {
+      background: var(--primary);
+      color: #FFFFFF;
+      border: none;
+      width: 100%;
+      padding: 0.8rem;
+      border-radius: 14px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.4rem;
+      transition: 0.2s;
+      margin-top: 0.2rem;
+    }
+    .btn-request:active { background: var(--primary-active); transform: scale(0.98); }
+    .spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #FFFFFF; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-        .status-card { background-color: var(--primary-orange); border-radius: 20px; padding: 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; transition: all 0.4s ease; box-shadow: 0 8px 25px rgba(255, 122, 0, 0.35); }
-        .status-card.offline { background-color: var(--bg-offline); box-shadow: var(--shadow); }
-        
-        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255,255,255,0.3); transition: .4s; border-radius: 34px; }
-        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
-        input:checked + .slider { background-color: white; }
-        input:checked + .slider:before { transform: translateX(26px); background-color: var(--primary-orange); }
+    /* Panel conductor */
+    .driver-panel {
+      background: var(--white);
+      border-radius: 16px;
+      padding: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .driver-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); }
+    .driver-details { flex: 1; }
+    .driver-name { font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 4px; color: var(--text-dark); }
+    .driver-car { font-size: 0.8rem; color: var(--text-muted); }
+    .driver-plate { display: inline-block; background: var(--border-color); padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; margin-top: 4px; color: var(--text-dark); }
 
-        .stats-grid { background-color: var(--bg-dark-gray); border-radius: 16px; padding: 20px 10px; display: grid; grid-template-columns: 1fr 1fr 1fr; margin-bottom: 20px; box-shadow: var(--shadow); }
-        .stat-item { text-align: center; }
-        .stat-icon-circle { display: inline-flex; justify-content: center; align-items: center; width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--primary-orange); color: var(--primary-orange); font-size: 18px; margin-bottom: 8px; }
-        .stat-label { font-size: 12px; color: var(--gray-text); margin-bottom: 5px; }
-        .stat-value { font-size: 20px; font-weight: 700; }
-        .online-card { border-radius: 16px; margin-bottom: 20px; overflow: hidden; height: 150px; box-shadow: var(--shadow); }
-        .banner-img { width: 100%; height: 100%; object-fit: cover; }
+    /* Modales */
+    .overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 2000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: 0.3s;
+    }
+    .overlay.active { opacity: 1; pointer-events: all; }
+    .modal-box {
+      background: var(--white);
+      width: 85%;
+      border-radius: 20px;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(20px);
+      transition: 0.3s;
+    }
+    .overlay.active .modal-box { transform: translateY(0); }
+    .modal-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-dark); }
+    .modal-desc { font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.5rem; }
+    .payment-options { display: flex; flex-direction: column; gap: 0.8rem; }
+    .btn-pay {
+      background: var(--bg-light);
+      border: 1px solid var(--border-color);
+      color: var(--text-dark);
+      padding: 0.8rem;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .btn-pay svg { fill: var(--primary); }
+    .stars-container { display: flex; justify-content: center; gap: 0.4rem; margin-bottom: 1.5rem; }
+    .star-icon { width: 32px; height: 32px; fill: var(--border-color); cursor: pointer; transition: 0.2s; }
+    .star-icon.active { fill: var(--primary); transform: scale(1.1); }
 
-        .wallet-card { background: var(--bg-dark-gray); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: var(--shadow); }
-        .wallet-balance { font-size: 32px; font-weight: 700; color: var(--primary-orange); margin-bottom: 5px; }
-        .wallet-label { color: var(--gray-text); font-size: 14px; }
-        .transaction-list { background: var(--bg-dark-gray); border-radius: 16px; padding: 15px; box-shadow: var(--shadow); }
-        .transaction-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; }
-        .transaction-item:last-child { border-bottom: none; }
-        .transaction-amount.positive { color: var(--green-online); }
-        .transaction-amount.negative { color: var(--red); }
+    /* Barra de navegación inferior */
+    .bottom-nav {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--white);
+      display: flex;
+      justify-content: space-around;
+      padding: 0.5rem 0.5rem calc(0.8rem + var(--safe-bottom)) 0.5rem;
+      box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
+      z-index: 1001;
+      border-top: 1px solid var(--border-color);
+      height: calc(var(--nav-height) + var(--safe-bottom));
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      text-decoration: none;
+      cursor: pointer;
+      padding: 0.2rem;
+    }
+    .nav-item svg { width: 22px; height: 22px; stroke: currentColor; stroke-width: 2; fill: none; }
+    .nav-item.active { color: var(--primary); font-weight: 600; }
+    .nav-item.active svg { stroke: var(--primary); fill: var(--primary); }
 
-        #view-chat.active { 
-            display: flex; 
-            flex-direction: column; 
-            flex: 1; 
-            overflow: hidden; 
-        }
-        
-        .chat-container { display: flex; flex-direction: column; flex: 1; background: var(--bg-dark-gray); width: 100%; }
-        .chat-header { padding: 15px; background: #1a1a1a; text-align: center; font-weight: 600; border-bottom: 1px solid #222; }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 15px; }
-        .message { max-width: 80%; margin-bottom: 10px; padding: 10px; border-radius: 15px; position: relative; }
-        .message.sent { background: var(--primary-orange); color: white; margin-left: auto; border-bottom-right-radius: 5px; }
-        .message.received { background: #333; margin-right: auto; border-bottom-left-radius: 5px; }
-        .chat-input-area { display: flex; padding: 10px; background: #1a1a1a; border-top: 1px solid #222; }
-        .chat-input { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid #333; background: #0b0b0b; color: white; outline: none;}
-        .chat-send-btn { width: 50px; margin-left: 10px; background: var(--primary-orange); border: none; border-radius: 50%; color: white; cursor: pointer; }
+    /* Perfil e historial */
+    .perfil-view, .historial-view {
+      padding: 1.2rem 1.2rem calc(var(--nav-height) + var(--safe-bottom) + 20px) 1.2rem;
+      background: var(--bg-light);
+      overflow-y: auto;
+    }
+    .perfil-header { text-align: center; margin-bottom: 1.5rem; }
+    .perfil-avatar { width: 75px; height: 75px; border-radius: 50%; object-fit: cover; margin-bottom: 0.5rem; border: 2px solid var(--primary); }
+    .perfil-input {
+      width: 100%;
+      padding: 0.7rem;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      font-size: 0.95rem;
+      margin-bottom: 0.8rem;
+    }
+    .perfil-input:focus { outline: none; border-color: var(--primary); }
+    .text-muted { color: var(--text-muted); text-align: center; padding: 1rem; }
 
-        .profile-section { background: var(--bg-dark-gray); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
-        .profile-header { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-        .profile-avatar { width: 70px; height: 70px; border-radius: 50%; background: #333; overflow: hidden; }
-        .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .profile-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #222; }
+    /* Registro modal */
+    .register-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 3000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .register-box {
+      background: var(--white);
+      width: 90%;
+      max-width: 350px;
+      border-radius: 20px;
+      padding: 1.5rem;
+      text-align: center;
+      color: var(--text-dark);
+      box-shadow: var(--shadow-lg);
+    }
+    .register-box h3 { margin-bottom: 1rem; }
+    .register-input {
+      width: 100%;
+      padding: 0.8rem;
+      margin-bottom: 0.8rem;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-light);
+      color: var(--text-dark);
+      font-size: 1rem;
+    }
+    .register-input:focus { outline: none; border-color: var(--primary); }
+    .register-btn {
+      width: 100%;
+      padding: 0.8rem;
+      margin-top: 0.5rem;
+      border: none;
+      border-radius: 10px;
+      background: var(--primary);
+      color: white;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .register-btn:active { transform: scale(0.97); }
+    .error-text { color: #ef4444; font-size: 0.85rem; margin-top: 0.5rem; }
 
-        .bottom-nav { 
-            background-color: rgba(22, 22, 22, 0.85); 
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 12px 0 calc(12px + env(safe-area-inset-bottom, 0px)) 0; 
-            border-top: 1px solid rgba(255, 255, 255, 0.08); 
-            display: flex; 
-            justify-content: space-around; 
-            box-shadow: 0 -4px 25px rgba(0,0,0,0.6); 
-            position: relative;
-            z-index: 1000;
-        }
-
-        .nav-item { 
-            color: var(--gray-text); 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            font-size: 11px; 
-            font-weight: 500;
-            gap: 6px; 
-            transition: all 0.3s ease; 
-            cursor: pointer; 
-            width: 60px;
-        }
-
-        .nav-icon { 
-            font-size: 20px; 
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-        }
-
-        .nav-item.active { 
-            color: var(--primary-orange); 
-        }
-
-        .nav-item.active .nav-icon {
-            transform: translateY(-4px) scale(1.15);
-            text-shadow: 0 4px 12px rgba(255, 122, 0, 0.6);
-        }
-
-        /* Estilos para Mapbox */
-        .mapboxgl-ctrl-bottom-left,
-        .mapboxgl-ctrl-bottom-right {
-            display: none;
-        }
-        .avatar-marker {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 3px solid var(--primary-orange);
-            box-shadow: 0 0 0 3px rgba(255,122,0,0.4), 0 4px 10px rgba(0,0,0,0.5);
-            background: #fff;
-        }
-        .avatar-marker img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-        .pulse-ring {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            border: 3px solid var(--primary-orange);
-            animation: pulse 1.5s ease-out infinite;
-            pointer-events: none;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(2.5); opacity: 0; }
-        }
-        .search-container { position: absolute; top: 15px; left: 15px; right: 15px; z-index: 1000; max-width: 500px; margin: 0 auto; }
-        .search-box { background-color: var(--bg-dark-gray); border-radius: 30px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid #333; }
-        .search-box input { flex: 1; background: transparent; border: none; outline: none; color: var(--white); font-size: 14px; }
-        .suggestions { background-color: var(--bg-dark-gray); border-radius: 16px; margin-top: 8px; max-height: 300px; overflow-y: auto; display: none; }
-        .suggestion-item { padding: 12px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #222; cursor: pointer; }
-        
-        /* Botones flotantes para acción del conductor */
-        .ride-actions-float {
-            position: absolute;
-            bottom: 25px;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            padding: 0 15px;
-            pointer-events: none;
-        }
-        .action-btn {
-            pointer-events: auto;
-            padding: 12px 25px;
-            border-radius: 30px;
-            border: none;
-            font-weight: 700;
-            font-size: 14px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .action-btn:active { transform: scale(0.96); }
-        .action-btn.pickup { background: var(--green-online); color: white; }
-        .action-btn.finish { background: var(--primary-orange); color: white; }
-        .action-btn.hidden { display: none; }
-
-        /* Estilos mejorados para el modal de solicitud */
-        .ride-modal { 
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0; 
-            background: rgba(0,0,0,0.85); 
-            z-index: 5000; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            opacity: 0; 
-            visibility: hidden; 
-            transition: opacity 0.3s ease, visibility 0.3s ease; 
-            backdrop-filter: blur(5px);
-        }
-        .ride-modal.active { opacity: 1; visibility: visible; }
-        .ride-card { 
-            background: linear-gradient(145deg, #1e293b, #0f172a); 
-            border: 2px solid var(--primary-orange); 
-            border-radius: 24px; 
-            padding: 25px; 
-            width: 90%; 
-            max-width: 400px; 
-            box-shadow: 0 0 30px rgba(255, 122, 0, 0.3); 
-            color: var(--white);
-            animation: slideUp 0.3s ease;
-        }
-        @keyframes slideUp {
-            from { transform: translateY(30px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        .ride-card h3 { 
-            text-align: center; 
-            margin-bottom: 20px; 
-            color: var(--primary-orange); 
-            font-weight: 700; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 10px; 
-        }
-        .ride-card h3 i { font-size: 28px; }
-        .ride-info { 
-            display: flex; 
-            flex-direction: column; 
-            gap: 15px; 
-            margin-bottom: 25px; 
-        }
-        .ride-info-item { 
-            background: rgba(0,0,0,0.3); 
-            border-radius: 12px; 
-            padding: 12px 15px; 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-        }
-        .ride-info-item i { 
-            font-size: 20px; 
-            color: var(--primary-orange); 
-            width: 24px; 
-            text-align: center; 
-        }
-        .ride-info-item .label { 
-            font-size: 12px; 
-            color: var(--gray-text); 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px; 
-        }
-        .ride-info-item .value { 
-            font-size: 16px; 
-            font-weight: 600; 
-            color: var(--white); 
-            margin-left: auto; 
-            text-align: right;
-        }
-        .ride-info-item .value.price { 
-            color: var(--green-online); 
-            font-size: 22px; 
-        }
-        .ride-actions { 
-            display: flex; 
-            gap: 15px; 
-            margin-top: 10px; 
-        }
-        .ride-btn { 
-            flex: 1; 
-            padding: 15px; 
-            border: none; 
-            border-radius: 14px; 
-            font-size: 16px; 
-            font-weight: 700; 
-            cursor: pointer; 
-            transition: transform 0.2s, box-shadow 0.2s; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 8px; 
-        }
-        .ride-btn.accept { 
-            background: var(--primary-orange); 
-            color: white; 
-            box-shadow: 0 6px 15px rgba(255, 122, 0, 0.4); 
-        }
-        .ride-btn.accept:hover { 
-            background: #e66a00; 
-            transform: translateY(-2px); 
-        }
-        .ride-btn.reject { 
-            background: rgba(255,255,255,0.1); 
-            color: var(--white); 
-            border: 1px solid rgba(255,255,255,0.2); 
-        }
-        .ride-btn.reject:hover { 
-            background: rgba(255,255,255,0.2); 
-            transform: translateY(-2px); 
-        }
-
-        .input-wrapper { position: relative; width: 100%; }
-        .input-wrapper .icon-left { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--primary-orange); font-size: 18px; pointer-events: none; }
-        .input-wrapper .icon-right { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #888888; font-size: 18px; padding: 10px; cursor: pointer; transition: color 0.3s ease; }
-        .login-input { width: 100%; padding: 18px 25px; border-radius: 30px; border: 1.5px solid #333; background: var(--bg-dark-gray); color: var(--white); font-size: 16px; font-weight: 500; outline: none; transition: all 0.3s; margin-bottom: 10px;}
-        .input-wrapper .login-input { padding-left: 55px; margin-bottom: 0;}
-        .login-input:focus { background: #1f1f1f; border-color: var(--primary-orange); }
-        
-        .login-btn { width: 100%; padding: 18px; background: var(--primary-orange); color: var(--white); border: none; border-radius: 30px; font-size: 17px; font-weight: 700; cursor: pointer; transition: transform 0.2s, background 0.2s ease; margin-top: 10px; }
-        .login-btn:active { transform: scale(0.96); }
-        .btn-outline { background: transparent; border: 2px solid var(--primary-orange); color: var(--primary-orange); }
-        .btn-outline:hover { background: rgba(255,122,0,0.1); }
-        
-        .btn-row { display: flex; gap: 10px; margin-top: 15px; width: 100%; }
-        .btn-row .login-btn { margin-top: 0; flex: 1; font-size: 15px; padding: 15px; }
-
-        #view-login { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; background: var(--bg-black); }
-        #view-login.active { display: flex; }
-        .login-box { width: 100%; max-width: 340px; display: flex; flex-direction: column; gap: 12px; }
-        .login-logo-container { text-align: center; margin-bottom: 5px; }
-        .login-logo-container img { width: 240px; height: auto; object-fit: contain; }
-        .login-box h2 { text-align: center; margin-bottom: 10px; font-size: 24px; color: var(--white); }
-        
-        #view-onboarding { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 20px; background: var(--bg-black); overflow-y: auto;}
-        #view-onboarding.active { display: flex; }
-        .onboarding-box { width: 100%; max-width: 340px; padding: 20px 0; }
-        .ob-step { display: none; flex-direction: column; gap: 15px; animation: slideInRight 0.4s ease forwards; }
-        .ob-step.active { display: flex; }
-        .ob-step h2 { text-align: center; color: var(--primary-orange); font-size: 24px; margin-bottom: 5px; }
-        .ob-step p { text-align: center; color: var(--gray-text); font-size: 14px; margin-bottom: 15px; line-height: 1.4;}
-        
-        @keyframes slideInRight { 0% { opacity: 0; transform: translateX(30px); } 100% { opacity: 1; transform: translateX(0); } }
-        
-        .mt-15 { margin-top: 15px; }
-        .status-text { text-align: center; font-size: 13px; color: var(--gray-text); font-weight: 500;}
-        .file-upload-box { background: var(--bg-dark-gray); padding: 20px; border-radius: 20px; border: 2px dashed #444; text-align: center; display: flex; flex-direction: column; gap: 10px; }
-        .file-upload-box i { font-size: 30px; color: var(--primary-orange); }
-        .file-upload-box input[type="file"] { width: 100%; color: var(--gray-text); font-size: 14px; }
-        
-        .photo-options { display: flex; flex-direction: column; gap: 10px; }
-        #selfiePreview { display: none; width: 120px; height: 120px; border-radius: 50%; margin: 10px auto; object-fit: cover; border: 3px solid var(--primary-orange); box-shadow: 0 4px 15px rgba(255,122,0,0.3); }
-    </style>
+    /* Botón ubicación */
+    .locate-btn {
+      position: absolute;
+      bottom: 120px;
+      right: 15px;
+      width: 42px;
+      height: 42px;
+      background: var(--white);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: var(--shadow-sm);
+      border: none;
+      z-index: 999;
+      cursor: pointer;
+      color: var(--primary);
+    }
+  </style>
 </head>
 <body>
+  <div class="app-container">
+    <!-- Mapa (vista principal) -->
+    <div class="map-view-container" id="map-view">
+      <div id="map"></div>
 
-    <!-- Loading overlay -->
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
-        <div class="loading-text" id="loadingText">Cargando...</div>
+      <!-- Búsqueda de direcciones -->
+      <div class="search-container">
+        <div class="search-box">
+          <i class="fas fa-search"></i>
+          <input type="text" id="searchInput" placeholder="Buscar dirección..." autocomplete="off">
+        </div>
+        <div class="suggestions" id="suggestions"></div>
+      </div>
+
+      <!-- Pin central para seleccionar destino -->
+      <div id="center-pin" class="center-fixed-pin">
+        <div class="pin-tooltip" id="pin-tooltip">
+          <div class="pin-tooltip-address" id="pin-tooltip-address">Calculando...</div>
+          <div class="pin-tooltip-price" id="pin-tooltip-price">Bs --</div>
+        </div>
+        <div class="pin-head"></div>
+        <div class="pin-shadow"></div>
+      </div>
+
+      <!-- Botón confirmar destino -->
+      <button class="btn-confirm-map" id="btn-confirm-dest">
+        <i class="fas fa-check"></i> Confirmar destino
+      </button>
+      <button class="locate-btn" id="btn-locate">
+        <i class="fas fa-crosshairs"></i>
+      </button>
+
+      <!-- Bottom sheet con opciones -->
+      <div class="bottom-sheet" id="main-bottom-sheet">
+        <div class="location-card" id="location-picker-ui">
+          <div class="input-row" id="pickup-row">
+            <div class="dot-icon dot-primary"></div>
+            <div class="address-info">
+              <div class="address-title" id="display-pickup">Mi ubicación actual</div>
+              <div class="address-sub" id="display-pickup-sub">Obteniendo GPS...</div>
+            </div>
+          </div>
+          <div class="input-row" id="dropoff-row">
+            <div class="dot-icon dot-black"></div>
+            <div class="address-info">
+              <div class="address-title" id="display-dropoff">¿A dónde vas?</div>
+              <div class="address-sub" id="display-dropoff-sub">Toca para buscar destino en el mapa</div>
+            </div>
+          </div>
+        </div>
+        <!-- Opciones de viaje (inicialmente ocultas) -->
+        <div class="ride-options hidden" id="ride-options-container">
+          <div class="ride-card-option active" data-multiplier="1">
+            <img src="https://app-vert-theta-18.vercel.app/bike.png" alt="Moto Campeón" style="width:50px; height:50px; object-fit:contain;">
+            <div class="ride-details">
+              <div class="ride-title">Moto Campeón</div>
+              <div class="ride-desc">Viaje ágil y seguro</div>
+            </div>
+            <div class="ride-price dynamic-price">Bs --</div>
+          </div>
+        </div>
+        <!-- Panel del conductor (oculto) -->
+        <div class="driver-panel hidden" id="driver-panel">
+          <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Chofer" class="driver-avatar">
+          <div class="driver-details">
+            <div class="driver-name">Carlos <i class="fas fa-star" style="color:var(--primary);"></i> 4.9</div>
+            <div class="driver-car">Moto Campeón</div>
+            <div class="driver-plate">ABC-123</div>
+          </div>
+        </div>
+        <!-- Botón pedir viaje (oculto inicialmente) -->
+        <button class="btn-request hidden" id="btn-request-ride">
+          <span id="btn-text">Pedir viaje</span>
+          <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
     </div>
 
-    <!-- Login View -->
-    <div id="view-login" class="view active">
-        <div class="login-box">
-            <div class="login-logo-container">
-                <img src="logo.png" alt="Moto Móvil">
-            </div>
-            <h2>Bienvenido</h2>
-            <div class="input-wrapper" style="margin-bottom:12px;">
-                <input type="tel" id="loginPhone" class="login-input" placeholder="Número de teléfono" autocomplete="tel">
-                <i class="fas fa-phone icon-left"></i>
-            </div>
-            <div class="input-wrapper">
-                <input type="password" id="loginPassword" class="login-input" placeholder="Contraseña">
-                <i class="fas fa-lock icon-left"></i>
-                <i class="fas fa-eye icon-right" id="togglePasswordIcon" onclick="togglePassword()"></i>
-            </div>
-            <button class="login-btn" onclick="login()">Iniciar Sesión</button>
-        </div>
+    <!-- Historial (oculto) -->
+    <div class="historial-view hidden" id="historial-view">
+      <h2 class="section-title">Historial de rutas</h2>
+      <div id="history-list"></div>
+      <p id="no-history" class="text-muted" style="display:none;">No hay viajes realizados aún.</p>
     </div>
 
-    <!-- ONBOARDING FLOW VIEW -->
-    <div id="view-onboarding" class="view">
-        <div class="onboarding-box">
-            
-            <!-- Step 1: Welcome -->
-            <div class="ob-step active" id="obStep1">
-                <h2>¡Gracias por unirte!</h2>
-                <p>Estás a unos pasos de ser el campeón de las calles. Vamos a crear tu perfil de conductor.</p>
-                <button class="login-btn mt-15" onclick="nextObStep(2)">Continuar</button>
-            </div>
-
-            <!-- Step 2: Personal -->
-            <div class="ob-step" id="obStep2">
-                <h2>Tus Datos</h2>
-                <p>Por favor, ingresa tu nombre completo y documento de identidad.</p>
-                <input type="text" id="obFullName" class="login-input" placeholder="Nombres y Apellidos">
-                <input type="text" id="obIdentity" class="login-input" placeholder="Cédula / Carnet de Identidad">
-                
-                <div class="btn-row">
-                    <button class="login-btn btn-outline" onclick="nextObStep(1)">Volver</button>
-                    <button class="login-btn" onclick="nextObStep(3)">Siguiente</button>
-                </div>
-            </div>
-
-            <!-- Step 3: Vehicle -->
-            <div class="ob-step" id="obStep3">
-                <h2>Tu Vehículo</h2>
-                <p>Registra los datos de la motocicleta con la que trabajarás.</p>
-                <input type="text" id="obMotoModel" class="login-input" placeholder="Modelo (Ej: Suzuki GN 125)">
-                <input type="text" id="obMotoPlate" class="login-input" placeholder="Placa (Ej: 1234-ABC)">
-                
-                <div class="btn-row">
-                    <button class="login-btn btn-outline" onclick="nextObStep(2)">Volver</button>
-                    <button class="login-btn" onclick="nextObStep(3)">Siguiente</button>
-                </div>
-            </div>
-
-            <!-- Step 4: Domicilio y Verificación -->
-            <div class="ob-step" id="obStep4">
-                <h2>Domicilio</h2>
-                <p>Para tu seguridad y la de los pasajeros, necesitamos validar tu domicilio real.</p>
-                
-                <input type="text" id="obAddress" class="login-input" placeholder="Dirección escrita (Zona, Calle)">
-                
-                <button class="login-btn btn-outline" onclick="getOnboardingGPS()">
-                    <i class="fas fa-map-marker-alt"></i> Fijar GPS Actual
-                </button>
-                <div id="obGpsStatus" class="status-text">Ubicación GPS no registrada</div>
-
-                <div class="file-upload-box mt-15">
-                    <i class="fas fa-file-invoice"></i>
-                    <label>Sube una foto de factura (Luz, Agua o Gas) que compruebe la dirección</label>
-                    <input type="file" id="obBillFile" accept="image/*,application/pdf">
-                </div>
-
-                <div class="btn-row">
-                    <button class="login-btn btn-outline" onclick="nextObStep(3)">Volver</button>
-                    <button class="login-btn" onclick="nextObStep(5)">Siguiente</button>
-                </div>
-            </div>
-
-            <!-- Step 5: Foto de Perfil (Selfie) -->
-            <div class="ob-step" id="obStep5">
-                <h2>Foto de Perfil</h2>
-                <p>Sube una foto tuya clara (selfie) para que los pasajeros te reconozcan. Esto da mayor confianza.</p>
-
-                <div class="photo-options mt-15">
-                    <input type="file" id="obSelfieCamera" accept="image/*" capture="user" style="display: none;" onchange="handleSelfieSelect(this)">
-                    <input type="file" id="obSelfieGallery" accept="image/*" style="display: none;" onchange="handleSelfieSelect(this)">
-
-                    <button class="login-btn btn-outline" onclick="document.getElementById('obSelfieCamera').click()">
-                        <i class="fas fa-camera"></i> Tomar una foto
-                    </button>
-                    <button class="login-btn btn-outline" style="margin-top:5px;" onclick="document.getElementById('obSelfieGallery').click()">
-                        <i class="fas fa-images"></i> Subir desde Galería
-                    </button>
-                </div>
-                
-                <div id="selfieStatus" class="status-text mt-15">Ninguna foto seleccionada</div>
-                <img id="selfiePreview" src="" alt="Previsualización de selfie">
-
-                <div class="btn-row">
-                    <button class="login-btn btn-outline" onclick="nextObStep(4)">Volver</button>
-                    <button class="login-btn" onclick="finishOnboarding()">Guardar Perfil</button>
-                </div>
-            </div>
-
-        </div>
+    <!-- Perfil (oculto) -->
+    <div class="perfil-view hidden" id="perfil-view">
+      <div class="perfil-header">
+        <img id="perfil-avatar-img" src="https://i.pravatar.cc/150?img=12" alt="Avatar" class="perfil-avatar">
+        <h3 id="perfil-nombre-display">María López</h3>
+      </div>
+      <label style="font-weight:600; color:var(--text-dark);">Nombre</label>
+      <input type="text" id="perfil-nombre-input" class="perfil-input" placeholder="Tu nombre">
+      <label style="font-weight:600; color:var(--text-dark);">Correo electrónico</label>
+      <input type="email" id="perfil-email-input" class="perfil-input" placeholder="correo@ejemplo.com">
+      <button class="btn-request" id="btn-guardar-perfil">Guardar cambios</button>
     </div>
 
-    <!-- Main App Container -->
-    <div class="app-container" id="mainApp" style="display: none;">
-        
-        <!-- Inicio View -->
-        <div id="view-inicio" class="content-area view active">
-            <div class="online-glow" id="onlineGlow"></div>
-            
-            <header class="header">
-                <div class="header-left">
-                    <div class="menu-icon"><i class="fas fa-bars"></i></div>
-                </div>
-                <div class="logo-text">MOTO MÓVIL<br><span>EL CAMPEÓN</span></div>
-                
-                <div class="header-right">
-                    <i class="fas fa-sign-out-alt logout-icon" onclick="logout()" title="Cerrar Sesión"></i>
-                    <div class="profile-pic" id="headerProfilePic">
-                        <img src="a.png" alt="Avatar">
-                    </div>
-                </div>
-            </header>
-            
-            <section class="status-card offline" id="statusCard">
-                <div class="status-card-content">
-                    <h4>Estado actual</h4>
-                    <h2 id="statusTitle">No disponible</h2>
-                    <p id="statusSubtitle">No estás recibiendo viajes</p>
-                </div>
-                <label class="switch">
-                    <input type="checkbox" id="toggleSwitch">
-                    <span class="slider"></span>
-                </label>
-            </section>
-
-            <section class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-icon-circle"><i class="fas fa-motorcycle"></i></div>
-                    <div class="stat-label">Viajes</div>
-                    <div class="stat-value" id="statViajes">0</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-icon-circle"><i class="fas fa-dollar-sign"></i></div>
-                    <div class="stat-label">Bs</div>
-                    <div class="stat-value" id="statGanancias">0</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-icon-circle"><i class="fas fa-clock"></i></div>
-                    <div class="stat-label">Horas</div>
-                    <div class="stat-value" id="statHoras">0h</div>
-                </div>
-            </section>
-
-            <section class="online-card">
-                <img src="banne.png" class="banner-img" alt="Banner" onerror="this.src='https://via.placeholder.com/400x150/161616/ff7a00?text=Moto+Movil'">
-            </section>
+    <!-- Modales -->
+    <div class="overlay" id="payment-modal">
+      <div class="modal-box">
+        <div class="modal-title">¡Has llegado a tu destino!</div>
+        <div class="modal-desc">Selecciona tu método de pago</div>
+        <div class="payment-options">
+          <button class="btn-pay" onclick="finishPayment()">
+            <i class="fas fa-qrcode"></i> Pago con QR
+          </button>
+          <button class="btn-pay" onclick="finishPayment()">
+            <i class="fas fa-money-bill"></i> Efectivo
+          </button>
         </div>
-
-        <!-- Viajes View (Mapa) -->
-        <div id="view-viajes" class="view">
-            <div id="map"></div>
-            <div class="search-container">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="searchInput" placeholder="Buscar dirección..." autocomplete="off">
-                </div>
-                <div class="suggestions" id="suggestions"></div>
-            </div>
-            <!-- Botones de acción flotantes -->
-            <div class="ride-actions-float" id="rideActionsFloat">
-                <button class="action-btn pickup hidden" id="pickupBtn" onclick="pickupPassenger()">
-                    <i class="fas fa-user-check"></i> Recoger pasajero
-                </button>
-                <button class="action-btn finish hidden" id="finishBtn" onclick="finishRide()">
-                    <i class="fas fa-flag-checkered"></i> Finalizar viaje
-                </button>
-            </div>
+      </div>
+    </div>
+    <div class="overlay" id="rating-modal">
+      <div class="modal-box">
+        <div class="modal-title">¿Cómo estuvo el viaje?</div>
+        <div class="modal-desc">Califica a Carlos</div>
+        <div class="stars-container">
+          <i class="fas fa-star star-icon" data-rating="1"></i>
+          <i class="fas fa-star star-icon" data-rating="2"></i>
+          <i class="fas fa-star star-icon" data-rating="3"></i>
+          <i class="fas fa-star star-icon" data-rating="4"></i>
+          <i class="fas fa-star star-icon" data-rating="5"></i>
         </div>
-
-        <!-- Billetera View -->
-        <div id="view-billetera" class="content-area view">
-            <h2 style="margin-bottom:20px;">Billetera</h2>
-            <div class="wallet-card">
-                <div class="wallet-label">Saldo disponible</div>
-                <div class="wallet-balance" id="walletBalance">Bs 0.00</div>
-            </div>
-            <h3 style="margin-bottom:10px;">Movimientos recientes</h3>
-            <div class="transaction-list" id="transactionList">
-                <p style="color: var(--gray-text); text-align:center;">No hay movimientos</p>
-            </div>
-        </div>
-
-        <!-- Chat View -->
-        <div id="view-chat" class="view">
-            <div class="chat-container">
-                <div class="chat-header" id="chatHeader">Chat con Central</div>
-                <div class="chat-messages" id="chatMessages"></div>
-                <div class="chat-input-area">
-                    <input type="text" class="chat-input" id="chatInput" placeholder="Escribe un mensaje...">
-                    <button class="chat-send-btn" onclick="sendCentralMessage()"><i class="fas fa-paper-plane"></i></button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Perfil View -->
-        <div id="view-perfil" class="content-area view">
-            <h2 style="margin-bottom:20px;">Mi Perfil</h2>
-            <div class="profile-section">
-                <div class="profile-header">
-                    <div class="profile-avatar" id="pageProfilePic">
-                        <img src="a.png" alt="Avatar">
-                    </div>
-                    <div class="profile-info">
-                        <h3 id="profileName">Nombre del conductor</h3>
-                        <p id="profilePhone">+591 70000000</p>
-                    </div>
-                </div>
-                <div class="profile-item">
-                    <span class="profile-item-label">Vehículo</span>
-                    <span class="profile-item-value" id="profileVehicle">Motocicleta</span>
-                </div>
-                <div class="profile-item">
-                    <span class="profile-item-label">Placa</span>
-                    <span class="profile-item-value" id="profilePlate">---</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bottom Navigation -->
-        <nav class="bottom-nav">
-            <div class="nav-item active" onclick="switchTab('inicio', this)">
-                <div class="nav-icon"><i class="fas fa-home"></i></div><span>Inicio</span>
-            </div>
-            <div class="nav-item" onclick="switchTab('viajes', this)">
-                <div class="nav-icon"><i class="fas fa-motorcycle"></i></div><span>Viajes</span>
-            </div>
-            <div class="nav-item" onclick="switchTab('billetera', this)">
-                <div class="nav-icon"><i class="fas fa-wallet"></i></div><span>Billetera</span>
-            </div>
-            <div class="nav-item" onclick="switchTab('chat', this)">
-                <div class="nav-icon"><i class="fas fa-comments"></i></div><span>Chat</span>
-            </div>
-            <div class="nav-item" onclick="switchTab('perfil', this)">
-                <div class="nav-icon"><i class="fas fa-user"></i></div><span>Perfil</span>
-            </div>
-        </nav>
+        <button class="btn-request" onclick="resetDemo()">Enviar calificación</button>
+      </div>
     </div>
 
-    <!-- Ride Request Modal -->
-    <div class="ride-modal" id="rideModal">
-        <div class="ride-card">
-            <h3><i class="fas fa-bell"></i> Nueva solicitud de viaje</h3>
-            <div class="ride-info">
-                <div class="ride-info-item">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <div>
-                        <div class="label">Origen (recoger)</div>
-                        <div class="value" id="rideOrigin">Cargando...</div>
-                    </div>
-                </div>
-                <div class="ride-info-item">
-                    <i class="fas fa-flag-checkered"></i>
-                    <div>
-                        <div class="label">Destino final</div>
-                        <div class="value" id="rideDestination">Cargando...</div>
-                    </div>
-                </div>
-                <div class="ride-info-item">
-                    <i class="fas fa-money-bill-wave"></i>
-                    <div>
-                        <div class="label">Precio</div>
-                        <div class="value price" id="ridePrice">Bs 0.00</div>
-                    </div>
-                </div>
-            </div>
-            <div class="ride-actions">
-                <button class="ride-btn accept" onclick="acceptRide()"><i class="fas fa-check"></i> Aceptar</button>
-                <button class="ride-btn reject" onclick="rejectRide()"><i class="fas fa-times"></i> Rechazar</button>
-            </div>
-        </div>
+    <!-- Modal de registro/login -->
+    <div class="register-overlay hidden" id="register-overlay">
+      <div class="register-box" id="register-box"></div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        // ==================== CONFIGURACIÓN SUPABASE ====================
-        const supabaseUrl = 'https://uwdojchfwmaczgdthtfr.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3ZG9qY2hmd21hY3pnZHRodGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDQ4NDEsImV4cCI6MjEwMjcyMDg0MX0.jafGOwlItnzSoZ6yYlpaae16S2nlSDpPIS2316ZPJak';
-        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+    <!-- Barra de navegación inferior -->
+    <nav class="bottom-nav">
+      <div class="nav-item active" data-view="viajes">
+        <i class="fas fa-map-marked-alt"></i>
+        Viajes
+      </div>
+      <div class="nav-item" data-view="historial">
+        <i class="fas fa-history"></i>
+        Historial
+      </div>
+      <div class="nav-item" data-view="perfil">
+        <i class="fas fa-user"></i>
+        Perfil
+      </div>
+    </nav>
+  </div>
 
-        // ==================== CONFIGURACIÓN MAPBOX ====================
-        mapboxgl.accessToken = 'pk.eyJ1IjoiYXJuZWx2emwiLCJhIjoiY21zd2p2bmc3MW0xODJ4b284d3Zld3g4ZiJ9.zYnczMSu1o0ZaWKdRIo-Ww'; // Token actual
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        // Variables globales
-        let currentDriverId = null;
-        let currentDriverData = null;
-        let map = null;
-        let currentPosition = null;
-        let driverMarker = null;
-        let pulseLayer = null;
-        let currentRideId = null;
-        let currentRideStatus = null; // 'aceptado', 'en_curso', etc.
-        let isDriverOnline = false;
-        let routeLayers = [];
-        let mapInitialized = false;
-        let watchId = null;
-        let pickupMarker = null;
-        let dropoffMarker = null;
-        let lastUpdateTime = 0;
-        const UPDATE_INTERVAL = 5000; // ms
+  <script>
+    // ========== CONFIGURACIÓN SUPABASE ==========
+    const supabaseUrl = 'https://uwdojchfwmaczgdthtfr.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3ZG9qY2hmd21hY3pnZHRodGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDQ4NDEsImV4cCI6MjEwMjcyMDg0MX0.jafGOwlItnzSoZ6yYlpaae16S2nlSDpPIS2316ZPJak';
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-        // Variables Onboarding
-        let obLat = null;
-        let obLng = null;
-        let currentSelfieFile = null;
+    // ========== CONFIGURACIÓN MAPBOX ==========
+    mapboxgl.accessToken = 'pk.eyJ1IjoiYXJuZWx2emwiLCJhIjoiY21zd2p2bmc3MW0xODJ4b284d3Zld3g4ZiJ9.zYnczMSu1o0ZaWKdRIo-Ww';
 
-        // ==================== FUNCIONES UI ====================
-        function showLoading(text = 'Cargando...') {
-            document.getElementById('loadingText').textContent = text;
-            document.getElementById('loadingOverlay').classList.add('active');
+    // ========== ESTADO GLOBAL ==========
+    let map;
+    let passengerMarker, destinationMarker;
+    let currentLat = -17.7833, currentLng = -63.1821;
+    let destLat = null, destLng = null;
+    let isSelectingDestination = true;
+    let mapInitialized = false;
+    let watchId = null;
+    let locationReady = false;
+    let currentCalculatedPrice = 'Bs 0.00';
+    let passenger = null;
+    let activeRideId = null;
+    let rideSubscription = null;
+    let moveEndTimer = null;
+
+    // ========== ELEMENTOS UI ==========
+    const mapView = document.getElementById('map-view');
+    const historialView = document.getElementById('historial-view');
+    const perfilView = document.getElementById('perfil-view');
+    const centerPin = document.getElementById('center-pin');
+    const pinTooltip = document.getElementById('pin-tooltip');
+    const pinTooltipAddress = document.getElementById('pin-tooltip-address');
+    const pinTooltipPrice = document.getElementById('pin-tooltip-price');
+    const btnConfirmMap = document.getElementById('btn-confirm-dest');
+    const dropoffRow = document.getElementById('dropoff-row');
+    const rideOptionsContainer = document.getElementById('ride-options-container');
+    const btnRequestRide = document.getElementById('btn-request-ride');
+    const locateBtn = document.getElementById('btn-locate');
+    const driverPanel = document.getElementById('driver-panel');
+    const locationPickerUi = document.getElementById('location-picker-ui');
+    const gpsStatus = document.getElementById('gps-status');
+    const navItems = document.querySelectorAll('.nav-item');
+    const registerOverlay = document.getElementById('register-overlay');
+    const registerBox = document.getElementById('register-box');
+    const searchInput = document.getElementById('searchInput');
+    const suggestions = document.getElementById('suggestions');
+
+    // ========== NAVEGACIÓN ==========
+    function switchView(viewName) {
+      mapView.classList.add('hidden');
+      historialView.classList.add('hidden');
+      perfilView.classList.add('hidden');
+
+      if (viewName === 'viajes') {
+        mapView.classList.remove('hidden');
+        if (mapInitialized) map.resize();
+        requestLocation();
+      } else if (viewName === 'historial') {
+        historialView.classList.remove('hidden');
+        renderHistory();
+      } else if (viewName === 'perfil') {
+        perfilView.classList.remove('hidden');
+        loadProfile();
+      }
+      navItems.forEach(n => n.classList.remove('active'));
+      document.querySelector(`.nav-item[data-view="${viewName}"]`).classList.add('active');
+    }
+
+    navItems.forEach(item => {
+      item.addEventListener('click', (e) => switchView(item.dataset.view));
+    });
+
+    // ========== CHECK INICIAL ==========
+    async function checkPassengerRegistration() {
+      const storedPassenger = localStorage.getItem('passenger');
+      if (storedPassenger) {
+        const storedData = JSON.parse(storedPassenger);
+        const { data, error } = await supabaseClient
+          .from('passengers')
+          .select('*')
+          .eq('id', storedData.id)
+          .maybeSingle();
+        if (data) {
+          passenger = {
+            id: data.id,
+            full_name: data.full_name,
+            phone: data.phone,
+            ci: data.ci
+          };
+          localStorage.setItem('passenger', JSON.stringify(passenger));
+          return true;
+        } else {
+          localStorage.removeItem('passenger');
+          passenger = null;
         }
-        function hideLoading() {
-            document.getElementById('loadingOverlay').classList.remove('active');
-        }
+      }
+      showRegisterLogin();
+      return false;
+    }
 
-        // ==================== AUTENTICACIÓN Y ENRUTAMIENTO ====================
-        async function login() {
-            const phone = document.getElementById('loginPhone').value.trim();
-            const password = document.getElementById('loginPassword').value;
-            if (!phone || !password) return alert('Ingresa tu teléfono y contraseña');
-            
-            const email = `${phone}@montero.app`;
-            showLoading('Iniciando sesión...');
-            try {
-                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                if (error) throw error;
-                currentDriverId = data.user.id;
-                await loadDriverData();
-                await forceOffline();
-                setupRideSubscription();
-                routeUserBasedOnProfile(); 
-            } catch (error) {
-                alert('Error de inicio de sesión: ' + error.message);
-                await logout();
-            } finally {
-                hideLoading();
-            }
-        }
+    function showRegisterLogin() {
+      registerOverlay.classList.remove('hidden');
+      registerBox.innerHTML = `
+        <h3>Bienvenido a Moto Campeón</h3>
+        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Ingresa tu nombre completo para continuar</p>
+        <input type="text" class="register-input" id="input-name" placeholder="Nombre completo" autocomplete="name">
+        <button class="register-btn" id="btn-continue">Continuar</button>
+        <div class="error-text" id="error-text"></div>
+      `;
+      document.getElementById('btn-continue').addEventListener('click', handleNameSubmit);
+      document.getElementById('input-name').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') handleNameSubmit();
+      });
+    }
 
-        window.addEventListener('load', async () => {
-            showLoading('Iniciando...');
-            try {
-                const { data: { session } } = await supabaseClient.auth.getSession();
-                if (session) {
-                    currentDriverId = session.user.id;
-                    await loadDriverData();
-                    await forceOffline();
-                    setupRideSubscription();
-                    routeUserBasedOnProfile();
-                } else {
-                    document.getElementById('view-login').classList.add('active');
-                }
-            } catch (error) {
-                document.getElementById('view-login').classList.add('active');
-            } finally {
-                hideLoading();
-            }
+    async function handleNameSubmit() {
+      const nameInput = document.getElementById('input-name');
+      const errorText = document.getElementById('error-text');
+      const name = nameInput.value.trim();
+      if (!name) {
+        errorText.textContent = 'Ingresa tu nombre';
+        return;
+      }
+      const { data: existingPassengers, error } = await supabaseClient
+        .from('passengers')
+        .select('*')
+        .ilike('full_name', name)
+        .limit(5);
+      if (error) {
+        errorText.textContent = 'Error al buscar: ' + error.message;
+        return;
+      }
+      if (existingPassengers && existingPassengers.length > 0) {
+        registerBox.innerHTML = `
+          <h3>Ingresa tu teléfono</h3>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Confirma tu número para acceder a tu cuenta</p>
+          <input type="tel" class="register-input" id="input-phone" placeholder="Teléfono" autocomplete="tel">
+          <button class="register-btn" id="btn-login">Ingresar</button>
+          <div class="error-text" id="error-text"></div>
+        `;
+        document.getElementById('btn-login').addEventListener('click', () => handleLoginSubmit(existingPassengers));
+        document.getElementById('input-phone').addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') handleLoginSubmit(existingPassengers);
         });
-
-        function routeUserBasedOnProfile() {
-            if (currentDriverData.profile_completed) {
-                document.getElementById('view-login').classList.remove('active');
-                document.getElementById('view-onboarding').classList.remove('active');
-                document.getElementById('mainApp').style.display = 'flex';
-            } else {
-                document.getElementById('obFullName').value = currentDriverData.full_name || '';
-                document.getElementById('view-login').classList.remove('active');
-                document.getElementById('mainApp').style.display = 'none';
-                document.getElementById('view-onboarding').classList.add('active');
-            }
-        }
-
-        async function forceOffline() {
-            try {
-                await supabaseClient.from('driver_status').upsert({
-                    driver_id: currentDriverId,
-                    is_online: false,
-                    latitude: null,
-                    longitude: null,
-                    last_updated: new Date().toISOString()
-                }, { onConflict: 'driver_id' });
-            } catch (error) {
-                console.error('Error al forzar offline:', error);
-            }
-            isDriverOnline = false;
-            document.getElementById('toggleSwitch').checked = false;
-            document.getElementById('statusCard').classList.add('offline');
-            document.getElementById('statusTitle').textContent = 'No disponible';
-            document.getElementById('statusSubtitle').textContent = 'No estás recibiendo viajes';
-        }
-
-        // ==================== LÓGICA DE ONBOARDING ====================
-        function nextObStep(stepNumber) {
-            document.querySelectorAll('.ob-step').forEach(el => el.classList.remove('active'));
-            document.getElementById('obStep' + stepNumber).classList.add('active');
-        }
-
-        function getOnboardingGPS() {
-            const statusLabel = document.getElementById('obGpsStatus');
-            statusLabel.textContent = "Buscando satélites...";
-            statusLabel.style.color = "var(--primary-orange)";
-            
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    obLat = pos.coords.latitude;
-                    obLng = pos.coords.longitude;
-                    statusLabel.innerHTML = `<i class="fas fa-check-circle"></i> Ubicación guardada con éxito`;
-                    statusLabel.style.color = "var(--green-online)";
-                },
-                (err) => {
-                    statusLabel.textContent = "Error al leer GPS. Revisa los permisos del teléfono.";
-                    statusLabel.style.color = "var(--red)";
-                },
-                { enableHighAccuracy: true, timeout: 15000 }
-            );
-        }
-
-        function handleSelfieSelect(inputElement) {
-            if (inputElement.files && inputElement.files[0]) {
-                currentSelfieFile = inputElement.files[0];
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    const preview = document.getElementById('selfiePreview');
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
-                    
-                    const status = document.getElementById('selfieStatus');
-                    status.innerHTML = `<i class="fas fa-check-circle"></i> ¡Foto lista!`;
-                    status.style.color = "var(--green-online)";
-                }
-                reader.readAsDataURL(currentSelfieFile);
-            }
-        }
-
-        async function finishOnboarding() {
-            const fullName = document.getElementById('obFullName').value.trim();
-            const identity = document.getElementById('obIdentity').value.trim();
-            const motoModel = document.getElementById('obMotoModel').value.trim();
-            const motoPlate = document.getElementById('obMotoPlate').value.trim();
-            const address = document.getElementById('obAddress').value.trim();
-            const billFile = document.getElementById('obBillFile').files[0];
-
-            if(!fullName || !identity || !motoModel || !motoPlate || !address) {
-                return alert("Por favor completa todos los campos de texto.");
-            }
-            if(!obLat || !obLng) {
-                return alert("Por favor usa el botón de Fijar GPS Actual en el paso anterior.");
-            }
-            if(!billFile) {
-                return alert("Por favor adjunta la foto de tu factura de servicios básicos.");
-            }
-            if(!currentSelfieFile) {
-                return alert("Por favor tómate una selfie o sube una foto de la galería.");
-            }
-
-            showLoading("Guardando tu perfil...");
-            
-            try {
-                const billExt = billFile.name.split('.').pop();
-                const billPath = `${currentDriverId}/factura_${Date.now()}.${billExt}`;
-                const { error: billError } = await supabaseClient.storage.from('driver_documents').upload(billPath, billFile);
-                if (billError) throw billError;
-                const { data: billUrlData } = supabaseClient.storage.from('driver_documents').getPublicUrl(billPath);
-
-                const selfieExt = currentSelfieFile.name.split('.').pop() || 'jpg';
-                const selfiePath = `${currentDriverId}/avatar_${Date.now()}.${selfieExt}`;
-                const { error: selfieError } = await supabaseClient.storage.from('driver_documents').upload(selfiePath, currentSelfieFile);
-                if (selfieError) throw selfieError;
-                const { data: selfieUrlData } = supabaseClient.storage.from('driver_documents').getPublicUrl(selfiePath);
-
-                const { error: updateError } = await supabaseClient
-                    .from('drivers')
-                    .update({
-                        full_name: fullName,
-                        identity_card: identity,
-                        vehicle_model: motoModel,
-                        vehicle_plate: motoPlate,
-                        home_address: address,
-                        home_lat: obLat,
-                        home_lng: obLng,
-                        utility_bill_url: billUrlData.publicUrl,
-                        avatar_url: selfieUrlData.publicUrl, 
-                        profile_completed: true
-                    })
-                    .eq('id', currentDriverId);
-
-                if (updateError) throw updateError;
-
-                await loadDriverData();
-                alert("¡Perfil completado exitosamente! Ya estás listo para trabajar.");
-                routeUserBasedOnProfile();
-
-            } catch (error) {
-                console.error(error);
-                alert("Ocurrió un error al guardar tu perfil: " + error.message);
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // ==================== DATOS DEL CONDUCTOR ====================
-        async function loadDriverData() {
-            const { data: driver, error } = await supabaseClient
-                .from('drivers')
-                .select('*')
-                .eq('id', currentDriverId)
-                .maybeSingle();
-                
-            if (error) throw error;
-            currentDriverData = driver;
-            
-            document.getElementById('profileName').textContent = driver.full_name || 'Sin nombre';
-            document.getElementById('profilePhone').textContent = driver.phone || '';
-            document.getElementById('profileVehicle').textContent = driver.vehicle_model || 'Motocicleta';
-            document.getElementById('profilePlate').textContent = driver.vehicle_plate || '---';
-            
-            if (driver.avatar_url) {
-                const headerImg = document.querySelector('#headerProfilePic img');
-                if (headerImg) headerImg.src = driver.avatar_url;
-                
-                const profileImg = document.querySelector('#pageProfilePic img');
-                if (profileImg) profileImg.src = driver.avatar_url;
-            }
-        }
-
-        async function logout() {
-            hideLoading();
-            if (watchId !== null) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
-            }
-            if (currentDriverId) {
-                await supabaseClient.from('driver_status').upsert({
-                    driver_id: currentDriverId,
-                    is_online: false,
-                    latitude: null,
-                    longitude: null,
-                    last_updated: new Date().toISOString()
-                }, { onConflict: 'driver_id' });
-            }
-            await supabaseClient.auth.signOut().catch(() => {});
-            currentDriverId = null;
-            currentDriverData = null;
-            document.getElementById('mainApp').style.display = 'none';
-            document.getElementById('view-onboarding').classList.remove('active');
-            document.getElementById('view-login').classList.add('active');
-            if (window.rideSubscription) {
-                supabaseClient.removeChannel(window.rideSubscription);
-                window.rideSubscription = null;
-            }
-            if (map) {
-                map.remove();
-                map = null;
-                mapInitialized = false;
-                driverMarker = null;
-                pulseLayer = null;
-            }
-        }
-
-        function togglePassword() {
-            const passwordInput = document.getElementById('loginPassword');
-            const toggleIcon = document.getElementById('togglePasswordIcon');
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                toggleIcon.classList.replace('fa-eye', 'fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                toggleIcon.classList.replace('fa-eye-slash', 'fa-eye');
-            }
-        }
-
-        // ==================== TABS Y MAPA ====================
-        function switchTab(tabId, element) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('view-' + tabId).classList.add('active');
-            element.classList.add('active');
-            
-            if (tabId === 'viajes') {
-                if (!map && isDriverOnline) {
-                    initMap();
-                }
-                if (map) {
-                    setTimeout(() => {
-                        map.resize();
-                        if (currentPosition) {
-                            map.jumpTo({ center: [currentPosition[1], currentPosition[0]], zoom: 16 });
-                        }
-                    }, 50);
-                }
-            }
-        }
-
-        function initMap() {
-            if (mapInitialized) return;
-            mapInitialized = true;
-            map = new mapboxgl.Map({
-                container: 'map',
-                style: 'mapbox://styles/mapbox/streets-v12',
-                center: [-63.1821, -17.7833],
-                zoom: 14,
-                pitch: 0,
-                bearing: 0
-            });
-            map.addControl(new mapboxgl.NavigationControl(), 'top-left');
-            map.on('load', () => {
-                const layers = map.getStyle().layers;
-                const labelLayerId = layers.find(layer => layer.type === 'symbol' && layer.layout['text-field']).id;
-                map.addLayer({
-                    'id': 'add-3d-buildings',
-                    'source': 'composite',
-                    'source-layer': 'building',
-                    'filter': ['==', 'extrude', 'true'],
-                    'type': 'fill-extrusion',
-                    'minzoom': 15,
-                    'paint': {
-                        'fill-extrusion-color': '#aaa',
-                        'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.05, ['get', 'height']],
-                        'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.05, ['get', 'min_height']],
-                        'fill-extrusion-opacity': 0.6
-                    }
-                }, labelLayerId);
-            });
-        }
-
-        // ==================== MARCADOR DEL CONDUCTOR ====================
-        function createDriverMarker(lat, lng) {
-            const avatarImg = currentDriverData?.avatar_url || 'a.png';
-            const el = document.createElement('div');
-            el.className = 'avatar-marker-container';
-            el.innerHTML = `<div class="avatar-marker"><img src="${avatarImg}" alt="Avatar"></div>`;
-            const marker = new mapboxgl.Marker(el)
-                .setLngLat([lng, lat])
-                .addTo(map);
-            
-            const pulseEl = document.createElement('div');
-            pulseEl.className = 'pulse-ring';
-            const pulseMarker = new mapboxgl.Marker(pulseEl)
-                .setLngLat([lng, lat])
-                .addTo(map);
-            
-            return { marker, pulseMarker };
-        }
-
-        // ==================== SUSCRIPCIÓN A VIAJES ====================
-        function setupRideSubscription() {
-            if (window.rideSubscription) return;
-
-            window.rideSubscription = supabaseClient
-                .channel('driver-rides-' + currentDriverId)
-                .on('postgres_changes', 
-                    { event: 'INSERT', schema: 'public', table: 'rides', filter: `driver_id=eq.${currentDriverId}` }, 
-                    (payload) => {
-                        const ride = payload.new;
-                        if (isDriverOnline && ride.status === 'pendiente') {
-                            showRideRequest(ride);
-                        }
-                    })
-                .on('postgres_changes', 
-                    { event: 'UPDATE', schema: 'public', table: 'rides', filter: `driver_id=eq.${currentDriverId}` }, 
-                    (payload) => {
-                        const ride = payload.new;
-                        if (isDriverOnline && ride.status === 'pendiente') {
-                            showRideRequest(ride);
-                        } else if (currentRideId === ride.id) {
-                            currentRideStatus = ride.status;
-                            updateRideUI(ride);
-                        }
-                    })
-                .subscribe();
-        }
-
-        async function loadPendingRides() {
-            if (!currentDriverId || !isDriverOnline) return;
-            const { data, error } = await supabaseClient
-                .from('rides')
-                .select('*')
-                .eq('driver_id', currentDriverId)
-                .eq('status', 'pendiente')
-                .maybeSingle();
-            
-            if (data && !error) {
-                showRideRequest(data);
-            }
-        }
-
-        function showRideRequest(ride) {
-            currentRideId = ride.id;
-            currentRideStatus = ride.status;
-            document.getElementById('rideOrigin').textContent = ride.origin_address || 'No especificado';
-            document.getElementById('rideDestination').textContent = ride.destination_address || 'No especificado';
-            document.getElementById('ridePrice').textContent = `Bs ${parseFloat(ride.price || 0).toFixed(2)}`;
-            document.getElementById('rideModal').classList.add('active');
-        }
-
-        function hideRideModal() {
-            document.getElementById('rideModal').classList.remove('active');
-            currentRideId = null;
-            currentRideStatus = null;
-            clearRoute();
-            updateActionButtons();
-        }
-
-        function updateRideUI(ride) {
-            // Actualizar botones flotantes según estado
-            if (ride.status === 'aceptado') {
-                // Ocultar modal si estuviera abierto
-                hideRideModal();
-                // Mostrar botón "Recoger pasajero"
-                document.getElementById('pickupBtn').classList.remove('hidden');
-                document.getElementById('finishBtn').classList.add('hidden');
-            } else if (ride.status === 'en_curso') {
-                document.getElementById('pickupBtn').classList.add('hidden');
-                document.getElementById('finishBtn').classList.remove('hidden');
-                // Reenfocar cámara al tramo restante
-                if (ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
-                    const bounds = new mapboxgl.LngLatBounds();
-                    bounds.extend([ride.origin_lng, ride.origin_lat]);
-                    bounds.extend([ride.destination_lng, ride.destination_lat]);
-                    map.fitBounds(bounds, { padding: 80, pitch: 60, bearing: 20 });
-                }
-            } else if (ride.status === 'completado' || ride.status === 'cancelado' || ride.status === 'rechazado') {
-                // Limpiar todo
-                currentRideId = null;
-                currentRideStatus = null;
-                clearRoute();
-                updateActionButtons();
-            }
-        }
-
-        function updateActionButtons() {
-            const pickupBtn = document.getElementById('pickupBtn');
-            const finishBtn = document.getElementById('finishBtn');
-            if (currentRideStatus === 'aceptado') {
-                pickupBtn.classList.remove('hidden');
-                finishBtn.classList.add('hidden');
-            } else if (currentRideStatus === 'en_curso') {
-                pickupBtn.classList.add('hidden');
-                finishBtn.classList.remove('hidden');
-            } else {
-                pickupBtn.classList.add('hidden');
-                finishBtn.classList.add('hidden');
-            }
-        }
-
-        async function acceptRide() {
-            if (!currentRideId) return;
-            const { data: ride, error } = await supabaseClient
-                .from('rides')
-                .select('*')
-                .eq('id', currentRideId)
-                .single();
-            if (error) { alert('Error al obtener viaje: ' + error.message); return; }
-            const { error: updateError } = await supabaseClient
-                .from('rides')
-                .update({ status: 'aceptado' })
-                .eq('id', currentRideId);
-            if (updateError) { alert('Error al aceptar: ' + updateError.message); return; }
-            currentRideStatus = 'aceptado';
-            hideRideModal();
-            // Dibujar ruta completa con marcadores
-            if (currentPosition && ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
-                drawRoute(
-                    currentPosition,
-                    [ride.origin_lat, ride.origin_lng],
-                    [ride.destination_lat, ride.destination_lng]
-                );
-            }
-            updateActionButtons();
-            alert('Viaje aceptado');
-        }
-
-        async function rejectRide() {
-            if (!currentRideId) return;
-            const { error } = await supabaseClient
-                .from('rides')
-                .update({ status: 'rechazado' })
-                .eq('id', currentRideId);
-            if (error) { alert('Error al rechazar: ' + error.message); return; }
-            hideRideModal();
-            clearRoute();
-            alert('Viaje rechazado');
-        }
-
-        async function pickupPassenger() {
-            if (!currentRideId) return;
-            const { error } = await supabaseClient
-                .from('rides')
-                .update({ status: 'en_curso', accepted_at: new Date().toISOString() })
-                .eq('id', currentRideId);
-            if (error) { alert('Error al confirmar recogida: ' + error.message); return; }
-            // La suscripción Realtime actualizará la UI automáticamente
-        }
-
-        async function finishRide() {
-            if (!currentRideId) return;
-            const { error } = await supabaseClient
-                .from('rides')
-                .update({ status: 'completado', completed_at: new Date().toISOString() })
-                .eq('id', currentRideId);
-            if (error) { alert('Error al finalizar viaje: ' + error.message); return; }
-            // La suscripción Realtime limpiará la UI
-        }
-
-        // ==================== FUNCIONES DE RUTA ====================
-        async function drawRoute(originCoords, waypointCoords, destinationCoords) {
-            if (!map) return;
-            clearRoute();
-
-            // Crear marcador de recogida (verde)
-            const pickupEl = document.createElement('div');
-            pickupEl.innerHTML = `<i class="fas fa-user-circle" style="font-size:35px;color:#22c55e;text-shadow:0 0 8px #22c55e;"></i>`;
-            pickupMarker = new mapboxgl.Marker(pickupEl)
-                .setLngLat([waypointCoords[1], waypointCoords[0]])
-                .addTo(map);
-
-            // Crear marcador de destino (rojo)
-            const dropoffEl = document.createElement('div');
-            dropoffEl.innerHTML = `<i class="fas fa-flag-checkered" style="font-size:35px;color:#ef4444;text-shadow:0 0 8px #ef4444;"></i>`;
-            dropoffMarker = new mapboxgl.Marker(dropoffEl)
-                .setLngLat([destinationCoords[1], destinationCoords[0]])
-                .addTo(map);
-
-            // Llamar a la API de direcciones
-            const coordinates = [
-                [originCoords[1], originCoords[0]],
-                [waypointCoords[1], waypointCoords[0]],
-                [destinationCoords[1], destinationCoords[0]]
-            ];
-            const coordsString = coordinates.map(c => c.join(',')).join(';');
-            const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordsString}?geometries=geojson&access_token=${mapboxgl.accessToken}`;
-
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-                if (data.routes && data.routes.length > 0) {
-                    const route = data.routes[0].geometry.coordinates;
-                    const geojson = {
-                        type: 'Feature',
-                        properties: {},
-                        geometry: { type: 'LineString', coordinates: route }
-                    };
-                    map.addSource('route', { type: 'geojson', data: geojson });
-                    map.addLayer({
-                        id: 'route-line',
-                        type: 'line',
-                        source: 'route',
-                        layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: {
-                            'line-color': ['interpolate', ['linear'], ['line-progress'],
-                                0, '#3b82f6',   // azul conductor -> pasajero
-                                0.5, '#3b82f6',
-                                0.5, '#ff7a00', // naranja pasajero -> destino
-                                1, '#ff7a00'
-                            ],
-                            'line-width': 6,
-                            'line-opacity': 0.9
-                        }
-                    });
-                    routeLayers.push('route', 'route-line');
-
-                    // Ajustar cámara inicial a toda la ruta
-                    const bounds = new mapboxgl.LngLatBounds();
-                    route.forEach(coord => bounds.extend(coord));
-                    map.fitBounds(bounds, { padding: 80, pitch: 60, bearing: 20, duration: 2000 });
-                }
-            } catch (error) {
-                console.error('Error al obtener ruta:', error);
-                // Fallback línea recta
-                const geojson = {
-                    type: 'Feature',
-                    geometry: { type: 'LineString', coordinates: coordinates }
-                };
-                map.addSource('route', { type: 'geojson', data: geojson });
-                map.addLayer({
-                    id: 'route-line',
-                    type: 'line',
-                    source: 'route',
-                    paint: { 'line-color': '#ff7a00', 'line-width': 4 }
-                });
-                routeLayers.push('route', 'route-line');
-                map.easeTo({ center: coordinates[2], zoom: 14, pitch: 60, bearing: 20 });
-            }
-        }
-
-        function clearRoute() {
-            if (!map) return;
-            routeLayers.forEach(layer => {
-                if (map.getLayer(layer)) map.removeLayer(layer);
-                if (map.getSource(layer)) map.removeSource(layer);
-            });
-            routeLayers = [];
-            if (pickupMarker) { pickupMarker.remove(); pickupMarker = null; }
-            if (dropoffMarker) { dropoffMarker.remove(); dropoffMarker = null; }
-        }
-
-        // ==================== ESTADO DEL CONDUCTOR ====================
-        const toggleSwitch = document.getElementById('toggleSwitch');
-        const statusCard = document.getElementById('statusCard');
-        const statusTitle = document.getElementById('statusTitle');
-        const statusSubtitle = document.getElementById('statusSubtitle');
-        const onlineGlow = document.getElementById('onlineGlow');
-
-        toggleSwitch.addEventListener('change', function() {
-            if (this.checked) {
-                statusCard.classList.remove('offline');
-                statusTitle.textContent = 'Disponible';
-                statusSubtitle.textContent = 'Buscando ubicación...';
-                if(onlineGlow) onlineGlow.classList.add('active');
-
-                showLoading('Obteniendo ubicación exacta...');
-                watchId = navigator.geolocation.watchPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        currentPosition = [lat, lng];
-
-                        if (!map) initMap();
-                        
-                        if (driverMarker) {
-                            driverMarker.marker.setLngLat([lng, lat]);
-                            driverMarker.pulseMarker.setLngLat([lng, lat]);
-                        } else {
-                            driverMarker = createDriverMarker(lat, lng);
-                            map.jumpTo({ center: [lng, lat], zoom: 16 });
-                        }
-                        map.easeTo({ center: [lng, lat] });
-
-                        hideLoading();
-                        statusSubtitle.textContent = 'Recibe solicitudes de viaje';
-
-                        if (!isDriverOnline) {
-                            isDriverOnline = true;
-                            loadPendingRides();
-                            switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
-                        }
-
-                        // Throttle para actualizar BD
-                        const now = Date.now();
-                        if (now - lastUpdateTime > UPDATE_INTERVAL) {
-                            lastUpdateTime = now;
-                            updateDriverStatus(true, lat, lng);
-                        }
-                    },
-                    (error) => {
-                        hideLoading();
-                        toggleSwitch.checked = false;
-                        isDriverOnline = false;
-                        alert('No se pudo obtener tu ubicación. Asegúrate de tener el GPS activado en Alta Precisión.');
-                    },
-                    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
-                );
-            } else {
-                statusCard.classList.add('offline');
-                statusTitle.textContent = 'No disponible';
-                statusSubtitle.textContent = 'No estás recibiendo viajes';
-                if(onlineGlow) onlineGlow.classList.remove('active');
-                
-                if (watchId !== null) {
-                    navigator.geolocation.clearWatch(watchId);
-                    watchId = null;
-                }
-
-                if (driverMarker) {
-                    driverMarker.marker.remove();
-                    driverMarker.pulseMarker.remove();
-                    driverMarker = null;
-                }
-                isDriverOnline = false;
-                updateDriverStatus(false);
-                hideRideModal();
-                clearRoute();
-            }
+      } else {
+        registerBox.innerHTML = `
+          <h3>Registro rápido</h3>
+          <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">Necesitamos estos datos para tu seguridad</p>
+          <input type="text" class="register-input" id="reg-name" value="${name}" disabled>
+          <input type="tel" class="register-input" id="reg-phone" placeholder="Teléfono" autocomplete="tel">
+          <input type="text" class="register-input" id="reg-ci" placeholder="Cédula de identidad" inputmode="numeric">
+          <button class="register-btn" id="btn-register">Registrarme</button>
+          <div class="error-text" id="error-text"></div>
+        `;
+        document.getElementById('btn-register').addEventListener('click', handleRegisterSubmit);
+        document.getElementById('reg-phone').addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') handleRegisterSubmit();
         });
-
-        async function updateDriverStatus(isOnline, lat = null, lng = null) {
-            try {
-                await supabaseClient.from('driver_status').upsert({
-                    driver_id: currentDriverId,
-                    is_online: isOnline,
-                    latitude: lat,
-                    longitude: lng,
-                    last_updated: new Date().toISOString()
-                }, { onConflict: 'driver_id' });
-            } catch (error) {
-                console.error('Error guardando estado:', error);
-            }
-        }
-
-        // ==================== BÚSQUEDA DE DIRECCIONES ====================
-        document.getElementById('searchInput').addEventListener('input', debounce(async (e) => {
-            const query = e.target.value.trim();
-            if (query.length < 3) {
-                document.getElementById('suggestions').style.display = 'none';
-                return;
-            }
-            const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&language=es&limit=5`;
-            const response = await fetch(url);
-            const data = await response.json();
-            const container = document.getElementById('suggestions');
-            container.innerHTML = '';
-            if (data.features && data.features.length > 0) {
-                data.features.forEach(feature => {
-                    const item = document.createElement('div');
-                    item.className = 'suggestion-item';
-                    item.innerHTML = `<i class="fas fa-map-marker-alt" style="color: var(--primary-orange)"></i> ${feature.place_name}`;
-                    item.addEventListener('click', () => {
-                        const [lng, lat] = feature.center;
-                        map.flyTo({ center: [lng, lat], zoom: 16 });
-                        document.getElementById('searchInput').value = feature.place_name;
-                        container.style.display = 'none';
-                    });
-                    container.appendChild(item);
-                });
-                container.style.display = 'block';
-            } else {
-                container.style.display = 'none';
-            }
-        }, 300));
-
-        function debounce(func, delay) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), delay);
-            };
-        }
-
-        // ==================== CHAT (simplificado) ====================
-        async function sendCentralMessage() {
-            const input = document.getElementById('chatInput');
-            const message = input.value.trim();
-            if (!message) return;
-            const messagesDiv = document.getElementById('chatMessages');
-            const msgEl = document.createElement('div');
-            msgEl.className = 'message sent';
-            msgEl.textContent = message;
-            messagesDiv.appendChild(msgEl);
-            input.value = '';
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }
-
-        // Al cerrar la ventana, poner offline
-        window.addEventListener('beforeunload', () => {
-            if (watchId !== null) {
-                navigator.geolocation.clearWatch(watchId);
-            }
-            if (currentDriverId) {
-                navigator.sendBeacon?.(
-                    `${supabaseUrl}/rest/v1/driver_status?driver_id=eq.${currentDriverId}`,
-                    new Blob([JSON.stringify({ is_online: false, last_updated: new Date().toISOString() })], { type: 'application/json' })
-                );
-            }
+        document.getElementById('reg-ci').addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') handleRegisterSubmit();
         });
-    </script>
+      }
+    }
+
+    async function handleLoginSubmit(existingPassengers) {
+      const phoneInput = document.getElementById('input-phone');
+      const errorText = document.getElementById('error-text');
+      const phone = phoneInput.value.trim();
+      if (!phone) {
+        errorText.textContent = 'Ingresa tu teléfono';
+        return;
+      }
+      const matched = existingPassengers.find(p => p.phone === phone);
+      if (!matched) {
+        errorText.textContent = 'Teléfono no coincide con el nombre proporcionado';
+        return;
+      }
+      passenger = {
+        id: matched.id,
+        full_name: matched.full_name,
+        phone: matched.phone,
+        ci: matched.ci
+      };
+      localStorage.setItem('passenger', JSON.stringify(passenger));
+      registerOverlay.classList.add('hidden');
+      requestLocation();
+      loadProfile();
+    }
+
+    async function handleRegisterSubmit() {
+      const name = document.getElementById('reg-name').value.trim();
+      const phone = document.getElementById('reg-phone').value.trim();
+      const ci = document.getElementById('reg-ci').value.trim();
+      const errorText = document.getElementById('error-text');
+      if (!phone || !ci) {
+        errorText.textContent = 'Teléfono y cédula son obligatorios';
+        return;
+      }
+      const passengerId = crypto.randomUUID();
+      passenger = { id: passengerId, full_name: name, phone: phone, ci: ci };
+      const { error } = await supabaseClient
+        .from('passengers')
+        .insert({ id: passengerId, full_name: name, phone: phone, ci: ci });
+      if (error) {
+        console.error('Error registrando pasajero:', error);
+        errorText.textContent = 'No se pudo registrar: ' + error.message;
+        passenger = null;
+        return;
+      }
+      localStorage.setItem('passenger', JSON.stringify(passenger));
+      registerOverlay.classList.add('hidden');
+      alert('Registro exitoso. Ya puedes solicitar viajes.');
+      requestLocation();
+      loadProfile();
+    }
+
+    // ========== GEOLOCALIZACIÓN ==========
+    function requestLocation() {
+      document.getElementById('display-pickup-sub').textContent = 'Buscando GPS...';
+      locationReady = false;
+      if (navigator.geolocation) {
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+        watchId = navigator.geolocation.watchPosition(
+          (pos) => {
+            currentLat = pos.coords.latitude;
+            currentLng = pos.coords.longitude;
+            locationReady = true;
+            document.getElementById('display-pickup-sub').textContent = 'Ubicación actual';
+            if (!map) initMap(currentLat, currentLng);
+            else {
+              map.jumpTo({ center: [currentLng, currentLat], zoom: 15 });
+              if (passengerMarker) passengerMarker.setLngLat([currentLng, currentLat]);
+            }
+            if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+          },
+          (err) => {
+            document.getElementById('display-pickup-sub').textContent = 'No se pudo obtener ubicación';
+            if (!map) initMap(currentLat, currentLng);
+            // Mostrar modal elegante para activar ubicación
+            showLocationModal();
+          },
+          { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+        );
+      } else {
+        document.getElementById('display-pickup-sub').textContent = 'Geolocalización no soportada';
+        if (!map) initMap(currentLat, currentLng);
+        showLocationModal();
+      }
+    }
+
+    function showLocationModal() {
+      const overlay = document.createElement('div');
+      overlay.className = 'register-overlay';
+      overlay.id = 'location-modal';
+      overlay.innerHTML = `
+        <div class="register-box">
+          <i class="fas fa-map-marker-alt" style="font-size:3rem; color:var(--primary); margin-bottom:1rem;"></i>
+          <h3>Activar ubicación real</h3>
+          <p style="color:var(--text-muted); margin-bottom:1.5rem;">Para solicitar viajes necesitas activar la ubicación GPS en tu dispositivo.</p>
+          <button class="register-btn" onclick="document.getElementById('location-modal').remove(); requestLocation();">Entendido, activar GPS</button>
+        </div>
+      `;
+      document.body.appendChild(overlay);
+    }
+
+    function stopWatchingLocation() {
+      if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    }
+
+    // ========== INICIALIZAR MAPA ==========
+    function initMap(lat, lng) {
+      if (map) return;
+      map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [lng, lat],
+        zoom: 15,
+        attributionControl: false
+      });
+      map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+      map.addControl(new mapboxgl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: true,
+        showUserHeading: true
+      }), 'bottom-right');
+
+      // Marcador del pasajero
+      const el = document.createElement('div');
+      el.className = 'passenger-marker';
+      el.innerHTML = '<div class="custom-pin"></div>';
+      passengerMarker = new mapboxgl.Marker(el)
+        .setLngLat([lng, lat])
+        .addTo(map);
+
+      map.on('moveend', () => {
+        if (isSelectingDestination) {
+          clearTimeout(moveEndTimer);
+          moveEndTimer = setTimeout(() => {
+            const center = map.getCenter();
+            destLat = center.lat;
+            destLng = center.lng;
+            pinTooltipAddress.textContent = 'Calculando...';
+            pinTooltipPrice.textContent = 'Bs --';
+            pinTooltip.classList.add('show');
+            updatePriceAndAddress(destLat, destLng);
+          }, 300);
+        }
+      });
+
+      centerPin.style.display = 'flex';
+      btnConfirmMap.style.display = 'flex';
+
+      mapInitialized = true;
+      map.fire('moveend');
+    }
+
+    // ========== BÚSQUEDA DE DIRECCIONES ==========
+    searchInput.addEventListener('input', debounce(async (e) => {
+      const query = e.target.value.trim();
+      if (query.length < 3) {
+        suggestions.style.display = 'none';
+        return;
+      }
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&language=es&limit=5`;
+      const response = await fetch(url);
+      const data = await response.json();
+      suggestions.innerHTML = '';
+      if (data.features && data.features.length > 0) {
+        data.features.forEach(feature => {
+          const item = document.createElement('div');
+          item.className = 'suggestion-item';
+          item.innerHTML = `<i class="fas fa-map-marker-alt" style="color:var(--primary);"></i> ${feature.place_name}`;
+          item.addEventListener('click', () => {
+            const [lng, lat] = feature.center;
+            map.flyTo({ center: [lng, lat], zoom: 16 });
+            searchInput.value = feature.place_name;
+            suggestions.style.display = 'none';
+            isSelectingDestination = true;
+            centerPin.style.display = 'flex';
+            btnConfirmMap.style.display = 'flex';
+            rideOptionsContainer.classList.add('hidden');
+            btnRequestRide.classList.add('hidden');
+            destLat = lat;
+            destLng = lng;
+            updatePriceAndAddress(lat, lng);
+          });
+          suggestions.appendChild(item);
+        });
+        suggestions.style.display = 'block';
+      } else {
+        suggestions.style.display = 'none';
+      }
+    }, 300));
+
+    function debounce(func, delay) {
+      let timeout;
+      return function(...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), delay);
+      };
+    }
+
+    // ========== CÁLCULO DE PRECIO Y DIRECCIÓN ==========
+    async function updatePriceAndAddress(lat, lng) {
+      const address = await obtenerDireccion(lat, lng);
+      const distanceInKm = calculateDistance(currentLat, currentLng, lat, lng);
+      const basePrice = 5.00;
+      const pricePerKm = 2.50;
+      const estimatedBase = basePrice + distanceInKm * pricePerKm;
+      document.querySelectorAll('.ride-card-option').forEach(card => {
+        let multiplier = parseFloat(card.dataset.multiplier) || 1;
+        let calculatedCardPrice = `Bs ${(estimatedBase * multiplier).toFixed(2)}`;
+        card.querySelector('.dynamic-price').textContent = calculatedCardPrice;
+        if (card.classList.contains('active')) currentCalculatedPrice = calculatedCardPrice;
+      });
+      pinTooltipAddress.textContent = address;
+      pinTooltipPrice.textContent = currentCalculatedPrice;
+      document.getElementById('display-dropoff').textContent = address;
+      document.getElementById('display-dropoff-sub').textContent = 'Ubicación en mapa';
+    }
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = deg2rad(lat2 - lat1);
+      const dLon = deg2rad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+    function deg2rad(deg) { return deg * (Math.PI / 180); }
+
+    // ========== CONFIRMAR DESTINO ==========
+    btnConfirmMap.addEventListener('click', async () => {
+      isSelectingDestination = false;
+      pinTooltip.classList.remove('show');
+      centerPin.style.display = 'none';
+      btnConfirmMap.style.display = 'none';
+      rideOptionsContainer.classList.remove('hidden');
+      btnRequestRide.classList.remove('hidden');
+      document.getElementById('display-dropoff-sub').textContent = 'Ubicación en mapa';
+      if (destinationMarker) destinationMarker.remove();
+      const el = document.createElement('div');
+      el.className = 'destination-marker';
+      el.innerHTML = '<div class="custom-pin" style="background:#FF7A00; border-color:#FFF;"></div>';
+      destinationMarker = new mapboxgl.Marker(el)
+        .setLngLat([destLng, destLat])
+        .addTo(map);
+      updatePriceAndAddress(destLat, destLng);
+    });
+
+    // ========== SOLICITAR VIAJE ==========
+    btnRequestRide.addEventListener('click', async () => {
+      if (!passenger) {
+        const isRegistered = await checkPassengerRegistration();
+        if (!isRegistered) return;
+      }
+      if (!destLat || !destLng) {
+        alert('Primero selecciona un destino en el mapa');
+        return;
+      }
+      if (!locationReady) {
+        alert('Aún no tenemos tu ubicación GPS');
+        return;
+      }
+
+      btnRequestRide.disabled = true;
+      btnRequestRide.innerHTML = '<div class="spinner"></div> Enviando solicitud...';
+
+      try {
+        const originAddress = await obtenerDireccion(currentLat, currentLng);
+        const destAddress = await obtenerDireccion(destLat, destLng);
+        const price = parseFloat(currentCalculatedPrice.replace('Bs ', ''));
+
+        const { data: ride, error } = await supabaseClient
+          .from('rides')
+          .insert({
+            passenger_id: passenger.id,
+            origin_lat: currentLat,
+            origin_lng: currentLng,
+            origin_address: originAddress,
+            destination_lat: destLat,
+            destination_lng: destLng,
+            destination_address: destAddress,
+            price: price,
+            status: 'pendiente'
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        activeRideId = ride.id;
+        subscribeToRide(activeRideId);
+        btnRequestRide.innerHTML = '<div class="spinner"></div> Esperando central...';
+      } catch (error) {
+        console.error('Error creando ride:', error);
+        alert('No se pudo enviar la solicitud: ' + error.message);
+        btnRequestRide.disabled = false;
+        btnRequestRide.innerHTML = '<span id="btn-text">Pedir viaje</span><i class="fas fa-arrow-right"></i>';
+      }
+    });
+
+    // ========== SUSCRIPCIÓN EN TIEMPO REAL ==========
+    function subscribeToRide(rideId) {
+      if (rideSubscription) rideSubscription.unsubscribe();
+      rideSubscription = supabaseClient
+        .channel('ride-' + rideId)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'rides',
+          filter: `id=eq.${rideId}`
+        }, (payload) => {
+          const newStatus = payload.new.status;
+          if (newStatus === 'pendiente' && payload.new.driver_id) {
+            btnRequestRide.innerHTML = '<span>Conductor asignado, esperando aceptación...</span>';
+          } else if (newStatus === 'aceptado') {
+            btnRequestRide.innerHTML = '<span>Conductor en camino...</span>';
+            driverPanel.classList.remove('hidden');
+            document.getElementById('display-dropoff-sub').textContent = 'Conductor asignado';
+          } else if (newStatus === 'en_curso') {
+            btnRequestRide.innerHTML = '<span>Viaje en curso...</span>';
+          } else if (newStatus === 'completado') {
+            btnRequestRide.innerHTML = '<span>Viaje completado</span>';
+            btnRequestRide.disabled = false;
+            activeRideId = null;
+            document.getElementById('payment-modal').classList.add('active');
+            guardarViajeEnHistorial();
+          } else if (newStatus === 'cancelado' || newStatus === 'rechazado') {
+            btnRequestRide.innerHTML = '<span>Viaje cancelado</span>';
+            btnRequestRide.disabled = false;
+            activeRideId = null;
+          }
+        })
+        .subscribe();
+    }
+
+    // ========== OBTENER DIRECCIÓN (Mapbox) ==========
+    async function obtenerDireccion(lat, lng) {
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}&language=es`;
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.features && data.features.length > 0) {
+          return data.features[0].place_name;
+        }
+        return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      } catch (error) {
+        console.error('Error geocodificando:', error);
+        return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      }
+    }
+
+    // ========== HISTORIAL Y PERFIL ==========
+    async function guardarViajeEnHistorial() {
+      const origenText = await obtenerDireccion(currentLat, currentLng);
+      const destinoText = await obtenerDireccion(destLat, destLng);
+      const viajes = JSON.parse(localStorage.getItem('migo_historial') || '[]');
+      viajes.unshift({
+        fecha: new Date().toLocaleString(),
+        origen: origenText,
+        destino: destinoText,
+        precio: currentCalculatedPrice
+      });
+      localStorage.setItem('migo_historial', JSON.stringify(viajes.slice(0, 20)));
+    }
+    function renderHistory() {
+      const container = document.getElementById('history-list');
+      const noHistory = document.getElementById('no-history');
+      const viajes = JSON.parse(localStorage.getItem('migo_historial') || '[]');
+      container.innerHTML = '';
+      if (viajes.length === 0) { noHistory.style.display = 'block'; return; }
+      noHistory.style.display = 'none';
+      viajes.forEach(v => {
+        const card = document.createElement('div');
+        card.className = 'history-card';
+        card.innerHTML = `
+          <div class="history-icon"><i class="fas fa-car"></i></div>
+          <div style="flex:1;">
+            <strong>${v.fecha}</strong>
+            <div class="ruta-historial" style="font-size:0.8rem; margin:4px 0; color:var(--text-muted);">
+              <span><b style="color:var(--text-dark);">De:</b> ${v.origen}</span>
+              <span><b style="color:var(--text-dark);">A:</b> ${v.destino}</span>
+            </div>
+            <span style="color:var(--primary); font-weight:bold;">${v.precio}</span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+    function loadProfile() {
+      if (passenger) {
+        document.getElementById('perfil-nombre-display').textContent = passenger.full_name || 'Sin nombre';
+        document.getElementById('perfil-nombre-input').value = passenger.full_name || '';
+        document.getElementById('perfil-email-input').value = passenger.phone || '';
+      }
+    }
+    document.getElementById('btn-guardar-perfil').addEventListener('click', () => {
+      const nombre = document.getElementById('perfil-nombre-input').value.trim();
+      if (passenger && nombre) {
+        passenger.full_name = nombre;
+        localStorage.setItem('passenger', JSON.stringify(passenger));
+        supabaseClient.from('passengers').update({ full_name: nombre }).eq('id', passenger.id);
+        document.getElementById('perfil-nombre-display').textContent = nombre;
+        alert('Perfil actualizado');
+      }
+    });
+
+    // ========== PAGO Y CALIFICACIÓN ==========
+    window.finishPayment = function() {
+      document.getElementById('payment-modal').classList.remove('active');
+      setTimeout(() => document.getElementById('rating-modal').classList.add('active'), 300);
+    };
+    window.resetDemo = function() {
+      document.getElementById('rating-modal').classList.remove('active');
+      if (destinationMarker) destinationMarker.remove();
+      passengerMarker.setLngLat([currentLng, currentLat]);
+      driverPanel.classList.add('hidden');
+      rideOptionsContainer.classList.add('hidden');
+      btnRequestRide.classList.add('hidden');
+      btnRequestRide.disabled = false;
+      btnRequestRide.innerHTML = '<span id="btn-text">Pedir viaje</span><i class="fas fa-arrow-right"></i>';
+      document.querySelectorAll('.star-icon').forEach(s => s.classList.remove('active'));
+    };
+
+    // ========== INICIALIZACIÓN ==========
+    window.onload = async () => {
+      switchView('viajes');
+      const isRegistered = await checkPassengerRegistration();
+      if (isRegistered) {
+        requestLocation();
+        loadProfile();
+      }
+    };
+  </script>
 </body>
 </html>
