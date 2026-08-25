@@ -54,8 +54,8 @@
     .map-view-container { flex: 1; display: flex; flex-direction: column; position: relative; height: 100%; }
     #map { width: 100%; height: 100%; z-index: 1; background-color: #222; }
 
-    /* Barra de búsqueda */
-    .search-container {
+    /* Botón de búsqueda (lupa) */
+    .search-button {
       position: absolute;
       top: 15px;
       left: 15px;
@@ -63,8 +63,6 @@
       z-index: 1000;
       max-width: 500px;
       margin: 0 auto;
-    }
-    .search-box {
       background-color: var(--white);
       border-radius: 30px;
       padding: 10px 20px;
@@ -73,24 +71,75 @@
       gap: 10px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.5);
       border: 1px solid var(--border-color);
+      cursor: pointer;
+      color: var(--text-muted);
     }
-    .search-box input {
-      flex: 1;
+    .search-button .search-icon {
+      color: var(--primary);
+      width: 20px;
+      height: 20px;
+    }
+    .search-button span {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    /* Overlay de búsqueda */
+    .search-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-light);
+      z-index: 3000;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .search-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .search-overlay-header {
+      display: flex;
+      align-items: center;
+      padding: 1rem 1.2rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .search-overlay-back {
+      background: none;
+      border: none;
+      color: var(--text-dark);
+      cursor: pointer;
+      font-size: 1.5rem;
+      margin-right: 1rem;
+    }
+    .search-overlay-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+    .search-input-container {
+      padding: 1rem 1.2rem;
+      background: var(--white);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .search-input {
+      width: 100%;
       background: transparent;
       border: none;
       outline: none;
       color: var(--text-dark);
-      font-size: 14px;
+      font-size: 1.1rem;
+      padding: 0.5rem 0;
     }
-    .search-box i { color: var(--primary); }
-    .suggestions {
-      background-color: var(--white);
-      border-radius: 16px;
-      margin-top: 8px;
-      max-height: 300px;
+    .search-suggestions {
+      flex: 1;
       overflow-y: auto;
-      display: none;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      padding: 0.5rem 0;
     }
     .suggestion-item {
       padding: 12px 20px;
@@ -101,7 +150,27 @@
       cursor: pointer;
       color: var(--text-dark);
     }
-    .suggestion-item:hover { background: rgba(255,122,0,0.1); }
+    .suggestion-item:hover {
+      background: rgba(255,122,0,0.1);
+    }
+    .recent-section {
+      padding: 0.5rem 1.2rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .recent-item {
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      color: var(--text-dark);
+      border-bottom: 1px solid var(--border-color);
+    }
+    .recent-item:hover {
+      background: rgba(255,122,0,0.1);
+    }
 
     /* Pin central y tooltip */
     .center-fixed-pin {
@@ -210,6 +279,7 @@
     }
     .input-row { display: flex; align-items: center; padding: 0.5rem 0; gap: 0.8rem; cursor: pointer; }
     .input-row:first-child { border-bottom: 1px solid var(--border-color); }
+    .input-row:active { background: rgba(255,255,255,0.05); }
     .dot-icon { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
     .dot-primary { background: var(--primary); }
     .dot-black { background: var(--text-dark); }
@@ -424,7 +494,7 @@
     .register-btn:active { transform: scale(0.97); }
     .error-text { color: #ef4444; font-size: 0.85rem; margin-top: 0.5rem; }
 
-    /* Botón ubicación */
+    /* Botón ubicación (personalizado, se mantiene como respaldo) */
     .locate-btn {
       position: absolute;
       bottom: 120px;
@@ -442,6 +512,27 @@
       cursor: pointer;
       color: var(--primary);
     }
+
+    /* Indicador de carga GPS */
+    .gps-loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1100;
+      background: var(--white);
+      padding: 1.5rem;
+      border-radius: 20px;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      min-width: 250px;
+    }
+    .gps-loading .spinner { border-color: rgba(0,0,0,0.3); border-top-color: var(--primary); }
+    .gps-loading .error-icon { font-size: 2rem; color: #ef4444; margin-bottom: 0.5rem; }
   </style>
 </head>
 <body>
@@ -450,17 +541,42 @@
     <div class="map-view-container" id="map-view">
       <div id="map"></div>
 
-      <!-- Búsqueda de direcciones -->
-      <div class="search-container">
-        <div class="search-box">
-          <i class="fas fa-search"></i>
-          <input type="text" id="searchInput" placeholder="Buscar dirección o lugar..." autocomplete="off">
+      <!-- Botón de búsqueda (lupa) -->
+      <button class="search-button" id="search-button">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <span>Buscar ubicación</span>
+      </button>
+
+      <!-- Overlay de búsqueda -->
+      <div class="search-overlay" id="search-overlay">
+        <div class="search-overlay-header">
+          <button class="search-overlay-back" id="search-back">
+            <i class="fas fa-arrow-left"></i>
+          </button>
+          <div class="search-overlay-title">Buscar destino</div>
         </div>
-        <div class="suggestions" id="suggestions"></div>
+        <div class="search-input-container">
+          <input type="text" class="search-input" id="search-input-overlay" placeholder="Ingresa una dirección, lugar o mercado..." autocomplete="off">
+        </div>
+        <div class="search-suggestions" id="search-suggestions">
+          <!-- Recientes (se llenará dinámicamente) -->
+          <div class="recent-section" id="recent-section" style="display:none;">Recientes</div>
+          <div id="recent-list"></div>
+        </div>
+      </div>
+
+      <!-- Indicador de carga GPS -->
+      <div class="gps-loading hidden" id="gps-loading">
+        <div class="spinner" id="gps-spinner"></div>
+        <p id="gps-message">Obteniendo tu ubicación...</p>
+        <button class="register-btn" id="btn-retry-gps" style="display:none; margin-top:10px;">Reintentar</button>
       </div>
 
       <!-- Pin central para seleccionar destino -->
-      <div id="center-pin" class="center-fixed-pin">
+      <div id="center-pin" class="center-fixed-pin" style="display:none;">
         <div class="pin-tooltip" id="pin-tooltip">
           <div class="pin-tooltip-address" id="pin-tooltip-address">Calculando...</div>
           <div class="pin-tooltip-price" id="pin-tooltip-price">Bs --</div>
@@ -473,7 +589,9 @@
       <button class="btn-confirm-map" id="btn-confirm-dest">
         <i class="fas fa-check"></i> Confirmar destino
       </button>
-      <button class="locate-btn" id="btn-locate">
+      
+      <!-- Botón de localización personalizado (respaldo) -->
+      <button class="locate-btn" id="btn-locate" title="Centrar en mi ubicación">
         <i class="fas fa-crosshairs"></i>
       </button>
 
@@ -599,30 +717,31 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <script>
+    // ========== API KEYS ==========
+    const GEOAPIFY_KEY = 'edb4019109d84d1c87bd40479c7de391';
+    mapboxgl.accessToken = 'pk.eyJ1IjoiYXJuZWx2emwiLCJhIjoiY21zd2p2bmc3MW0xODJ4b284d3Zld3g4ZiJ9.zYnczMSu1o0ZaWKdRIo-Ww';
+
     // ========== CONFIGURACIÓN SUPABASE ==========
     const supabaseUrl = 'https://uwdojchfwmaczgdthtfr.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3ZG9qY2hmd21hY3pnZHRodGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDQ4NDEsImV4cCI6MjEwMjcyMDg0MX0.jafGOwlItnzSoZ6yYlpaae16S2nlSDpPIS2316ZPJak';
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // ========== CONFIGURACIÓN MAPBOX ==========
-    mapboxgl.accessToken = 'pk.eyJ1IjoiYXJuZWx2emwiLCJhIjoiY21zd2p2bmc3MW0xODJ4b284d3Zld3g4ZiJ9.zYnczMSu1o0ZaWKdRIo-Ww';
-
     // ========== ESTADO GLOBAL ==========
     let map;
     let passengerMarker, destinationMarker;
-    let currentLat = -17.7833, currentLng = -63.1821;
+    let currentLat = -17.7833, currentLng = -63.1821; // Coordenadas por defecto (solo para inicializar el mapa si no hay GPS)
     let destLat = null, destLng = null;
     let isSelectingDestination = true;
     let mapInitialized = false;
-    let watchId = null;
     let locationReady = false;
     let currentCalculatedPrice = 'Bs 0.00';
     let passenger = null;
     let activeRideId = null;
     let rideSubscription = null;
     let moveEndTimer = null;
-    let searchTimer = null; // Para búsqueda con debounce
+    let searchTimer = null;
     let isSearching = false;
+    let watchId = null; // Para watchPosition
 
     // ========== ELEMENTOS UI ==========
     const mapView = document.getElementById('map-view');
@@ -639,12 +758,20 @@
     const locateBtn = document.getElementById('btn-locate');
     const driverPanel = document.getElementById('driver-panel');
     const locationPickerUi = document.getElementById('location-picker-ui');
-    const gpsStatus = document.getElementById('gps-status');
     const navItems = document.querySelectorAll('.nav-item');
     const registerOverlay = document.getElementById('register-overlay');
     const registerBox = document.getElementById('register-box');
-    const searchInput = document.getElementById('searchInput');
-    const suggestions = document.getElementById('suggestions');
+    const gpsLoading = document.getElementById('gps-loading');
+    const gpsSpinner = document.getElementById('gps-spinner');
+    const gpsMessage = document.getElementById('gps-message');
+    const btnRetryGps = document.getElementById('btn-retry-gps');
+    const searchButton = document.getElementById('search-button');
+    const searchOverlay = document.getElementById('search-overlay');
+    const searchInputOverlay = document.getElementById('search-input-overlay');
+    const searchSuggestions = document.getElementById('search-suggestions');
+    const recentSection = document.getElementById('recent-section');
+    const recentList = document.getElementById('recent-list');
+    const pickupRow = document.getElementById('pickup-row');
 
     // ========== NAVEGACIÓN ==========
     function switchView(viewName) {
@@ -655,7 +782,9 @@
       if (viewName === 'viajes') {
         mapView.classList.remove('hidden');
         if (mapInitialized) map.resize();
-        requestLocation();
+        if (!locationReady) {
+          requestLocation();
+        }
       } else if (viewName === 'historial') {
         historialView.classList.remove('hidden');
         renderHistory();
@@ -704,28 +833,20 @@
         <div class="error-text" id="error-text"></div>
       `;
       document.getElementById('btn-continue').addEventListener('click', handleNameSubmit);
-      document.getElementById('input-name').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleNameSubmit();
-      });
     }
 
     async function handleNameSubmit() {
       const nameInput = document.getElementById('input-name');
       const errorText = document.getElementById('error-text');
       const name = nameInput.value.trim();
-      if (!name) {
-        errorText.textContent = 'Ingresa tu nombre';
-        return;
-      }
+      if (!name) { errorText.textContent = 'Ingresa tu nombre'; return; }
+      
       const { data: existingPassengers, error } = await supabaseClient
         .from('passengers')
         .select('*')
         .ilike('full_name', name)
         .limit(5);
-      if (error) {
-        errorText.textContent = 'Error al buscar: ' + error.message;
-        return;
-      }
+        
       if (existingPassengers && existingPassengers.length > 0) {
         registerBox.innerHTML = `
           <h3>Ingresa tu teléfono</h3>
@@ -735,9 +856,6 @@
           <div class="error-text" id="error-text"></div>
         `;
         document.getElementById('btn-login').addEventListener('click', () => handleLoginSubmit(existingPassengers));
-        document.getElementById('input-phone').addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') handleLoginSubmit(existingPassengers);
-        });
       } else {
         registerBox.innerHTML = `
           <h3>Registro rápido</h3>
@@ -749,12 +867,6 @@
           <div class="error-text" id="error-text"></div>
         `;
         document.getElementById('btn-register').addEventListener('click', handleRegisterSubmit);
-        document.getElementById('reg-phone').addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') handleRegisterSubmit();
-        });
-        document.getElementById('reg-ci').addEventListener('keypress', (e) => {
-          if (e.key === 'Enter') handleRegisterSubmit();
-        });
       }
     }
 
@@ -762,15 +874,9 @@
       const phoneInput = document.getElementById('input-phone');
       const errorText = document.getElementById('error-text');
       const phone = phoneInput.value.trim();
-      if (!phone) {
-        errorText.textContent = 'Ingresa tu teléfono';
-        return;
-      }
       const matched = existingPassengers.find(p => p.phone === phone);
-      if (!matched) {
-        errorText.textContent = 'Teléfono no coincide con el nombre proporcionado';
-        return;
-      }
+      if (!matched) { errorText.textContent = 'Teléfono no coincide con el nombre'; return; }
+      
       passenger = { id: matched.id, full_name: matched.full_name, phone: matched.phone, ci: matched.ci };
       localStorage.setItem('passenger', JSON.stringify(passenger));
       registerOverlay.classList.add('hidden');
@@ -782,79 +888,94 @@
       const name = document.getElementById('reg-name').value.trim();
       const phone = document.getElementById('reg-phone').value.trim();
       const ci = document.getElementById('reg-ci').value.trim();
-      const errorText = document.getElementById('error-text');
-      if (!phone || !ci) {
-        errorText.textContent = 'Teléfono y cédula son obligatorios';
-        return;
-      }
       const passengerId = crypto.randomUUID();
+      
+      const { error } = await supabaseClient.from('passengers').insert({ id: passengerId, full_name: name, phone: phone, ci: ci });
+      if (error) return;
+      
       passenger = { id: passengerId, full_name: name, phone: phone, ci: ci };
-      const { error } = await supabaseClient
-        .from('passengers')
-        .insert({ id: passengerId, full_name: name, phone: phone, ci: ci });
-      if (error) {
-        console.error('Error registrando pasajero:', error);
-        errorText.textContent = 'No se pudo registrar: ' + error.message;
-        passenger = null;
-        return;
-      }
       localStorage.setItem('passenger', JSON.stringify(passenger));
       registerOverlay.classList.add('hidden');
-      alert('Registro exitoso. Ya puedes solicitar viajes.');
       requestLocation();
       loadProfile();
     }
 
-    // ========== GEOLOCALIZACIÓN ==========
+    // ========== GEOLOCALIZACIÓN MEJORADA ==========
     function requestLocation() {
+      // Limpiar watch anterior
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+      }
+      
+      gpsLoading.classList.remove('hidden');
+      gpsSpinner.style.display = 'block';
+      gpsMessage.textContent = 'Obteniendo tu ubicación...';
+      btnRetryGps.style.display = 'none';
       document.getElementById('display-pickup-sub').textContent = 'Buscando GPS...';
-      locationReady = false;
-      if (navigator.geolocation) {
-        if (watchId) navigator.geolocation.clearWatch(watchId);
-        watchId = navigator.geolocation.watchPosition(
-          (pos) => {
+      
+      if (!navigator.geolocation) {
+        showLocationError('Tu navegador no soporta geolocalización. Usa un navegador moderno.');
+        return;
+      }
+      
+      const options = {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: 30000
+      };
+      
+      let locationObtained = false;
+      let attempts = 0;
+      const maxAttempts = 5;
+      
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          attempts++;
+          const accuracy = pos.coords.accuracy;
+          console.log(`Intento ${attempts}, precisión: ${accuracy} m`);
+          
+          if (accuracy <= 100 || attempts >= maxAttempts) {
             currentLat = pos.coords.latitude;
             currentLng = pos.coords.longitude;
             locationReady = true;
-            document.getElementById('display-pickup-sub').textContent = 'Ubicación actual';
-            if (!map) initMap(currentLat, currentLng);
-            else {
+            gpsLoading.classList.add('hidden');
+            document.getElementById('display-pickup-sub').textContent = `Ubicación actual (precisión: ${Math.round(accuracy)} m)`;
+            
+            if (!map) {
+              initMap(currentLat, currentLng);
+            } else {
               map.jumpTo({ center: [currentLng, currentLat], zoom: 15 });
               if (passengerMarker) passengerMarker.setLngLat([currentLng, currentLat]);
             }
-            if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-          },
-          (err) => {
-            document.getElementById('display-pickup-sub').textContent = 'No se pudo obtener ubicación';
-            if (!map) initMap(currentLat, currentLng);
-            showLocationModal();
-          },
-          { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
-        );
-      } else {
-        document.getElementById('display-pickup-sub').textContent = 'Geolocalización no soportada';
-        if (!map) initMap(currentLat, currentLng);
-        showLocationModal();
-      }
+            
+            if (watchId) {
+              navigator.geolocation.clearWatch(watchId);
+              watchId = null;
+            }
+            locationObtained = true;
+          }
+        },
+        (err) => {
+          console.error('Error de geolocalización:', err);
+          if (!locationObtained) {
+            let mensaje = 'No pudimos obtener tu ubicación.';
+            if (err.code === 1) mensaje = 'Permiso de ubicación denegado. Activa el GPS y permite el acceso a la ubicación.';
+            else if (err.code === 2) mensaje = 'No se pudo determinar la ubicación. Verifica tu conexión y GPS.';
+            else if (err.code === 3) mensaje = 'Tiempo de espera agotado. Intenta de nuevo.';
+            showLocationError(mensaje);
+          }
+        },
+        options
+      );
     }
-
-    function showLocationModal() {
-      const overlay = document.createElement('div');
-      overlay.className = 'register-overlay';
-      overlay.id = 'location-modal';
-      overlay.innerHTML = `
-        <div class="register-box">
-          <i class="fas fa-map-marker-alt" style="font-size:3rem; color:var(--primary); margin-bottom:1rem;"></i>
-          <h3>Activar ubicación real</h3>
-          <p style="color:var(--text-muted); margin-bottom:1.5rem;">Para solicitar viajes necesitas activar la ubicación GPS en tu dispositivo.</p>
-          <button class="register-btn" onclick="document.getElementById('location-modal').remove(); requestLocation();">Entendido, activar GPS</button>
-        </div>
-      `;
-      document.body.appendChild(overlay);
-    }
-
-    function stopWatchingLocation() {
-      if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    
+    function showLocationError(message) {
+      gpsLoading.classList.remove('hidden');
+      gpsSpinner.style.display = 'none';
+      gpsMessage.innerHTML = `<div class="error-icon"><i class="fas fa-exclamation-triangle"></i></div>${message}`;
+      btnRetryGps.style.display = 'block';
+      btnRetryGps.addEventListener('click', requestLocation);
     }
 
     // ========== INICIALIZAR MAPA ==========
@@ -867,19 +988,35 @@
         zoom: 15,
         attributionControl: false
       });
-      map.addControl(new mapboxgl.NavigationControl(), 'top-left');
-      map.addControl(new mapboxgl.GeolocateControl({
-        positionOptions: { enableHighAccuracy: true },
+
+      // Añadir control de geolocalización oficial de Mapbox (botón azul)
+      const geolocate = new mapboxgl.GeolocateControl({
+        positionOptions: {
+          enableHighAccuracy: true
+        },
         trackUserLocation: true,
         showUserHeading: true
-      }), 'bottom-right');
+      });
+      map.addControl(geolocate, 'top-right');
+
+      // Actualizar ubicación cuando el control de geolocalización emita un evento 'geolocate'
+      geolocate.on('geolocate', (e) => {
+        currentLat = e.coords.latitude;
+        currentLng = e.coords.longitude;
+        locationReady = true;
+        document.getElementById('display-pickup-sub').textContent = `Ubicación actual (precisión: ${Math.round(e.coords.accuracy)} m)`;
+        if (passengerMarker) passengerMarker.setLngLat([currentLng, currentLat]);
+        // También centrar el mapa en la nueva ubicación
+        map.flyTo({ center: [currentLng, currentLat], zoom: 15 });
+      });
+
+      // Agregar control de navegación
+      map.addControl(new mapboxgl.NavigationControl(), 'top-left');
 
       const el = document.createElement('div');
       el.className = 'passenger-marker';
       el.innerHTML = '<div class="custom-pin"></div>';
-      passengerMarker = new mapboxgl.Marker(el)
-        .setLngLat([lng, lat])
-        .addTo(map);
+      passengerMarker = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map);
 
       map.on('moveend', () => {
         if (isSelectingDestination) {
@@ -891,7 +1028,6 @@
             pinTooltipAddress.textContent = 'Calculando...';
             pinTooltipPrice.textContent = 'Bs --';
             pinTooltip.classList.add('show');
-            // Cálculo rápido (línea recta) para no gastar API en cada movimiento
             updatePriceAndAddress(destLat, destLng, false);
           }, 300);
         }
@@ -899,61 +1035,103 @@
 
       centerPin.style.display = 'flex';
       btnConfirmMap.style.display = 'flex';
-
       mapInitialized = true;
       map.fire('moveend');
     }
 
-    // ========== BÚSQUEDA MEJORADA (Mapbox sin BBOX) ==========
-    searchInput.addEventListener('input', function(e) {
+    // ========== BÚSQUEDA (OVERLAY) ==========
+    searchButton.addEventListener('click', () => {
+      searchOverlay.classList.add('active');
+      searchInputOverlay.value = '';
+      searchSuggestions.innerHTML = '';
+      renderRecentSearches();
+      searchInputOverlay.focus();
+    });
+
+    document.getElementById('search-back').addEventListener('click', () => {
+      searchOverlay.classList.remove('active');
+    });
+
+    searchInputOverlay.addEventListener('input', function(e) {
       const query = e.target.value.trim();
       if (query.length < 3) {
-        suggestions.style.display = 'none';
+        searchSuggestions.innerHTML = '';
+        renderRecentSearches();
         return;
       }
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => performSearch(query), 500); // debounce 500 ms
+      searchTimer = setTimeout(() => performSearch(query), 500);
     });
+
+    function renderRecentSearches() {
+      const viajes = JSON.parse(localStorage.getItem('migo_historial') || '[]');
+      recentList.innerHTML = '';
+      if (viajes.length > 0) {
+        recentSection.style.display = 'block';
+        const destinosUnicos = [];
+        for (let v of viajes) {
+          if (!destinosUnicos.includes(v.destino)) {
+            destinosUnicos.push(v.destino);
+          }
+          if (destinosUnicos.length >= 3) break;
+        }
+        destinosUnicos.forEach(destino => {
+          const item = document.createElement('div');
+          item.className = 'recent-item';
+          item.innerHTML = `
+            <i class="fas fa-history" style="color: var(--text-muted);"></i>
+            <span>${destino}</span>
+          `;
+          item.addEventListener('click', () => {
+            // Aquí deberías implementar la selección del destino a partir del historial guardado con coordenadas
+            // Por ahora solo cerramos overlay y no hacemos nada, pero podrías buscar el viaje y usar sus lat/lng.
+            searchOverlay.classList.remove('active');
+          });
+          recentList.appendChild(item);
+        });
+      } else {
+        recentSection.style.display = 'none';
+      }
+    }
 
     async function performSearch(query) {
       if (isSearching) return;
       isSearching = true;
       
-      const proximity = locationReady ? `${currentLng},${currentLat}` : '-63.1821,-17.7833';
+      const lon = locationReady ? currentLng : -63.1821;
+      const lat = locationReady ? currentLat : -17.7833;
       
-      // Truco: Si el usuario no escribe "Santa Cruz" o "Bolivia", se lo agregamos ocultamente a la petición
-      // para darle más contexto a Mapbox y evitar resultados de otros países.
-      let searchQuery = query;
-      if (!query.toLowerCase().includes('bolivia')) {
-          searchQuery += ' Santa Cruz Bolivia';
-      }
-
-      // Quitamos el bbox y agregamos types=poi,place,address para priorizar lugares conocidos
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(searchQuery)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&language=es&limit=7&country=BO&proximity=${proximity}&types=poi,place,address`;
+      const url = `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(query)}&bias=proximity:${lon},${lat}&filter=countrycode:bo&limit=6&apiKey=${GEOAPIFY_KEY}&lang=es`;
       
       try {
         const response = await fetch(url);
         const data = await response.json();
-        const container = document.getElementById('suggestions');
-        container.innerHTML = '';
+        searchSuggestions.innerHTML = '';
         
         if (data.features && data.features.length > 0) {
           data.features.forEach(feature => {
             const item = document.createElement('div');
             item.className = 'suggestion-item';
             
-            // Mejoramos la forma en que se muestra el nombre descartando el "Santa Cruz Bolivia" extra
-            const placeName = feature.place_name.replace(', Santa Cruz de la Sierra, Bolivia', '');
+            const mainText = feature.properties.address_line1 || feature.properties.name || feature.properties.formatted;
+            let subText = feature.properties.address_line2 || feature.properties.city || 'Bolivia';
+
+            item.innerHTML = `
+              <i class="fas fa-map-marker-alt" style="color: var(--primary); font-size: 1.2rem; min-width: 20px; text-align: center;"></i>
+              <div style="display: flex; flex-direction: column; overflow: hidden; width: 100%;">
+                <span style="font-weight: 700; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.95rem;">${mainText}</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${subText}</span>
+              </div>
+            `;
             
-            item.innerHTML = `📍 ${placeName}`;
             item.addEventListener('click', () => {
-              const [lng, lat] = feature.center;
+              const lng = feature.properties.lon;
+              const lat = feature.properties.lat;
               
-              map.flyTo({ center: [lng, lat], zoom: 16 }); // Vuela al lugar
-              searchInput.value = feature.text; // Pone el nombre corto en el input
-              suggestions.style.display = 'none'; // Oculta sugerencias
+              searchOverlay.classList.remove('active');
               
-              // Activa el modo "mover el mapa para ajustar"
+              map.flyTo({ center: [lng, lat], zoom: 16, essential: true });
+              
               isSelectingDestination = true;
               centerPin.style.display = 'flex';
               btnConfirmMap.style.display = 'flex';
@@ -964,15 +1142,17 @@
               destLng = lng;
               updatePriceAndAddress(lat, lng, true);
             });
-            container.appendChild(item);
+            searchSuggestions.appendChild(item);
           });
-          container.style.display = 'block';
         } else {
-          container.style.display = 'none';
+          searchSuggestions.innerHTML = `
+            <div class="suggestion-item" style="color: var(--text-muted); justify-content: center; pointer-events: none;">
+              No se encontraron resultados
+            </div>`;
         }
       } catch (error) {
-        console.error('Error en búsqueda:', error);
-        container.style.display = 'none';
+        console.error('Error en búsqueda Geoapify:', error);
+        searchSuggestions.innerHTML = '';
       } finally {
         isSearching = false;
       }
@@ -983,7 +1163,6 @@
       const address = await obtenerDireccion(lat, lng);
       let distanceInKm;
       if (useRealDistance) {
-        // Mostrar "calculando ruta..." mientras se obtiene la ruta real
         pinTooltipPrice.textContent = 'Calculando ruta...';
         distanceInKm = await calcularDistanciaRuta(currentLat, currentLng, lat, lng);
       } else {
@@ -992,12 +1171,14 @@
       const basePrice = 5.00;
       const pricePerKm = 2.50;
       const estimatedBase = basePrice + distanceInKm * pricePerKm;
+      
       document.querySelectorAll('.ride-card-option').forEach(card => {
         let multiplier = parseFloat(card.dataset.multiplier) || 1;
         let calculatedCardPrice = `Bs ${(estimatedBase * multiplier).toFixed(2)}`;
         card.querySelector('.dynamic-price').textContent = calculatedCardPrice;
         if (card.classList.contains('active')) currentCalculatedPrice = calculatedCardPrice;
       });
+      
       pinTooltipAddress.textContent = address;
       pinTooltipPrice.textContent = currentCalculatedPrice;
       document.getElementById('display-dropoff').textContent = address;
@@ -1008,15 +1189,12 @@
       const R = 6371;
       const dLat = deg2rad(lat2 - lat1);
       const dLon = deg2rad(lon2 - lon1);
-      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       return R * c;
     }
     function deg2rad(deg) { return deg * (Math.PI / 180); }
 
-    // Función para calcular distancia real por carretera usando Mapbox Directions
     async function calcularDistanciaRuta(origenLat, origenLng, destinoLat, destinoLng) {
       const coords = `${origenLng},${origenLat};${destinoLng},${destinoLat}`;
       const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}?access_token=${mapboxgl.accessToken}&geometries=geojson`;
@@ -1024,11 +1202,10 @@
         const response = await fetch(url);
         const data = await response.json();
         if (data.routes && data.routes.length > 0) {
-          return data.routes[0].distance / 1000; // km
+          return data.routes[0].distance / 1000;
         }
         return calculateDistance(origenLat, origenLng, destinoLat, destinoLng);
       } catch (error) {
-        console.error('Error obteniendo ruta:', error);
         return calculateDistance(origenLat, origenLng, destinoLat, destinoLng);
       }
     }
@@ -1042,6 +1219,7 @@
       rideOptionsContainer.classList.remove('hidden');
       btnRequestRide.classList.remove('hidden');
       document.getElementById('display-dropoff-sub').textContent = 'Calculando ruta exacta...';
+      
       if (destinationMarker) destinationMarker.remove();
       const el = document.createElement('div');
       el.className = 'destination-marker';
@@ -1049,10 +1227,27 @@
       destinationMarker = new mapboxgl.Marker(el)
         .setLngLat([destLng, destLat])
         .addTo(map);
-      // Calcular precio con distancia real
+        
       await updatePriceAndAddress(destLat, destLng, true);
       document.getElementById('display-dropoff-sub').textContent = 'Ubicación en mapa';
     });
+
+    // ========== OBTENER DIRECCIÓN ==========
+    async function obtenerDireccion(lat, lng) {
+      const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${GEOAPIFY_KEY}&lang=es`;
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.features && data.features.length > 0) {
+          const props = data.features[0].properties;
+          return props.address_line1 || props.formatted || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        }
+        return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      } catch (error) {
+        console.error('Error geocodificando:', error);
+        return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      }
+    }
 
     // ========== SOLICITAR VIAJE ==========
     btnRequestRide.addEventListener('click', async () => {
@@ -1060,14 +1255,8 @@
         const isRegistered = await checkPassengerRegistration();
         if (!isRegistered) return;
       }
-      if (!destLat || !destLng) {
-        alert('Primero selecciona un destino en el mapa');
-        return;
-      }
-      if (!locationReady) {
-        alert('Aún no tenemos tu ubicación GPS');
-        return;
-      }
+      if (!destLat || !destLng) return;
+      if (!locationReady) { alert('Aún no tenemos tu ubicación GPS'); return; }
 
       btnRequestRide.disabled = true;
       btnRequestRide.innerHTML = '<div class="spinner"></div> Enviando solicitud...';
@@ -1099,7 +1288,6 @@
         subscribeToRide(activeRideId);
         btnRequestRide.innerHTML = '<div class="spinner"></div> Esperando central...';
       } catch (error) {
-        console.error('Error creando ride:', error);
         alert('No se pudo enviar la solicitud: ' + error.message);
         btnRequestRide.disabled = false;
         btnRequestRide.innerHTML = '<span id="btn-text">Pedir viaje</span><i class="fas fa-arrow-right"></i>';
@@ -1111,19 +1299,13 @@
       if (rideSubscription) rideSubscription.unsubscribe();
       rideSubscription = supabaseClient
         .channel('ride-' + rideId)
-        .on('postgres_changes', {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'rides',
-          filter: `id=eq.${rideId}`
-        }, (payload) => {
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rides', filter: `id=eq.${rideId}` }, (payload) => {
           const newStatus = payload.new.status;
           if (newStatus === 'pendiente' && payload.new.driver_id) {
             btnRequestRide.innerHTML = '<span>Conductor asignado, esperando aceptación...</span>';
           } else if (newStatus === 'aceptado') {
             btnRequestRide.innerHTML = '<span>Conductor en camino...</span>';
             driverPanel.classList.remove('hidden');
-            document.getElementById('display-dropoff-sub').textContent = 'Conductor asignado';
           } else if (newStatus === 'en_curso') {
             btnRequestRide.innerHTML = '<span>Viaje en curso...</span>';
           } else if (newStatus === 'completado') {
@@ -1137,24 +1319,7 @@
             btnRequestRide.disabled = false;
             activeRideId = null;
           }
-        })
-        .subscribe();
-    }
-
-    // ========== OBTENER DIRECCIÓN (Mapbox) ==========
-    async function obtenerDireccion(lat, lng) {
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?access_token=${mapboxgl.accessToken}&language=es`;
-      try {
-        const response = await fetch(url);
-        const data = await response.json();
-        if (data.features && data.features.length > 0) {
-          return data.features[0].place_name;
-        }
-        return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-      } catch (error) {
-        console.error('Error geocodificando:', error);
-        return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-      }
+        }).subscribe();
     }
 
     // ========== HISTORIAL Y PERFIL ==========
@@ -1162,12 +1327,7 @@
       const origenText = await obtenerDireccion(currentLat, currentLng);
       const destinoText = await obtenerDireccion(destLat, destLng);
       const viajes = JSON.parse(localStorage.getItem('migo_historial') || '[]');
-      viajes.unshift({
-        fecha: new Date().toLocaleString(),
-        origen: origenText,
-        destino: destinoText,
-        precio: currentCalculatedPrice
-      });
+      viajes.unshift({ fecha: new Date().toLocaleString(), origen: origenText, destino: destinoText, precio: currentCalculatedPrice, lat: destLat, lng: destLng });
       localStorage.setItem('migo_historial', JSON.stringify(viajes.slice(0, 20)));
     }
     function renderHistory() {
@@ -1212,7 +1372,18 @@
       }
     });
 
-    // ========== PAGO Y CALIFICACIÓN ==========
+    // ========== BOTÓN DE LOCALIZACIÓN ==========
+    function centerOnLocation() {
+      if (locationReady) {
+        map.flyTo({ center: [currentLng, currentLat], zoom: 15, essential: true });
+      } else {
+        requestLocation();
+      }
+    }
+
+    locateBtn.addEventListener('click', centerOnLocation);
+    pickupRow.addEventListener('click', centerOnLocation);
+
     window.finishPayment = function() {
       document.getElementById('payment-modal').classList.remove('active');
       setTimeout(() => document.getElementById('rating-modal').classList.add('active'), 300);
@@ -1229,13 +1400,12 @@
       document.querySelectorAll('.star-icon').forEach(s => s.classList.remove('active'));
     };
 
-    // ========== INICIALIZAR UBICACIÓN Y EVENTOS DEL BUSCADOR ==========
     window.onload = async () => {
       switchView('viajes');
       const isRegistered = await checkPassengerRegistration();
-      if (isRegistered) {
-        requestLocation();
-        loadProfile();
+      if (isRegistered) { 
+        requestLocation(); 
+        loadProfile(); 
       }
     };
   </script>
