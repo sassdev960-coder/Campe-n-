@@ -902,73 +902,81 @@
 
     // ========== GEOLOCALIZACIÓN MEJORADA ==========
     function requestLocation() {
-      // Limpiar watch anterior
-      if (watchId) {
-        navigator.geolocation.clearWatch(watchId);
-        watchId = null;
+  // Limpiar watch anterior si existe
+  if (watchId) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+  
+  gpsLoading.classList.remove('hidden');
+  gpsSpinner.style.display = 'block';
+  gpsMessage.textContent = 'Obteniendo tu ubicación...';
+  btnRetryGps.style.display = 'none';
+  document.getElementById('display-pickup-sub').textContent = 'Buscando GPS...';
+  
+  if (!navigator.geolocation) {
+    showLocationError('Tu navegador no soporta geolocalización.');
+    return;
+  }
+  
+  const options = {
+    enableHighAccuracy: true,
+    maximumAge: 0,
+    timeout: 10000 
+  };
+  
+  let mapCentered = false; // Control para no volver locos los movimientos de cámara
+
+  watchId = navigator.geolocation.watchPosition(
+    (pos) => {
+      const accuracy = pos.coords.accuracy;
+      console.log(`GPS actualizándose, precisión: ${accuracy} m`);
+      
+      // Actualizamos siempre a la posición más reciente
+      currentLat = pos.coords.latitude;
+      currentLng = pos.coords.longitude;
+      locationReady = true;
+      
+      document.getElementById('display-pickup-sub').textContent = `Ubicación actual (precisión: ${Math.round(accuracy)} m)`;
+      
+      // En cuanto tenemos una ubicación (aunque sea de baja precisión), quitamos la pantalla de carga
+      gpsLoading.classList.add('hidden');
+      
+      if (!map) {
+        // Inicializamos el mapa en el primer dato que recibimos
+        initMap(currentLat, currentLng);
+        mapCentered = (accuracy <= 100); 
+      } else {
+        // Si el mapa ya existe, actualizamos el marcador del pasajero en tiempo real
+        if (passengerMarker) {
+          passengerMarker.setLngLat([currentLng, currentLat]);
+        }
+        
+        // Si la precisión mejora (es menor a 100m) y no habíamos centrado la cámara, saltamos a la ubicación exacta
+        if (accuracy <= 100 && !mapCentered) {
+          map.flyTo({ center: [currentLng, currentLat], zoom: 15 });
+          mapCentered = true; // Ya centramos la cámara, no lo forzamos de nuevo para dejar al usuario navegar
+        }
       }
       
-      gpsLoading.classList.remove('hidden');
-      gpsSpinner.style.display = 'block';
-      gpsMessage.textContent = 'Obteniendo tu ubicación...';
-      btnRetryGps.style.display = 'none';
-      document.getElementById('display-pickup-sub').textContent = 'Buscando GPS...';
-      
-      if (!navigator.geolocation) {
-        showLocationError('Tu navegador no soporta geolocalización. Usa un navegador moderno.');
-        return;
+      // ¡IMPORTANTE!: Eliminamos el clearWatch(watchId) y los maxAttempts. 
+      // El navegador seguirá enviando mejores coordenadas a medida que el hardware GPS se estabiliza.
+    },
+    (err) => {
+      console.error('Error de geolocalización:', err);
+      // Solo mostramos error crítico si nunca logramos ubicar al usuario
+      if (!locationReady) {
+        let mensaje = 'No pudimos obtener tu ubicación.';
+        if (err.code === 1) mensaje = 'Permiso de ubicación denegado. Activa el GPS.';
+        else if (err.code === 2) mensaje = 'No se pudo determinar la ubicación.';
+        else if (err.code === 3) mensaje = 'Tiempo de espera agotado. Intenta de nuevo.';
+        showLocationError(mensaje);
       }
-      
-      const options = {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 30000
-      };
-      
-      let locationObtained = false;
-      let attempts = 0;
-      const maxAttempts = 5;
-      
-      watchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          attempts++;
-          const accuracy = pos.coords.accuracy;
-          console.log(`Intento ${attempts}, precisión: ${accuracy} m`);
-          
-          if (accuracy <= 100 || attempts >= maxAttempts) {
-            currentLat = pos.coords.latitude;
-            currentLng = pos.coords.longitude;
-            locationReady = true;
-            gpsLoading.classList.add('hidden');
-            document.getElementById('display-pickup-sub').textContent = `Ubicación actual (precisión: ${Math.round(accuracy)} m)`;
-            
-            if (!map) {
-              initMap(currentLat, currentLng);
-            } else {
-              map.jumpTo({ center: [currentLng, currentLat], zoom: 15 });
-              if (passengerMarker) passengerMarker.setLngLat([currentLng, currentLat]);
-            }
-            
-            if (watchId) {
-              navigator.geolocation.clearWatch(watchId);
-              watchId = null;
-            }
-            locationObtained = true;
-          }
-        },
-        (err) => {
-          console.error('Error de geolocalización:', err);
-          if (!locationObtained) {
-            let mensaje = 'No pudimos obtener tu ubicación.';
-            if (err.code === 1) mensaje = 'Permiso de ubicación denegado. Activa el GPS y permite el acceso a la ubicación.';
-            else if (err.code === 2) mensaje = 'No se pudo determinar la ubicación. Verifica tu conexión y GPS.';
-            else if (err.code === 3) mensaje = 'Tiempo de espera agotado. Intenta de nuevo.';
-            showLocationError(mensaje);
-          }
-        },
-        options
-      );
-    }
+    },
+    options
+  );
+}
+
     
     function showLocationError(message) {
       gpsLoading.classList.remove('hidden');
@@ -979,65 +987,69 @@
     }
 
     // ========== INICIALIZAR MAPA ==========
-    function initMap(lat, lng) {
-      if (map) return;
-      map = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/streets-v12',
-        center: [lng, lat],
-        zoom: 15,
-        attributionControl: false
-      });
+    // ========== INICIALIZAR MAPA ==========
+function initMap(lat, lng) {
+  if (map) return;
+  
+  map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/streets-v12',
+    center: [lng, lat],
+    zoom: 15,
+    attributionControl: false
+  });
 
-      // Añadir control de geolocalización oficial de Mapbox (botón azul)
-      const geolocate = new mapboxgl.GeolocateControl({
-        positionOptions: {
-          enableHighAccuracy: true
-        },
-        trackUserLocation: true,
-        showUserHeading: true
-      });
-      map.addControl(geolocate, 'top-right');
+  // 1. Instanciar el control nativo de geolocalización de Mapbox (Esto crea la flecha de dirección y el punto azul)
+  const geolocate = new mapboxgl.GeolocateControl({
+    positionOptions: {
+      enableHighAccuracy: true
+    },
+    trackUserLocation: true, // Sigue al usuario en tiempo real
+    showUserHeading: true    // Muestra la flecha de dirección/rumbo del dispositivo
+  });
 
-      // Actualizar ubicación cuando el control de geolocalización emita un evento 'geolocate'
-      geolocate.on('geolocate', (e) => {
-        currentLat = e.coords.latitude;
-        currentLng = e.coords.longitude;
-        locationReady = true;
-        document.getElementById('display-pickup-sub').textContent = `Ubicación actual (precisión: ${Math.round(e.coords.accuracy)} m)`;
-        if (passengerMarker) passengerMarker.setLngLat([currentLng, currentLat]);
-        // También centrar el mapa en la nueva ubicación
-        map.flyTo({ center: [currentLng, currentLat], zoom: 15 });
-      });
+  // Añadir el control arriba a la derecha (o donde prefieras)
+  map.addControl(geolocate, 'top-right');
 
-      // Agregar control de navegación
-      map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+  // Agregar control de navegación normal
+  map.addControl(new mapboxgl.NavigationControl(), 'top-left');
 
-      const el = document.createElement('div');
-      el.className = 'passenger-marker';
-      el.innerHTML = '<div class="custom-pin"></div>';
-      passengerMarker = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map);
+  // Evento cuando Mapbox encuentra la ubicación con su control nativo
+  geolocate.on('geolocate', (e) => {
+    currentLat = e.coords.latitude;
+    currentLng = e.coords.longitude;
+    locationReady = true;
+    document.getElementById('display-pickup-sub').textContent = `Ubicación actual (precisión: ${Math.round(e.coords.accuracy)} m)`;
+  });
 
-      map.on('moveend', () => {
-        if (isSelectingDestination) {
-          clearTimeout(moveEndTimer);
-          moveEndTimer = setTimeout(() => {
-            const center = map.getCenter();
-            destLat = center.lat;
-            destLng = center.lng;
-            pinTooltipAddress.textContent = 'Calculando...';
-            pinTooltipPrice.textContent = 'Bs --';
-            pinTooltip.classList.add('show');
-            updatePriceAndAddress(destLat, destLng, false);
-          }, 300);
-        }
-      });
+  // IMPORTANTE: Ya NO creamos el marcador naranja manual (passengerMarker) 
+  // porque el componente 'geolocate' de Mapbox se encarga 100% de mostrar la flecha azul de dirección.
 
-      centerPin.style.display = 'flex';
-      btnConfirmMap.style.display = 'flex';
-      mapInitialized = true;
-      map.fire('moveend');
+  map.on('moveend', () => {
+    if (isSelectingDestination) {
+      clearTimeout(moveEndTimer);
+      moveEndTimer = setTimeout(() => {
+        const center = map.getCenter();
+        destLat = center.lat;
+        destLng = center.lng;
+        pinTooltipAddress.textContent = 'Calculando...';
+        pinTooltipPrice.textContent = 'Bs --';
+        pinTooltip.classList.add('show');
+        updatePriceAndAddress(destLat, destLng, false);
+      }, 300);
     }
+  });
+
+  centerPin.style.display = 'flex';
+  btnConfirmMap.style.display = 'flex';
+  mapInitialized = true;
+
+  // 2. Forzar que el mapa active la geolocalización y dibuje la flecha en cuanto cargue
+  map.on('load', () => {
+    geolocate.trigger(); // Esto hace que al abrir la app se dispare la flecha azul de inmediato
+  });
+}
+
 
     // ========== BÚSQUEDA (OVERLAY) ==========
     searchButton.addEventListener('click', () => {
@@ -1374,12 +1386,13 @@
 
     // ========== BOTÓN DE LOCALIZACIÓN ==========
     function centerOnLocation() {
-      if (locationReady) {
-        map.flyTo({ center: [currentLng, currentLat], zoom: 15, essential: true });
-      } else {
-        requestLocation();
-      }
-    }
+  if (locationReady) {
+    map.flyTo({ center: [currentLng, currentLat], zoom: 16, essential: true });
+  } else {
+    requestLocation();
+  }
+}
+
 
     locateBtn.addEventListener('click', centerOnLocation);
     pickupRow.addEventListener('click', centerOnLocation);
