@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -11,7 +10,7 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <style>
-        /* ========== ESTILOS ========== */
+        /* ========== ESTILOS (mantenidos y ajustados) ========== */
         :root {
             --bg-black: #0b0b0b;
             --bg-dark-gray: #161616;
@@ -313,22 +312,21 @@
         .status-badge.no_completado { background: rgba(239,68,68,0.2); color: #ef4444; }
         .status-badge.activo { background: rgba(59,130,246,0.2); color: #3b82f6; }
 
-        /* ====== NUEVOS ESTILOS PARA NAVEGACIÓN ====== */
+        /* ====== NAVEGACIÓN MEJORADA (flecha grande) ====== */
         .navigation-panel {
             position: absolute;
-            top: 20px;
+            top: 15px;
             left: 50%;
             transform: translateX(-50%);
             width: 90%;
             max-width: 400px;
             z-index: 1000;
-            background: #2563eb; 
-            border-radius: 16px;
+            background: rgba(37, 99, 235, 0.95);
+            border-radius: 20px;
             padding: 20px;
             display: flex;
-            justify-content: flex-start;
             align-items: center;
-            gap: 15px;
+            gap: 20px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.4);
             pointer-events: none;
             transition: all 0.3s ease;
@@ -336,30 +334,34 @@
         .nav-instruction {
             display: flex;
             align-items: center;
-            gap: 15px;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            flex-shrink: 0;
         }
         .nav-instruction i {
-            font-size: 32px;
+            font-size: 48px;
             color: #ffffff;
-            width: 40px;
-            text-align: center;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
         .nav-details {
             display: flex;
             flex-direction: column;
+            gap: 5px;
         }
         .nav-distance {
-            font-size: 24px;
+            font-size: 32px;
             color: #ffffff;
-            font-weight: 700;
+            font-weight: 800;
             line-height: 1;
-            margin-bottom: 4px;
         }
         .nav-text {
-            font-size: 16px;
-            color: rgba(255, 255, 255, 0.9);
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.95);
             font-weight: 500;
+            letter-spacing: 0.5px;
         }
     </style>
 </head>
@@ -505,7 +507,7 @@
                 <div class="suggestions" id="suggestions"></div>
             </div>
 
-            <!-- Panel de instrucciones de navegación -->
+            <!-- Panel de instrucciones de navegación (flecha grande) -->
             <div id="navigation-panel" class="navigation-panel" style="display: none;">
                 <div class="nav-instruction">
                     <i class="fas fa-arrow-up" id="nav-icon"></i>
@@ -640,6 +642,8 @@
         let lastUpdateTime = 0;
         const UPDATE_INTERVAL = 5000;
         let lastPositionForBearing = null;
+        let currentMapBearing = 0;  // Para suavizar rotación
+        let lastHeading = 0;
 
         // Onboarding
         let obLat = null;
@@ -653,6 +657,7 @@
         let currentNavigationSteps = [];   
         let currentNavigationIndex = 0;    
         let lastRouteUpdate = 0;           
+        let proximityAlertShown = false;   // Para aviso de proximidad
 
         // ==================== FUNCIONES UI ====================
         function showLoading(text = 'Cargando...') {
@@ -688,6 +693,12 @@
             let brng = Math.atan2(y, x);
             brng = brng * 180 / Math.PI;
             return (brng + 360) % 360;
+        }
+
+        // Función para interpolar ángulo (evitar saltos bruscos)
+        function interpolateAngle(current, target, factor = 0.3) {
+            let diff = (target - current + 540) % 360 - 180;
+            return current + diff * factor;
         }
 
         // ==================== AUTENTICACIÓN ====================
@@ -1109,6 +1120,7 @@
             if (map && currentPosition) {
                 map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
             }
+            proximityAlertShown = false;
         }
 
         function updateRideUI(ride) {
@@ -1253,6 +1265,7 @@
                     pickupMarker = null;
                 }
             }
+            proximityAlertShown = false;
         }
 
         async function finishRide(completed) {
@@ -1419,7 +1432,6 @@
             let minDistance = Infinity;
             
             currentNavigationSteps.forEach((step, index) => {
-                // Solo considerar pasos posteriores al actual
                 if (index <= currentNavigationIndex) return;
                 const stepLoc = step.maneuver.location;
                 const dist = getDistanceFromLatLonInMeters(lat, lng, stepLoc[1], stepLoc[0]);
@@ -1450,6 +1462,7 @@
             document.getElementById('nav-text').textContent = 'Sin ruta activa';
             document.getElementById('nav-icon').className = 'fas fa-arrow-up';
             document.getElementById('nav-distance').textContent = '0 m';
+            proximityAlertShown = false;
         }
 
         // ==================== ESTADO DEL CONDUCTOR ====================
@@ -1481,29 +1494,33 @@
                             map.jumpTo({ center: [lng, lat], zoom: 16 });
                         }
 
-                        // Lógica de cámara 3D / rotación
-                        let heading = position.coords.heading;
-                        if (heading === null || isNaN(heading)) {
+                        // --- Cámara suavizada ---
+                        let rawHeading = position.coords.heading;
+                        if (rawHeading === null || isNaN(rawHeading)) {
                             if (lastPositionForBearing) {
-                                heading = calculateBearing(lastPositionForBearing, [lng, lat]);
+                                rawHeading = calculateBearing(lastPositionForBearing, [lng, lat]);
                             } else {
-                                heading = 0;
+                                rawHeading = 0;
                             }
                         }
+                        // Interpolar el ángulo para evitar saltos bruscos
+                        currentMapBearing = interpolateAngle(currentMapBearing, rawHeading, 0.25);
                         lastPositionForBearing = [lng, lat];
+                        lastHeading = currentMapBearing;
 
                         if (currentRideId) {
-                            // Modo Navegación
+                            // Modo Navegación: inclinación y rotación suave
                             map.easeTo({ 
                                 center: [lng, lat], 
                                 pitch: 60, 
-                                bearing: heading,
+                                bearing: currentMapBearing,
                                 zoom: 17,
-                                duration: 1000 
+                                duration: 1500,
+                                easing: t => t
                             });
                             document.getElementById('navigation-panel').style.display = 'flex';
                         } else {
-                            // Modo Normal (Vista aérea 2D)
+                            // Modo Normal: vista 2D sin rotación
                             map.easeTo({ 
                                 center: [lng, lat], 
                                 pitch: 0, 
@@ -1522,6 +1539,34 @@
                         }
                         
                         updateNavigationByPosition(lat, lng);
+
+                        // Detección de proximidad al pasajero
+                        if (currentRideStatus === 'aceptado' && !proximityAlertShown) {
+                            // Obtener coordenadas del waypoint (origen) de la ruta actual
+                            const { data: rideData } = supabaseClient
+                                .from('rides')
+                                .select('origin_lat, origin_lng')
+                                .eq('id', currentRideId)
+                                .single();
+                            if (rideData && rideData.origin_lat && rideData.origin_lng) {
+                                const distToPickup = getDistanceFromLatLonInMeters(
+                                    lat, lng,
+                                    rideData.origin_lat, rideData.origin_lng
+                                );
+                                if (distToPickup < 20) { // Umbral 20 metros
+                                    proximityAlertShown = true;
+                                    // Aviso visual y vibración (si es soportada)
+                                    document.getElementById('nav-text').textContent = '¡Has llegado al pasajero!';
+                                    document.getElementById('nav-distance').textContent = '0 m';
+                                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                                    // Resaltar botón de recoger
+                                    document.getElementById('pickupBtn').style.transform = 'scale(1.1)';
+                                    setTimeout(() => {
+                                        document.getElementById('pickupBtn').style.transform = 'scale(1)';
+                                    }, 1000);
+                                }
+                            }
+                        }
 
                         const now = Date.now();
                         if (now - lastRouteUpdate > 30000 && currentRideId && currentPosition) {
@@ -1853,4 +1898,3 @@
     </script>
 </body>
 </html>
-```
