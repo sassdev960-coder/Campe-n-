@@ -311,6 +311,44 @@
         .status-badge.completado { background: rgba(34,197,94,0.2); color: #22c55e; }
         .status-badge.no_completado { background: rgba(239,68,68,0.2); color: #ef4444; }
         .status-badge.activo { background: rgba(59,130,246,0.2); color: #3b82f6; }
+
+        /* ====== NUEVOS ESTILOS PARA NAVEGACIÓN ====== */
+        .navigation-panel {
+            position: absolute;
+            top: 80px;
+            left: 15px;
+            right: 15px;
+            z-index: 1000;
+            background: rgba(22,22,22,0.95);
+            border-radius: 16px;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+            backdrop-filter: blur(10px);
+            pointer-events: none;
+        }
+        .nav-instruction {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+        }
+        .nav-instruction i {
+            font-size: 28px;
+            color: var(--primary-orange);
+            width: 30px;
+            text-align: center;
+        }
+        .nav-distance {
+            font-size: 16px;
+            color: var(--gray-text);
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -454,6 +492,16 @@
                 </div>
                 <div class="suggestions" id="suggestions"></div>
             </div>
+
+            <!-- Panel de instrucciones de navegación -->
+            <div id="navigation-panel" class="navigation-panel">
+                <div class="nav-instruction">
+                    <i class="fas fa-arrow-up" id="nav-icon"></i>
+                    <span id="nav-text">Sin ruta activa</span>
+                </div>
+                <div class="nav-distance" id="nav-distance">0 m</div>
+            </div>
+
             <div class="ride-actions-float" id="rideActionsFloat">
                 <button class="action-btn pickup hidden" id="pickupBtn" onclick="pickupPassenger()">
                     <i class="fas fa-user-check"></i> Recoger pasajero
@@ -525,7 +573,7 @@
             </div>
         </div>
 
-        <!-- Bottom Navigation (añadida pestaña Historial) -->
+        <!-- Bottom Navigation -->
         <nav class="bottom-nav">
             <div class="nav-item active" onclick="switchTab('inicio', this)"><div class="nav-icon"><i class="fas fa-home"></i></div><span>Inicio</span></div>
             <div class="nav-item" onclick="switchTab('viajes', this)"><div class="nav-icon"><i class="fas fa-motorcycle"></i></div><span>Viajes</span></div>
@@ -587,6 +635,11 @@
 
         // Chat
         let currentChatTarget = 'central';
+
+        // ====== NUEVAS VARIABLES PARA NAVEGACIÓN ======
+        let currentNavigationSteps = [];   // Pasos de la ruta
+        let currentNavigationIndex = 0;    // Índice del paso actual
+        let lastRouteUpdate = 0;           // Para recálculo periódico (opcional)
 
         // ==================== FUNCIONES UI ====================
         function showLoading(text = 'Cargando...') {
@@ -1018,12 +1071,10 @@
         }
 
         function updateRideUI(ride) {
-            // Botones flotantes
             const pickupBtn = document.getElementById('pickupBtn');
             const finishBtn = document.getElementById('finishBtn');
             const notCompletedBtn = document.getElementById('notCompletedBtn');
             
-            // Reset
             pickupBtn.classList.add('hidden');
             finishBtn.classList.add('hidden');
             notCompletedBtn.classList.add('hidden');
@@ -1038,7 +1089,6 @@
                 resetRideState();
             }
             
-            // Si estamos en historial, recargar
             if (document.getElementById('view-historial').classList.contains('active')) {
                 loadHistorial();
             }
@@ -1130,80 +1180,78 @@
         }
 
         async function finishRide(completed) {
-    if (!currentRideId) return;
-    
-    if (completed) {
-        // Verificar que el conductor esté cerca del destino
-        if (!currentPosition) {
-            alert('No se pudo obtener tu ubicación actual. Activa el GPS para finalizar el viaje.');
-            return;
-        }
-        
-        // Obtener datos del viaje
-        const { data: ride, error: rideError } = await supabaseClient
-            .from('rides')
-            .select('destination_lat, destination_lng')
-            .eq('id', currentRideId)
-            .single();
-        if (rideError || !ride) {
-            alert('Error al obtener información del viaje.');
-            return;
-        }
-        
-        if (ride.destination_lat && ride.destination_lng) {
-            const distance = getDistanceFromLatLonInMeters(
-                currentPosition[0], currentPosition[1],
-                ride.destination_lat, ride.destination_lng
-            );
-            const UMBRAL = 200; // metros
-            if (distance > UMBRAL) {
-                alert(`Estás a ${Math.round(distance)} m del destino. Acércate para poder completar el viaje. Si no puedes llegar, márcalo como "No completado".`);
-                return;
+            if (!currentRideId) return;
+            
+            if (completed) {
+                if (!currentPosition) {
+                    alert('No se pudo obtener tu ubicación actual. Activa el GPS para finalizar el viaje.');
+                    return;
+                }
+                
+                const { data: ride, error: rideError } = await supabaseClient
+                    .from('rides')
+                    .select('destination_lat, destination_lng')
+                    .eq('id', currentRideId)
+                    .single();
+                if (rideError || !ride) {
+                    alert('Error al obtener información del viaje.');
+                    return;
+                }
+                
+                if (ride.destination_lat && ride.destination_lng) {
+                    const distance = getDistanceFromLatLonInMeters(
+                        currentPosition[0], currentPosition[1],
+                        ride.destination_lat, ride.destination_lng
+                    );
+                    const UMBRAL = 200;
+                    if (distance > UMBRAL) {
+                        alert(`Estás a ${Math.round(distance)} m del destino. Acércate para poder completar el viaje. Si no puedes llegar, márcalo como "No completado".`);
+                        return;
+                    }
+                } else {
+                    if (!confirm('No hay coordenadas de destino. ¿Seguro que deseas marcar como completado?')) return;
+                }
             }
-        } else {
-            // Si no hay coordenadas de destino, no se puede verificar; continuar con advertencia
-            if (!confirm('No hay coordenadas de destino. ¿Seguro que deseas marcar como completado?')) return;
+            
+            const newStatus = completed ? 'completado' : 'no_completado';
+            const updates = {
+                status: newStatus,
+                completed_at: completed ? new Date().toISOString() : null,
+                cancelled_at: completed ? null : new Date().toISOString()
+            };
+            
+            const { error } = await supabaseClient
+                .from('rides')
+                .update(updates)
+                .eq('id', currentRideId);
+            if (error) { alert('Error al actualizar viaje: ' + error.message); return; }
+            
+            resetRideState();
+            alert(completed ? 'Viaje completado' : 'Viaje marcado como no completado');
         }
-    }
-    
-    const newStatus = completed ? 'completado' : 'no_completado';
-    const updates = {
-        status: newStatus,
-        completed_at: completed ? new Date().toISOString() : null,
-        cancelled_at: completed ? null : new Date().toISOString()
-    };
-    
-    const { error } = await supabaseClient
-        .from('rides')
-        .update(updates)
-        .eq('id', currentRideId);
-    if (error) { alert('Error al actualizar viaje: ' + error.message); return; }
-    
-    resetRideState();
-    alert(completed ? 'Viaje completado' : 'Viaje marcado como no completado');
-}
 
-// Función para calcular distancia en metros entre dos coordenadas (Fórmula de Haversine)
-function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
-    const R = 6371000; // radio de la Tierra en metros
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-}
+        function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
 
-        // ==================== RUTA ====================
+        // ==================== RUTA Y NAVEGACIÓN ====================
         async function drawRoute(originCoords, waypointCoords, destinationCoords) {
             if (!map) return;
             clearRoute();
 
+            // Marcador de recogida
             const pickupEl = document.createElement('div');
             pickupEl.innerHTML = `<i class="fas fa-user-circle" style="font-size:35px;color:#22c55e;text-shadow:0 0 8px #22c55e;"></i>`;
             pickupMarker = new mapboxgl.Marker(pickupEl).setLngLat([waypointCoords[1], waypointCoords[0]]).addTo(map);
 
+            // Marcador de destino
             const dropoffEl = document.createElement('div');
             dropoffEl.innerHTML = `<i class="fas fa-flag-checkered" style="font-size:35px;color:#ef4444;text-shadow:0 0 8px #ef4444;"></i>`;
             dropoffMarker = new mapboxgl.Marker(dropoffEl).setLngLat([destinationCoords[1], destinationCoords[0]]).addTo(map);
@@ -1214,38 +1262,66 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
                 [destinationCoords[1], destinationCoords[0]]
             ];
             const coordsString = coordinates.map(c => c.join(',')).join(';');
-            const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordsString}?geometries=geojson&access_token=${mapboxgl.accessToken}`;
+            const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordsString}?geometries=geojson&steps=true&annotations=congestion,duration&access_token=${mapboxgl.accessToken}`;
 
             try {
                 const response = await fetch(url);
                 const data = await response.json();
                 if (data.routes && data.routes.length > 0) {
-                    const route = data.routes[0].geometry.coordinates;
-                    const geojson = { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: route } };
+                    const route = data.routes[0];
+                    const geometry = route.geometry;
+                    const steps = route.legs[0].steps; // Todos los pasos
+
+                    // Guardar pasos para navegación
+                    currentNavigationSteps = steps;
+                    currentNavigationIndex = 0;
+                    updateNavigationPanel(steps[0]);  // Mostrar primer paso
+
+                    // Dibujar línea de ruta
+                    const geojson = {
+                        type: 'Feature',
+                        properties: {},
+                        geometry: geometry
+                    };
                     map.addSource('route', { type: 'geojson', data: geojson });
+
+                    // Colorear según congestión (si la API devuelve 'congestion')
                     map.addLayer({
                         id: 'route-line',
                         type: 'line',
                         source: 'route',
                         layout: { 'line-join': 'round', 'line-cap': 'round' },
                         paint: {
-                            'line-color': ['interpolate', ['linear'], ['line-progress'],
-                                0, '#3b82f6',
-                                0.5, '#3b82f6',
-                                0.5, '#ff7a00',
-                                1, '#ff7a00'
+                            'line-color': [
+                                'match',
+                                ['get', 'congestion'],
+                                'low', '#22c55e',
+                                'moderate', '#eab308',
+                                'heavy', '#ef4444',
+                                'severe', '#7f1d1d',
+                                '#3b82f6' // color por defecto
                             ],
                             'line-width': 8,
                             'line-opacity': 1
                         }
                     });
                     routeLayers.push('route', 'route-line');
+
+                    // Mostrar retraso por tráfico si existe
+                    const leg = route.legs[0];
+                    const delay = leg.duration - leg.duration_typical;
+                    if (delay > 60) {
+                        document.getElementById('nav-distance').textContent = `+${Math.round(delay/60)} min tráfico`;
+                    }
+
+                    // Ajustar vista a la ruta
                     const bounds = new mapboxgl.LngLatBounds();
-                    route.forEach(coord => bounds.extend(coord));
+                    geometry.coordinates.forEach(coord => bounds.extend(coord));
                     map.fitBounds(bounds, { padding: 80, pitch: 60, bearing: 20, duration: 2000 });
                 }
             } catch (error) {
                 console.error('Error al obtener ruta:', error);
+                // Fallback simple sin tráfico
                 const geojson = { type: 'Feature', geometry: { type: 'LineString', coordinates: coordinates } };
                 map.addSource('route', { type: 'geojson', data: geojson });
                 map.addLayer({
@@ -1259,6 +1335,55 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
             }
         }
 
+        // Actualizar el panel con la instrucción del paso dado
+        function updateNavigationPanel(step) {
+            const iconMap = {
+                'turn-left': 'fa-arrow-left',
+                'turn-right': 'fa-arrow-right',
+                'turn-slight-left': 'fa-arrow-left',
+                'turn-slight-right': 'fa-arrow-right',
+                'turn-sharp-left': 'fa-arrow-left',
+                'turn-sharp-right': 'fa-arrow-right',
+                'continue': 'fa-arrow-up',
+                'depart': 'fa-arrow-up',
+                'arrive': 'fa-flag-checkered',
+                'merge': 'fa-arrow-up',
+                'fork': 'fa-code-fork'
+            };
+            const instruction = step.maneuver.instruction || 'Sigue recto';
+            const distance = step.distance; // metros
+            const iconClass = iconMap[step.maneuver.type] || 'fa-arrow-up';
+            
+            document.getElementById('nav-text').textContent = instruction;
+            document.getElementById('nav-icon').className = `fas ${iconClass}`;
+            document.getElementById('nav-distance').textContent = 
+                distance >= 1000 ? `${(distance/1000).toFixed(1)} km` : `${Math.round(distance)} m`;
+        }
+
+        // Actualizar la instrucción activa según la posición GPS
+        function updateNavigationByPosition(lat, lng) {
+            if (!currentNavigationSteps.length) return;
+            
+            let closestIndex = currentNavigationIndex;
+            let minDistance = Infinity;
+            
+            currentNavigationSteps.forEach((step, index) => {
+                // step.maneuver.location es [lng, lat]
+                const stepLoc = step.maneuver.location;
+                const dist = getDistanceFromLatLonInMeters(lat, lng, stepLoc[1], stepLoc[0]);
+                // Si estamos a menos de 30 metros del punto de maniobra, avanzamos
+                if (dist < minDistance && dist < 30 && index > currentNavigationIndex) {
+                    minDistance = dist;
+                    closestIndex = index;
+                }
+            });
+            
+            if (closestIndex > currentNavigationIndex) {
+                currentNavigationIndex = closestIndex;
+                updateNavigationPanel(currentNavigationSteps[currentNavigationIndex]);
+            }
+        }
+
         function clearRoute() {
             if (!map) return;
             routeLayers.forEach(layer => {
@@ -1268,6 +1393,13 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
             routeLayers = [];
             if (pickupMarker) { pickupMarker.remove(); pickupMarker = null; }
             if (dropoffMarker) { dropoffMarker.remove(); dropoffMarker = null; }
+            
+            // Reiniciar navegación
+            currentNavigationSteps = [];
+            currentNavigationIndex = 0;
+            document.getElementById('nav-text').textContent = 'Sin ruta activa';
+            document.getElementById('nav-icon').className = 'fas fa-arrow-up';
+            document.getElementById('nav-distance').textContent = '0 m';
         }
 
         // ==================== ESTADO DEL CONDUCTOR ====================
@@ -1305,7 +1437,24 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
                             loadActiveRide();
                             switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
                         }
+                        
+                        // Actualizar instrucción de navegación
+                        updateNavigationByPosition(lat, lng);
+
+                        // Recalcular ruta cada 30 segundos si hay un viaje activo
                         const now = Date.now();
+                        if (now - lastRouteUpdate > 30000 && currentRideId && currentPosition) {
+                            lastRouteUpdate = now;
+                            const { data: ride } = supabaseClient
+                                .from('rides')
+                                .select('origin_lat, origin_lng, destination_lat, destination_lng')
+                                .eq('id', currentRideId)
+                                .single();
+                            if (ride) {
+                                drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
+                            }
+                        }
+
                         if (now - lastUpdateTime > UPDATE_INTERVAL) {
                             lastUpdateTime = now;
                             updateDriverStatus(true, lat, lng);
@@ -1396,7 +1545,6 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
         async function loadHistorial() {
             if (!currentDriverId) return;
             
-            // Cargar viajes activos (pendiente, aceptado, en_curso)
             const { data: activeRides, error: activeError } = await supabaseClient
                 .from('rides')
                 .select('id, origin_address, destination_address, price, status, created_at')
@@ -1428,7 +1576,6 @@ function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
                 });
             }
 
-            // Cargar historial (completado, no_completado, cancelado, rechazado)
             const { data: completedRides, error: completedError } = await supabaseClient
                 .from('rides')
                 .select('id, origin_address, destination_address, price, status, created_at')
