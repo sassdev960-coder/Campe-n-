@@ -10,7 +10,7 @@
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <style>
-        /* ========== ESTILOS (mantenidos y ajustados) ========== */
+        /* ========== ESTILOS ========== */
         :root {
             --bg-black: #0b0b0b;
             --bg-dark-gray: #161616;
@@ -696,7 +696,7 @@
         }
 
         // Función para interpolar ángulo (evitar saltos bruscos)
-        function interpolateAngle(current, target, factor = 0.3) {
+        function interpolateAngle(current, target, factor = 0.25) {
             let diff = (target - current + 540) % 360 - 180;
             return current + diff * factor;
         }
@@ -1138,6 +1138,7 @@
                 // Dibujar ruta si no está dibujada
                 if (currentPosition && ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
                     if (!routeLayers.includes('route-line')) {
+                        console.log('Dibujando ruta desde updateRideUI');
                         drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
                     }
                 }
@@ -1208,17 +1209,23 @@
             switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
 
             // Esperar a que el mapa esté listo
-            if (!map || !map.loaded()) {
+            if (!map) {
+                initMap();
+            }
+            if (!map.loaded()) {
                 await new Promise(resolve => {
-                    if (map && map.loaded()) resolve();
-                    else if (map) map.once('load', resolve);
-                    else resolve();
+                    map.once('load', resolve);
                 });
             }
+            // Pequeña espera para asegurar que el mapa esté completamente renderizado
+            await new Promise(resolve => setTimeout(resolve, 100));
 
+            console.log('Mapa listo, dibujando ruta...');
             // Dibujar ruta (origen -> recogida -> destino)
             if (ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
-                drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
+                await drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
+            } else {
+                console.warn('Faltan coordenadas para dibujar la ruta');
             }
 
             updateActionButtons();
@@ -1258,7 +1265,7 @@
                 .single();
                 
             if (ride && currentPosition) {
-                drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
+                await drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
                 
                 if (pickupMarker) {
                     pickupMarker.remove();
@@ -1321,7 +1328,16 @@
 
         // ==================== RUTA Y NAVEGACIÓN ====================
         async function drawRoute(originCoords, waypointCoords, destinationCoords) {
-            if (!map) return;
+            console.log('drawRoute llamada con:', originCoords, waypointCoords, destinationCoords);
+            if (!map) {
+                console.warn('Mapa no inicializado');
+                return;
+            }
+            // Asegurar que el mapa está cargado antes de limpiar y dibujar
+            if (!map.loaded()) {
+                await new Promise(resolve => map.once('load', resolve));
+            }
+
             clearRoute();
 
             // Marcador de recogida (si origen != waypoint)
@@ -1385,9 +1401,13 @@
                         }
                     });
                     routeLayers.push('route', 'route-line');
+                    console.log('Ruta dibujada correctamente');
+                } else {
+                    console.warn('No se obtuvieron rutas de la API');
+                    throw new Error('No routes found');
                 }
             } catch (error) {
-                console.error('Error al obtener ruta:', error);
+                console.error('Error al obtener ruta, usando fallback:', error);
                 // Fallback: línea recta naranja
                 const geojson = { type: 'Feature', geometry: { type: 'LineString', coordinates: coordinates } };
                 map.addSource('route', { type: 'geojson', data: geojson });
@@ -1398,6 +1418,7 @@
                     paint: { 'line-color': '#ff7a00', 'line-width': 6 }
                 });
                 routeLayers.push('route', 'route-line');
+                console.log('Ruta de respaldo dibujada');
             }
         }
 
