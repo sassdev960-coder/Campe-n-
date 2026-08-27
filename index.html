@@ -966,24 +966,33 @@
             });
             // Controles en el lado derecho, centrados verticalmente
             map.addControl(new mapboxgl.NavigationControl(), 'middle-right');
+
+            // Añadir edificios 3D cuando el mapa esté listo
             map.on('load', () => {
                 console.log('Mapa cargado');
                 const layers = map.getStyle().layers;
+                // Buscar la capa de símbolos para insertar después de ella
                 const labelLayerId = layers.find(layer => layer.type === 'symbol' && layer.layout['text-field']).id;
-                map.addLayer({
-                    'id': 'add-3d-buildings',
-                    'source': 'composite',
-                    'source-layer': 'building',
-                    'filter': ['==', 'extrude', 'true'],
-                    'type': 'fill-extrusion',
-                    'minzoom': 15,
-                    'paint': {
-                        'fill-extrusion-color': '#aaa',
-                        'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.05, ['get', 'height']],
-                        'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.05, ['get', 'min_height']],
-                        'fill-extrusion-opacity': 0.6
-                    }
-                }, labelLayerId);
+
+                // Verificar si la fuente 'composite' y la capa 'building' existen
+                if (map.getSource('composite') && map.getLayer('building')) {
+                    map.addLayer({
+                        'id': 'add-3d-buildings',
+                        'source': 'composite',
+                        'source-layer': 'building',
+                        'filter': ['==', 'extrude', 'true'],
+                        'type': 'fill-extrusion',
+                        'minzoom': 15,
+                        'paint': {
+                            'fill-extrusion-color': '#aaa',
+                            'fill-extrusion-height': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.05, ['get', 'height']],
+                            'fill-extrusion-base': ['interpolate', ['linear'], ['zoom'], 15, 0, 15.05, ['get', 'min_height']],
+                            'fill-extrusion-opacity': 0.6
+                        }
+                    }, labelLayerId);
+                } else {
+                    console.warn('No se pudo agregar capa 3D: fuente o capa building no encontrada');
+                }
             });
         }
 
@@ -1941,6 +1950,47 @@
                     `${supabaseUrl}/rest/v1/driver_status?driver_id=eq.${currentDriverId}`,
                     new Blob([JSON.stringify({ is_online: false, last_updated: new Date().toISOString() })], { type: 'application/json' })
                 );
+            }
+        });
+
+        // ==================== MANEJO DE VISIBILIDAD (para pantalla en descanso) ====================
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                // La página volvió a ser visible
+                hideLoading(); // Asegurar que el overlay no quede atascado
+                if (map) {
+                    map.resize(); // Redimensionar el mapa por si el contenedor cambió
+                }
+                if (isDriverOnline && !watchId) {
+                    // Si el GPS se detuvo, reiniciar la observación
+                    watchId = navigator.geolocation.watchPosition(
+                        (position) => {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            currentPosition = [lat, lng];
+                            if (driverMarker) {
+                                driverMarker.marker.setLngLat([lng, lat]);
+                                driverMarker.pulseMarker.setLngLat([lng, lat]);
+                            } else if (map) {
+                                driverMarker = createDriverMarker(lat, lng);
+                            }
+                            // Actualizar cámara
+                            if (currentRideId && currentRouteTarget && map) {
+                                const targetBearing = calculateBearing(lat, lng, currentRouteTarget.lat, currentRouteTarget.lng);
+                                map.easeTo({ center: [lng, lat], pitch: 60, bearing: targetBearing, zoom: 17, duration: 1000 });
+                            } else if (map) {
+                                map.easeTo({ center: [lng, lat], pitch: 0, bearing: 0, duration: 1000 });
+                            }
+                        },
+                        (error) => {
+                            console.error('Error de GPS al reanudar:', error);
+                            if (isDriverOnline) {
+                                alert('No se pudo obtener tu ubicación. Asegúrate de tener el GPS activado en Alta Precisión.');
+                            }
+                        },
+                        { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+                    );
+                }
             }
         });
     </script>
