@@ -6,7 +6,6 @@
     <title>Moto Móvil - Conductor</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Mapbox GL JS -->
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <style>
@@ -165,7 +164,6 @@
             text-shadow: 0 4px 12px rgba(255, 122, 0, 0.6);
         }
 
-        /* Mapbox */
         .mapboxgl-ctrl-bottom-left, .mapboxgl-ctrl-bottom-right { display: none; }
         .avatar-marker {
             width: 50px; height: 50px; border-radius: 50%;
@@ -189,7 +187,6 @@
         .suggestions { background-color: var(--bg-dark-gray); border-radius: 16px; margin-top: 8px; max-height: 300px; overflow-y: auto; display: none; }
         .suggestion-item { padding: 12px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #222; cursor: pointer; }
 
-        /* Botones flotantes */
         .ride-actions-float {
             position: absolute; bottom: 25px; left: 0; right: 0;
             z-index: 1000; display: flex; justify-content: center; gap: 15px;
@@ -208,7 +205,6 @@
         .action-btn.not-completed { background: #6b7280; color: white; } 
         .action-btn.hidden { display: none; }
 
-        /* Modal */
         .ride-modal {
             position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.85); z-index: 5000;
@@ -253,7 +249,6 @@
         .ride-btn.reject { background: rgba(255,255,255,0.1); color: var(--white); border: 1px solid rgba(255,255,255,0.2); }
         .ride-btn.reject:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
 
-        /* Login y Onboarding */
         .input-wrapper { position: relative; width: 100%; }
         .input-wrapper .icon-left { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--primary-orange); font-size: 18px; pointer-events: none; }
         .input-wrapper .icon-right { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #888888; font-size: 18px; padding: 10px; cursor: pointer; transition: color 0.3s ease; }
@@ -290,7 +285,6 @@
         .photo-options { display: flex; flex-direction: column; gap: 10px; }
         #selfiePreview { display: none; width: 120px; height: 120px; border-radius: 50%; margin: 10px auto; object-fit: cover; border: 3px solid var(--primary-orange); box-shadow: 0 4px 15px rgba(255,122,0,0.3); }
 
-        /* Historial */
         .history-section { margin-bottom: 30px; }
         .history-section h3 { margin-bottom: 15px; font-size: 18px; font-weight: 700; }
         .ride-card-history {
@@ -312,7 +306,6 @@
         .status-badge.no_completado { background: rgba(239,68,68,0.2); color: #ef4444; }
         .status-badge.activo { background: rgba(59,130,246,0.2); color: #3b82f6; }
 
-        /* ====== NAVEGACIÓN MEJORADA (flecha grande) ====== */
         .navigation-panel {
             position: absolute;
             top: 15px;
@@ -507,7 +500,6 @@
                 <div class="suggestions" id="suggestions"></div>
             </div>
 
-            <!-- Panel de instrucciones de navegación (flecha grande) -->
             <div id="navigation-panel" class="navigation-panel" style="display: none;">
                 <div class="nav-instruction">
                     <i class="fas fa-arrow-up" id="nav-icon"></i>
@@ -630,7 +622,6 @@
         let map = null;
         let currentPosition = null;
         let driverMarker = null;
-        let pulseLayer = null;
         let currentRideId = null;
         let currentRideStatus = null;
         let isDriverOnline = false;
@@ -641,9 +632,11 @@
         let dropoffMarker = null;
         let lastUpdateTime = 0;
         const UPDATE_INTERVAL = 5000;
-        let lastPositionForBearing = null;
-        let currentMapBearing = 0;  // Para suavizar rotación
-        let lastHeading = 0;
+        let currentNavigationSteps = [];
+        let currentNavigationIndex = 0;
+        let lastRouteUpdate = 0;
+        let proximityAlertShown = false;
+        let currentRouteTarget = null; // {lat, lng} del objetivo actual (pasajero o destino)
 
         // Onboarding
         let obLat = null;
@@ -652,12 +645,6 @@
 
         // Chat
         let currentChatTarget = 'central';
-
-        // Variables para navegación
-        let currentNavigationSteps = [];   
-        let currentNavigationIndex = 0;    
-        let lastRouteUpdate = 0;           
-        let proximityAlertShown = false;   // Para aviso de proximidad
 
         // ==================== FUNCIONES UI ====================
         function showLoading(text = 'Cargando...') {
@@ -668,7 +655,7 @@
             document.getElementById('loadingOverlay').classList.remove('active');
         }
 
-        // ==================== FUNCIONES DE NAVEGACIÓN Y CÁMARA ====================
+        // ==================== UTILIDADES ====================
         function getDistanceFromLatLonInMeters(lat1, lon1, lat2, lon2) {
             const R = 6371000;
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -680,25 +667,18 @@
             return R * c;
         }
 
-        function calculateBearing(startLoc, endLoc) {
-            const startLat = startLoc[1] * Math.PI / 180;
-            const startLng = startLoc[0] * Math.PI / 180;
-            const endLat = endLoc[1] * Math.PI / 180;
-            const endLng = endLoc[0] * Math.PI / 180;
-
-            const dLng = endLng - startLng;
-            const y = Math.sin(dLng) * Math.cos(endLat);
-            const x = Math.cos(startLat) * Math.sin(endLat) -
-                      Math.sin(startLat) * Math.cos(endLat) * Math.cos(dLng);
+        function calculateBearing(startLat, startLng, endLat, endLng) {
+            const startLatRad = startLat * Math.PI / 180;
+            const startLngRad = startLng * Math.PI / 180;
+            const endLatRad = endLat * Math.PI / 180;
+            const endLngRad = endLng * Math.PI / 180;
+            const dLng = endLngRad - startLngRad;
+            const y = Math.sin(dLng) * Math.cos(endLatRad);
+            const x = Math.cos(startLatRad) * Math.sin(endLatRad) -
+                      Math.sin(startLatRad) * Math.cos(endLatRad) * Math.cos(dLng);
             let brng = Math.atan2(y, x);
             brng = brng * 180 / Math.PI;
             return (brng + 360) % 360;
-        }
-
-        // Función para interpolar ángulo (evitar saltos bruscos)
-        function interpolateAngle(current, target, factor = 0.25) {
-            let diff = (target - current + 540) % 360 - 180;
-            return current + diff * factor;
         }
 
         // ==================== AUTENTICACIÓN ====================
@@ -813,9 +793,8 @@
                     const preview = document.getElementById('selfiePreview');
                     preview.src = e.target.result;
                     preview.style.display = 'block';
-                    const status = document.getElementById('selfieStatus');
-                    status.innerHTML = `<i class="fas fa-check-circle"></i> ¡Foto lista!`;
-                    status.style.color = "var(--green-online)";
+                    document.getElementById('selfieStatus').innerHTML = '<i class="fas fa-check-circle"></i> ¡Foto lista!';
+                    document.getElementById('selfieStatus').style.color = 'var(--green-online)';
                 }
                 reader.readAsDataURL(currentSelfieFile);
             }
@@ -932,7 +911,6 @@
                 map = null;
                 mapInitialized = false;
                 driverMarker = null;
-                pulseLayer = null;
             }
         }
 
@@ -981,6 +959,7 @@
             });
             map.addControl(new mapboxgl.NavigationControl(), 'top-left');
             map.on('load', () => {
+                console.log('Mapa cargado');
                 const layers = map.getStyle().layers;
                 const labelLayerId = layers.find(layer => layer.type === 'symbol' && layer.layout['text-field']).id;
                 map.addLayer({
@@ -1010,6 +989,19 @@
             pulseEl.className = 'pulse-ring';
             const pulseMarker = new mapboxgl.Marker(pulseEl).setLngLat([lng, lat]).addTo(map);
             return { marker, pulseMarker };
+        }
+
+        function ensureMapReady() {
+            return new Promise(resolve => {
+                if (!map) {
+                    initMap();
+                }
+                if (map.loaded()) {
+                    resolve();
+                } else {
+                    map.once('load', resolve);
+                }
+            });
         }
 
         // ==================== SUSCRIPCIÓN A VIAJES ====================
@@ -1121,6 +1113,7 @@
                 map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
             }
             proximityAlertShown = false;
+            currentRouteTarget = null;
         }
 
         function updateRideUI(ride) {
@@ -1135,7 +1128,6 @@
             if (ride.status === 'aceptado') {
                 hideRideModal();
                 pickupBtn.classList.remove('hidden');
-                // Dibujar ruta si no está dibujada
                 if (currentPosition && ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
                     if (!routeLayers.includes('route-line')) {
                         console.log('Dibujando ruta desde updateRideUI');
@@ -1205,25 +1197,18 @@
                 }
             }
 
-            // Cambiar a la pestaña Viajes
+            // Cambiar a pestaña Viajes
             switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
 
             // Esperar a que el mapa esté listo
-            if (!map) {
-                initMap();
-            }
-            if (!map.loaded()) {
-                await new Promise(resolve => {
-                    map.once('load', resolve);
-                });
-            }
-            // Pequeña espera para asegurar que el mapa esté completamente renderizado
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await ensureMapReady();
 
             console.log('Mapa listo, dibujando ruta...');
             // Dibujar ruta (origen -> recogida -> destino)
             if (ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
                 await drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
+                // Establecer objetivo actual (pasajero)
+                currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
             } else {
                 console.warn('Faltan coordenadas para dibujar la ruta');
             }
@@ -1257,7 +1242,7 @@
             currentRideStatus = 'en_curso';
             updateActionButtons();
 
-            // Recalcular ruta solo hacia el destino
+            // Obtener destino
             const { data: ride } = await supabaseClient
                 .from('rides')
                 .select('destination_lat, destination_lng')
@@ -1265,7 +1250,11 @@
                 .single();
                 
             if (ride && currentPosition) {
+                await ensureMapReady();
+                // Dibujar ruta directa al destino
                 await drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
+                // Actualizar objetivo
+                currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
                 
                 if (pickupMarker) {
                     pickupMarker.remove();
@@ -1333,11 +1322,9 @@
                 console.warn('Mapa no inicializado');
                 return;
             }
-            // Asegurar que el mapa está cargado antes de limpiar y dibujar
-            if (!map.loaded()) {
-                await new Promise(resolve => map.once('load', resolve));
-            }
+            await ensureMapReady();
 
+            // Limpiar ruta anterior
             clearRoute();
 
             // Marcador de recogida (si origen != waypoint)
@@ -1376,7 +1363,6 @@
                 if (data.routes && data.routes.length > 0) {
                     const route = data.routes[0];
                     const geometry = route.geometry;
-                    // Concatenar TODOS los pasos de todas las piernas
                     currentNavigationSteps = route.legs.flatMap(leg => leg.steps);
                     currentNavigationIndex = 0;
                     updateNavigationPanel(currentNavigationSteps[0]);
@@ -1388,7 +1374,6 @@
                     };
                     map.addSource('route', { type: 'geojson', data: geojson });
 
-                    // Línea naranja fija
                     map.addLayer({
                         id: 'route-line',
                         type: 'line',
@@ -1403,12 +1388,10 @@
                     routeLayers.push('route', 'route-line');
                     console.log('Ruta dibujada correctamente');
                 } else {
-                    console.warn('No se obtuvieron rutas de la API');
                     throw new Error('No routes found');
                 }
             } catch (error) {
                 console.error('Error al obtener ruta, usando fallback:', error);
-                // Fallback: línea recta naranja
                 const geojson = { type: 'Feature', geometry: { type: 'LineString', coordinates: coordinates } };
                 map.addSource('route', { type: 'geojson', data: geojson });
                 map.addLayer({
@@ -1515,38 +1498,29 @@
                             map.jumpTo({ center: [lng, lat], zoom: 16 });
                         }
 
-                        // --- Cámara suavizada ---
-                        let rawHeading = position.coords.heading;
-                        if (rawHeading === null || isNaN(rawHeading)) {
-                            if (lastPositionForBearing) {
-                                rawHeading = calculateBearing(lastPositionForBearing, [lng, lat]);
-                            } else {
-                                rawHeading = 0;
-                            }
+                        // Calcular bearing hacia el objetivo actual
+                        let targetBearing = 0;
+                        if (currentRouteTarget) {
+                            targetBearing = calculateBearing(lat, lng, currentRouteTarget.lat, currentRouteTarget.lng);
                         }
-                        // Interpolar el ángulo para evitar saltos bruscos
-                        currentMapBearing = interpolateAngle(currentMapBearing, rawHeading, 0.25);
-                        lastPositionForBearing = [lng, lat];
-                        lastHeading = currentMapBearing;
 
                         if (currentRideId) {
-                            // Modo Navegación: inclinación y rotación suave
-                            map.easeTo({ 
-                                center: [lng, lat], 
-                                pitch: 60, 
-                                bearing: currentMapBearing,
+                            // Modo Navegación
+                            map.easeTo({
+                                center: [lng, lat],
+                                pitch: 60,
+                                bearing: targetBearing,
                                 zoom: 17,
-                                duration: 1500,
-                                easing: t => t
+                                duration: 1000
                             });
                             document.getElementById('navigation-panel').style.display = 'flex';
                         } else {
-                            // Modo Normal: vista 2D sin rotación
-                            map.easeTo({ 
-                                center: [lng, lat], 
-                                pitch: 0, 
-                                bearing: 0, 
-                                duration: 1000 
+                            // Modo Normal
+                            map.easeTo({
+                                center: [lng, lat],
+                                pitch: 0,
+                                bearing: 0,
+                                duration: 1000
                             });
                             document.getElementById('navigation-panel').style.display = 'none';
                         }
@@ -1563,7 +1537,6 @@
 
                         // Detección de proximidad al pasajero
                         if (currentRideStatus === 'aceptado' && !proximityAlertShown) {
-                            // Obtener coordenadas del waypoint (origen) de la ruta actual
                             const { data: rideData } = supabaseClient
                                 .from('rides')
                                 .select('origin_lat, origin_lng')
@@ -1574,13 +1547,11 @@
                                     lat, lng,
                                     rideData.origin_lat, rideData.origin_lng
                                 );
-                                if (distToPickup < 20) { // Umbral 20 metros
+                                if (distToPickup < 20) {
                                     proximityAlertShown = true;
-                                    // Aviso visual y vibración (si es soportada)
                                     document.getElementById('nav-text').textContent = '¡Has llegado al pasajero!';
                                     document.getElementById('nav-distance').textContent = '0 m';
                                     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                                    // Resaltar botón de recoger
                                     document.getElementById('pickupBtn').style.transform = 'scale(1.1)';
                                     setTimeout(() => {
                                         document.getElementById('pickupBtn').style.transform = 'scale(1)';
@@ -1600,8 +1571,10 @@
                             if (ride) {
                                 if(currentRideStatus === 'en_curso') {
                                     drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
+                                    currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
                                 } else {
                                     drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
+                                    currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
                                 }
                             }
                         }
