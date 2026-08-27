@@ -19,6 +19,7 @@
             --gray-text: #9ca3af;
             --green-online: #22c55e;
             --red: #ef4444;
+            --blue: #3b82f6;
             --shadow: 0 4px 12px rgba(0,0,0,0.3);
         }
 
@@ -181,7 +182,8 @@
             0% { transform: scale(1); opacity: 1; }
             100% { transform: scale(2.5); opacity: 0; }
         }
-        .search-container { position: absolute; top: 15px; left: 15px; right: 15px; z-index: 1000; max-width: 500px; margin: 0 auto; }
+        .search-container { position: absolute; top: 15px; left: 15px; right: 15px; z-index: 1000; max-width: 500px; margin: 0 auto; transition: opacity 0.3s; }
+        .search-container.hidden { opacity: 0; pointer-events: none; }
         .search-box { background-color: var(--bg-dark-gray); border-radius: 30px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid #333; }
         .search-box input { flex: 1; background: transparent; border: none; outline: none; color: var(--white); font-size: 14px; }
         .suggestions { background-color: var(--bg-dark-gray); border-radius: 16px; margin-top: 8px; max-height: 300px; overflow-y: auto; display: none; }
@@ -196,11 +198,12 @@
             pointer-events: auto; padding: 12px 25px; border-radius: 30px;
             border: none; font-weight: 700; font-size: 14px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4); cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
             display: flex; align-items: center; gap: 8px;
         }
         .action-btn:active { transform: scale(0.96); }
         .action-btn.pickup { background: var(--green-online); color: white; }
+        .action-btn.arrived { background: var(--blue); color: white; }
         .action-btn.finish { background: var(--primary-orange); color: white; }
         .action-btn.not-completed { background: #6b7280; color: white; } 
         .action-btn.hidden { display: none; }
@@ -305,6 +308,7 @@
         .status-badge.completado { background: rgba(34,197,94,0.2); color: #22c55e; }
         .status-badge.no_completado { background: rgba(239,68,68,0.2); color: #ef4444; }
         .status-badge.activo { background: rgba(59,130,246,0.2); color: #3b82f6; }
+        .status-badge.llegado_origen { background: rgba(245,158,11,0.2); color: #f59e0b; }
 
         .navigation-panel {
             position: absolute;
@@ -492,7 +496,7 @@
         <!-- Viajes View -->
         <div id="view-viajes" class="view">
             <div id="map"></div>
-            <div class="search-container">
+            <div class="search-container" id="searchContainer">
                 <div class="search-box">
                     <i class="fas fa-search"></i>
                     <input type="text" id="searchInput" placeholder="Buscar dirección..." autocomplete="off">
@@ -511,8 +515,11 @@
             </div>
 
             <div class="ride-actions-float" id="rideActionsFloat">
-                <button class="action-btn pickup hidden" id="pickupBtn" onclick="pickupPassenger()">
-                    <i class="fas fa-user-check"></i> Recoger pasajero
+                <button class="action-btn arrived hidden" id="arrivedBtn" onclick="markArrived()">
+                    <i class="fas fa-flag"></i> He llegado
+                </button>
+                <button class="action-btn pickup hidden" id="pickupBtn" onclick="startRideWithPassenger()">
+                    <i class="fas fa-user-check"></i> Iniciar viaje
                 </button>
                 <button class="action-btn finish hidden" id="finishBtn" onclick="finishRide(true)">
                     <i class="fas fa-flag-checkered"></i> Finalizar viaje
@@ -636,7 +643,7 @@
         let currentNavigationIndex = 0;
         let lastRouteUpdate = 0;
         let proximityAlertShown = false;
-        let currentRouteTarget = null; // {lat, lng} del objetivo actual (pasajero o destino)
+        let currentRouteTarget = null;
 
         // Onboarding
         let obLat = null;
@@ -957,7 +964,8 @@
                 pitch: 0,
                 bearing: 0
             });
-            map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+            // Controles en el lado derecho, centrados verticalmente
+            map.addControl(new mapboxgl.NavigationControl(), 'middle-right');
             map.on('load', () => {
                 console.log('Mapa cargado');
                 const layers = map.getStyle().layers;
@@ -1051,7 +1059,7 @@
                 .from('rides')
                 .select('*, passengers(full_name, phone)')
                 .eq('driver_id', currentDriverId)
-                .in('status', ['aceptado', 'en_curso'])
+                .in('status', ['aceptado', 'llegado_origen', 'en_curso'])
                 .order('created_at', { ascending: false })
                 .maybeSingle();
             if (error) return;
@@ -1085,6 +1093,7 @@
                     switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
                     if (currentPosition && ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
                         drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
+                        currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
                     }
                 };
                 rejectBtn.innerHTML = '<i class="fas fa-times"></i> No puedo';
@@ -1109,6 +1118,7 @@
             currentRideStatus = null;
             clearRoute();
             updateActionButtons();
+            document.getElementById('searchContainer').classList.remove('hidden');
             if (map && currentPosition) {
                 map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
             }
@@ -1118,25 +1128,46 @@
 
         function updateRideUI(ride) {
             const pickupBtn = document.getElementById('pickupBtn');
+            const arrivedBtn = document.getElementById('arrivedBtn');
             const finishBtn = document.getElementById('finishBtn');
             const notCompletedBtn = document.getElementById('notCompletedBtn');
             
             pickupBtn.classList.add('hidden');
+            arrivedBtn.classList.add('hidden');
             finishBtn.classList.add('hidden');
             notCompletedBtn.classList.add('hidden');
             
+            if (ride && (ride.status === 'aceptado' || ride.status === 'llegado_origen' || ride.status === 'en_curso')) {
+                document.getElementById('searchContainer').classList.add('hidden');
+            } else {
+                document.getElementById('searchContainer').classList.remove('hidden');
+            }
+            
             if (ride.status === 'aceptado') {
                 hideRideModal();
-                pickupBtn.classList.remove('hidden');
+                arrivedBtn.classList.remove('hidden');
                 if (currentPosition && ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
                     if (!routeLayers.includes('route-line')) {
-                        console.log('Dibujando ruta desde updateRideUI');
                         drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
+                        currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
                     }
+                }
+            } else if (ride.status === 'llegado_origen') {
+                pickupBtn.classList.remove('hidden');
+                clearRoute();
+                if (map && currentPosition) {
+                    map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 16, pitch: 0, bearing: 0 });
                 }
             } else if (ride.status === 'en_curso') {
                 finishBtn.classList.remove('hidden');
                 notCompletedBtn.classList.remove('hidden');
+                if (currentPosition && ride.destination_lat && ride.destination_lng) {
+                    if (!routeLayers.includes('route-line')) {
+                        console.log('Dibujando ruta al destino desde updateRideUI');
+                        drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
+                        currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
+                    }
+                }
             } else if (['completado','no_completado','cancelado','rechazado'].includes(ride.status)) {
                 resetRideState();
             }
@@ -1148,12 +1179,16 @@
 
         function updateActionButtons() {
             const pickupBtn = document.getElementById('pickupBtn');
+            const arrivedBtn = document.getElementById('arrivedBtn');
             const finishBtn = document.getElementById('finishBtn');
             const notCompletedBtn = document.getElementById('notCompletedBtn');
             pickupBtn.classList.add('hidden');
+            arrivedBtn.classList.add('hidden');
             finishBtn.classList.add('hidden');
             notCompletedBtn.classList.add('hidden');
             if (currentRideStatus === 'aceptado') {
+                arrivedBtn.classList.remove('hidden');
+            } else if (currentRideStatus === 'llegado_origen') {
                 pickupBtn.classList.remove('hidden');
             } else if (currentRideStatus === 'en_curso') {
                 finishBtn.classList.remove('hidden');
@@ -1180,7 +1215,6 @@
             currentRideStatus = 'aceptado';
             hideRideModal();
 
-            // Asegurar ubicación actual
             if (!currentPosition) {
                 try {
                     const pos = await new Promise((resolve, reject) => {
@@ -1197,23 +1231,20 @@
                 }
             }
 
-            // Cambiar a pestaña Viajes
             switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
 
-            // Esperar a que el mapa esté listo
             await ensureMapReady();
 
             console.log('Mapa listo, dibujando ruta...');
-            // Dibujar ruta (origen -> recogida -> destino)
             if (ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
                 await drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
-                // Establecer objetivo actual (pasajero)
                 currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
             } else {
                 console.warn('Faltan coordenadas para dibujar la ruta');
             }
 
             updateActionButtons();
+            document.getElementById('searchContainer').classList.add('hidden');
         }
 
         async function rejectRide() {
@@ -1231,34 +1262,65 @@
             alert('Has rechazado el viaje. Se devolverá a la central para reasignar.');
         }
 
-        async function pickupPassenger() {
+        async function markArrived() {
             if (!currentRideId) return;
+            const { data: ride } = await supabaseClient
+                .from('rides')
+                .select('origin_lat, origin_lng')
+                .eq('id', currentRideId)
+                .single();
+            if (ride && currentPosition) {
+                const dist = getDistanceFromLatLonInMeters(currentPosition[0], currentPosition[1], ride.origin_lat, ride.origin_lng);
+                if (dist > 50) {
+                    alert(`Estás a ${Math.round(dist)} m del origen. Acércate más para confirmar llegada.`);
+                    return;
+                }
+            }
+
+            const { error } = await supabaseClient
+                .from('rides')
+                .update({ status: 'llegado_origen' })
+                .eq('id', currentRideId);
+            if (error) { alert('Error al confirmar llegada: ' + error.message); return; }
+            currentRideStatus = 'llegado_origen';
+            updateActionButtons();
+            clearRoute();
+            currentRouteTarget = null;
+            if (map && currentPosition) {
+                map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 16, pitch: 0, bearing: 0 });
+            }
+        }
+
+        async function startRideWithPassenger() {
+            if (!currentRideId || currentRideStatus !== 'llegado_origen') return;
             const { error } = await supabaseClient
                 .from('rides')
                 .update({ status: 'en_curso', accepted_at: new Date().toISOString() })
                 .eq('id', currentRideId);
-            if (error) { alert('Error al confirmar recogida: ' + error.message); return; }
+            if (error) { alert('Error al iniciar viaje: ' + error.message); return; }
 
             currentRideStatus = 'en_curso';
             updateActionButtons();
 
-            // Obtener destino
             const { data: ride } = await supabaseClient
                 .from('rides')
                 .select('destination_lat, destination_lng')
                 .eq('id', currentRideId)
                 .single();
-                
-            if (ride && currentPosition) {
+            
+            console.log('Datos del destino:', ride);
+            if (ride && ride.destination_lat && ride.destination_lng && currentPosition) {
                 await ensureMapReady();
-                // Dibujar ruta directa al destino
+                console.log('Llamando a drawRoute con destino:', ride.destination_lat, ride.destination_lng);
                 await drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
-                // Actualizar objetivo
                 currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
-                
-                if (pickupMarker) {
-                    pickupMarker.remove();
-                    pickupMarker = null;
+            } else {
+                console.warn('Faltan coordenadas de destino o posición actual');
+                if (!currentPosition) console.warn('currentPosition es null');
+                if (!ride) console.warn('ride es null');
+                else {
+                    if (!ride.destination_lat) console.warn('destination_lat es null');
+                    if (!ride.destination_lng) console.warn('destination_lng es null');
                 }
             }
             proximityAlertShown = false;
@@ -1324,7 +1386,10 @@
             }
             await ensureMapReady();
 
-            // Limpiar ruta anterior
+            // Limpiar capas previas de manera explícita para evitar conflictos
+            if (map.getLayer('route-line')) map.removeLayer('route-line');
+            if (map.getSource('route')) map.removeSource('route');
+            // También limpiar los arrays de capas y marcadores
             clearRoute();
 
             // Marcador de recogida (si origen != waypoint)
@@ -1373,7 +1438,6 @@
                         geometry: geometry
                     };
                     map.addSource('route', { type: 'geojson', data: geojson });
-
                     map.addLayer({
                         id: 'route-line',
                         type: 'line',
@@ -1388,6 +1452,7 @@
                     routeLayers.push('route', 'route-line');
                     console.log('Ruta dibujada correctamente');
                 } else {
+                    console.warn('No se obtuvieron rutas de la API');
                     throw new Error('No routes found');
                 }
             } catch (error) {
@@ -1498,14 +1563,12 @@
                             map.jumpTo({ center: [lng, lat], zoom: 16 });
                         }
 
-                        // Calcular bearing hacia el objetivo actual
                         let targetBearing = 0;
                         if (currentRouteTarget) {
                             targetBearing = calculateBearing(lat, lng, currentRouteTarget.lat, currentRouteTarget.lng);
                         }
 
                         if (currentRideId) {
-                            // Modo Navegación
                             map.easeTo({
                                 center: [lng, lat],
                                 pitch: 60,
@@ -1515,7 +1578,6 @@
                             });
                             document.getElementById('navigation-panel').style.display = 'flex';
                         } else {
-                            // Modo Normal
                             map.easeTo({
                                 center: [lng, lat],
                                 pitch: 0,
@@ -1535,28 +1597,18 @@
                         
                         updateNavigationByPosition(lat, lng);
 
-                        // Detección de proximidad al pasajero
-                        if (currentRideStatus === 'aceptado' && !proximityAlertShown) {
-                            const { data: rideData } = supabaseClient
-                                .from('rides')
-                                .select('origin_lat, origin_lng')
-                                .eq('id', currentRideId)
-                                .single();
-                            if (rideData && rideData.origin_lat && rideData.origin_lng) {
-                                const distToPickup = getDistanceFromLatLonInMeters(
-                                    lat, lng,
-                                    rideData.origin_lat, rideData.origin_lng
-                                );
-                                if (distToPickup < 20) {
-                                    proximityAlertShown = true;
-                                    document.getElementById('nav-text').textContent = '¡Has llegado al pasajero!';
-                                    document.getElementById('nav-distance').textContent = '0 m';
-                                    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                                    document.getElementById('pickupBtn').style.transform = 'scale(1.1)';
-                                    setTimeout(() => {
-                                        document.getElementById('pickupBtn').style.transform = 'scale(1)';
-                                    }, 1000);
-                                }
+                        if (currentRideStatus === 'aceptado' && !proximityAlertShown && currentRouteTarget) {
+                            const distToPickup = getDistanceFromLatLonInMeters(lat, lng, currentRouteTarget.lat, currentRouteTarget.lng);
+                            if (distToPickup < 20) {
+                                proximityAlertShown = true;
+                                document.getElementById('nav-text').textContent = '¡Has llegado al pasajero!';
+                                document.getElementById('nav-distance').textContent = '0 m';
+                                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                                const arrivedBtn = document.getElementById('arrivedBtn');
+                                arrivedBtn.style.transform = 'scale(1.1)';
+                                setTimeout(() => {
+                                    arrivedBtn.style.transform = 'scale(1)';
+                                }, 1000);
                             }
                         }
 
@@ -1569,12 +1621,12 @@
                                 .eq('id', currentRideId)
                                 .single();
                             if (ride) {
-                                if(currentRideStatus === 'en_curso') {
-                                    drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
-                                    currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
-                                } else {
+                                if (currentRideStatus === 'aceptado') {
                                     drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
                                     currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
+                                } else if (currentRideStatus === 'en_curso') {
+                                    drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
+                                    currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
                                 }
                             }
                         }
@@ -1673,7 +1725,7 @@
                 .from('rides')
                 .select('id, origin_address, destination_address, price, status, created_at')
                 .eq('driver_id', currentDriverId)
-                .in('status', ['pendiente', 'aceptado', 'en_curso'])
+                .in('status', ['pendiente', 'aceptado', 'llegado_origen', 'en_curso'])
                 .order('created_at', { ascending: false });
             
             const activeContainer = document.getElementById('activeRidesList');
@@ -1685,6 +1737,8 @@
                 activeContainer.innerHTML = `<p style="color: var(--gray-text); text-align:center;">No tienes viajes activos</p>`;
             } else {
                 activeRides.forEach(ride => {
+                    let statusClass = 'activo';
+                    if (ride.status === 'llegado_origen') statusClass = 'llegado_origen';
                     activeContainer.innerHTML += `
                         <div class="ride-card-history">
                             <div class="info">
@@ -1693,7 +1747,7 @@
                             </div>
                             <div class="text-end">
                                 <div class="fs-6 fw-bold text-white">Bs ${parseFloat(ride.price || 0).toFixed(2)}</div>
-                                <span class="status-badge activo">${ride.status}</span>
+                                <span class="status-badge ${statusClass}">${ride.status}</span>
                             </div>
                         </div>
                     `;
