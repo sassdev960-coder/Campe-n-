@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <!-- Turf.js para cálculos espaciales -->
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <style>
         /* ========== ESTILOS ========== */
         :root {
@@ -913,6 +915,10 @@
                 supabaseClient.removeChannel(window.chatSubscription);
                 window.chatSubscription = null;
             }
+            // Detener módulos de navegación
+            if (routeMonitor) routeMonitor.stop();
+            if (snapService) snapService.clear();
+            if (arrowMarker) arrowMarker.remove();
             if (map) {
                 map.remove();
                 map = null;
@@ -964,17 +970,13 @@
                 pitch: 0,
                 bearing: 0
             });
-            // Controles en el lado derecho, centrados verticalmente
             map.addControl(new mapboxgl.NavigationControl(), 'middle-right');
 
-            // Añadir edificios 3D cuando el mapa esté listo
             map.on('load', () => {
                 console.log('Mapa cargado');
+                initializeNavigationModules(); // NUEVO
                 const layers = map.getStyle().layers;
-                // Buscar la capa de símbolos para insertar después de ella
                 const labelLayerId = layers.find(layer => layer.type === 'symbol' && layer.layout['text-field']).id;
-
-                // Verificar si la fuente 'composite' y la capa 'building' existen
                 if (map.getSource('composite') && map.getLayer('building')) {
                     map.addLayer({
                         'id': 'add-3d-buildings',
@@ -996,16 +998,11 @@
             });
         }
 
+        // MODIFICADO: reemplazar createDriverMarker por la flecha
         function createDriverMarker(lat, lng) {
-            const avatarImg = currentDriverData?.avatar_url || 'a.png';
-            const el = document.createElement('div');
-            el.className = 'avatar-marker-container';
-            el.innerHTML = `<div class="avatar-marker"><img src="${avatarImg}" alt="Avatar"></div>`;
-            const marker = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map);
-            const pulseEl = document.createElement('div');
-            pulseEl.className = 'pulse-ring';
-            const pulseMarker = new mapboxgl.Marker(pulseEl).setLngLat([lng, lat]).addTo(map);
-            return { marker, pulseMarker };
+            if (!arrowMarker) arrowMarker = new NavigationArrow(map);
+            arrowMarker.addToMap(lat, lng);
+            return arrowMarker;
         }
 
         function ensureMapReady() {
@@ -1395,13 +1392,12 @@
             }
             await ensureMapReady();
 
-            // Limpiar capas previas de manera explícita para evitar conflictos
+            // Limpiar capas previas
             if (map.getLayer('route-line')) map.removeLayer('route-line');
             if (map.getSource('route')) map.removeSource('route');
-            // También limpiar los arrays de capas y marcadores
             clearRoute();
 
-            // Marcador de recogida (si origen != waypoint)
+            // Marcador de recogida
             if (originCoords[0] !== waypointCoords[0] || originCoords[1] !== waypointCoords[1]) {
                 const pickupEl = document.createElement('div');
                 pickupEl.innerHTML = `<i class="fas fa-user-circle" style="font-size:35px;color:#22c55e;text-shadow:0 0 8px #22c55e;"></i>`;
@@ -1441,6 +1437,10 @@
                     currentNavigationIndex = 0;
                     updateNavigationPanel(currentNavigationSteps[0]);
 
+                    // NUEVO: Guardar geometría para snap y monitor
+                    if (snapService) snapService.setRouteGeometry(geometry);
+                    if (routeMonitor) routeMonitor.setRoute(geometry, originCoords, waypointCoords, destinationCoords);
+
                     const geojson = {
                         type: 'Feature',
                         properties: {},
@@ -1475,6 +1475,9 @@
                     paint: { 'line-color': '#ff7a00', 'line-width': 6 }
                 });
                 routeLayers.push('route', 'route-line');
+                // NUEVO: Guardar geometría de fallback
+                if (snapService) snapService.setRouteGeometry(geojson.geometry);
+                if (routeMonitor) routeMonitor.setRoute(geojson.geometry, originCoords, waypointCoords, destinationCoords);
                 console.log('Ruta de respaldo dibujada');
             }
         }
@@ -1541,6 +1544,10 @@
             document.getElementById('nav-icon').className = 'fas fa-arrow-up';
             document.getElementById('nav-distance').textContent = '0 m';
             proximityAlertShown = false;
+
+            // NUEVO: Limpiar snapService y routeMonitor
+            if (snapService) snapService.clear();
+            if (routeMonitor) routeMonitor.clear();
         }
 
         // ==================== ESTADO DEL CONDUCTOR ====================
@@ -1559,27 +1566,41 @@
                 showLoading('Obteniendo ubicación exacta...');
                 watchId = navigator.geolocation.watchPosition(
                     (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        currentPosition = [lat, lng];
+                        const rawLat = position.coords.latitude;
+                        const rawLng = position.coords.longitude;
+
+                        // NUEVO: Ajustar la coordenada a la ruta (snap local)
+                        let matchedLat = rawLat;
+                        let matchedLng = rawLng;
+                        if (snapService && snapService.routeGeometry) {
+                            const snapped = snapService.snapToRoute(rawLat, rawLng);
+                            matchedLat = snapped.lat;
+                            matchedLng = snapped.lng;
+                        }
+
+                        currentPosition = [matchedLat, matchedLng];
+
                         if (!map) initMap();
                         
-                        if (driverMarker) {
-                            driverMarker.marker.setLngLat([lng, lat]);
-                            driverMarker.pulseMarker.setLngLat([lng, lat]);
+                        // Actualizar marcador de flecha
+                        if (!arrowMarker) {
+                            arrowMarker = new NavigationArrow(map);
+                        }
+                        if (!arrowMarker.marker) {
+                            arrowMarker.addToMap(matchedLat, matchedLng);
+                            map.jumpTo({ center: [matchedLng, matchedLat], zoom: 16 });
                         } else {
-                            driverMarker = createDriverMarker(lat, lng);
-                            map.jumpTo({ center: [lng, lat], zoom: 16 });
+                            arrowMarker.updatePosition(matchedLat, matchedLng);
                         }
 
                         let targetBearing = 0;
                         if (currentRouteTarget) {
-                            targetBearing = calculateBearing(lat, lng, currentRouteTarget.lat, currentRouteTarget.lng);
+                            targetBearing = calculateBearing(matchedLat, matchedLng, currentRouteTarget.lat, currentRouteTarget.lng);
                         }
 
                         if (currentRideId) {
                             map.easeTo({
-                                center: [lng, lat],
+                                center: [matchedLng, matchedLat],
                                 pitch: 60,
                                 bearing: targetBearing,
                                 zoom: 17,
@@ -1588,7 +1609,7 @@
                             document.getElementById('navigation-panel').style.display = 'flex';
                         } else {
                             map.easeTo({
-                                center: [lng, lat],
+                                center: [matchedLng, matchedLat],
                                 pitch: 0,
                                 bearing: 0,
                                 duration: 1000
@@ -1604,10 +1625,10 @@
                             switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
                         }
                         
-                        updateNavigationByPosition(lat, lng);
+                        updateNavigationByPosition(matchedLat, matchedLng);
 
                         if (currentRideStatus === 'aceptado' && !proximityAlertShown && currentRouteTarget) {
-                            const distToPickup = getDistanceFromLatLonInMeters(lat, lng, currentRouteTarget.lat, currentRouteTarget.lng);
+                            const distToPickup = getDistanceFromLatLonInMeters(matchedLat, matchedLng, currentRouteTarget.lat, currentRouteTarget.lng);
                             if (distToPickup < 20) {
                                 proximityAlertShown = true;
                                 document.getElementById('nav-text').textContent = '¡Has llegado al pasajero!';
@@ -1642,7 +1663,7 @@
 
                         if (now - lastUpdateTime > UPDATE_INTERVAL) {
                             lastUpdateTime = now;
-                            updateDriverStatus(true, lat, lng);
+                            updateDriverStatus(true, matchedLat, matchedLng);
                         }
                     },
                     (error) => {
@@ -1662,14 +1683,13 @@
                     navigator.geolocation.clearWatch(watchId);
                     watchId = null;
                 }
-                if (driverMarker) {
-                    driverMarker.marker.remove();
-                    driverMarker.pulseMarker.remove();
-                    driverMarker = null;
-                }
+                if (arrowMarker) arrowMarker.remove();
                 isDriverOnline = false;
                 updateDriverStatus(false);
                 resetRideState();
+                // Detener snap y monitor
+                if (snapService) snapService.clear();
+                if (routeMonitor) routeMonitor.stop();
             }
         });
 
@@ -1953,33 +1973,37 @@
             }
         });
 
-        // ==================== MANEJO DE VISIBILIDAD (para pantalla en descanso) ====================
+        // ==================== MANEJO DE VISIBILIDAD ====================
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) {
-                // La página volvió a ser visible
-                hideLoading(); // Asegurar que el overlay no quede atascado
+                hideLoading();
                 if (map) {
-                    map.resize(); // Redimensionar el mapa por si el contenedor cambió
+                    map.resize();
                 }
                 if (isDriverOnline && !watchId) {
-                    // Si el GPS se detuvo, reiniciar la observación
                     watchId = navigator.geolocation.watchPosition(
                         (position) => {
-                            const lat = position.coords.latitude;
-                            const lng = position.coords.longitude;
-                            currentPosition = [lat, lng];
-                            if (driverMarker) {
-                                driverMarker.marker.setLngLat([lng, lat]);
-                                driverMarker.pulseMarker.setLngLat([lng, lat]);
-                            } else if (map) {
-                                driverMarker = createDriverMarker(lat, lng);
+                            const rawLat = position.coords.latitude;
+                            const rawLng = position.coords.longitude;
+                            let matchedLat = rawLat;
+                            let matchedLng = rawLng;
+                            if (snapService && snapService.routeGeometry) {
+                                const snapped = snapService.snapToRoute(rawLat, rawLng);
+                                matchedLat = snapped.lat;
+                                matchedLng = snapped.lng;
                             }
-                            // Actualizar cámara
-                            if (currentRideId && currentRouteTarget && map) {
-                                const targetBearing = calculateBearing(lat, lng, currentRouteTarget.lat, currentRouteTarget.lng);
-                                map.easeTo({ center: [lng, lat], pitch: 60, bearing: targetBearing, zoom: 17, duration: 1000 });
+                            currentPosition = [matchedLat, matchedLng];
+                            if (arrowMarker) {
+                                arrowMarker.updatePosition(matchedLat, matchedLng);
                             } else if (map) {
-                                map.easeTo({ center: [lng, lat], pitch: 0, bearing: 0, duration: 1000 });
+                                arrowMarker = new NavigationArrow(map);
+                                arrowMarker.addToMap(matchedLat, matchedLng);
+                            }
+                            if (currentRideId && currentRouteTarget && map) {
+                                const targetBearing = calculateBearing(matchedLat, matchedLng, currentRouteTarget.lat, currentRouteTarget.lng);
+                                map.easeTo({ center: [matchedLng, matchedLat], pitch: 60, bearing: targetBearing, zoom: 17, duration: 1000 });
+                            } else if (map) {
+                                map.easeTo({ center: [matchedLng, matchedLat], pitch: 0, bearing: 0, duration: 1000 });
                             }
                         },
                         (error) => {
@@ -1993,6 +2017,212 @@
                 }
             }
         });
+
+        // ============================================================
+        // MÓDULO 1: FLECHA DE NAVEGACIÓN CON ROTACIÓN DINÁMICA
+        // ============================================================
+        class NavigationArrow {
+            constructor(map) {
+                this.map = map;
+                this.previousCoord = null;
+                this.marker = null;
+                this.pulseMarker = null;
+                this.element = null;
+            }
+
+            createArrowElement() {
+                const el = document.createElement('div');
+                el.className = 'nav-arrow-container';
+                el.style.width = '60px';
+                el.style.height = '60px';
+                el.style.display = 'flex';
+                el.style.alignItems = 'center';
+                el.style.justifyContent = 'center';
+                el.style.filter = 'drop-shadow(0 2px 5px rgba(0,0,0,0.5))';
+
+                el.innerHTML = `
+                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L21 22L12 17L3 22L12 2Z" fill="#4285F4" stroke="#FFFFFF" stroke-width="1.5"/>
+                        <circle cx="12" cy="12" r="3" fill="#4285F4" stroke="#FFFFFF" stroke-width="1.5"/>
+                    </svg>
+                `;
+                this.element = el;
+                return el;
+            }
+
+            addToMap(lat, lng) {
+                if (this.marker) this.marker.remove();
+                if (this.pulseMarker) this.pulseMarker.remove();
+
+                const el = this.createArrowElement();
+                this.marker = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(this.map);
+
+                const pulseEl = document.createElement('div');
+                pulseEl.className = 'pulse-ring';
+                pulseEl.style.width = '60px';
+                pulseEl.style.height = '60px';
+                this.pulseMarker = new mapboxgl.Marker(pulseEl).setLngLat([lng, lat]).addTo(this.map);
+
+                this.previousCoord = [lng, lat];
+                return this;
+            }
+
+            updatePosition(lat, lng) {
+                if (!this.marker) {
+                    this.addToMap(lat, lng);
+                    return;
+                }
+
+                let bearing = 0;
+                if (this.previousCoord) {
+                    const from = turf.point(this.previousCoord);
+                    const to = turf.point([lng, lat]);
+                    bearing = turf.bearing(from, to);
+                    if (bearing < 0) bearing += 360;
+                }
+
+                this.marker.setLngLat([lng, lat]);
+                if (this.pulseMarker) this.pulseMarker.setLngLat([lng, lat]);
+
+                if (this.element) {
+                    this.element.style.transform = `rotate(${bearing}deg)`;
+                }
+
+                this.previousCoord = [lng, lat];
+            }
+
+            remove() {
+                if (this.marker) this.marker.remove();
+                if (this.pulseMarker) this.pulseMarker.remove();
+                this.marker = null;
+                this.pulseMarker = null;
+                this.element = null;
+                this.previousCoord = null;
+            }
+        }
+
+        // ============================================================
+        // MÓDULO 2: AJUSTE LOCAL A LA RUTA (SNAP TO ROUTE)
+        // ============================================================
+        class LocalSnapService {
+            constructor() {
+                this.routeGeometry = null;
+                this.lastSnappedCoord = null;
+                this.snapThresholdMeters = 50;
+            }
+
+            setRouteGeometry(geometry) {
+                this.routeGeometry = geometry;
+            }
+
+            clear() {
+                this.routeGeometry = null;
+                this.lastSnappedCoord = null;
+            }
+
+            snapToRoute(rawLat, rawLng) {
+                if (!this.routeGeometry) {
+                    return { lat: rawLat, lng: rawLng };
+                }
+
+                const point = turf.point([rawLng, rawLat]);
+                const snapped = turf.nearestPointOnLine(this.routeGeometry, point, { units: 'meters' });
+                const distance = snapped.properties.dist;
+
+                if (distance > this.snapThresholdMeters) {
+                    console.warn(`Distancia a ruta: ${distance.toFixed(1)} m > umbral, usando coordenada cruda`);
+                    return { lat: rawLat, lng: rawLng };
+                }
+
+                this.lastSnappedCoord = {
+                    lat: snapped.geometry.coordinates[1],
+                    lng: snapped.geometry.coordinates[0]
+                };
+                return this.lastSnappedCoord;
+            }
+        }
+
+        // ============================================================
+        // MÓDULO 3: RECÁLCULO AUTOMÁTICO DE RUTA
+        // ============================================================
+        class RouteMonitor {
+            constructor() {
+                this.activeRouteGeometry = null;
+                this.destinationCoords = null;
+                this.waypointCoords = null;
+                this.lastRecalculation = 0;
+                this.minIntervalMs = 30000;
+                this.thresholdMeters = 30;
+                this.monitorTimer = null;
+            }
+
+            setRoute(geometry, originCoords, waypointCoords, destinationCoords) {
+                this.activeRouteGeometry = geometry;
+                this.destinationCoords = destinationCoords;
+                this.waypointCoords = waypointCoords;
+            }
+
+            clear() {
+                this.activeRouteGeometry = null;
+                this.destinationCoords = null;
+                this.waypointCoords = null;
+            }
+
+            start() {
+                this.monitorTimer = setInterval(() => this.checkDeviation(), 5000);
+            }
+
+            stop() {
+                if (this.monitorTimer) clearInterval(this.monitorTimer);
+                this.monitorTimer = null;
+            }
+
+            checkDeviation() {
+                if (!this.activeRouteGeometry || !currentPosition) return;
+
+                const point = turf.point([currentPosition[1], currentPosition[0]]);
+                const distance = turf.pointToLineDistance(point, this.activeRouteGeometry, { units: 'meters' });
+
+                const now = Date.now();
+                if (distance > this.thresholdMeters && (now - this.lastRecalculation) > this.minIntervalMs) {
+                    console.log(`Desviación detectada: ${distance.toFixed(1)} m > ${this.thresholdMeters} m. Recalculando...`);
+                    this.lastRecalculation = now;
+                    this.recalculateRoute();
+                }
+            }
+
+            async recalculateRoute() {
+                if (!currentPosition || !this.destinationCoords) return;
+
+                let waypoint = this.waypointCoords;
+                if (currentRideStatus === 'en_curso') {
+                    waypoint = currentPosition;
+                }
+
+                try {
+                    await drawRoute(currentPosition, waypoint, this.destinationCoords);
+                    console.log('Ruta recalculada correctamente');
+                } catch (error) {
+                    console.error('Error al recalcular ruta:', error);
+                }
+            }
+        }
+
+        // ============================================================
+        // INSTANCIACIÓN GLOBAL
+        // ============================================================
+        let arrowMarker = null;
+        let snapService = null;
+        let routeMonitor = null;
+
+        function initializeNavigationModules() {
+            if (!map) return;
+            arrowMarker = new NavigationArrow(map);
+            snapService = new LocalSnapService();
+            routeMonitor = new RouteMonitor();
+            routeMonitor.start();
+            console.log('Módulos de navegación inicializados (sin Map Matching, usando ajuste local)');
+        }
     </script>
 </body>
 </html>
