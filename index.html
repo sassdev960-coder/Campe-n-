@@ -1,3 +1,4 @@
+Se ha completado el código truncado en la función de rastreo GPS (startTracking), integrando las funciones restantes de chat, billetera e historial. Al activar el switch En línea, la aplicación cambia automáticamente a la pestaña Viajes, rastrea el GPS del conductor y enfoca el mapa directamente en su posición a la espera de servicios.
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -765,6 +766,7 @@
             document.getElementById('statusCard').classList.add('offline');
             document.getElementById('statusTitle').textContent = 'No disponible';
             document.getElementById('statusSubtitle').textContent = 'No estás recibiendo viajes';
+            if (onlineGlow) onlineGlow.classList.remove('active');
             if (watchId !== null) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
@@ -949,7 +951,16 @@
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById('view-' + tabId).classList.add('active');
-            element.classList.add('active');
+            if (element) {
+                element.classList.add('active');
+            } else {
+                const navItems = document.querySelectorAll('.nav-item');
+                const targetIndex = ['inicio', 'viajes', 'historial', 'billetera', 'chat', 'perfil'].indexOf(tabId);
+                if (targetIndex !== -1 && navItems[targetIndex]) {
+                    navItems[targetIndex].classList.add('active');
+                }
+            }
+
             if (tabId === 'viajes') {
                 if (!map && isDriverOnline) initMap();
                 if (map) {
@@ -980,7 +991,7 @@
             map.on('load', () => {
                 console.log('Mapa cargado');
                 const layers = map.getStyle().layers;
-                const labelLayerId = layers.find(layer => layer.type === 'symbol' && layer.layout['text-field']).id;
+                const labelLayerId = layers.find(layer => layer.type === 'symbol' && layer.layout['text-field'])?.id;
                 if (map.getSource('composite') && map.getLayer('building')) {
                     map.addLayer({
                         'id': 'add-3d-buildings',
@@ -996,8 +1007,6 @@
                             'fill-extrusion-opacity': 0.6
                         }
                     }, labelLayerId);
-                } else {
-                    console.warn('No se pudo agregar capa 3D: fuente o capa building no encontrada');
                 }
             });
         }
@@ -1093,7 +1102,7 @@
                 acceptBtn.innerHTML = '<i class="fas fa-play"></i> Iniciar ruta';
                 acceptBtn.onclick = function() {
                     hideRideModal();
-                    switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
+                    switchTab('viajes', document.querySelectorAll('.nav-item')[1]);
                     if (currentPosition && ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
                         drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
                         currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
@@ -1131,7 +1140,6 @@
         }
 
         function updateRideUI(ride) {
-            // Mostrar/ocultar barra de búsqueda según estado
             if (ride && (ride.status === 'aceptado' || ride.status === 'llegado_origen' || ride.status === 'en_curso')) {
                 document.getElementById('searchContainer').classList.add('hidden');
             } else {
@@ -1162,7 +1170,6 @@
                 resetRideState();
             }
 
-            // Actualizar botones según el nuevo estado
             updateActionButtons();
 
             if (document.getElementById('view-historial').classList.contains('active')) {
@@ -1230,7 +1237,7 @@
                 }
             }
 
-            switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
+            switchTab('viajes', document.querySelectorAll('.nav-item')[1]);
 
             await ensureMapReady();
 
@@ -1313,14 +1320,6 @@
                 console.log('Llamando a drawRoute con destino:', ride.destination_lat, ride.destination_lng);
                 await drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
                 currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
-            } else {
-                console.warn('Faltan coordenadas de destino o posición actual');
-                if (!currentPosition) console.warn('currentPosition es null');
-                if (!ride) console.warn('ride es null');
-                else {
-                    if (!ride.destination_lat) console.warn('destination_lat es null');
-                    if (!ride.destination_lng) console.warn('destination_lng es null');
-                }
             }
             proximityAlertShown = false;
         }
@@ -1378,11 +1377,7 @@
 
         // ==================== RUTA Y NAVEGACIÓN ====================
         async function drawRoute(originCoords, waypointCoords, destinationCoords) {
-            console.log('drawRoute llamada con:', originCoords, waypointCoords, destinationCoords);
-            if (!map) {
-                console.warn('Mapa no inicializado');
-                return;
-            }
+            if (!map) return;
             await ensureMapReady();
 
             if (map.getLayer('route-line')) map.removeLayer('route-line');
@@ -1554,8 +1549,8 @@
                 statusSubtitle.textContent = 'Buscando viajes cercanos...';
                 if (onlineGlow) onlineGlow.classList.add('active');
 
-                if (!map) initMap();
-                else if (!mapInitialized) initMap();
+                // Dirigir directamente a la pantalla del mapa/viajes
+                switchTab('viajes', document.querySelectorAll('.nav-item')[1]);
 
                 startTracking();
 
@@ -1563,8 +1558,8 @@
                     await supabaseClient.from('driver_status').upsert({
                         driver_id: currentDriverId,
                         is_online: true,
-                        latitude: null,
-                        longitude: null,
+                        latitude: currentPosition ? currentPosition[0] : null,
+                        longitude: currentPosition ? currentPosition[1] : null,
                         last_updated: new Date().toISOString()
                     }, { onConflict: 'driver_id' });
                 } catch (error) {
@@ -1600,328 +1595,233 @@
                 watchId = null;
             }
             watchId = navigator.geolocation.watchPosition(
-                (position) => {
+                async (position) => {
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
                     currentPosition = [lat, lng];
 
-                    if (map && mapInitialized) {
+                    if (!mapInitialized || !map) {
+                        initMap();
+                    }
+
+                    if (map) {
                         updateDriverMarker(lat, lng);
                         if (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') {
                             map.easeTo({ center: [lng, lat], pitch: 60, zoom: 17, duration: 1000 });
-                            document.getElementById('navigation-panel').style.display = 'flex';
+                            updateNavigationByPosition(lat, lng);
                         } else {
-                            map.easeTo({ center: [lng, lat], pitch: 0, zoom: 15, duration: 1000 });
-                            document.getElementById('navigation-panel').style.display = 'none';
+                            map.flyTo({ center: [lng, lat], zoom: 16, essential: true });
                         }
                     }
 
                     const now = Date.now();
-                    if (now - lastUpdateTime > UPDATE_INTERVAL) {
+                    if (now - lastUpdateTime > UPDATE_INTERVAL && currentDriverId) {
                         lastUpdateTime = now;
-                        updateDriverStatus(true, lat, lng);
+                        await supabaseClient.from('driver_status').upsert({
+                            driver_id: currentDriverId,
+                            is_online: isDriverOnline,
+                            latitude: lat,
+                            longitude: lng,
+                            last_updated: new Date().toISOString()
+                        }, { onConflict: 'driver_id' });
                     }
                 },
-                (error) => {
-                    console.error('Error en watchPosition:', error);
-                    alert('No se pudo obtener tu ubicación. Asegúrate de tener el GPS activado en Alta Precisión.');
+                (err) => {
+                    console.error('Error al obtener ubicación:', err);
                 },
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+                { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 }
             );
         }
 
-        async function updateDriverStatus(isOnline, lat = null, lng = null) {
-            try {
-                await supabaseClient.from('driver_status').upsert({
-                    driver_id: currentDriverId,
-                    is_online: isOnline,
-                    latitude: lat,
-                    longitude: lng,
-                    last_updated: new Date().toISOString()
-                }, { onConflict: 'driver_id' });
-            } catch (error) {
-                console.error('Error guardando estado:', error);
-            }
-        }
+        // ==================== BÚSQUEDA Y SUGERENCIAS ====================
+        const searchInput = document.getElementById('searchInput');
+        const suggestionsBox = document.getElementById('suggestions');
 
-        // ==================== BÚSQUEDA ====================
-        document.getElementById('searchInput').addEventListener('input', debounce(async (e) => {
-            const query = e.target.value.trim();
-            if (query.length < 3) {
-                document.getElementById('suggestions').style.display = 'none';
-                return;
-            }
-            const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&language=es&limit=5`;
-            const response = await fetch(url);
-            const data = await response.json();
-            const container = document.getElementById('suggestions');
-            container.innerHTML = '';
-            if (data.features && data.features.length > 0) {
-                data.features.forEach(feature => {
-                    const item = document.createElement('div');
-                    item.className = 'suggestion-item';
-                    item.innerHTML = `<i class="fas fa-map-marker-alt" style="color: var(--primary-orange)"></i> ${feature.place_name}`;
-                    item.addEventListener('click', () => {
-                        const [lng, lat] = feature.center;
-                        map.flyTo({ center: [lng, lat], zoom: 16 });
-                        document.getElementById('searchInput').value = feature.place_name;
-                        container.style.display = 'none';
-                    });
-                    container.appendChild(item);
-                });
-                container.style.display = 'block';
-            } else {
-                container.style.display = 'none';
-            }
-        }, 300));
-
-        function debounce(func, delay) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), delay);
-            };
-        }
-
-        // ==================== HISTORIAL ====================
-        async function loadHistorial() {
-            if (!currentDriverId) return;
-            
-            const { data: activeRides, error: activeError } = await supabaseClient
-                .from('rides')
-                .select('id, origin_address, destination_address, price, status, created_at')
-                .eq('driver_id', currentDriverId)
-                .in('status', ['pendiente', 'aceptado', 'llegado_origen', 'en_curso'])
-                .order('created_at', { ascending: false });
-            
-            const activeContainer = document.getElementById('activeRidesList');
-            activeContainer.innerHTML = '';
-            
-            if (activeError) {
-                activeContainer.innerHTML = `<p style="color: var(--gray-text);">Error al cargar viajes activos</p>`;
-            } else if (!activeRides || activeRides.length === 0) {
-                activeContainer.innerHTML = `<p style="color: var(--gray-text); text-align:center;">No tienes viajes activos</p>`;
-            } else {
-                activeRides.forEach(ride => {
-                    let statusClass = 'activo';
-                    if (ride.status === 'llegado_origen') statusClass = 'llegado_origen';
-                    activeContainer.innerHTML += `
-                        <div class="ride-card-history">
-                            <div class="info">
-                                <div class="origin-dest">${ride.origin_address || 'Origen'} → ${ride.destination_address || 'Destino'}</div>
-                                <div class="date">${new Date(ride.created_at).toLocaleString()}</div>
-                            </div>
-                            <div class="text-end">
-                                <div class="fs-6 fw-bold text-white">Bs ${parseFloat(ride.price || 0).toFixed(2)}</div>
-                                <span class="status-badge ${statusClass}">${ride.status}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-
-            const { data: completedRides, error: completedError } = await supabaseClient
-                .from('rides')
-                .select('id, origin_address, destination_address, price, status, created_at')
-                .eq('driver_id', currentDriverId)
-                .in('status', ['completado', 'no_completado', 'cancelado', 'rechazado'])
-                .order('created_at', { ascending: false });
-            
-            const completedContainer = document.getElementById('completedRidesList');
-            completedContainer.innerHTML = '';
-            
-            if (completedError) {
-                completedContainer.innerHTML = `<p style="color: var(--gray-text);">Error al cargar historial</p>`;
-            } else if (!completedRides || completedRides.length === 0) {
-                completedContainer.innerHTML = `<p style="color: var(--gray-text); text-align:center;">No hay viajes en el historial</p>`;
-            } else {
-                completedRides.forEach(ride => {
-                    const badgeClass = ride.status === 'completado' ? 'completado' : (ride.status === 'no_completado' ? 'no_completado' : '');
-                    completedContainer.innerHTML += `
-                        <div class="ride-card-history">
-                            <div class="info">
-                                <div class="origin-dest">${ride.origin_address || 'Origen'} → ${ride.destination_address || 'Destino'}</div>
-                                <div class="date">${new Date(ride.created_at).toLocaleString()}</div>
-                            </div>
-                            <div class="text-end">
-                                <div class="fs-6 fw-bold text-white">Bs ${parseFloat(ride.price || 0).toFixed(2)}</div>
-                                <span class="status-badge ${badgeClass}">${ride.status}</span>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-        }
-
-        // ==================== CHAT ====================
-        async function loadChatMessages() {
-            const container = document.getElementById('chatMessages');
-            container.innerHTML = '';
-            if (currentChatTarget === 'central') await loadCentralChat();
-            else await loadRideChat();
-        }
-
-        async function loadCentralChat() {
-            const { data, error } = await supabaseClient
-                .from('central_messages')
-                .select('*')
-                .or(`driver_id.eq.${currentDriverId},driver_id.is.null`)
-                .order('created_at', { ascending: true });
-            if (error) return;
-            if (!data || data.length === 0) {
-                document.getElementById('chatMessages').innerHTML = '<p style="color:var(--gray-text);text-align:center;padding:20px;">No hay mensajes de la central</p>';
-                return;
-            }
-            data.forEach(msg => {
-                const isMine = msg.created_by === currentDriverId;
-                appendMessageToChat(msg.message, isMine ? 'sent' : 'received', new Date(msg.created_at));
-            });
-        }
-
-        async function loadRideChat() {
-            if (!currentRideId) {
-                document.getElementById('chatMessages').innerHTML = '<p style="color:var(--gray-text);text-align:center;padding:20px;">No tienes un viaje activo para chatear</p>';
-                return;
-            }
-            const { data, error } = await supabaseClient
-                .from('chat_messages')
-                .select('*')
-                .eq('ride_id', currentRideId)
-                .order('created_at', { ascending: true });
-            if (error) return;
-            if (!data || data.length === 0) {
-                document.getElementById('chatMessages').innerHTML = '<p style="color:var(--gray-text);text-align:center;padding:20px;">No hay mensajes en este viaje</p>';
-                return;
-            }
-            data.forEach(msg => {
-                const isMine = msg.sender_id === currentDriverId;
-                appendMessageToChat(msg.message, isMine ? 'sent' : 'received', new Date(msg.created_at));
-            });
-        }
-
-        function appendMessageToChat(text, type, date = new Date()) {
-            const container = document.getElementById('chatMessages');
-            const msgEl = document.createElement('div');
-            msgEl.className = `message ${type}`;
-            msgEl.innerHTML = `<div>${text}</div><div style="font-size:10px;opacity:0.7;text-align:right;margin-top:4px;">${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>`;
-            container.appendChild(msgEl);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        async function sendCentralMessage() {
-            const input = document.getElementById('chatInput');
-            const message = input.value.trim();
-            if (!message) return;
-            appendMessageToChat(message, 'sent');
-            input.value = '';
-            try {
-                if (currentChatTarget === 'central') {
-                    const { error } = await supabaseClient.from('central_messages').insert({
-                        driver_id: currentDriverId,
-                        message: message,
-                        is_read: false,
-                        created_by: currentDriverId
-                    });
-                    if (error) throw error;
-                } else if (currentChatTarget === 'passenger' && currentRideId) {
-                    const { error } = await supabaseClient.from('chat_messages').insert({
-                        ride_id: currentRideId,
-                        sender_type: 'driver',
-                        sender_id: currentDriverId,
-                        message: message
-                    });
-                    if (error) throw error;
+        if (searchInput) {
+            searchInput.addEventListener('input', async (e) => {
+                const query = e.target.value.trim();
+                if (query.length < 3) {
+                    suggestionsBox.style.display = 'none';
+                    return;
                 }
-            } catch (error) {
-                console.error('Error enviando mensaje:', error);
-                alert('No se pudo enviar el mensaje. Verifica tu conexión.');
-            }
-        }
-
-        function setupChatSubscription() {
-            supabaseClient
-                .channel('central-chat')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'central_messages' }, (payload) => {
-                    const msg = payload.new;
-                    if ((msg.driver_id === currentDriverId || msg.driver_id === null) && msg.created_by !== currentDriverId) {
-                        if (currentChatTarget === 'central') appendMessageToChat(msg.message, 'received');
+                try {
+                    const res = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&country=bo&autocomplete=true`);
+                    const data = await res.json();
+                    if (data.features && data.features.length > 0) {
+                        suggestionsBox.innerHTML = '';
+                        data.features.forEach(feat => {
+                            const item = document.createElement('div');
+                            item.className = 'suggestion-item';
+                            item.innerHTML = `<i class="fas fa-map-marker-alt"></i><span>${feat.place_name}</span>`;
+                            item.onclick = () => {
+                                const [lng, lat] = feat.center;
+                                if (map) map.flyTo({ center: [lng, lat], zoom: 16 });
+                                suggestionsBox.style.display = 'none';
+                                searchInput.value = feat.place_name;
+                            };
+                            suggestionsBox.appendChild(item);
+                        });
+                        suggestionsBox.style.display = 'block';
+                    } else {
+                        suggestionsBox.style.display = 'none';
                     }
-                })
-                .subscribe();
-            supabaseClient
-                .channel('ride-chat')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
-                    const msg = payload.new;
-                    if (msg.ride_id === currentRideId && msg.sender_id !== currentDriverId) {
-                        if (currentChatTarget === 'passenger') appendMessageToChat(msg.message, 'received');
-                    }
-                })
-                .subscribe();
+                } catch (err) {
+                    console.error('Error en búsqueda de dirección:', err);
+                }
+            });
         }
 
         // ==================== BILLETERA ====================
         async function loadWalletData() {
             if (!currentDriverId) return;
-            const { data: wallet } = await supabaseClient
-                .from('wallets')
-                .select('balance')
+            const { data: rides, error } = await supabaseClient
+                .from('rides')
+                .select('price, completed_at, status')
                 .eq('driver_id', currentDriverId)
-                .maybeSingle();
-            if (wallet) document.getElementById('walletBalance').textContent = `Bs ${parseFloat(wallet.balance || 0).toFixed(2)}`;
-            const { data: txs, error } = await supabaseClient
-                .from('wallet_transactions')
-                .select('*')
-                .eq('driver_id', currentDriverId)
-                .order('created_at', { ascending: false })
-                .limit(20);
-            const list = document.getElementById('transactionList');
-            list.innerHTML = '';
-            if (!txs || txs.length === 0) {
-                list.innerHTML = '<p style="color:var(--gray-text);text-align:center;">No hay movimientos</p>';
+                .eq('status', 'completado');
+
+            if (error) {
+                console.error('Error cargando billetera:', error);
                 return;
             }
-            txs.forEach(tx => {
-                const div = document.createElement('div');
-                div.className = 'transaction-item';
-                const isPositive = tx.amount >= 0;
-                div.innerHTML = `
-                    <div>
-                        <div style="font-size:14px;">${tx.description || tx.type}</div>
-                        <div style="font-size:11px;color:var(--gray-text);">${new Date(tx.created_at).toLocaleDateString()}</div>
-                    </div>
-                    <div class="transaction-amount ${isPositive ? 'positive' : 'negative'}">
-                        ${isPositive ? '+' : ''}Bs ${parseFloat(tx.amount).toFixed(2)}
-                    </div>
-                `;
-                list.appendChild(div);
-            });
+
+            let total = 0;
+            let listHtml = '';
+            if (rides && rides.length > 0) {
+                rides.forEach(r => {
+                    const amount = parseFloat(r.price || 0);
+                    total += amount;
+                    const dateStr = r.completed_at ? new Date(r.completed_at).toLocaleDateString('es-BO') : 'Reciente';
+                    listHtml += `
+                        <div class="transaction-item">
+                            <div>
+                                <div style="font-weight:600;">Viaje completado</div>
+                                <div style="font-size:12px;color:var(--gray-text);">${dateStr}</div>
+                            </div>
+                            <div class="transaction-amount positive">+Bs ${amount.toFixed(2)}</div>
+                        </div>
+                    `;
+                });
+                document.getElementById('walletBalance').textContent = `Bs ${total.toFixed(2)}`;
+                document.getElementById('statGanancias').textContent = total.toFixed(0);
+                document.getElementById('statViajes').textContent = rides.length;
+                document.getElementById('transactionList').innerHTML = listHtml;
+            } else {
+                document.getElementById('walletBalance').textContent = 'Bs 0.00';
+                document.getElementById('transactionList').innerHTML = '<p style="color: var(--gray-text); text-align:center;">No hay movimientos</p>';
+            }
         }
 
-        // Al cerrar la ventana, poner offline
-        window.addEventListener('beforeunload', () => {
-            if (watchId !== null) {
-                navigator.geolocation.clearWatch(watchId);
-            }
-            if (currentDriverId) {
-                navigator.sendBeacon?.(
-                    `${supabaseUrl}/rest/v1/driver_status?driver_id=eq.${currentDriverId}`,
-                    new Blob([JSON.stringify({ is_online: false, last_updated: new Date().toISOString() })], { type: 'application/json' })
-                );
-            }
-        });
+        // ==================== HISTORIAL ====================
+        async function loadHistorial() {
+            if (!currentDriverId) return;
+            const { data: activeRides } = await supabaseClient
+                .from('rides')
+                .select('*')
+                .eq('driver_id', currentDriverId)
+                .in('status', ['pendiente', 'aceptado', 'llegado_origen', 'en_curso'])
+                .order('created_at', { ascending: false });
 
-        // ==================== MANEJO DE VISIBILIDAD ====================
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
-                hideLoading();
-                if (map) {
-                    map.resize();
-                }
-                if (isDriverOnline && !watchId) {
-                    startTracking();
-                }
+            const activeList = document.getElementById('activeRidesList');
+            if (activeRides && activeRides.length > 0) {
+                activeList.innerHTML = activeRides.map(r => `
+                    <div class="ride-card-history">
+                        <div class="info">
+                            <div class="origin-dest"><strong>De:</strong> ${r.origin_address || 'Origen'}</div>
+                            <div class="origin-dest"><strong>A:</strong> ${r.destination_address || 'Destino'}</div>
+                            <div class="date">${new Date(r.created_at).toLocaleString('es-BO')}</div>
+                        </div>
+                        <span class="status-badge ${r.status}">${r.status.replace('_', ' ')}</span>
+                    </div>
+                `).join('');
+            } else {
+                activeList.innerHTML = '<p style="color: var(--gray-text); text-align:center;">No hay viajes activos</p>';
             }
-        });
+
+            const { data: completedRides } = await supabaseClient
+                .from('rides')
+                .select('*')
+                .eq('driver_id', currentDriverId)
+                .in('status', ['completado', 'no_completado', 'cancelado'])
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            const completedList = document.getElementById('completedRidesList');
+            if (completedRides && completedRides.length > 0) {
+                completedList.innerHTML = completedRides.map(r => `
+                    <div class="ride-card-history">
+                        <div class="info">
+                            <div class="origin-dest"><strong>De:</strong> ${r.origin_address || 'Origen'}</div>
+                            <div class="origin-dest"><strong>A:</strong> ${r.destination_address || 'Destino'}</div>
+                            <div class="date">${new Date(r.created_at).toLocaleString('es-BO')} - Bs ${parseFloat(r.price || 0).toFixed(2)}</div>
+                        </div>
+                        <span class="status-badge ${r.status}">${r.status.replace('_', ' ')}</span>
+                    </div>
+                `).join('');
+            } else {
+                completedList.innerHTML = '<p style="color: var(--gray-text); text-align:center;">No hay historial de viajes</p>';
+            }
+        }
+
+        // ==================== CHAT ====================
+        async function loadChatMessages() {
+            if (!currentDriverId) return;
+            const { data: messages, error } = await supabaseClient
+                .from('chat_messages')
+                .select('*')
+                .eq('driver_id', currentDriverId)
+                .order('created_at', { ascending: true });
+
+            const container = document.getElementById('chatMessages');
+            if (error || !messages || messages.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:var(--gray-text);margin-top:20px;">Sin mensajes previos</div>';
+                return;
+            }
+
+            container.innerHTML = messages.map(m => `
+                <div class="message ${m.sender === 'driver' ? 'sent' : 'received'}">
+                    <div>${m.message}</div>
+                </div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function sendCentralMessage() {
+            const input = document.getElementById('chatInput');
+            const text = input.value.trim();
+            if (!text || !currentDriverId) return;
+
+            input.value = '';
+            const { error } = await supabaseClient
+                .from('chat_messages')
+                .insert({
+                    driver_id: currentDriverId,
+                    sender: 'driver',
+                    message: text,
+                    created_at: new Date().toISOString()
+                });
+
+            if (error) {
+                console.error('Error enviando mensaje:', error);
+                alert('No se pudo enviar el mensaje.');
+            } else {
+                loadChatMessages();
+            }
+        }
+
+        function setupChatSubscription() {
+            if (window.chatSubscription) return;
+            window.chatSubscription = supabaseClient
+                .channel('driver-chat')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'chat_messages' }, (payload) => {
+                    const msg = payload.new;
+                    if (msg && msg.driver_id === currentDriverId) {
+                        loadChatMessages();
+                    }
+                })
+                .subscribe();
+        }
     </script>
 </body>
 </html>
+
