@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-    <!-- Turf.js para cálculos espaciales (aún puede usarse para otras cosas) -->
+    <!-- Turf.js para cálculos espaciales (opcional, lo mantenemos) -->
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <style>
         /* ========== ESTILOS ========== */
@@ -362,45 +362,6 @@
             font-weight: 500;
             letter-spacing: 0.5px;
         }
-
-        /* NUEVO: Panel para Google Maps iframe */
-        #google-maps-panel {
-            display: none;
-            position: absolute;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 95%;
-            max-width: 500px;
-            height: 70%;
-            z-index: 1001;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
-            background: white;
-        }
-        #google-maps-panel .gm-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            background: #1a1a1a;
-            color: white;
-            font-weight: 600;
-        }
-        #google-maps-panel .gm-header button {
-            background: var(--primary-orange);
-            border: none;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 50%;
-            cursor: pointer;
-        }
-        #google-maps-frame {
-            width: 100%;
-            height: calc(100% - 50px);
-            border: 0;
-        }
     </style>
 </head>
 <body>
@@ -545,15 +506,6 @@
                 <div class="suggestions" id="suggestions"></div>
             </div>
 
-            <!-- NUEVO: Panel de Google Maps incrustado -->
-            <div id="google-maps-panel">
-                <div class="gm-header">
-                    <span>Navegación</span>
-                    <button id="close-google-maps"><i class="fas fa-times"></i></button>
-                </div>
-                <iframe id="google-maps-frame" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-            </div>
-
             <div id="navigation-panel" class="navigation-panel" style="display: none;">
                 <div class="nav-instruction">
                     <i class="fas fa-arrow-up" id="nav-icon"></i>
@@ -677,8 +629,9 @@
         let currentDriverId = null;
         let currentDriverData = null;
         let map = null;
-        let currentPosition = null;
-        let driverMarker = null;
+        let currentPosition = null;      // posición actual (para mostrar)
+        let previousCoord = null;        // coordenada anterior para calcular bearing si no hay heading
+        let driverMarker = null;         // marcador de la moto
         let currentRideId = null;
         let currentRideStatus = null;
         let isDriverOnline = false;
@@ -691,7 +644,6 @@
         const UPDATE_INTERVAL = 5000;
         let currentNavigationSteps = [];
         let currentNavigationIndex = 0;
-        let lastRouteUpdate = 0;
         let proximityAlertShown = false;
         let currentRouteTarget = null;
 
@@ -815,6 +767,14 @@
             document.getElementById('statusCard').classList.add('offline');
             document.getElementById('statusTitle').textContent = 'No disponible';
             document.getElementById('statusSubtitle').textContent = 'No estás recibiendo viajes';
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            if (driverMarker) {
+                driverMarker.remove();
+                driverMarker = null;
+            }
         }
 
         // ==================== ONBOARDING ====================
@@ -963,11 +923,14 @@
                 supabaseClient.removeChannel(window.chatSubscription);
                 window.chatSubscription = null;
             }
+            if (driverMarker) {
+                driverMarker.remove();
+                driverMarker = null;
+            }
             if (map) {
                 map.remove();
                 map = null;
                 mapInitialized = false;
-                driverMarker = null;
             }
         }
 
@@ -1041,7 +1004,6 @@
             });
         }
 
-        // Función auxiliar para asegurar que el mapa esté listo
         function ensureMapReady() {
             return new Promise(resolve => {
                 if (!map) {
@@ -1135,9 +1097,6 @@
                     hideRideModal();
                     switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
                     if (currentPosition && ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
-                        // NUEVO: abrir Google Maps con ruta al origen
-                        openGoogleMapsNavigation(ride.origin_lat, ride.origin_lng);
-                        // También dibujar ruta en Mapbox como respaldo visual
                         drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
                         currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
                     }
@@ -1160,8 +1119,6 @@
         function resetRideState() {
             document.getElementById('rideModal').classList.remove('active');
             document.getElementById('navigation-panel').style.display = 'none';
-            // NUEVO: cerrar Google Maps si está abierto
-            closeGoogleMapsNavigation();
             currentRideId = null;
             currentRideStatus = null;
             clearRoute();
@@ -1287,8 +1244,6 @@
             if (ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
                 await drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
                 currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
-                // NUEVO: abrir Google Maps con ruta al origen
-                openGoogleMapsNavigation(ride.origin_lat, ride.origin_lng);
             } else {
                 console.warn('Faltan coordenadas para dibujar la ruta');
             }
@@ -1336,8 +1291,6 @@
             updateActionButtons();
             clearRoute();
             currentRouteTarget = null;
-            // NUEVO: cerrar Google Maps al llegar
-            closeGoogleMapsNavigation();
             if (map && currentPosition) {
                 map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 16, pitch: 0, bearing: 0 });
             }
@@ -1366,8 +1319,6 @@
                 console.log('Llamando a drawRoute con destino:', ride.destination_lat, ride.destination_lng);
                 await drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
                 currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
-                // NUEVO: abrir Google Maps con ruta al destino
-                openGoogleMapsNavigation(ride.destination_lat, ride.destination_lng);
             } else {
                 console.warn('Faltan coordenadas de destino o posición actual');
                 if (!currentPosition) console.warn('currentPosition es null');
@@ -1527,24 +1478,28 @@
             const iconMap = {
                 'turn-left': 'fa-arrow-left',
                 'turn-right': 'fa-arrow-right',
-                'turn-slight-left': 'fa-arrow-left',
-                'turn-slight-right': 'fa-arrow-right',
+                'turn-slight-left': 'fa-undo',
+                'turn-slight-right': 'fa-redo',
                 'turn-sharp-left': 'fa-arrow-left',
                 'turn-sharp-right': 'fa-arrow-right',
-                'continue': 'fa-arrow-up',
-                'depart': 'fa-arrow-up',
-                'arrive': 'fa-flag-checkered',
-                'merge': 'fa-arrow-up',
-                'fork': 'fa-code-fork'
+                'straight': 'fa-arrow-up',
+                'arrive': 'fa-flag-checkered'
             };
-            const instruction = step.maneuver.instruction || 'Sigue recto';
-            const distance = step.distance; 
-            const iconClass = iconMap[step.maneuver.type] || 'fa-arrow-up';
-            
-            document.getElementById('nav-text').textContent = instruction;
-            document.getElementById('nav-icon').className = `fas ${iconClass}`;
-            document.getElementById('nav-distance').textContent = 
-                distance >= 1000 ? `${(distance/1000).toFixed(1)} km` : `${Math.round(distance)} m`;
+            const panel = document.getElementById('navigation-panel');
+            const iconEl = document.getElementById('nav-icon');
+            const distanceEl = document.getElementById('nav-distance');
+            const textEl = document.getElementById('nav-text');
+
+            if (step) {
+                panel.style.display = 'flex';
+                const iconClass = iconMap[step.maneuver.modifier] || iconMap[step.maneuver.type] || 'fa-arrow-up';
+                iconEl.className = `fas ${iconClass}`;
+                let distanceStr = step.distance < 1000 ? `${Math.round(step.distance)} m` : `${(step.distance / 1000).toFixed(1)} km`;
+                distanceEl.textContent = distanceStr;
+                textEl.textContent = step.maneuver.instruction;
+            } else {
+                panel.style.display = 'none';
+            }
         }
 
         function updateNavigationByPosition(lat, lng) {
@@ -1594,131 +1549,112 @@
         const statusSubtitle = document.getElementById('statusSubtitle');
         const onlineGlow = document.getElementById('onlineGlow');
 
-        toggleSwitch.addEventListener('change', function() {
-            if (this.checked) {
+        toggleSwitch.addEventListener('change', async function(e) {
+            isDriverOnline = e.target.checked;
+            if (isDriverOnline) {
                 statusCard.classList.remove('offline');
-                statusTitle.textContent = 'Disponible';
-                statusSubtitle.textContent = 'Buscando ubicación...';
-                if(onlineGlow) onlineGlow.classList.add('active');
-                showLoading('Obteniendo ubicación exacta...');
-                watchId = navigator.geolocation.watchPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        currentPosition = [lat, lng];
-                        if (!map) initMap();
-                        
-                        if (driverMarker) {
-                            driverMarker.marker.setLngLat([lng, lat]);
-                            driverMarker.pulseMarker.setLngLat([lng, lat]);
-                        } else {
-                            driverMarker = createDriverMarker(lat, lng);
-                            map.jumpTo({ center: [lng, lat], zoom: 16 });
-                        }
+                statusTitle.textContent = 'En línea';
+                statusSubtitle.textContent = 'Buscando viajes cercanos...';
+                if (onlineGlow) onlineGlow.classList.add('active');
 
-                        let targetBearing = 0;
-                        if (currentRouteTarget) {
-                            targetBearing = calculateBearing(lat, lng, currentRouteTarget.lat, currentRouteTarget.lng);
-                        }
+                // Iniciar mapa si no está listo
+                if (!map) initMap();
+                else if (!mapInitialized) initMap();
 
-                        // Si el panel de Google Maps no está abierto, mover el mapa de Mapbox
-                        if (document.getElementById('google-maps-panel').style.display === 'none') {
-                            if (currentRideId) {
-                                map.easeTo({
-                                    center: [lng, lat],
-                                    pitch: 60,
-                                    bearing: targetBearing,
-                                    zoom: 17,
-                                    duration: 1000
-                                });
-                                document.getElementById('navigation-panel').style.display = 'flex';
-                            } else {
-                                map.easeTo({
-                                    center: [lng, lat],
-                                    pitch: 0,
-                                    bearing: 0,
-                                    duration: 1000
-                                });
-                                document.getElementById('navigation-panel').style.display = 'none';
-                            }
-                        }
-                        
-                        hideLoading();
-                        statusSubtitle.textContent = 'Recibe solicitudes de viaje';
-                        if (!isDriverOnline) {
-                            isDriverOnline = true;
-                            loadActiveRide();
-                            switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
-                        }
-                        
-                        updateNavigationByPosition(lat, lng);
+                // Iniciar GPS
+                startTracking();
 
-                        if (currentRideStatus === 'aceptado' && !proximityAlertShown && currentRouteTarget) {
-                            const distToPickup = getDistanceFromLatLonInMeters(lat, lng, currentRouteTarget.lat, currentRouteTarget.lng);
-                            if (distToPickup < 20) {
-                                proximityAlertShown = true;
-                                document.getElementById('nav-text').textContent = '¡Has llegado al pasajero!';
-                                document.getElementById('nav-distance').textContent = '0 m';
-                                if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-                                const arrivedBtn = document.getElementById('arrivedBtn');
-                                arrivedBtn.style.transform = 'scale(1.1)';
-                                setTimeout(() => {
-                                    arrivedBtn.style.transform = 'scale(1)';
-                                }, 1000);
-                            }
-                        }
+                // Actualizar estado en Supabase
+                try {
+                    await supabaseClient.from('driver_status').upsert({
+                        driver_id: currentDriverId,
+                        is_online: true,
+                        latitude: null,
+                        longitude: null,
+                        last_updated: new Date().toISOString()
+                    }, { onConflict: 'driver_id' });
+                } catch (error) {
+                    console.error('Error actualizando estado:', error);
+                }
 
-                        const now = Date.now();
-                        if (now - lastRouteUpdate > 30000 && currentRideId && currentPosition && document.getElementById('google-maps-panel').style.display === 'none') {
-                            lastRouteUpdate = now;
-                            const { data: ride } = supabaseClient
-                                .from('rides')
-                                .select('origin_lat, origin_lng, destination_lat, destination_lng')
-                                .eq('id', currentRideId)
-                                .single();
-                            if (ride) {
-                                if (currentRideStatus === 'aceptado') {
-                                    drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
-                                    currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
-                                } else if (currentRideStatus === 'en_curso') {
-                                    drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
-                                    currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
-                                }
-                            }
-                        }
-
-                        if (now - lastUpdateTime > UPDATE_INTERVAL) {
-                            lastUpdateTime = now;
-                            updateDriverStatus(true, lat, lng);
-                        }
-                    },
-                    (error) => {
-                        hideLoading();
-                        toggleSwitch.checked = false;
-                        isDriverOnline = false;
-                        alert('No se pudo obtener tu ubicación. Asegúrate de tener el GPS activado en Alta Precisión.');
-                    },
-                    { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
-                );
+                // Cargar viajes activos
+                loadActiveRide();
             } else {
-                statusCard.classList.add('offline');
-                statusTitle.textContent = 'No disponible';
-                statusSubtitle.textContent = 'No estás recibiendo viajes';
-                if(onlineGlow) onlineGlow.classList.remove('active');
-                if (watchId !== null) {
-                    navigator.geolocation.clearWatch(watchId);
-                    watchId = null;
-                }
-                if (driverMarker) {
-                    driverMarker.marker.remove();
-                    driverMarker.pulseMarker.remove();
-                    driverMarker = null;
-                }
-                isDriverOnline = false;
-                updateDriverStatus(false);
-                resetRideState();
+                forceOffline();
             }
         });
+
+        function startTracking() {
+            if (watchId) return;
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    const heading = position.coords.heading || 0;
+
+                    currentPosition = [lat, lng];
+
+                    let bearing = heading;
+                    if (!heading && previousCoord) {
+                        bearing = turf.bearing(
+                            turf.point(previousCoord),
+                            turf.point([lng, lat])
+                        );
+                        if (bearing < 0) bearing += 360;
+                    }
+                    previousCoord = [lng, lat];
+
+                    if (map && mapInitialized) {
+                        updateDriverMarker(lat, lng, bearing);
+
+                        if (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') {
+                            map.easeTo({
+                                center: [lng, lat],
+                                bearing: bearing,
+                                pitch: 60,
+                                zoom: 17,
+                                duration: 1000
+                            });
+                            document.getElementById('navigation-panel').style.display = 'flex';
+                        } else {
+                            map.easeTo({
+                                center: [lng, lat],
+                                bearing: 0,
+                                pitch: 0,
+                                zoom: 15,
+                                duration: 1000
+                            });
+                            document.getElementById('navigation-panel').style.display = 'none';
+                        }
+                    }
+                },
+                (error) => {
+                    console.error("Error obteniendo GPS:", error);
+                },
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 0,
+                    timeout: 5000
+                }
+            );
+        }
+
+        function updateDriverMarker(lat, lng, bearing = 0) {
+            if (!driverMarker) {
+                const el = document.createElement('div');
+                el.className = 'avatar-marker';
+                el.innerHTML = '<i class="fas fa-motorcycle" style="font-size:30px; color:#ff7a00; background:white; padding:10px; border-radius:50%; border:2px solid #ff7a00;"></i>';
+                driverMarker = new mapboxgl.Marker({
+                    element: el,
+                    rotationAlignment: 'map'
+                })
+                .setLngLat([lng, lat])
+                .addTo(map);
+            } else {
+                driverMarker.setLngLat([lng, lat]);
+            }
+            driverMarker.setRotation(bearing);
+        }
 
         async function updateDriverStatus(isOnline, lat = null, lng = null) {
             try {
@@ -2008,73 +1944,10 @@
                     map.resize();
                 }
                 if (isDriverOnline && !watchId) {
-                    watchId = navigator.geolocation.watchPosition(
-                        (position) => {
-                            const lat = position.coords.latitude;
-                            const lng = position.coords.longitude;
-                            currentPosition = [lat, lng];
-                            if (driverMarker) {
-                                driverMarker.marker.setLngLat([lng, lat]);
-                                driverMarker.pulseMarker.setLngLat([lng, lat]);
-                            } else if (map) {
-                                driverMarker = createDriverMarker(lat, lng);
-                            }
-                            if (currentRideId && currentRouteTarget && map && document.getElementById('google-maps-panel').style.display === 'none') {
-                                const targetBearing = calculateBearing(lat, lng, currentRouteTarget.lat, currentRouteTarget.lng);
-                                map.easeTo({ center: [lng, lat], pitch: 60, bearing: targetBearing, zoom: 17, duration: 1000 });
-                            } else if (map) {
-                                map.easeTo({ center: [lng, lat], pitch: 0, bearing: 0, duration: 1000 });
-                            }
-                        },
-                        (error) => {
-                            console.error('Error de GPS al reanudar:', error);
-                            if (isDriverOnline) {
-                                alert('No se pudo obtener tu ubicación. Asegúrate de tener el GPS activado en Alta Precisión.');
-                            }
-                        },
-                        { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
-                    );
+                    startTracking();
                 }
             }
         });
-
-        // NUEVO: Funciones para Google Maps iframe
-        function openGoogleMapsNavigation(destinationLat, destinationLng) {
-            if (!currentPosition) {
-                alert('No se pudo obtener tu ubicación actual.');
-                return;
-            }
-            const origin = `${currentPosition[0]},${currentPosition[1]}`;
-            const destination = `${destinationLat},${destinationLng}`;
-            const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
-            
-            document.getElementById('google-maps-frame').src = url;
-            document.getElementById('google-maps-panel').style.display = 'block';
-            
-            // Ocultar el panel de instrucciones de Mapbox
-            document.getElementById('navigation-panel').style.display = 'none';
-        }
-
-        function closeGoogleMapsNavigation() {
-            document.getElementById('google-maps-panel').style.display = 'none';
-            document.getElementById('google-maps-frame').src = 'about:blank';
-        }
-
-        // Evento para cerrar el panel
-        document.getElementById('close-google-maps').addEventListener('click', closeGoogleMapsNavigation);
-
-        // Función auxiliar para crear marcador de conductor (puede ser avatar, no se usa flecha)
-        function createDriverMarker(lat, lng) {
-            const avatarImg = currentDriverData?.avatar_url || 'a.png';
-            const el = document.createElement('div');
-            el.className = 'avatar-marker-container';
-            el.innerHTML = `<div class="avatar-marker"><img src="${avatarImg}" alt="Avatar"></div>`;
-            const marker = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map);
-            const pulseEl = document.createElement('div');
-            pulseEl.className = 'pulse-ring';
-            const pulseMarker = new mapboxgl.Marker(pulseEl).setLngLat([lng, lat]).addTo(map);
-            return { marker, pulseMarker };
-        }
     </script>
 </body>
 </html>
