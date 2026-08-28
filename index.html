@@ -629,7 +629,7 @@
         let map = null;
         let currentPosition = null;
         let previousCoord = null;
-        let driverMarker = null; // ahora será un marcador simple
+        let driverMarker = null; // marcador simple
         let currentRideId = null;
         let currentRideStatus = null;
         let isDriverOnline = false;
@@ -1062,7 +1062,7 @@
                 .from('rides')
                 .select('*, passengers(full_name, phone)')
                 .eq('driver_id', currentDriverId)
-                .in('status', ['aceptado', 'llegado_origen', 'en_curso'])
+                .in('status', ['pendiente', 'aceptado', 'llegado_origen', 'en_curso'])
                 .order('created_at', { ascending: false })
                 .maybeSingle();
             if (error) return;
@@ -1074,7 +1074,7 @@
                 currentRideId = data.id;
                 currentRideStatus = data.status;
                 updateRideUI(data);
-                if (data.status === 'aceptado') showRideRequest(data);
+                if (data.status === 'pendiente' || data.status === 'aceptado') showRideRequest(data);
             }
         }
 
@@ -1098,6 +1098,7 @@
                         drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
                         currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
                     }
+                    updateActionButtons();
                 };
                 rejectBtn.innerHTML = '<i class="fas fa-times"></i> No puedo';
                 rejectBtn.onclick = rejectRide;
@@ -1130,18 +1131,7 @@
         }
 
         function updateRideUI(ride) {
-            const pickupBtn = document.getElementById('pickupBtn');
-            const arrivedBtn = document.getElementById('arrivedBtn');
-            const finishBtn = document.getElementById('finishBtn');
-            const notCompletedBtn = document.getElementById('notCompletedBtn');
-            const redirectBtn = document.getElementById('redirectBtn');
-            
-            pickupBtn.classList.add('hidden');
-            arrivedBtn.classList.add('hidden');
-            finishBtn.classList.add('hidden');
-            notCompletedBtn.classList.add('hidden');
-            redirectBtn.classList.add('hidden');
-            
+            // Mostrar/ocultar barra de búsqueda según estado
             if (ride && (ride.status === 'aceptado' || ride.status === 'llegado_origen' || ride.status === 'en_curso')) {
                 document.getElementById('searchContainer').classList.add('hidden');
             } else {
@@ -1150,8 +1140,6 @@
             
             if (ride.status === 'aceptado') {
                 hideRideModal();
-                arrivedBtn.classList.remove('hidden');
-                redirectBtn.classList.remove('hidden');
                 if (currentPosition && ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
                     if (!routeLayers.includes('route-line')) {
                         drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
@@ -1159,18 +1147,13 @@
                     }
                 }
             } else if (ride.status === 'llegado_origen') {
-                pickupBtn.classList.remove('hidden');
                 clearRoute();
                 if (map && currentPosition) {
                     map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 16, pitch: 0, bearing: 0 });
                 }
             } else if (ride.status === 'en_curso') {
-                finishBtn.classList.remove('hidden');
-                notCompletedBtn.classList.remove('hidden');
-                redirectBtn.classList.remove('hidden');
                 if (currentPosition && ride.destination_lat && ride.destination_lng) {
                     if (!routeLayers.includes('route-line')) {
-                        console.log('Dibujando ruta al destino desde updateRideUI');
                         drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
                         currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
                     }
@@ -1178,7 +1161,10 @@
             } else if (['completado','no_completado','cancelado','rechazado'].includes(ride.status)) {
                 resetRideState();
             }
-            
+
+            // Actualizar botones según el nuevo estado
+            updateActionButtons();
+
             if (document.getElementById('view-historial').classList.contains('active')) {
                 loadHistorial();
             }
@@ -1190,11 +1176,13 @@
             const finishBtn = document.getElementById('finishBtn');
             const notCompletedBtn = document.getElementById('notCompletedBtn');
             const redirectBtn = document.getElementById('redirectBtn');
+            
             pickupBtn.classList.add('hidden');
             arrivedBtn.classList.add('hidden');
             finishBtn.classList.add('hidden');
             notCompletedBtn.classList.add('hidden');
             redirectBtn.classList.add('hidden');
+            
             if (currentRideStatus === 'aceptado') {
                 arrivedBtn.classList.remove('hidden');
                 redirectBtn.classList.remove('hidden');
