@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-    <!-- Turf.js para cálculos espaciales (opcional, lo mantenemos) -->
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <style>
         /* ========== ESTILOS ========== */
@@ -168,22 +167,7 @@
         }
 
         .mapboxgl-ctrl-bottom-left, .mapboxgl-ctrl-bottom-right { display: none; }
-        .avatar-marker {
-            width: 50px; height: 50px; border-radius: 50%;
-            overflow: hidden; border: 3px solid var(--primary-orange);
-            box-shadow: 0 0 0 3px rgba(255,122,0,0.4), 0 4px 10px rgba(0,0,0,0.5);
-            background: #fff;
-        }
-        .avatar-marker img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-        .pulse-ring {
-            position: absolute; width: 50px; height: 50px;
-            border-radius: 50%; border: 3px solid var(--primary-orange);
-            animation: pulse 1.5s ease-out infinite; pointer-events: none;
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(2.5); opacity: 0; }
-        }
+
         .search-container { position: absolute; top: 15px; left: 15px; right: 15px; z-index: 1000; max-width: 500px; margin: 0 auto; transition: opacity 0.3s; }
         .search-container.hidden { opacity: 0; pointer-events: none; }
         .search-box { background-color: var(--bg-dark-gray); border-radius: 30px; padding: 10px 20px; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); border: 1px solid #333; }
@@ -208,7 +192,7 @@
         .action-btn.arrived { background: var(--blue); color: white; }
         .action-btn.finish { background: var(--primary-orange); color: white; }
         .action-btn.not-completed { background: #6b7280; color: white; } 
-        .action-btn.redirect { background: #8b5cf6; color: white; } /* Nuevo color */
+        .action-btn.redirect { background: #8b5cf6; color: white; }
         .action-btn.hidden { display: none; }
 
         .ride-modal {
@@ -362,6 +346,16 @@
             color: rgba(255, 255, 255, 0.95);
             font-weight: 500;
             letter-spacing: 0.5px;
+        }
+
+        /* Marcador de ubicación estilo Google Maps */
+        .location-marker {
+            width: 20px;
+            height: 20px;
+            background-color: #4285F4;
+            border: 2px solid white;
+            border-radius: 50%;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
         }
     </style>
 </head>
@@ -530,7 +524,6 @@
                 <button class="action-btn not-completed hidden" id="notCompletedBtn" onclick="finishRide(false)">
                     <i class="fas fa-times-circle"></i> No completado
                 </button>
-                <!-- NUEVO BOTÓN: REDIRECCIONAR -->
                 <button class="action-btn redirect hidden" id="redirectBtn" onclick="redirectRoute()">
                     <i class="fas fa-route"></i> Redireccionar
                 </button>
@@ -635,8 +628,8 @@
         let currentDriverData = null;
         let map = null;
         let currentPosition = null;
-        let previousCoord = null; // para cálculo de bearing si no hay heading
-        let driverMarker = null; // ya no se usa para la flecha, se mantiene por compatibilidad
+        let previousCoord = null;
+        let driverMarker = null; // ahora será un marcador simple
         let currentRideId = null;
         let currentRideStatus = null;
         let isDriverOnline = false;
@@ -651,7 +644,6 @@
         let currentNavigationIndex = 0;
         let proximityAlertShown = false;
         let currentRouteTarget = null;
-        let geolocateControl = null; // nuevo control de geolocalización
 
         // Onboarding
         let obLat = null;
@@ -776,9 +768,6 @@
             if (watchId !== null) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
-            }
-            if (geolocateControl) {
-                geolocateControl.trigger(); // apagar
             }
             if (driverMarker) {
                 driverMarker.remove();
@@ -936,9 +925,6 @@
                 driverMarker.remove();
                 driverMarker = null;
             }
-            if (geolocateControl) {
-                geolocateControl.trigger();
-            }
             if (map) {
                 map.remove();
                 map = null;
@@ -991,30 +977,8 @@
             });
             map.addControl(new mapboxgl.NavigationControl(), 'middle-right');
 
-            // NUEVO: Añadir control de geolocalización con flecha de orientación
-            geolocateControl = new mapboxgl.GeolocateControl({
-                positionOptions: { enableHighAccuracy: true },
-                trackUserLocation: true,
-                showUserHeading: true // Muestra flecha de dirección
-            });
-            map.addControl(geolocateControl, 'top-right');
-
-            // Escuchar cuando el control obtiene una nueva posición
-            geolocateControl.on('geolocate', (e) => {
-                const lat = e.coords.latitude;
-                const lng = e.coords.longitude;
-                currentPosition = [lat, lng];
-                // Actualizar estado en Supabase periódicamente
-                const now = Date.now();
-                if (now - lastUpdateTime > UPDATE_INTERVAL) {
-                    lastUpdateTime = now;
-                    updateDriverStatus(true, lat, lng);
-                }
-            });
-
             map.on('load', () => {
                 console.log('Mapa cargado');
-                // Ya no usamos loadImage para flechas personalizadas
                 const layers = map.getStyle().layers;
                 const labelLayerId = layers.find(layer => layer.type === 'symbol' && layer.layout['text-field']).id;
                 if (map.getSource('composite') && map.getLayer('building')) {
@@ -1176,7 +1140,7 @@
             arrivedBtn.classList.add('hidden');
             finishBtn.classList.add('hidden');
             notCompletedBtn.classList.add('hidden');
-            redirectBtn.classList.add('hidden'); // ocultar por defecto
+            redirectBtn.classList.add('hidden');
             
             if (ride && (ride.status === 'aceptado' || ride.status === 'llegado_origen' || ride.status === 'en_curso')) {
                 document.getElementById('searchContainer').classList.add('hidden');
@@ -1187,7 +1151,7 @@
             if (ride.status === 'aceptado') {
                 hideRideModal();
                 arrivedBtn.classList.remove('hidden');
-                redirectBtn.classList.remove('hidden'); // mostrar redireccionar
+                redirectBtn.classList.remove('hidden');
                 if (currentPosition && ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
                     if (!routeLayers.includes('route-line')) {
                         drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
@@ -1203,7 +1167,7 @@
             } else if (ride.status === 'en_curso') {
                 finishBtn.classList.remove('hidden');
                 notCompletedBtn.classList.remove('hidden');
-                redirectBtn.classList.remove('hidden'); // mostrar redireccionar
+                redirectBtn.classList.remove('hidden');
                 if (currentPosition && ride.destination_lat && ride.destination_lng) {
                     if (!routeLayers.includes('route-line')) {
                         console.log('Dibujando ruta al destino desde updateRideUI');
@@ -1230,7 +1194,7 @@
             arrivedBtn.classList.add('hidden');
             finishBtn.classList.add('hidden');
             notCompletedBtn.classList.add('hidden');
-            redirectBtn.classList.add('hidden'); // ocultar por defecto
+            redirectBtn.classList.add('hidden');
             if (currentRideStatus === 'aceptado') {
                 arrivedBtn.classList.remove('hidden');
                 redirectBtn.classList.remove('hidden');
@@ -1433,36 +1397,25 @@
             }
             await ensureMapReady();
 
-            // Limpiar capas previas
             if (map.getLayer('route-line')) map.removeLayer('route-line');
             if (map.getSource('route')) map.removeSource('route');
             clearRoute();
 
-            // Marcador de recogida
             if (originCoords[0] !== waypointCoords[0] || originCoords[1] !== waypointCoords[1]) {
                 const pickupEl = document.createElement('div');
                 pickupEl.innerHTML = `<i class="fas fa-user-circle" style="font-size:35px;color:#22c55e;text-shadow:0 0 8px #22c55e;"></i>`;
                 pickupMarker = new mapboxgl.Marker(pickupEl).setLngLat([waypointCoords[1], waypointCoords[0]]).addTo(map);
             }
 
-            // Marcador de destino
             const dropoffEl = document.createElement('div');
             dropoffEl.innerHTML = `<i class="fas fa-flag-checkered" style="font-size:35px;color:#ef4444;text-shadow:0 0 8px #ef4444;"></i>`;
             dropoffMarker = new mapboxgl.Marker(dropoffEl).setLngLat([destinationCoords[1], destinationCoords[0]]).addTo(map);
 
-            // Construir coordenadas
             let coordinates = [];
             if (originCoords[0] === waypointCoords[0] && originCoords[1] === waypointCoords[1]) {
-                coordinates = [
-                    [originCoords[1], originCoords[0]],
-                    [destinationCoords[1], destinationCoords[0]]
-                ];
+                coordinates = [[originCoords[1], originCoords[0]], [destinationCoords[1], destinationCoords[0]]];
             } else {
-                coordinates = [
-                    [originCoords[1], originCoords[0]],
-                    [waypointCoords[1], waypointCoords[0]],
-                    [destinationCoords[1], destinationCoords[0]]
-                ];
+                coordinates = [[originCoords[1], originCoords[0]], [waypointCoords[1], waypointCoords[0]], [destinationCoords[1], destinationCoords[0]]];
             }
 
             const coordsString = coordinates.map(c => c.join(',')).join(';');
@@ -1478,27 +1431,17 @@
                     currentNavigationIndex = 0;
                     updateNavigationPanel(currentNavigationSteps[0]);
 
-                    const geojson = {
-                        type: 'Feature',
-                        properties: {},
-                        geometry: geometry
-                    };
+                    const geojson = { type: 'Feature', properties: {}, geometry: geometry };
                     map.addSource('route', { type: 'geojson', data: geojson });
                     map.addLayer({
                         id: 'route-line',
                         type: 'line',
                         source: 'route',
                         layout: { 'line-join': 'round', 'line-cap': 'round' },
-                        paint: {
-                            'line-color': '#ff7a00',
-                            'line-width': 8,
-                            'line-opacity': 1
-                        }
+                        paint: { 'line-color': '#ff7a00', 'line-width': 8, 'line-opacity': 1 }
                     });
                     routeLayers.push('route', 'route-line');
-                    console.log('Ruta dibujada correctamente');
                 } else {
-                    console.warn('No se obtuvieron rutas de la API');
                     throw new Error('No routes found');
                 }
             } catch (error) {
@@ -1512,7 +1455,6 @@
                     paint: { 'line-color': '#ff7a00', 'line-width': 6 }
                 });
                 routeLayers.push('route', 'route-line');
-                console.log('Ruta de respaldo dibujada');
             }
         }
 
@@ -1546,10 +1488,8 @@
 
         function updateNavigationByPosition(lat, lng) {
             if (!currentNavigationSteps.length) return;
-            
             let closestIndex = currentNavigationIndex;
             let minDistance = Infinity;
-            
             currentNavigationSteps.forEach((step, index) => {
                 if (index <= currentNavigationIndex) return;
                 const stepLoc = step.maneuver.location;
@@ -1559,7 +1499,6 @@
                     closestIndex = index;
                 }
             });
-            
             if (closestIndex > currentNavigationIndex) {
                 currentNavigationIndex = closestIndex;
                 updateNavigationPanel(currentNavigationSteps[currentNavigationIndex]);
@@ -1575,7 +1514,6 @@
             routeLayers = [];
             if (pickupMarker) { pickupMarker.remove(); pickupMarker = null; }
             if (dropoffMarker) { dropoffMarker.remove(); dropoffMarker = null; }
-            
             currentNavigationSteps = [];
             currentNavigationIndex = 0;
             document.getElementById('nav-text').textContent = 'Sin ruta activa';
@@ -1590,29 +1528,20 @@
                 alert('No hay viaje activo o no se conoce tu ubicación actual.');
                 return;
             }
-
             try {
-                // Obtener los datos del viaje actual
                 const { data: ride, error } = await supabaseClient
                     .from('rides')
                     .select('origin_lat, origin_lng, destination_lat, destination_lng')
                     .eq('id', currentRideId)
                     .single();
-
                 if (error) throw error;
 
-                if (currentRideStatus === 'aceptado') {
-                    // Ir al origen (recoger pasajero)
-                    if (ride.origin_lat && ride.origin_lng) {
-                        await drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
-                        currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
-                    }
-                } else if (currentRideStatus === 'en_curso') {
-                    // Ir al destino final
-                    if (ride.destination_lat && ride.destination_lng) {
-                        await drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
-                        currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
-                    }
+                if (currentRideStatus === 'aceptado' && ride.origin_lat && ride.origin_lng) {
+                    await drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
+                    currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
+                } else if (currentRideStatus === 'en_curso' && ride.destination_lat && ride.destination_lng) {
+                    await drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
+                    currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
                 } else {
                     alert('La redirección solo está disponible en estado "aceptado" o "en_curso".');
                 }
@@ -1640,7 +1569,6 @@
                 if (!map) initMap();
                 else if (!mapInitialized) initMap();
 
-                // Iniciar rastreo GPS
                 startTracking();
 
                 try {
@@ -1661,35 +1589,57 @@
             }
         });
 
+        // Crear marcador simple de ubicación (círculo azul)
+        function createDriverMarker(lat, lng) {
+            const el = document.createElement('div');
+            el.className = 'location-marker';
+            driverMarker = new mapboxgl.Marker(el)
+                .setLngLat([lng, lat])
+                .addTo(map);
+        }
+
+        function updateDriverMarker(lat, lng) {
+            if (driverMarker) {
+                driverMarker.setLngLat([lng, lat]);
+            } else {
+                createDriverMarker(lat, lng);
+            }
+        }
+
         function startTracking() {
-            // Si hay un watchId manual, lo limpiamos (usaremos el control)
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
                 watchId = null;
             }
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    currentPosition = [lat, lng];
 
-            // Iniciar el control de geolocalización (activa el GPS y muestra flecha)
-            if (geolocateControl) {
-                geolocateControl.trigger();
-            } else {
-                console.warn('GeolocateControl no está inicializado');
-                // Fallback: usar watchPosition manual
-                watchId = navigator.geolocation.watchPosition(
-                    (position) => {
-                        const lat = position.coords.latitude;
-                        const lng = position.coords.longitude;
-                        currentPosition = [lat, lng];
-                        // Actualizar estado en Supabase cada intervalo
-                        const now = Date.now();
-                        if (now - lastUpdateTime > UPDATE_INTERVAL) {
-                            lastUpdateTime = now;
-                            updateDriverStatus(true, lat, lng);
+                    if (map && mapInitialized) {
+                        updateDriverMarker(lat, lng);
+                        if (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') {
+                            map.easeTo({ center: [lng, lat], pitch: 60, zoom: 17, duration: 1000 });
+                            document.getElementById('navigation-panel').style.display = 'flex';
+                        } else {
+                            map.easeTo({ center: [lng, lat], pitch: 0, zoom: 15, duration: 1000 });
+                            document.getElementById('navigation-panel').style.display = 'none';
                         }
-                    },
-                    (error) => console.error('Error en watchPosition:', error),
-                    { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
-                );
-            }
+                    }
+
+                    const now = Date.now();
+                    if (now - lastUpdateTime > UPDATE_INTERVAL) {
+                        lastUpdateTime = now;
+                        updateDriverStatus(true, lat, lng);
+                    }
+                },
+                (error) => {
+                    console.error('Error en watchPosition:', error);
+                    alert('No se pudo obtener tu ubicación. Asegúrate de tener el GPS activado en Alta Precisión.');
+                },
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+            );
         }
 
         async function updateDriverStatus(isOnline, lat = null, lng = null) {
