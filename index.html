@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-    <!-- Turf.js para cálculos espaciales -->
+    <!-- Turf.js para cálculos espaciales (aún puede usarse para otras cosas) -->
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <style>
         /* ========== ESTILOS ========== */
@@ -362,6 +362,45 @@
             font-weight: 500;
             letter-spacing: 0.5px;
         }
+
+        /* NUEVO: Panel para Google Maps iframe */
+        #google-maps-panel {
+            display: none;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 95%;
+            max-width: 500px;
+            height: 70%;
+            z-index: 1001;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+            background: white;
+        }
+        #google-maps-panel .gm-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: #1a1a1a;
+            color: white;
+            font-weight: 600;
+        }
+        #google-maps-panel .gm-header button {
+            background: var(--primary-orange);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        #google-maps-frame {
+            width: 100%;
+            height: calc(100% - 50px);
+            border: 0;
+        }
     </style>
 </head>
 <body>
@@ -506,6 +545,15 @@
                 <div class="suggestions" id="suggestions"></div>
             </div>
 
+            <!-- NUEVO: Panel de Google Maps incrustado -->
+            <div id="google-maps-panel">
+                <div class="gm-header">
+                    <span>Navegación</span>
+                    <button id="close-google-maps"><i class="fas fa-times"></i></button>
+                </div>
+                <iframe id="google-maps-frame" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+
             <div id="navigation-panel" class="navigation-panel" style="display: none;">
                 <div class="nav-instruction">
                     <i class="fas fa-arrow-up" id="nav-icon"></i>
@@ -629,8 +677,7 @@
         let currentDriverId = null;
         let currentDriverData = null;
         let map = null;
-        let currentPosition = null;      // posición ajustada (snap)
-        let rawPosition = null;          // posición cruda del GPS
+        let currentPosition = null;
         let driverMarker = null;
         let currentRideId = null;
         let currentRideStatus = null;
@@ -916,10 +963,6 @@
                 supabaseClient.removeChannel(window.chatSubscription);
                 window.chatSubscription = null;
             }
-            // Detener módulos de navegación
-            if (routeMonitor) routeMonitor.stop();
-            if (snapService) snapService.clear();
-            if (arrowMarker) arrowMarker.remove();
             if (map) {
                 map.remove();
                 map = null;
@@ -975,7 +1018,6 @@
 
             map.on('load', () => {
                 console.log('Mapa cargado');
-                initializeNavigationModules(); // Inicializar módulos
                 const layers = map.getStyle().layers;
                 const labelLayerId = layers.find(layer => layer.type === 'symbol' && layer.layout['text-field']).id;
                 if (map.getSource('composite') && map.getLayer('building')) {
@@ -999,13 +1041,7 @@
             });
         }
 
-        // NUEVA FUNCIÓN: reemplaza createDriverMarker por la flecha
-        function createDriverMarker(lat, lng) {
-            if (!arrowMarker) arrowMarker = new NavigationArrow(map);
-            arrowMarker.addToMap(lat, lng);
-            return arrowMarker;
-        }
-
+        // Función auxiliar para asegurar que el mapa esté listo
         function ensureMapReady() {
             return new Promise(resolve => {
                 if (!map) {
@@ -1099,6 +1135,9 @@
                     hideRideModal();
                     switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
                     if (currentPosition && ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
+                        // NUEVO: abrir Google Maps con ruta al origen
+                        openGoogleMapsNavigation(ride.origin_lat, ride.origin_lng);
+                        // También dibujar ruta en Mapbox como respaldo visual
                         drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
                         currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
                     }
@@ -1121,6 +1160,8 @@
         function resetRideState() {
             document.getElementById('rideModal').classList.remove('active');
             document.getElementById('navigation-panel').style.display = 'none';
+            // NUEVO: cerrar Google Maps si está abierto
+            closeGoogleMapsNavigation();
             currentRideId = null;
             currentRideStatus = null;
             clearRoute();
@@ -1232,7 +1273,6 @@
                         });
                     });
                     currentPosition = [pos.coords.latitude, pos.coords.longitude];
-                    rawPosition = currentPosition.slice(); // también guardar cruda
                 } catch (err) {
                     alert('No se pudo obtener tu ubicación actual. Activa el GPS e inténtalo de nuevo.');
                     return;
@@ -1247,6 +1287,8 @@
             if (ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
                 await drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
                 currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
+                // NUEVO: abrir Google Maps con ruta al origen
+                openGoogleMapsNavigation(ride.origin_lat, ride.origin_lng);
             } else {
                 console.warn('Faltan coordenadas para dibujar la ruta');
             }
@@ -1294,6 +1336,8 @@
             updateActionButtons();
             clearRoute();
             currentRouteTarget = null;
+            // NUEVO: cerrar Google Maps al llegar
+            closeGoogleMapsNavigation();
             if (map && currentPosition) {
                 map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 16, pitch: 0, bearing: 0 });
             }
@@ -1322,6 +1366,8 @@
                 console.log('Llamando a drawRoute con destino:', ride.destination_lat, ride.destination_lng);
                 await drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
                 currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
+                // NUEVO: abrir Google Maps con ruta al destino
+                openGoogleMapsNavigation(ride.destination_lat, ride.destination_lng);
             } else {
                 console.warn('Faltan coordenadas de destino o posición actual');
                 if (!currentPosition) console.warn('currentPosition es null');
@@ -1439,10 +1485,6 @@
                     currentNavigationIndex = 0;
                     updateNavigationPanel(currentNavigationSteps[0]);
 
-                    // Guardar geometría para snap y monitor
-                    if (snapService) snapService.setRouteGeometry(geometry);
-                    if (routeMonitor) routeMonitor.setRoute(geometry, originCoords, waypointCoords, destinationCoords);
-
                     const geojson = {
                         type: 'Feature',
                         properties: {},
@@ -1477,9 +1519,6 @@
                     paint: { 'line-color': '#ff7a00', 'line-width': 6 }
                 });
                 routeLayers.push('route', 'route-line');
-                // Guardar geometría de fallback
-                if (snapService) snapService.setRouteGeometry(geojson.geometry);
-                if (routeMonitor) routeMonitor.setRoute(geojson.geometry, originCoords, waypointCoords, destinationCoords);
                 console.log('Ruta de respaldo dibujada');
             }
         }
@@ -1546,11 +1585,6 @@
             document.getElementById('nav-icon').className = 'fas fa-arrow-up';
             document.getElementById('nav-distance').textContent = '0 m';
             proximityAlertShown = false;
-
-            // Limpiar snapService y routeMonitor
-            if (snapService) snapService.clear();
-            if (routeMonitor) routeMonitor.clear();
-            rawPosition = null; // limpiar también
         }
 
         // ==================== ESTADO DEL CONDUCTOR ====================
@@ -1569,58 +1603,44 @@
                 showLoading('Obteniendo ubicación exacta...');
                 watchId = navigator.geolocation.watchPosition(
                     (position) => {
-                        const rawLat = position.coords.latitude;
-                        const rawLng = position.coords.longitude;
-
-                        // Guardar posición cruda
-                        rawPosition = [rawLat, rawLng];
-
-                        // Ajustar a la ruta (snap) para el marcador
-                        let matchedLat = rawLat;
-                        let matchedLng = rawLng;
-                        if (snapService && snapService.routeGeometry) {
-                            const snapped = snapService.snapToRoute(rawLat, rawLng);
-                            matchedLat = snapped.lat;
-                            matchedLng = snapped.lng;
-                        }
-
-                        currentPosition = [matchedLat, matchedLng];
-
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        currentPosition = [lat, lng];
                         if (!map) initMap();
                         
-                        // Actualizar marcador de flecha
-                        if (!arrowMarker) {
-                            arrowMarker = new NavigationArrow(map);
-                        }
-                        if (!arrowMarker.marker) {
-                            arrowMarker.addToMap(matchedLat, matchedLng);
-                            map.jumpTo({ center: [matchedLng, matchedLat], zoom: 16 });
+                        if (driverMarker) {
+                            driverMarker.marker.setLngLat([lng, lat]);
+                            driverMarker.pulseMarker.setLngLat([lng, lat]);
                         } else {
-                            arrowMarker.updatePosition(matchedLat, matchedLng);
+                            driverMarker = createDriverMarker(lat, lng);
+                            map.jumpTo({ center: [lng, lat], zoom: 16 });
                         }
 
                         let targetBearing = 0;
                         if (currentRouteTarget) {
-                            targetBearing = calculateBearing(matchedLat, matchedLng, currentRouteTarget.lat, currentRouteTarget.lng);
+                            targetBearing = calculateBearing(lat, lng, currentRouteTarget.lat, currentRouteTarget.lng);
                         }
 
-                        if (currentRideId) {
-                            map.easeTo({
-                                center: [matchedLng, matchedLat],
-                                pitch: 60,
-                                bearing: targetBearing,
-                                zoom: 17,
-                                duration: 1000
-                            });
-                            document.getElementById('navigation-panel').style.display = 'flex';
-                        } else {
-                            map.easeTo({
-                                center: [matchedLng, matchedLat],
-                                pitch: 0,
-                                bearing: 0,
-                                duration: 1000
-                            });
-                            document.getElementById('navigation-panel').style.display = 'none';
+                        // Si el panel de Google Maps no está abierto, mover el mapa de Mapbox
+                        if (document.getElementById('google-maps-panel').style.display === 'none') {
+                            if (currentRideId) {
+                                map.easeTo({
+                                    center: [lng, lat],
+                                    pitch: 60,
+                                    bearing: targetBearing,
+                                    zoom: 17,
+                                    duration: 1000
+                                });
+                                document.getElementById('navigation-panel').style.display = 'flex';
+                            } else {
+                                map.easeTo({
+                                    center: [lng, lat],
+                                    pitch: 0,
+                                    bearing: 0,
+                                    duration: 1000
+                                });
+                                document.getElementById('navigation-panel').style.display = 'none';
+                            }
                         }
                         
                         hideLoading();
@@ -1631,11 +1651,10 @@
                             switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
                         }
                         
-                        updateNavigationByPosition(matchedLat, matchedLng);
+                        updateNavigationByPosition(lat, lng);
 
-                        // Proximidad al punto de recogida
                         if (currentRideStatus === 'aceptado' && !proximityAlertShown && currentRouteTarget) {
-                            const distToPickup = getDistanceFromLatLonInMeters(matchedLat, matchedLng, currentRouteTarget.lat, currentRouteTarget.lng);
+                            const distToPickup = getDistanceFromLatLonInMeters(lat, lng, currentRouteTarget.lat, currentRouteTarget.lng);
                             if (distToPickup < 20) {
                                 proximityAlertShown = true;
                                 document.getElementById('nav-text').textContent = '¡Has llegado al pasajero!';
@@ -1649,11 +1668,28 @@
                             }
                         }
 
-                        // Actualizar estado en Supabase con la posición ajustada
                         const now = Date.now();
+                        if (now - lastRouteUpdate > 30000 && currentRideId && currentPosition && document.getElementById('google-maps-panel').style.display === 'none') {
+                            lastRouteUpdate = now;
+                            const { data: ride } = supabaseClient
+                                .from('rides')
+                                .select('origin_lat, origin_lng, destination_lat, destination_lng')
+                                .eq('id', currentRideId)
+                                .single();
+                            if (ride) {
+                                if (currentRideStatus === 'aceptado') {
+                                    drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
+                                    currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
+                                } else if (currentRideStatus === 'en_curso') {
+                                    drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
+                                    currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
+                                }
+                            }
+                        }
+
                         if (now - lastUpdateTime > UPDATE_INTERVAL) {
                             lastUpdateTime = now;
-                            updateDriverStatus(true, matchedLat, matchedLng);
+                            updateDriverStatus(true, lat, lng);
                         }
                     },
                     (error) => {
@@ -1673,13 +1709,14 @@
                     navigator.geolocation.clearWatch(watchId);
                     watchId = null;
                 }
-                if (arrowMarker) arrowMarker.remove();
+                if (driverMarker) {
+                    driverMarker.marker.remove();
+                    driverMarker.pulseMarker.remove();
+                    driverMarker = null;
+                }
                 isDriverOnline = false;
                 updateDriverStatus(false);
                 resetRideState();
-                // Detener snap y monitor
-                if (snapService) snapService.clear();
-                if (routeMonitor) routeMonitor.stop();
             }
         });
 
@@ -1973,28 +2010,20 @@
                 if (isDriverOnline && !watchId) {
                     watchId = navigator.geolocation.watchPosition(
                         (position) => {
-                            const rawLat = position.coords.latitude;
-                            const rawLng = position.coords.longitude;
-                            rawPosition = [rawLat, rawLng];
-                            let matchedLat = rawLat;
-                            let matchedLng = rawLng;
-                            if (snapService && snapService.routeGeometry) {
-                                const snapped = snapService.snapToRoute(rawLat, rawLng);
-                                matchedLat = snapped.lat;
-                                matchedLng = snapped.lng;
-                            }
-                            currentPosition = [matchedLat, matchedLng];
-                            if (arrowMarker) {
-                                arrowMarker.updatePosition(matchedLat, matchedLng);
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            currentPosition = [lat, lng];
+                            if (driverMarker) {
+                                driverMarker.marker.setLngLat([lng, lat]);
+                                driverMarker.pulseMarker.setLngLat([lng, lat]);
                             } else if (map) {
-                                arrowMarker = new NavigationArrow(map);
-                                arrowMarker.addToMap(matchedLat, matchedLng);
+                                driverMarker = createDriverMarker(lat, lng);
                             }
-                            if (currentRideId && currentRouteTarget && map) {
-                                const targetBearing = calculateBearing(matchedLat, matchedLng, currentRouteTarget.lat, currentRouteTarget.lng);
-                                map.easeTo({ center: [matchedLng, matchedLat], pitch: 60, bearing: targetBearing, zoom: 17, duration: 1000 });
+                            if (currentRideId && currentRouteTarget && map && document.getElementById('google-maps-panel').style.display === 'none') {
+                                const targetBearing = calculateBearing(lat, lng, currentRouteTarget.lat, currentRouteTarget.lng);
+                                map.easeTo({ center: [lng, lat], pitch: 60, bearing: targetBearing, zoom: 17, duration: 1000 });
                             } else if (map) {
-                                map.easeTo({ center: [matchedLng, matchedLat], pitch: 0, bearing: 0, duration: 1000 });
+                                map.easeTo({ center: [lng, lat], pitch: 0, bearing: 0, duration: 1000 });
                             }
                         },
                         (error) => {
@@ -2009,219 +2038,42 @@
             }
         });
 
-        // ============================================================
-        // MÓDULO 1: FLECHA DE NAVEGACIÓN CON ROTACIÓN DINÁMICA
-        // ============================================================
-        class NavigationArrow {
-            constructor(map) {
-                this.map = map;
-                this.previousCoord = null;
-                this.marker = null;
-                this.pulseMarker = null;
-                this.element = null; // div contenedor
-                this.svgElement = null; // referencia al svg para rotar
+        // NUEVO: Funciones para Google Maps iframe
+        function openGoogleMapsNavigation(destinationLat, destinationLng) {
+            if (!currentPosition) {
+                alert('No se pudo obtener tu ubicación actual.');
+                return;
             }
-
-            createArrowElement() {
-                const el = document.createElement('div');
-                el.className = 'nav-arrow-container';
-                el.style.width = '60px';
-                el.style.height = '60px';
-                el.style.display = 'flex';
-                el.style.alignItems = 'center';
-                el.style.justifyContent = 'center';
-                el.style.filter = 'drop-shadow(0 2px 5px rgba(0,0,0,0.5))';
-
-                // SVG con forma de flecha de navegación (similar al SDK de Mapbox)
-                el.innerHTML = `
-                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 2L21 22L12 17L3 22L12 2Z" fill="#4285F4" stroke="#FFFFFF" stroke-width="1.5"/>
-                        <circle cx="12" cy="12" r="3" fill="#4285F4" stroke="#FFFFFF" stroke-width="1.5"/>
-                    </svg>
-                `;
-                this.element = el;
-                this.svgElement = el.querySelector('svg');
-                return el;
-            }
-
-            addToMap(lat, lng) {
-                if (this.marker) this.marker.remove();
-                if (this.pulseMarker) this.pulseMarker.remove();
-
-                const el = this.createArrowElement();
-                this.marker = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(this.map);
-
-                const pulseEl = document.createElement('div');
-                pulseEl.className = 'pulse-ring';
-                pulseEl.style.width = '60px';
-                pulseEl.style.height = '60px';
-                this.pulseMarker = new mapboxgl.Marker(pulseEl).setLngLat([lng, lat]).addTo(this.map);
-
-                this.previousCoord = [lng, lat];
-                return this;
-            }
-
-            updatePosition(lat, lng) {
-                if (!this.marker) {
-                    this.addToMap(lat, lng);
-                    return;
-                }
-
-                let bearing = 0;
-                if (this.previousCoord) {
-                    const from = turf.point(this.previousCoord);
-                    const to = turf.point([lng, lat]);
-                    bearing = turf.bearing(from, to);
-                    if (bearing < 0) bearing += 360;
-                }
-
-                this.marker.setLngLat([lng, lat]);
-                if (this.pulseMarker) this.pulseMarker.setLngLat([lng, lat]);
-
-                // Aplicar rotación al SVG (o al contenedor si no hay svg)
-                if (this.svgElement) {
-                    this.svgElement.style.transform = `rotate(${bearing}deg)`;
-                    this.svgElement.style.transition = 'transform 0.3s ease';
-                } else {
-                    this.element.style.transform = `rotate(${bearing}deg)`;
-                }
-
-                this.previousCoord = [lng, lat];
-            }
-
-            remove() {
-                if (this.marker) this.marker.remove();
-                if (this.pulseMarker) this.pulseMarker.remove();
-                this.marker = null;
-                this.pulseMarker = null;
-                this.element = null;
-                this.svgElement = null;
-                this.previousCoord = null;
-            }
+            const origin = `${currentPosition[0]},${currentPosition[1]}`;
+            const destination = `${destinationLat},${destinationLng}`;
+            const url = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+            
+            document.getElementById('google-maps-frame').src = url;
+            document.getElementById('google-maps-panel').style.display = 'block';
+            
+            // Ocultar el panel de instrucciones de Mapbox
+            document.getElementById('navigation-panel').style.display = 'none';
         }
 
-        // ============================================================
-        // MÓDULO 2: AJUSTE LOCAL A LA RUTA (SNAP TO ROUTE)
-        // ============================================================
-        class LocalSnapService {
-            constructor() {
-                this.routeGeometry = null;
-                this.lastSnappedCoord = null;
-                this.snapThresholdMeters = 50;
-            }
-
-            setRouteGeometry(geometry) {
-                this.routeGeometry = geometry;
-            }
-
-            clear() {
-                this.routeGeometry = null;
-                this.lastSnappedCoord = null;
-            }
-
-            snapToRoute(rawLat, rawLng) {
-                if (!this.routeGeometry) {
-                    return { lat: rawLat, lng: rawLng };
-                }
-
-                const point = turf.point([rawLng, rawLat]);
-                const snapped = turf.nearestPointOnLine(this.routeGeometry, point, { units: 'meters' });
-                const distance = snapped.properties.dist;
-
-                if (distance > this.snapThresholdMeters) {
-                    console.warn(`Distancia a ruta: ${distance.toFixed(1)} m > umbral, usando coordenada cruda`);
-                    return { lat: rawLat, lng: rawLng };
-                }
-
-                this.lastSnappedCoord = {
-                    lat: snapped.geometry.coordinates[1],
-                    lng: snapped.geometry.coordinates[0]
-                };
-                return this.lastSnappedCoord;
-            }
+        function closeGoogleMapsNavigation() {
+            document.getElementById('google-maps-panel').style.display = 'none';
+            document.getElementById('google-maps-frame').src = 'about:blank';
         }
 
-        // ============================================================
-        // MÓDULO 3: RECÁLCULO AUTOMÁTICO DE RUTA
-        // ============================================================
-        class RouteMonitor {
-            constructor() {
-                this.activeRouteGeometry = null;
-                this.destinationCoords = null;
-                this.waypointCoords = null;
-                this.lastRecalculation = 0;
-                this.minIntervalMs = 15000; // 15 segundos
-                this.thresholdMeters = 30;
-                this.monitorTimer = null;
-            }
+        // Evento para cerrar el panel
+        document.getElementById('close-google-maps').addEventListener('click', closeGoogleMapsNavigation);
 
-            setRoute(geometry, originCoords, waypointCoords, destinationCoords) {
-                this.activeRouteGeometry = geometry;
-                this.destinationCoords = destinationCoords;
-                this.waypointCoords = waypointCoords;
-            }
-
-            clear() {
-                this.activeRouteGeometry = null;
-                this.destinationCoords = null;
-                this.waypointCoords = null;
-            }
-
-            start() {
-                this.monitorTimer = setInterval(() => this.checkDeviation(), 5000);
-            }
-
-            stop() {
-                if (this.monitorTimer) clearInterval(this.monitorTimer);
-                this.monitorTimer = null;
-            }
-
-            checkDeviation() {
-                // Usar rawPosition (cruda) para detectar desviación real
-                if (!this.activeRouteGeometry || !rawPosition) return;
-
-                const point = turf.point([rawPosition[1], rawPosition[0]]);
-                const distance = turf.pointToLineDistance(point, this.activeRouteGeometry, { units: 'meters' });
-
-                const now = Date.now();
-                if (distance > this.thresholdMeters && (now - this.lastRecalculation) > this.minIntervalMs) {
-                    console.log(`Desviación detectada: ${distance.toFixed(1)} m > ${this.thresholdMeters} m. Recalculando...`);
-                    this.lastRecalculation = now;
-                    this.recalculateRoute();
-                }
-            }
-
-            async recalculateRoute() {
-                if (!currentPosition || !this.destinationCoords) return;
-
-                let waypoint = this.waypointCoords;
-                if (currentRideStatus === 'en_curso') {
-                    waypoint = currentPosition;
-                }
-
-                try {
-                    await drawRoute(currentPosition, waypoint, this.destinationCoords);
-                    console.log('Ruta recalculada correctamente');
-                } catch (error) {
-                    console.error('Error al recalcular ruta:', error);
-                }
-            }
-        }
-
-        // ============================================================
-        // INSTANCIACIÓN GLOBAL
-        // ============================================================
-        let arrowMarker = null;
-        let snapService = null;
-        let routeMonitor = null;
-
-        function initializeNavigationModules() {
-            if (!map) return;
-            arrowMarker = new NavigationArrow(map);
-            snapService = new LocalSnapService();
-            routeMonitor = new RouteMonitor();
-            routeMonitor.start();
-            console.log('Módulos de navegación inicializados (sin Map Matching, usando ajuste local)');
+        // Función auxiliar para crear marcador de conductor (puede ser avatar, no se usa flecha)
+        function createDriverMarker(lat, lng) {
+            const avatarImg = currentDriverData?.avatar_url || 'a.png';
+            const el = document.createElement('div');
+            el.className = 'avatar-marker-container';
+            el.innerHTML = `<div class="avatar-marker"><img src="${avatarImg}" alt="Avatar"></div>`;
+            const marker = new mapboxgl.Marker(el).setLngLat([lng, lat]).addTo(map);
+            const pulseEl = document.createElement('div');
+            pulseEl.className = 'pulse-ring';
+            const pulseMarker = new mapboxgl.Marker(pulseEl).setLngLat([lng, lat]).addTo(map);
+            return { marker, pulseMarker };
         }
     </script>
 </body>
