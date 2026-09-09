@@ -55,6 +55,7 @@
         .badge-rechazada{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);}
         .badge-info{background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);}
         .badge-neutral{background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.3);}
+        .badge-cargo{background:rgba(249,115,22,0.2);color:var(--primary);border:1px solid rgba(249,115,22,0.4);font-weight:800;}
         .btn{font-weight:600;border-radius:8px;font-size:13px;padding:10px 16px;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;}
         .btn-primary{background:var(--primary);border:none;color:#fff;box-shadow:var(--primary-glow);}
         .btn-primary:hover{background:var(--primary-hover);transform:translateY(-2px);}
@@ -141,7 +142,6 @@
         .dispatch-toast .toast-body{font-size:13px;}
         .dispatch-toast .toast-body b{display:block;font-size:14px;margin-bottom:2px;}
         .dispatch-toast .toast-body span{color:var(--text-secondary);}
-        /* Eliminamos la regla que ocultaba los controles inferiores de Mapbox para que el NavigationControl sea visible */
     </style>
 <base target="_blank">
 </head>
@@ -298,6 +298,21 @@
     <div class="modal fade" id="credentialsModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title text-white fw-bold fs-6"><i class="fas fa-shield-alt text-accent me-2"></i> Credenciales</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="credentialsContent" class="d-flex flex-column gap-3"></div></div><div class="modal-footer p-2"><button class="btn btn-outline-light w-100" data-bs-dismiss="modal">Cerrar</button></div></div></div></div>
     <div class="modal fade" id="driverDetailsModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title text-white fw-bold fs-6"><i class="fas fa-id-card text-accent me-2"></i> Ficha del Conductor</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body" id="driverDetailsContent"></div><div class="modal-footer p-2"><button class="btn btn-outline-light" data-bs-dismiss="modal">Cerrar</button></div></div></div></div>
     <div class="modal fade" id="editDriverModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title text-white fw-bold fs-6"><i class="fas fa-edit text-accent me-2"></i> Editar Conductor</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="editDriverForm"><input type="hidden" id="editDriverId"><div class="mb-3"><label class="form-label">Nombre completo</label><input type="text" class="form-control" id="editFullName" required></div><div class="mb-3"><label class="form-label">Teléfono</label><input type="text" class="form-control" id="editPhone" required></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Modelo</label><input type="text" class="form-control" id="editVehicleModel"></div><div class="col-md-6 mb-3"><label class="form-label">Placa</label><input type="text" class="form-control" id="editVehiclePlate"></div></div><div class="mb-3"><label class="form-label">Dirección</label><input type="text" class="form-control" id="editHomeAddress"></div><div class="mb-3"><label class="form-label">Notas</label><textarea class="form-control" id="editNotes" rows="3"></textarea></div><div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" id="editIsActive"><label class="form-check-label text-white" for="editIsActive">Activo</label></div><div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" id="editProfileCompleted"><label class="form-check-label text-white" for="editProfileCompleted">Perfil completado</label></div></form></div><div class="modal-footer"><button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" onclick="saveDriverEdit()">Guardar</button></div></div></div></div>
+    
+    <!-- Modal para visualizar la foto de la carga -->
+    <div class="modal fade" id="cargoPhotoModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-white fw-bold fs-6"><i class="fas fa-box text-accent me-2"></i> Foto de la Carga</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center p-0">
+                    <img id="cargoPhotoImg" src="" class="img-fluid rounded" style="max-height:70vh; object-fit:contain; width:100%;">
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -377,7 +392,6 @@
         }
 
         function setupRealtimeSubscriptions() {
-            // ── 1. NUEVOS INGRESOS DE CONDUCTORES ──
             subscribeChannel('apps-insert', 'driver_applications', 'INSERT', function(payload) {
                 unreadNotifications++;
                 updateNotificationBadge();
@@ -386,8 +400,6 @@
                 showDispatchToast('🪪 Nueva solicitud de conductor',
                     payload.new.full_name + ' · ' + payload.new.phone);
             });
-
-            // ── 2. NUEVAS SOLICITUDES DE VIAJE ──
             subscribeChannel('rides-insert', 'rides', 'INSERT', function(payload) {
                 var ride = payload.new;
                 unreadNotifications++;
@@ -396,8 +408,8 @@
                 loadRides();
                 if (ride.status === 'pendiente') {
                     playDispatchAlert();
-                    showDispatchToast('🔔 ¡NUEVO VIAJE! Bs ' + parseFloat(ride.price || 0).toFixed(2),
-                        (ride.origin_address || 'Origen') + ' → ' + (ride.destination_address || 'Destino'));
+                    var cargoMsg = (ride.has_cargo ? '📦 CON CARGA · ' : '') + (ride.origin_address || 'Origen') + ' → ' + (ride.destination_address || 'Destino');
+                    showDispatchToast('🔔 ¡NUEVO VIAJE! Bs ' + parseFloat(ride.price || 0).toFixed(2), cargoMsg);
                     refreshDispatchData();
                     var isDispatchVisible = document.getElementById('section-despacho').style.display === 'block';
                     if (isDispatchVisible && ride.origin_lat && ride.origin_lng && dispatchMap && dispatchMapInitialized) {
@@ -406,13 +418,9 @@
                     }
                 }
             });
-
-            // ── 3. CAMBIOS EN VIAJES ──
             subscribeChannel('rides-update', 'rides', 'UPDATE', function(payload) {
                 loadRides(); loadDashboard(); refreshDispatchData();
             });
-
-            // ── 4. UBICACIÓN / ESTADO DE CONDUCTORES ──
             subscribeChannel('status-all', 'driver_status', '*', function(payload) {
                 loadDrivers(); loadAvailableDrivers();
                 if (payload.new && payload.new.is_online && payload.new.latitude && payload.new.longitude) {
@@ -432,6 +440,14 @@
                 document.getElementById('adminPanel').style.display = 'block';
                 setupRealtimeSubscriptions();
                 navigateTo('dashboard');
+                
+                // Listener de expiración de sesión
+                supabaseClient.auth.onAuthStateChange((event, session) => {
+                    if (event === 'SIGNED_OUT' || !session) {
+                        console.log("Sesión expirada o cerrada.");
+                        location.reload();
+                    }
+                });
             } else { showLoginForm(); }
         }
         function showLoginForm() {
@@ -450,6 +466,10 @@
             document.getElementById('adminPanel').style.display = 'block';
             setupRealtimeSubscriptions();
             navigateTo('dashboard');
+            
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                if (event === 'SIGNED_OUT' || !session) location.reload();
+            });
         }
         async function logoutAdmin() { await supabaseClient.auth.signOut(); location.reload(); }
 
@@ -545,7 +565,6 @@
                     zoom: 13,
                     attributionControl: false
                 });
-                // Control de navegación en la esquina inferior derecha (visible)
                 dispatchMap.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
                 dispatchMap.on('load', function() {
                     dispatchMapInitialized = true;
@@ -591,7 +610,6 @@
                     .select('driver_id, is_online, latitude, longitude, last_updated')
                     .eq('is_online', true);
                 var onlineStatus = statusResult.data || [];
-                console.log('📡 Conductores online en BD:', onlineStatus.length);
 
                 var driverIds = [];
                 for (var k = 0; k < onlineStatus.length; k++) { driverIds.push(onlineStatus[k].driver_id); }
@@ -621,29 +639,19 @@
                     var s = onlineStatus[m];
                     var sLat = parseFloat(s.latitude);
                     var sLng = parseFloat(s.longitude);
-                    if (isNaN(sLat) || isNaN(sLng) || sLat === 0 || sLng === 0) {
-                        console.log('⚠️ Conductor sin GPS válido: ' + s.driver_id);
-                        continue;
-                    }
+                    if (isNaN(sLat) || isNaN(sLng) || sLat === 0 || sLng === 0) continue;
                     var dInfo = null;
                     for (var n = 0; n < driversData.length; n++) {
                         if (driversData[n].id === s.driver_id) { dInfo = driversData[n]; break; }
                     }
                     dispatchDriversCache.push({
-                        driver_id: s.driver_id,
-                        latitude: sLat,
-                        longitude: sLng,
-                        last_updated: s.last_updated,
+                        driver_id: s.driver_id, latitude: sLat, longitude: sLng, last_updated: s.last_updated,
                         full_name: dInfo ? dInfo.full_name : 'Conductor',
                         phone: dInfo ? (dInfo.phone || '') : '',
                         vehicle_plate: dInfo ? (dInfo.vehicle_plate || '') : '',
                         vehicle_model: dInfo ? (dInfo.vehicle_model || '') : '',
                         is_busy: busyDriverIds[s.driver_id] ? true : false
                     });
-                }
-                console.log('🏍️ Conductores con GPS para mostrar: ' + dispatchDriversCache.length);
-                for (var dbg = 0; dbg < dispatchDriversCache.length; dbg++) {
-                    console.log('  → ' + dispatchDriversCache[dbg].full_name + ' [' + dispatchDriversCache[dbg].latitude + ', ' + dispatchDriversCache[dbg].longitude + '] busy=' + dispatchDriversCache[dbg].is_busy);
                 }
 
                 document.getElementById('dispatchOnlineCount').textContent = dispatchDriversCache.length;
@@ -662,11 +670,7 @@
         }
 
         function renderDispatchMarkers() {
-            if (!dispatchMap || !dispatchMapInitialized) {
-                console.log('⚠️ renderDispatchMarkers: mapa no listo');
-                return;
-            }
-            console.log('🎨 renderDispatchMarkers: ' + dispatchRidesCache.length + ' rides, ' + dispatchDriversCache.length + ' drivers');
+            if (!dispatchMap || !dispatchMapInitialized) return;
 
             var rideIds = {};
             for (var i = 0; i < dispatchRidesCache.length; i++) { rideIds[dispatchRidesCache[i].id] = true; }
@@ -697,7 +701,6 @@
                         dispatchRideMarkers[rd.id] = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
                             .setLngLat([rlng, rlat])
                             .addTo(dispatchMap);
-                        console.log('📍 Marcador de solicitud creado: ' + rd.id.substring(0,8));
                     })(ride, waitMin, rideLng, rideLat);
                 }
             }
@@ -712,22 +715,16 @@
                 }
             }
 
-            var createdCount = 0;
-            var updatedCount = 0;
             for (var f = 0; f < dispatchDriversCache.length; f++) {
                 var driver = dispatchDriversCache[f];
                 var drvLng = parseFloat(driver.longitude);
                 var drvLat = parseFloat(driver.latitude);
-                if (isNaN(drvLng) || isNaN(drvLat)) {
-                    console.log('⚠️ Coordenadas inválidas para: ' + driver.full_name);
-                    continue;
-                }
+                if (isNaN(drvLng) || isNaN(drvLat)) continue;
                 if (dispatchDriverMarkers[driver.driver_id]) {
                     dispatchDriverMarkers[driver.driver_id].setLngLat([drvLng, drvLat]);
                     var existingEl = dispatchDriverMarkers[driver.driver_id].getElement();
-                    if (driver.is_busy) { existingEl.classList.add('busy'); }
-                    else { existingEl.classList.remove('busy'); }
-                    updatedCount++;
+                    if (driver.is_busy) existingEl.classList.add('busy');
+                    else existingEl.classList.remove('busy');
                 } else {
                     (function(drv, dlng, dlat) {
                         var dEl = document.createElement('div');
@@ -738,12 +735,9 @@
                         dispatchDriverMarkers[drv.driver_id] = new mapboxgl.Marker({ element: dEl })
                             .setLngLat([dlng, dlat])
                             .addTo(dispatchMap);
-                        createdCount++;
-                        console.log('🏍️ Marcador conductor creado: ' + drv.full_name + ' [' + dlat + ', ' + dlng + ']');
                     })(driver, drvLng, drvLat);
                 }
             }
-            console.log('🏍️ Conductores: ' + createdCount + ' creados, ' + updatedCount + ' actualizados');
         }
 
         function updateSingleDriverMarker(statusData) {
@@ -874,6 +868,21 @@
             html += '</div>';
             html += '<div class="ride-price">Bs ' + parseFloat(ride.price || 0).toFixed(2) + '</div>';
             html += '</div>';
+            
+            // --- NUEVO: ALERTA DE CARGA PESADA ---
+            if (ride.has_cargo) {
+                html += '<div style="background:rgba(249,115,22,0.15); border:1px solid var(--primary); border-radius:10px; padding:10px; margin-bottom:12px;">';
+                html += '<div style="font-weight:800; color:var(--primary); font-size:13px; margin-bottom:4px;"><i class="fas fa-box me-2"></i>⚠️ LLEVA CARGA / PAQUETE</div>';
+                if (ride.cargo_description) {
+                    html += '<div style="font-size:12px; color:var(--text-main); margin-bottom:6px;">' + ride.cargo_description + '</div>';
+                }
+                if (ride.cargo_photo_url) {
+                    html += '<button class="btn btn-sm btn-outline-light" style="border-color:var(--primary); color:var(--primary);" onclick="showCargoPhoto(\'' + ride.cargo_photo_url + '\')"><i class="fas fa-image"></i> Ver foto de la carga</button>';
+                }
+                html += '</div>';
+            }
+            // ---------------------------------------
+
             html += '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);margin-bottom:8px;"><i class="fas fa-motorcycle me-1" style="color:var(--primary);"></i> Conductores (' + radiusKm + ' km)</div>';
 
             if (driversWithDistance.length === 0) {
@@ -1107,16 +1116,35 @@
                 else if (ride.status === 'cancelado' || ride.status === 'rechazado') badgeClass = 'badge-rechazada';
                 var passengerName = ride.passengers ? (ride.passengers.full_name || 'Pasajero') : 'Pasajero';
                 var driverName = ride.drivers ? (ride.drivers.full_name || 'Sin asignar') : 'Sin asignar';
+                
+                var cargoBadge = ride.has_cargo ? ' <span class="badge-custom badge-cargo" style="font-size:9px;">📦 CARGA</span>' : '';
+
                 var assignHtml = '';
                 if (ride.status === 'pendiente' && !ride.driver_id) {
                     var options = '<option value="">Seleccionar...</option>';
                     for (var j = 0; j < availableDriversCache.length; j++) {
                         var ad = availableDriversCache[j];
-                        options += '<option value="' + ad.id + '">' + ad.full_name + (ad.is_online ? ' 🟢' : ' 🔴') + '</option>';
+                        var optDisabled = ad.is_busy ? ' disabled' : '';
+                        var optText = ad.full_name + (ad.is_online ? (ad.is_busy ? ' 🟡 Ocupado' : ' 🟢') : ' 🔴');
+                        options += '<option value="' + ad.id + '"' + optDisabled + '>' + optText + '</option>';
                     }
                     assignHtml = '<div class="assign-panel"><select class="form-select form-select-sm" id="driverSelect-' + ride.id + '">' + options + '</select><button class="btn btn-primary btn-sm mt-1" onclick="assignDriver(\'' + ride.id + '\')">Asignar</button></div>';
                 }
-                grid.innerHTML += '<div class="data-card p-3"><div class="data-card-header border-0 pb-0"><h4 class="data-card-title">#' + ride.id.slice(0,5).toUpperCase() + '</h4><span class="badge-custom ' + badgeClass + '">' + ride.status.replace('_',' ') + '</span></div><hr style="border-color:var(--border-color);margin:8px 0;"><div class="info-row"><i class="fas fa-user"></i> <span>' + passengerName + '</span></div><div class="info-row"><i class="fas fa-motorcycle"></i> <span>' + driverName + '</span></div><div class="info-row"><i class="fas fa-map-marker-alt text-danger"></i> <span class="text-truncate">' + (ride.origin_address || 'Origen') + '</span></div><div class="d-flex justify-content-between mt-2 pt-2 border-top" style="border-color:var(--border-color)!important;"><span class="text-secondary-custom" style="font-size:11px;">TARIFA</span><strong class="text-accent fs-5">Bs ' + parseFloat(ride.price || 0).toFixed(2) + '</strong></div>' + assignHtml + '</div>';
+                
+                var cargoHtml = '';
+                if (ride.has_cargo) {
+                    cargoHtml = '<div class="info-row mt-2" style="background:rgba(249,115,22,0.1); padding:8px; border-radius:8px; border:1px solid rgba(249,115,22,0.3); flex-direction:column; align-items:flex-start;">';
+                    cargoHtml += '<div><i class="fas fa-box text-accent me-2"></i> <span class="text-accent fw-bold">📦 CARGA PESADA</span></div>';
+                    if (ride.cargo_description) {
+                        cargoHtml += '<small class="text-white" style="margin-left:28px; margin-top:4px;">' + ride.cargo_description + '</small>';
+                    }
+                    if (ride.cargo_photo_url) {
+                        cargoHtml += '<button class="btn btn-sm btn-outline-light mt-1" style="margin-left:28px; font-size:11px; padding:4px 8px;" onclick="showCargoPhoto(\'' + ride.cargo_photo_url + '\')"><i class="fas fa-camera"></i> Ver Foto</button>';
+                    }
+                    cargoHtml += '</div>';
+                }
+
+                grid.innerHTML += '<div class="data-card p-3"><div class="data-card-header border-0 pb-0"><h4 class="data-card-title">#' + ride.id.slice(0,5).toUpperCase() + ' ' + cargoBadge + '</h4><span class="badge-custom ' + badgeClass + '">' + ride.status.replace('_',' ') + '</span></div><hr style="border-color:var(--border-color);margin:8px 0;"><div class="info-row"><i class="fas fa-user"></i> <span>' + passengerName + '</span></div><div class="info-row"><i class="fas fa-motorcycle"></i> <span>' + driverName + '</span></div><div class="info-row"><i class="fas fa-map-marker-alt text-danger"></i> <span class="text-truncate">' + (ride.origin_address || 'Origen') + '</span></div>' + cargoHtml + '<div class="d-flex justify-content-between mt-2 pt-2 border-top" style="border-color:var(--border-color)!important;"><span class="text-secondary-custom" style="font-size:11px;">TARIFA</span><strong class="text-accent fs-5">Bs ' + parseFloat(ride.price || 0).toFixed(2) + '</strong></div>' + assignHtml + '</div>';
             }
         }
         async function loadAvailableDrivers() {
@@ -1127,9 +1155,23 @@
                 var onlineIds = {};
                 var statuses = sResult.data || [];
                 for (var i = 0; i < statuses.length; i++) { onlineIds[statuses[i].driver_id] = true; }
+                
+                // Obtener conductores ocupados (con viajes activos)
+                var busyResult = await supabaseClient.from('rides').select('driver_id').in('status', ['aceptado', 'llegado_origen', 'en_curso']);
+                var busyIds = {};
+                var busyData = busyResult.data || [];
+                for (var b = 0; b < busyData.length; b++) { 
+                    if(busyData[b].driver_id) busyIds[busyData[b].driver_id] = true; 
+                }
+
                 availableDriversCache = [];
                 for (var j = 0; j < drivers.length; j++) {
-                    availableDriversCache.push({ id: drivers[j].id, full_name: drivers[j].full_name, is_online: onlineIds[drivers[j].id] ? true : false });
+                    availableDriversCache.push({ 
+                        id: drivers[j].id, 
+                        full_name: drivers[j].full_name, 
+                        is_online: onlineIds[drivers[j].id] ? true : false,
+                        is_busy: busyIds[drivers[j].id] ? true : false
+                    });
                 }
             } catch (err) { availableDriversCache = []; }
         }
@@ -1201,6 +1243,13 @@
                 var msg = msgs[i];
                 tbody.innerHTML += '<tr><td>' + (msg.driver_id ? (msg.drivers ? msg.drivers.full_name : 'Conductor') : 'Global') + '</td><td>' + msg.message + '</td><td>' + new Date(msg.created_at).toLocaleString() + '</td></tr>';
             }
+        }
+        
+        // Función para mostrar la foto de la carga en el modal
+        function showCargoPhoto(url) {
+            document.getElementById('cargoPhotoImg').src = url;
+            var modal = new bootstrap.Modal(document.getElementById('cargoPhotoModal'));
+            modal.show();
         }
 
         window.addEventListener('load', initApp);
