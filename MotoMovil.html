@@ -212,10 +212,10 @@
       background: rgba(255,122,0,0.1);
     }
 
-    /* Pin central */
+    /* Pin central - AJUSTADO para mejor espaciado */
     .center-fixed-pin {
       position: absolute;
-      top: 50%;
+      top: 42%; /* ✅ Antes 50%, ahora más arriba para separar del botón */
       left: 50%;
       transform: translate(-50%, -100%);
       z-index: 1000;
@@ -254,19 +254,20 @@
       margin-top: 4px;
     }
 
+    /* Tooltip del pin - AJUSTADO con más margen */
     .pin-tooltip {
       position: absolute;
       bottom: 100%;
-      margin-bottom: 22px;
+      margin-bottom: 28px; /* ✅ Antes 22px, más espacio del pin */
       background: var(--white);
       color: var(--text-dark);
-      padding: 0.6rem 1rem;
+      padding: 0.7rem 1.1rem;
       border-radius: 12px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 2px;
+      gap: 4px;
       opacity: 0;
       transform: translateX(-50%) translateY(20px) scale(0.95);
       left: 50%;
@@ -290,13 +291,14 @@
       text-align: center;
     }
 
+    /* Precio en tooltip - AJUSTADO */
     .pin-tooltip-price {
-      color: var(--primary);
       font-weight: 800;
-      font-size: 1rem;
+      font-size: 0.85rem; /* ✅ Más pequeño para no competir con la dirección */
+      transition: color 0.3s;
     }
 
-    /* Botones flotantes */
+    /* Botones flotantes - AJUSTADOS para mejor espaciado */
     .btn-confirm-map,
     .btn-confirm-pickup {
       position: absolute;
@@ -315,6 +317,7 @@
       white-space: nowrap;
       align-items: center;
       gap: 8px;
+      transition: all 0.2s;
     }
 
     .btn-confirm-map {
@@ -323,7 +326,7 @@
     }
 
     .btn-confirm-pickup {
-      bottom: 280px;
+      bottom: 380px; /* ✅ Antes 280px, ahora más abajo (lejos del pin) */
       background: #00C853;
     }
 
@@ -1674,65 +1677,68 @@
       }
     }
 
-    // ========== MAP MATCHING / SNAP TO ROAD ==========
-       // ========== ANCLAR A LA CARRETERA (USANDO DIRECTIONS API) ==========
+    // ========== ANCLAR A LA CARRETERA (CON VALIDACIÓN) ==========
     async function snapToRoad(lat, lng) {
       console.log('🚗 [SNAP TO ROAD] Iniciando con coordenadas:', { lat, lng });
 
-      // Estrategia: Creamos un segundo punto a ~3 metros al norte para que Mapbox
-      // nos devuelva el punto más cercano en la red de carreteras.
-      const offsetMeters = 3;
-      const degreesPerMeter = 1 / 111111; // 1 grado ≈ 111,111 metros
+      // Offset muy pequeño (0.5 metros) para no empujar a otra calle
+      const offsetMeters = 0.5;
+      const degreesPerMeter = 1 / 111111;
       const offsetLat = lat + (offsetMeters * degreesPerMeter);
 
-      // Usamos Directions API en lugar de Map Matching (que requiere mínimo 2 puntos)
       const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${lng},${lat};${lng},${offsetLat}?access_token=${mapboxgl.accessToken}&geometries=geojson&steps=false&overview=false`;
       
       console.log('🔗 [SNAP TO ROAD] URL:', url);
 
       try {
-        console.log('📡 [SNAP TO ROAD] Enviando petición a Mapbox Directions...');
+        console.log('📡 [SNAP TO ROAD] Enviando petición...');
         const response = await fetch(url);
-        console.log('📡 [SNAP TO ROAD] Status HTTP:', response.status, response.statusText);
+        console.log('📡 [SNAP TO ROAD] Status HTTP:', response.status);
 
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error('❌ [SNAP TO ROAD] Error HTTP:', errorText);
-          console.warn('⚠️ [SNAP TO ROAD] Usando coordenada cruda como fallback');
-          return { lat, lng, success: false, reason: 'HTTP Error ' + response.status };
+          console.warn('⚠️ [SNAP TO ROAD] Error HTTP, usando coordenada cruda');
+          return { lat, lng, success: false, reason: 'HTTP Error' };
         }
 
         const data = await response.json();
-        console.log('📦 [SNAP TO ROAD] Respuesta completa:', data);
 
         if (data.code && data.code !== 'Ok') {
-          console.error('❌ [SNAP TO ROAD] Error de API:', data.code, data.message);
+          console.warn('⚠️ [SNAP TO ROAD] Error de API:', data.code);
           return { lat, lng, success: false, reason: data.code };
         }
 
-        // ¡Aquí está la magia! Los 'waypoints' contienen las coordenadas YA ANCLADAS a la carretera
         if (data.waypoints && data.waypoints.length > 0) {
-          const snappedLocation = data.waypoints[0].location; // [lng, lat]
+          const snappedLocation = data.waypoints[0].location;
           const snappedLng = snappedLocation[0];
           const snappedLat = snappedLocation[1];
+          const streetName = data.waypoints[0].name || 'Desconocida';
 
           const distanceMeters = calculateDistance(lat, lng, snappedLat, snappedLng) * 1000;
 
-          console.log('✅ [SNAP TO ROAD] ¡ÉXITO! Coordenada anclada a la vía:', {
+          console.log('📏 [SNAP TO ROAD] Distancia al punto anclado:', distanceMeters.toFixed(2), 'm');
+
+          // ✅ VALIDACIÓN CRÍTICA: Si el punto anclado está a más de 30 metros,
+          // significa que Mapbox se fue a la calle equivocada. Usamos el punto original.
+          if (distanceMeters > 30) {
+            console.warn(`⚠️ [SNAP TO ROAD] Punto anclado DEMASIADO LEJOS (${distanceMeters.toFixed(2)}m). ` +
+                        `Probablemente se fue a otra calle. Usando coordenada original.`);
+            return { lat, lng, success: false, reason: 'Too far (>' + distanceMeters.toFixed(0) + 'm)' };
+          }
+
+          console.log('✅ [SNAP TO ROAD] ¡ÉXITO! Anclado a:', streetName, {
             original: { lat, lng },
             snapped: { lat: snappedLat, lng: snappedLng },
-            distancia_metros: distanceMeters.toFixed(2),
-            nombre_via: data.waypoints[0].name || 'Desconocida'
+            distancia_metros: distanceMeters.toFixed(2)
           });
 
-          return { lat: snappedLat, lng: snappedLng, success: true };
-        } else {
-          console.warn('⚠️ [SNAP TO ROAD] Sin waypoints. Usando coordenada cruda.');
-          return { lat, lng, success: false, reason: 'No waypoints found' };
+          return { lat: snappedLat, lng: snappedLng, success: true, streetName };
         }
+
+        console.warn('⚠️ [SNAP TO ROAD] Sin waypoints, usando coordenada cruda');
+        return { lat, lng, success: false, reason: 'No waypoints' };
       } catch (error) {
-        console.error('❌ [SNAP TO ROAD] Error de red o fetch:', error);
-        return { lat, lng, success: false, reason: 'Network error: ' + error.message };
+        console.error('❌ [SNAP TO ROAD] Error de red:', error);
+        return { lat, lng, success: false, reason: 'Network error' };
       }
     }
 
@@ -1922,16 +1928,17 @@
 
       const requestId = ++pickupRequestId;
 
-      console.log('🟢 [ORIGEN] Procesando selección de origen:', { lat, lng });
+      console.log('🟢 [ORIGEN] Procesando selección:', { lat, lng });
 
       pinTooltip.classList.add('show');
       pinTooltipAddress.textContent = 'Buscando calle cercana...';
-      pinTooltipPrice.textContent = 'Origen';
+      pinTooltipPrice.textContent = ''; // ✅ Ocultar precio durante selección
+      pinTooltipPrice.style.visibility = 'hidden';
 
       const snapped = await snapToRoad(lat, lng);
 
       if (requestId !== pickupRequestId) {
-        console.warn('⚠️ [ORIGEN] Proceso cancelado por nuevo movimiento');
+        console.warn('⚠️ [ORIGEN] Proceso cancelado');
         return;
       }
 
@@ -1940,19 +1947,30 @@
 
       const address = await obtenerDireccion(snappedPickupLat, snappedPickupLng);
 
-      if (requestId !== pickupRequestId) {
-        console.warn('⚠️ [ORIGEN] Proceso cancelado después de geocodificación');
-        return;
-      }
+      if (requestId !== pickupRequestId) return;
 
       pinTooltipAddress.textContent = address;
-      pinTooltipPrice.textContent = snapped.success ? '✅ Anclado a vía' : '⚠️ Coordenada cruda';
+      
+      // ✅ Mostrar mensaje según el éxito del anclaje
+      if (snapped.success) {
+        pinTooltipPrice.textContent = '📍 ' + (snapped.streetName || 'En la vía');
+        pinTooltipPrice.style.color = '#00C853';
+        pinTooltipPrice.style.visibility = 'visible';
+      } else {
+        pinTooltipPrice.textContent = '⚠️ Ajusta manualmente';
+        pinTooltipPrice.style.color = '#FF9800';
+        pinTooltipPrice.style.visibility = 'visible';
+      }
 
       updateTempPickupMarker(snappedPickupLat, snappedPickupLng);
 
+      // ✅ NO recalcular precio aquí si el destino está muy cerca (evita el Bs 4.00 molesto)
       if (destLat && destLng) {
-        console.log('💰 [ORIGEN] Destino ya existe, recalculando precio...');
-        updatePriceAndAddress(destLat, destLng, true);
+        const distance = calculateDistance(snappedPickupLat, snappedPickupLng, destLat, destLng);
+        if (distance > 0.05) { // Solo recalcular si hay más de 50 metros reales
+          console.log('💰 [ORIGEN] Recalculando precio...');
+          updatePriceAndAddress(destLat, destLng, true);
+        }
       }
     }
 
