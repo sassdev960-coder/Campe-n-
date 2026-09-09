@@ -480,7 +480,7 @@
                     zoom: 13,
                     attributionControl: false
                 });
-                dispatchMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
+                dispatchMap.addControl(new mapboxgl.NavigationControl(), 'bottom-right');  // <--- CAMBIO AQUÍ
                 dispatchMap.on('load', function() {
                     dispatchMapInitialized = true;
                     dispatchMap.addSource('dispatch-radius', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
