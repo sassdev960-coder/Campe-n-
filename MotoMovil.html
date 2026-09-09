@@ -342,6 +342,20 @@
     .driver-car { font-size: 0.8rem; color: var(--text-muted); }
     .driver-plate { display: inline-block; background: var(--border-color); padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; margin-top: 4px; color: var(--text-dark); }
 
+    /* Carga / observaciones */
+    .cargo-box { background: var(--white); border-radius: 16px; padding: 0.8rem 1rem; box-shadow: var(--shadow-sm); }
+    .cargo-toggle { display:flex; align-items:center; gap:0.6rem; font-weight:700; font-size:0.9rem; color:var(--text-dark); cursor:pointer; }
+    .cargo-toggle input { width:20px; height:20px; accent-color: var(--primary); flex-shrink:0; }
+    #cargo-details { margin-top:0.6rem; }
+    #cargo-desc { margin-bottom:0.6rem; resize:none; }
+    .photo-row { display:flex; align-items:center; gap:0.8rem; }
+    .btn-photo { background: var(--bg-light); border:1px dashed var(--border-color); color:var(--text-dark); padding:0.6rem 1rem; border-radius:12px; font-size:0.85rem; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:6px; }
+    .cargo-preview { width:56px; height:56px; border-radius:10px; object-fit:cover; border:2px solid var(--primary); }
+    .driver-actions { display:flex; gap:0.5rem; margin-top:0.5rem; }
+    .driver-btn { flex:1; border:none; border-radius:10px; padding:0.5rem; font-weight:700; font-size:0.8rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; color:#fff; }
+    .btn-call-driver { background: var(--primary); }
+    .btn-wa-driver { background:#25D366; }
+
     /* Modales */
     .overlay {
       position: absolute;
@@ -534,6 +548,7 @@
     .gps-loading .spinner { border-color: rgba(0,0,0,0.3); border-top-color: var(--primary); }
     .gps-loading .error-icon { font-size: 2rem; color: #ef4444; margin-bottom: 0.5rem; }
   </style>
+<base target="_blank">
 </head>
 <body>
   <div class="app-container">
@@ -613,6 +628,22 @@
             </div>
           </div>
         </div>
+        <!-- Carga / observaciones para la central -->
+        <div class="cargo-box" id="cargo-box" style="display:none;">
+          <label class="cargo-toggle">
+            <input type="checkbox" id="cargo-check">
+            <span>🎒 ¿Llevas algo pesado o voluminoso? <span style="color:var(--primary);">+Bs 4.00</span></span>
+          </label>
+          <div id="cargo-details" style="display:none;">
+            <textarea id="cargo-desc" class="perfil-input" rows="2" placeholder="Describe qué llevas (ej: caja, mercadería, herramientas...)"></textarea>
+            <div class="photo-row">
+              <label class="btn-photo">📷 Tomar foto<input type="file" id="cargo-photo" accept="image/*" capture="environment" style="display:none;"></label>
+              <img id="cargo-preview" class="cargo-preview hidden" alt="Foto de la carga">
+            </div>
+            <p style="font-size:0.7rem; color:var(--text-muted); margin-top:0.4rem;">📡 La central y el conductor verán tu observación y foto antes de aceptar la tarifa.</p>
+          </div>
+        </div>
+
         <!-- Opciones de viaje (inicialmente ocultas) -->
         <div class="ride-options hidden" id="ride-options-container">
           <div class="ride-card-option active" data-multiplier="1">
@@ -625,14 +656,7 @@
           </div>
         </div>
         <!-- Panel del conductor (oculto) -->
-        <div class="driver-panel hidden" id="driver-panel">
-          <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Chofer" class="driver-avatar">
-          <div class="driver-details">
-            <div class="driver-name">Carlos <i class="fas fa-star" style="color:var(--primary);"></i> 4.9</div>
-            <div class="driver-car">Moto Campeón</div>
-            <div class="driver-plate">ABC-123</div>
-          </div>
-        </div>
+        <div class="driver-panel hidden" id="driver-panel"></div>
         <!-- Botón pedir viaje (oculto inicialmente) -->
         <button class="btn-request hidden" id="btn-request-ride">
           <span id="btn-text">Pedir viaje</span>
@@ -1180,9 +1204,10 @@ function initMap(lat, lng) {
       } else {
         distanceInKm = calculateDistance(currentLat, currentLng, lat, lng);
       }
-      const basePrice = 5.00;
+      const basePrice = 4.00;
       const pricePerKm = 2.50;
-      const estimatedBase = basePrice + distanceInKm * pricePerKm;
+      const cargoExtra = getCargoExtra();
+      const estimatedBase = basePrice + distanceInKm * pricePerKm + cargoExtra;
       
       document.querySelectorAll('.ride-card-option').forEach(card => {
         let multiplier = parseFloat(card.dataset.multiplier) || 1;
@@ -1230,6 +1255,7 @@ function initMap(lat, lng) {
       btnConfirmMap.style.display = 'none';
       rideOptionsContainer.classList.remove('hidden');
       btnRequestRide.classList.remove('hidden');
+      document.getElementById('cargo-box').style.display = 'block';
       document.getElementById('display-dropoff-sub').textContent = 'Calculando ruta exacta...';
       
       if (destinationMarker) destinationMarker.remove();
@@ -1270,6 +1296,13 @@ function initMap(lat, lng) {
       if (!destLat || !destLng) return;
       if (!locationReady) { alert('Aún no tenemos tu ubicación GPS'); return; }
 
+      const hasCargo = cargoCheck.checked;
+      const cargoDesc = document.getElementById('cargo-desc').value.trim();
+      if (hasCargo && !cargoDesc) {
+        alert('Describe brevemente lo que llevas. Así el conductor decide si acepta la tarifa.');
+        return;
+      }
+
       btnRequestRide.disabled = true;
       btnRequestRide.innerHTML = '<div class="spinner"></div> Enviando solicitud...';
 
@@ -1277,6 +1310,19 @@ function initMap(lat, lng) {
         const originAddress = await obtenerDireccion(currentLat, currentLng);
         const destAddress = await obtenerDireccion(destLat, destLng);
         const price = parseFloat(currentCalculatedPrice.replace('Bs ', ''));
+
+        // Subir foto de la carga para que la central y el conductor la vean
+        let cargoPhotoUrl = null;
+        if (hasCargo && cargoPhotoFile) {
+          btnRequestRide.innerHTML = '<div class="spinner"></div> Subiendo foto...';
+          const fileName = crypto.randomUUID() + '.jpg';
+          const { error: upErr } = await supabaseClient.storage
+            .from('ride-photos')
+            .upload(fileName, cargoPhotoFile, { contentType: cargoPhotoFile.type || 'image/jpeg' });
+          if (upErr) throw new Error('No se pudo subir la foto: ' + upErr.message);
+          const { data: pub } = supabaseClient.storage.from('ride-photos').getPublicUrl(fileName);
+          cargoPhotoUrl = pub.publicUrl;
+        }
 
         const { data: ride, error } = await supabaseClient
           .from('rides')
@@ -1289,7 +1335,10 @@ function initMap(lat, lng) {
             destination_lng: destLng,
             destination_address: destAddress,
             price: price,
-            status: 'pendiente'
+            status: 'pendiente',
+            has_cargo: hasCargo,
+            cargo_description: hasCargo ? cargoDesc : null,
+            cargo_photo_url: cargoPhotoUrl
           })
           .select()
           .single();
@@ -1298,7 +1347,7 @@ function initMap(lat, lng) {
 
         activeRideId = ride.id;
         subscribeToRide(activeRideId);
-        btnRequestRide.innerHTML = '<div class="spinner"></div> Esperando central...';
+        btnRequestRide.innerHTML = '<div class="spinner"></div> Enviando a la central...';
       } catch (error) {
         alert('No se pudo enviar la solicitud: ' + error.message);
         btnRequestRide.disabled = false;
@@ -1314,12 +1363,15 @@ function initMap(lat, lng) {
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rides', filter: `id=eq.${rideId}` }, (payload) => {
           const newStatus = payload.new.status;
           if (newStatus === 'pendiente' && payload.new.driver_id) {
-            btnRequestRide.innerHTML = '<span>Conductor asignado, esperando aceptación...</span>';
+            btnRequestRide.innerHTML = '<span>🧐 El conductor está revisando tu tarifa...</span>';
+            loadDriverInfo(payload.new.driver_id);
+            driverPanel.classList.remove('hidden');
           } else if (newStatus === 'aceptado') {
-            btnRequestRide.innerHTML = '<span>Conductor en camino...</span>';
+            if (payload.new.driver_id) loadDriverInfo(payload.new.driver_id);
+            btnRequestRide.innerHTML = '<span>✅ Conductor aceptó · en camino...</span>';
             driverPanel.classList.remove('hidden');
           } else if (newStatus === 'en_curso') {
-            btnRequestRide.innerHTML = '<span>Viaje en curso...</span>';
+            btnRequestRide.innerHTML = '<span>🛵 Viaje en curso...</span>';
           } else if (newStatus === 'completado') {
             btnRequestRide.innerHTML = '<span>Viaje completado</span>';
             btnRequestRide.disabled = false;
@@ -1327,9 +1379,16 @@ function initMap(lat, lng) {
             document.getElementById('payment-modal').classList.add('active');
             guardarViajeEnHistorial();
           } else if (newStatus === 'cancelado' || newStatus === 'rechazado') {
-            btnRequestRide.innerHTML = '<span>Viaje cancelado</span>';
+            const motivo = newStatus === 'rechazado'
+              ? 'El conductor rechazó la tarifa. Puedes pedir de nuevo.'
+              : 'El viaje fue cancelado.';
+            btnRequestRide.innerHTML = '<span>❌ ' + motivo + '</span>';
             btnRequestRide.disabled = false;
+            driverPanel.classList.add('hidden');
             activeRideId = null;
+            setTimeout(() => {
+              if (!activeRideId) btnRequestRide.innerHTML = '<span id="btn-text">Pedir viaje</span><i class="fas fa-arrow-right"></i>';
+            }, 4000);
           }
         }).subscribe();
     }
@@ -1397,6 +1456,52 @@ function initMap(lat, lng) {
     locateBtn.addEventListener('click', centerOnLocation);
     pickupRow.addEventListener('click', centerOnLocation);
 
+    // ========== CARGA / OBSERVACIONES ==========
+    let cargoPhotoFile = null;
+    const cargoCheck = document.getElementById('cargo-check');
+    const cargoDetails = document.getElementById('cargo-details');
+    const cargoPhotoInput = document.getElementById('cargo-photo');
+    const cargoPreview = document.getElementById('cargo-preview');
+
+    function getCargoExtra() {
+      return (cargoCheck && cargoCheck.checked) ? 4.00 : 0;
+    }
+    cargoCheck.addEventListener('change', () => {
+      cargoDetails.style.display = cargoCheck.checked ? 'block' : 'none';
+      if (destLat && destLng) updatePriceAndAddress(destLat, destLng, false);
+    });
+    cargoPhotoInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      cargoPhotoFile = file;
+      cargoPreview.src = URL.createObjectURL(file);
+      cargoPreview.classList.remove('hidden');
+    });
+
+    async function loadDriverInfo(driverId) {
+      try {
+        const { data } = await supabaseClient
+          .from('drivers')
+          .select('full_name, phone, vehicle_model, vehicle_plate')
+          .eq('id', driverId)
+          .maybeSingle();
+        if (!data) return;
+        let phoneClean = (data.phone || '').replace(/[^0-9]/g, '');
+        if (phoneClean && phoneClean.indexOf('591') !== 0) phoneClean = '591' + phoneClean;
+        const waMsg = encodeURIComponent('Hola ' + (data.full_name || '') + ', soy tu pasajero de Moto Campeón.');
+        driverPanel.innerHTML = `
+          <div class="driver-avatar" style="display:flex;align-items:center;justify-content:center;background:var(--primary);color:#fff;font-weight:800;font-size:1.3rem;">${(data.full_name || 'C').charAt(0).toUpperCase()}</div>
+          <div class="driver-details">
+            <div class="driver-name">${data.full_name || 'Conductor'}</div>
+            <div class="driver-car">${data.vehicle_model || 'Moto'}${data.vehicle_plate ? ' · ' + data.vehicle_plate : ''}</div>
+            <div class="driver-actions">
+              <button class="driver-btn btn-call-driver" onclick="window.location.href='tel:+${phoneClean}'"><i class="fas fa-phone"></i> Llamar</button>
+              ${phoneClean ? `<button class="driver-btn btn-wa-driver" onclick="window.open('https://wa.me/${phoneClean}?text=${waMsg}','_blank')"><i class="fab fa-whatsapp"></i> WhatsApp</button>` : ''}
+            </div>
+          </div>`;
+      } catch (e) { console.error('Error cargando conductor:', e); }
+    }
+
     window.finishPayment = function() {
       document.getElementById('payment-modal').classList.remove('active');
       setTimeout(() => document.getElementById('rating-modal').classList.add('active'), 300);
@@ -1404,8 +1509,16 @@ function initMap(lat, lng) {
     window.resetDemo = function() {
       document.getElementById('rating-modal').classList.remove('active');
       if (destinationMarker) destinationMarker.remove();
-      passengerMarker.setLngLat([currentLng, currentLat]);
+      if (passengerMarker) passengerMarker.setLngLat([currentLng, currentLat]);
       driverPanel.classList.add('hidden');
+      driverPanel.innerHTML = '';
+      document.getElementById('cargo-box').style.display = 'none';
+      cargoCheck.checked = false;
+      cargoDetails.style.display = 'none';
+      document.getElementById('cargo-desc').value = '';
+      cargoPhotoInput.value = '';
+      cargoPhotoFile = null;
+      cargoPreview.classList.add('hidden');
       rideOptionsContainer.classList.add('hidden');
       btnRequestRide.classList.add('hidden');
       btnRequestRide.disabled = false;
