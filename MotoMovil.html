@@ -172,7 +172,7 @@
       background: rgba(255,122,0,0.1);
     }
 
-    /* Pin central y tooltip */
+    /* Pin central y tooltip (Destino - Naranja) */
     .center-fixed-pin {
       position: absolute;
       top: 50%;
@@ -235,6 +235,36 @@
     }
     .pin-tooltip-price { color: var(--primary); font-weight: 800; font-size: 1rem; }
 
+    /* Pin central para SELECCIONAR ORIGEN (Verde) */
+    .center-pickup-pin {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -100%);
+      z-index: 1000;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .pickup-pin-head {
+      width: 28px;
+      height: 28px;
+      background: #00C853;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      border: 2px solid #FFF;
+    }
+    .pickup-pin-head::after {
+      content: '📍';
+      transform: rotate(45deg);
+      font-size: 14px;
+    }
+
     /* Botón confirmar destino */
     .btn-confirm-map {
       position: absolute;
@@ -255,6 +285,46 @@
       white-space: nowrap;
       align-items: center;
       gap: 8px;
+    }
+
+    /* Botón confirmar punto de partida */
+    .btn-confirm-pickup {
+      position: absolute;
+      bottom: 280px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #00C853;
+      color: #FFFFFF;
+      border: none;
+      padding: 0.9rem 1.8rem;
+      border-radius: 25px;
+      font-weight: 700;
+      font-size: 1rem;
+      box-shadow: var(--shadow-md);
+      z-index: 999;
+      display: none;
+      cursor: pointer;
+      white-space: nowrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-confirm-pickup:active { background: #009624; transform: translateX(-50%) scale(0.98); }
+
+    /* Instrucción flotante */
+    .map-instruction {
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      z-index: 999;
+      display: none;
+      text-align: center;
+      backdrop-filter: blur(4px);
     }
 
     /* Bottom sheet */
@@ -577,7 +647,6 @@
           <input type="text" class="search-input" id="search-input-overlay" placeholder="Ingresa una dirección, lugar o mercado..." autocomplete="off">
         </div>
         <div class="search-suggestions" id="search-suggestions">
-          <!-- Recientes (se llenará dinámicamente) -->
           <div class="recent-section" id="recent-section" style="display:none;">Recientes</div>
           <div id="recent-list"></div>
         </div>
@@ -588,6 +657,17 @@
         <div class="spinner" id="gps-spinner"></div>
         <p id="gps-message">Obteniendo tu ubicación...</p>
         <button class="register-btn" id="btn-retry-gps" style="display:none; margin-top:10px;">Reintentar</button>
+      </div>
+
+      <!-- Instrucción flotante -->
+      <div class="map-instruction" id="map-instruction">
+        Arrastra el mapa para ajustar el punto de partida a la calle
+      </div>
+
+      <!-- Pin central para seleccionar ORIGEN -->
+      <div id="center-pickup-pin" class="center-pickup-pin" style="display:none;">
+        <div class="pickup-pin-head"></div>
+        <div class="pin-shadow"></div>
       </div>
 
       <!-- Pin central para seleccionar destino -->
@@ -603,6 +683,11 @@
       <!-- Botón confirmar destino -->
       <button class="btn-confirm-map" id="btn-confirm-dest">
         <i class="fas fa-check"></i> Confirmar destino
+      </button>
+      
+      <!-- Botón confirmar punto de partida -->
+      <button class="btn-confirm-pickup" id="btn-confirm-pickup">
+        <i class="fas fa-check"></i> Confirmar punto de partida
       </button>
       
       <!-- Botón de localización personalizado (respaldo) -->
@@ -753,9 +838,9 @@
     // ========== ESTADO GLOBAL ==========
     let map;
     let passengerMarker, destinationMarker;
-    let currentLat = -17.7833, currentLng = -63.1821; // Coordenadas por defecto (solo para inicializar el mapa si no hay GPS)
+    let currentLat = -17.7833, currentLng = -63.1821;
     let destLat = null, destLng = null;
-    let isSelectingDestination = true;
+    let isSelectingDestination = false;
     let mapInitialized = false;
     let locationReady = false;
     let currentCalculatedPrice = 'Bs 0.00';
@@ -765,7 +850,13 @@
     let moveEndTimer = null;
     let searchTimer = null;
     let isSearching = false;
-    let watchId = null; // Para watchPosition
+    let watchId = null;
+
+    // Nuevas variables para selección de origen
+    let isSelectingPickup = false;
+    let snappedPickupLat = null;
+    let snappedPickupLng = null;
+    let pickupMarker = null;
 
     // ========== ELEMENTOS UI ==========
     const mapView = document.getElementById('map-view');
@@ -926,81 +1017,61 @@
 
     // ========== GEOLOCALIZACIÓN MEJORADA ==========
     function requestLocation() {
-  // Limpiar watch anterior si existe
-  if (watchId) {
-    navigator.geolocation.clearWatch(watchId);
-    watchId = null;
-  }
-  
-  gpsLoading.classList.remove('hidden');
-  gpsSpinner.style.display = 'block';
-  gpsMessage.textContent = 'Obteniendo tu ubicación...';
-  btnRetryGps.style.display = 'none';
-  document.getElementById('display-pickup-sub').textContent = 'Buscando GPS...';
-  
-  if (!navigator.geolocation) {
-    showLocationError('Tu navegador no soporta geolocalización.');
-    return;
-  }
-  
-  const options = {
-    enableHighAccuracy: true,
-    maximumAge: 0,
-    timeout: 10000 
-  };
-  
-  let mapCentered = false; // Control para no volver locos los movimientos de cámara
-
-  watchId = navigator.geolocation.watchPosition(
-    (pos) => {
-      const accuracy = pos.coords.accuracy;
-      console.log(`GPS actualizándose, precisión: ${accuracy} m`);
-      
-      // Actualizamos siempre a la posición más reciente
-      currentLat = pos.coords.latitude;
-      currentLng = pos.coords.longitude;
-      locationReady = true;
-      
-      document.getElementById('display-pickup-sub').textContent = `Ubicación actual (precisión: ${Math.round(accuracy)} m)`;
-      
-      // En cuanto tenemos una ubicación (aunque sea de baja precisión), quitamos la pantalla de carga
-      gpsLoading.classList.add('hidden');
-      
-      if (!map) {
-        // Inicializamos el mapa en el primer dato que recibimos
-        initMap(currentLat, currentLng);
-        mapCentered = (accuracy <= 100); 
-      } else {
-        // Si el mapa ya existe, actualizamos el marcador del pasajero en tiempo real
-        if (passengerMarker) {
-          passengerMarker.setLngLat([currentLng, currentLat]);
-        }
-        
-        // Si la precisión mejora (es menor a 100m) y no habíamos centrado la cámara, saltamos a la ubicación exacta
-        if (accuracy <= 100 && !mapCentered) {
-          map.flyTo({ center: [currentLng, currentLat], zoom: 15 });
-          mapCentered = true; // Ya centramos la cámara, no lo forzamos de nuevo para dejar al usuario navegar
-        }
+      if (watchId) {
+        navigator.geolocation.clearWatch(watchId);
+        watchId = null;
       }
       
-      // ¡IMPORTANTE!: Eliminamos el clearWatch(watchId) y los maxAttempts. 
-      // El navegador seguirá enviando mejores coordenadas a medida que el hardware GPS se estabiliza.
-    },
-    (err) => {
-      console.error('Error de geolocalización:', err);
-      // Solo mostramos error crítico si nunca logramos ubicar al usuario
-      if (!locationReady) {
-        let mensaje = 'No pudimos obtener tu ubicación.';
-        if (err.code === 1) mensaje = 'Permiso de ubicación denegado. Activa el GPS.';
-        else if (err.code === 2) mensaje = 'No se pudo determinar la ubicación.';
-        else if (err.code === 3) mensaje = 'Tiempo de espera agotado. Intenta de nuevo.';
-        showLocationError(mensaje);
+      gpsLoading.classList.remove('hidden');
+      gpsSpinner.style.display = 'block';
+      gpsMessage.textContent = 'Obteniendo tu ubicación...';
+      btnRetryGps.style.display = 'none';
+      document.getElementById('display-pickup-sub').textContent = 'Buscando GPS...';
+      
+      if (!navigator.geolocation) {
+        showLocationError('Tu navegador no soporta geolocalización.');
+        return;
       }
-    },
-    options
-  );
-}
+      
+      const options = { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 };
+      let mapCentered = false;
 
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const accuracy = pos.coords.accuracy;
+          currentLat = pos.coords.latitude;
+          currentLng = pos.coords.longitude;
+          locationReady = true;
+          
+          document.getElementById('display-pickup-sub').textContent = `Ubicación actual (precisión: ${Math.round(accuracy)} m)`;
+          gpsLoading.classList.add('hidden');
+          
+          if (!map) {
+            initMap(currentLat, currentLng);
+            mapCentered = (accuracy <= 100); 
+          } else {
+            if (passengerMarker) {
+              passengerMarker.setLngLat([currentLng, currentLat]);
+            }
+            if (accuracy <= 100 && !mapCentered) {
+              map.flyTo({ center: [currentLng, currentLat], zoom: 15 });
+              mapCentered = true;
+            }
+          }
+        },
+        (err) => {
+          console.error('Error de geolocalización:', err);
+          if (!locationReady) {
+            let mensaje = 'No pudimos obtener tu ubicación.';
+            if (err.code === 1) mensaje = 'Permiso de ubicación denegado. Activa el GPS.';
+            else if (err.code === 2) mensaje = 'No se pudo determinar la ubicación.';
+            else if (err.code === 3) mensaje = 'Tiempo de espera agotado. Intenta de nuevo.';
+            showLocationError(mensaje);
+          }
+        },
+        options
+      );
+    }
     
     function showLocationError(message) {
       gpsLoading.classList.remove('hidden');
@@ -1011,69 +1082,92 @@
     }
 
     // ========== INICIALIZAR MAPA ==========
-    // ========== INICIALIZAR MAPA ==========
-function initMap(lat, lng) {
-  if (map) return;
-  
-  map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/streets-v12',
-    center: [lng, lat],
-    zoom: 15,
-    attributionControl: false
-  });
+    function initMap(lat, lng) {
+      if (map) return;
+      
+      map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center: [lng, lat],
+        zoom: 15,
+        attributionControl: false
+      });
 
-  // 1. Instanciar el control nativo de geolocalización de Mapbox (Esto crea la flecha de dirección y el punto azul)
-  const geolocate = new mapboxgl.GeolocateControl({
-    positionOptions: {
-      enableHighAccuracy: true
-    },
-    trackUserLocation: true, // Sigue al usuario en tiempo real
-    showUserHeading: true    // Muestra la flecha de dirección/rumbo del dispositivo
-  });
+      const geolocate = new mapboxgl.GeolocateControl({
+        positionOptions: { enableHighAccuracy: true },
+        trackUserLocation: true,
+        showUserHeading: true
+      });
 
-  // Añadir el control arriba a la derecha (o donde prefieras)
-  map.addControl(geolocate, 'top-right');
+      map.addControl(geolocate, 'top-right');
+      map.addControl(new mapboxgl.NavigationControl(), 'top-left');
 
-  // Agregar control de navegación normal
-  map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+      geolocate.on('geolocate', (e) => {
+        currentLat = e.coords.latitude;
+        currentLng = e.coords.longitude;
+        locationReady = true;
+        document.getElementById('display-pickup-sub').textContent = `Ubicación actual (precisión: ${Math.round(e.coords.accuracy)} m)`;
+      });
 
-  // Evento cuando Mapbox encuentra la ubicación con su control nativo
-  geolocate.on('geolocate', (e) => {
-    currentLat = e.coords.latitude;
-    currentLng = e.coords.longitude;
-    locationReady = true;
-    document.getElementById('display-pickup-sub').textContent = `Ubicación actual (precisión: ${Math.round(e.coords.accuracy)} m)`;
-  });
-
-  // IMPORTANTE: Ya NO creamos el marcador naranja manual (passengerMarker) 
-  // porque el componente 'geolocate' de Mapbox se encarga 100% de mostrar la flecha azul de dirección.
-
-  map.on('moveend', () => {
-    if (isSelectingDestination) {
-      clearTimeout(moveEndTimer);
-      moveEndTimer = setTimeout(() => {
+      map.on('moveend', () => {
         const center = map.getCenter();
-        destLat = center.lat;
-        destLng = center.lng;
-        pinTooltipAddress.textContent = 'Calculando...';
-        pinTooltipPrice.textContent = 'Bs --';
-        pinTooltip.classList.add('show');
-        updatePriceAndAddress(destLat, destLng, false);
-      }, 300);
+        
+        if (isSelectingPickup) {
+          clearTimeout(moveEndTimer);
+          moveEndTimer = setTimeout(async () => {
+            pinTooltipAddress.textContent = 'Buscando calle cercana...';
+            pinTooltip.classList.add('show');
+            
+            const snapped = await snapToRoad(center.lat, center.lng);
+            snappedPickupLat = snapped.lat;
+            snappedPickupLng = snapped.lng;
+            
+            const address = await obtenerDireccion(snappedPickupLat, snappedPickupLng);
+            pinTooltipAddress.textContent = address;
+            pinTooltipPrice.textContent = 'Punto de partida';
+            
+            if (destLat && destLng) {
+               updatePriceAndAddress(destLat, destLng, true);
+            }
+          }, 400);
+        } 
+        else if (isSelectingDestination) {
+          clearTimeout(moveEndTimer);
+          moveEndTimer = setTimeout(() => {
+            destLat = center.lat;
+            destLng = center.lng;
+            pinTooltipAddress.textContent = 'Calculando...';
+            pinTooltipPrice.textContent = 'Bs --';
+            pinTooltip.classList.add('show');
+            updatePriceAndAddress(destLat, destLng, false);
+          }, 300);
+        }
+      });
+
+      centerPin.style.display = 'flex';
+      btnConfirmMap.style.display = 'flex';
+      mapInitialized = true;
+
+      map.on('load', () => {
+        geolocate.trigger();
+      });
     }
-  });
 
-  centerPin.style.display = 'flex';
-  btnConfirmMap.style.display = 'flex';
-  mapInitialized = true;
-
-  // 2. Forzar que el mapa active la geolocalización y dibuje la flecha en cuanto cargue
-  map.on('load', () => {
-    geolocate.trigger(); // Esto hace que al abrir la app se dispare la flecha azul de inmediato
-  });
-}
-
+    // ========== ANCLAR A LA CARRETERA (MAP MATCHING) ==========
+    async function snapToRoad(lat, lng) {
+      const url = `https://api.mapbox.com/matching/v5/mapbox/driving/${lng},${lat}?access_token=${mapboxgl.accessToken}&geometries=geojson&radiuses=50`;
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.matchings && data.matchings.length > 0) {
+          const snappedCoords = data.matchings[0].geometry.coordinates[0];
+          return { lat: snappedCoords[1], lng: snappedCoords[0], success: true };
+        }
+      } catch (error) {
+        console.warn('Map matching falló, usando coordenada cruda:', error);
+      }
+      return { lat, lng, success: false };
+    }
 
     // ========== BÚSQUEDA (OVERLAY) ==========
     searchButton.addEventListener('click', () => {
@@ -1119,8 +1213,6 @@ function initMap(lat, lng) {
             <span>${destino}</span>
           `;
           item.addEventListener('click', () => {
-            // Aquí deberías implementar la selección del destino a partir del historial guardado con coordenadas
-            // Por ahora solo cerramos overlay y no hacemos nada, pero podrías buscar el viaje y usar sus lat/lng.
             searchOverlay.classList.remove('active');
           });
           recentList.appendChild(item);
@@ -1169,8 +1261,12 @@ function initMap(lat, lng) {
               map.flyTo({ center: [lng, lat], zoom: 16, essential: true });
               
               isSelectingDestination = true;
+              isSelectingPickup = false;
               centerPin.style.display = 'flex';
               btnConfirmMap.style.display = 'flex';
+              document.getElementById('center-pickup-pin').style.display = 'none';
+              document.getElementById('btn-confirm-pickup').style.display = 'none';
+              document.getElementById('map-instruction').style.display = 'none';
               rideOptionsContainer.classList.add('hidden');
               btnRequestRide.classList.add('hidden');
               
@@ -1200,9 +1296,9 @@ function initMap(lat, lng) {
       let distanceInKm;
       if (useRealDistance) {
         pinTooltipPrice.textContent = 'Calculando ruta...';
-        distanceInKm = await calcularDistanciaRuta(currentLat, currentLng, lat, lng);
+        distanceInKm = await calcularDistanciaRuta(snappedPickupLat || currentLat, snappedPickupLng || currentLng, lat, lng);
       } else {
-        distanceInKm = calculateDistance(currentLat, currentLng, lat, lng);
+        distanceInKm = calculateDistance(snappedPickupLat || currentLat, snappedPickupLng || currentLng, lat, lng);
       }
       const basePrice = 4.00;
       const pricePerKm = 2.50;
@@ -1270,6 +1366,26 @@ function initMap(lat, lng) {
       document.getElementById('display-dropoff-sub').textContent = 'Ubicación en mapa';
     });
 
+    // ========== CONFIRMAR PUNTO DE PARTIDA ==========
+    document.getElementById('btn-confirm-pickup').addEventListener('click', async () => {
+      isSelectingPickup = false;
+      document.getElementById('center-pickup-pin').style.display = 'none';
+      document.getElementById('btn-confirm-pickup').style.display = 'none';
+      document.getElementById('map-instruction').style.display = 'none';
+      pinTooltip.classList.remove('show');
+      
+      const address = await obtenerDireccion(snappedPickupLat, snappedPickupLng);
+      document.getElementById('display-pickup').textContent = address;
+      document.getElementById('display-pickup-sub').textContent = 'Punto de partida fijado en la vía';
+      
+      if (destLat && destLng) {
+        document.getElementById('display-dropoff-sub').textContent = 'Recalculando ruta...';
+        await updatePriceAndAddress(destLat, destLng, true);
+        rideOptionsContainer.classList.remove('hidden');
+        btnRequestRide.classList.remove('hidden');
+      }
+    });
+
     // ========== OBTENER DIRECCIÓN ==========
     async function obtenerDireccion(lat, lng) {
       const url = `https://api.geoapify.com/v1/geocode/reverse?lat=${lat}&lon=${lng}&apiKey=${GEOAPIFY_KEY}&lang=es`;
@@ -1307,11 +1423,14 @@ function initMap(lat, lng) {
       btnRequestRide.innerHTML = '<div class="spinner"></div> Enviando solicitud...';
 
       try {
-        const originAddress = await obtenerDireccion(currentLat, currentLng);
+        // USAR LAS COORDENADAS ANCLADAS A LA CARRETERA, no las crudas del GPS
+        const finalOriginLat = snappedPickupLat || currentLat;
+        const finalOriginLng = snappedPickupLng || currentLng;
+        
+        const originAddress = await obtenerDireccion(finalOriginLat, finalOriginLng);
         const destAddress = await obtenerDireccion(destLat, destLng);
         const price = parseFloat(currentCalculatedPrice.replace('Bs ', ''));
 
-        // Subir foto de la carga para que la central y el conductor la vean
         let cargoPhotoUrl = null;
         if (hasCargo && cargoPhotoFile) {
           btnRequestRide.innerHTML = '<div class="spinner"></div> Subiendo foto...';
@@ -1328,8 +1447,8 @@ function initMap(lat, lng) {
           .from('rides')
           .insert({
             passenger_id: passenger.id,
-            origin_lat: currentLat,
-            origin_lng: currentLng,
+            origin_lat: finalOriginLat,
+            origin_lng: finalOriginLng,
             origin_address: originAddress,
             destination_lat: destLat,
             destination_lng: destLng,
@@ -1395,12 +1514,13 @@ function initMap(lat, lng) {
 
     // ========== HISTORIAL Y PERFIL ==========
     async function guardarViajeEnHistorial() {
-      const origenText = await obtenerDireccion(currentLat, currentLng);
+      const origenText = await obtenerDireccion(snappedPickupLat || currentLat, snappedPickupLng || currentLng);
       const destinoText = await obtenerDireccion(destLat, destLng);
       const viajes = JSON.parse(localStorage.getItem('migo_historial') || '[]');
       viajes.unshift({ fecha: new Date().toLocaleString(), origen: origenText, destino: destinoText, precio: currentCalculatedPrice, lat: destLat, lng: destLng });
       localStorage.setItem('migo_historial', JSON.stringify(viajes.slice(0, 20)));
     }
+    
     function renderHistory() {
       const container = document.getElementById('history-list');
       const noHistory = document.getElementById('no-history');
@@ -1425,6 +1545,7 @@ function initMap(lat, lng) {
         container.appendChild(card);
       });
     }
+    
     function loadProfile() {
       if (passenger) {
         document.getElementById('perfil-nombre-display').textContent = passenger.full_name || 'Sin nombre';
@@ -1432,6 +1553,7 @@ function initMap(lat, lng) {
         document.getElementById('perfil-email-input').value = passenger.phone || '';
       }
     }
+    
     document.getElementById('btn-guardar-perfil').addEventListener('click', () => {
       const nombre = document.getElementById('perfil-nombre-input').value.trim();
       if (passenger && nombre) {
@@ -1445,16 +1567,34 @@ function initMap(lat, lng) {
 
     // ========== BOTÓN DE LOCALIZACIÓN ==========
     function centerOnLocation() {
-  if (locationReady) {
-    map.flyTo({ center: [currentLng, currentLat], zoom: 16, essential: true });
-  } else {
-    requestLocation();
-  }
-}
-
+      if (locationReady) {
+        map.flyTo({ center: [currentLng, currentLat], zoom: 16, essential: true });
+      } else {
+        requestLocation();
+      }
+    }
 
     locateBtn.addEventListener('click', centerOnLocation);
-    pickupRow.addEventListener('click', centerOnLocation);
+    
+    pickupRow.addEventListener('click', () => {
+      isSelectingPickup = true;
+      isSelectingDestination = false;
+      
+      centerPin.style.display = 'none';
+      btnConfirmMap.style.display = 'none';
+      rideOptionsContainer.classList.add('hidden');
+      btnRequestRide.classList.add('hidden');
+      
+      document.getElementById('center-pickup-pin').style.display = 'flex';
+      document.getElementById('btn-confirm-pickup').style.display = 'flex';
+      document.getElementById('map-instruction').style.display = 'block';
+      
+      const targetLat = snappedPickupLat || currentLat;
+      const targetLng = snappedPickupLng || currentLng;
+      map.flyTo({ center: [targetLng, targetLat], zoom: 17, essential: true });
+      
+      map.fire('moveend');
+    });
 
     // ========== CARGA / OBSERVACIONES ==========
     let cargoPhotoFile = null;
@@ -1506,10 +1646,10 @@ function initMap(lat, lng) {
       document.getElementById('payment-modal').classList.remove('active');
       setTimeout(() => document.getElementById('rating-modal').classList.add('active'), 300);
     };
+    
     window.resetDemo = function() {
       document.getElementById('rating-modal').classList.remove('active');
       if (destinationMarker) destinationMarker.remove();
-      if (passengerMarker) passengerMarker.setLngLat([currentLng, currentLat]);
       driverPanel.classList.add('hidden');
       driverPanel.innerHTML = '';
       document.getElementById('cargo-box').style.display = 'none';
@@ -1524,6 +1664,15 @@ function initMap(lat, lng) {
       btnRequestRide.disabled = false;
       btnRequestRide.innerHTML = '<span id="btn-text">Pedir viaje</span><i class="fas fa-arrow-right"></i>';
       document.querySelectorAll('.star-icon').forEach(s => s.classList.remove('active'));
+      
+      isSelectingPickup = false;
+      snappedPickupLat = null;
+      snappedPickupLng = null;
+      document.getElementById('center-pickup-pin').style.display = 'none';
+      document.getElementById('btn-confirm-pickup').style.display = 'none';
+      document.getElementById('map-instruction').style.display = 'none';
+      document.getElementById('display-pickup').textContent = 'Mi ubicación actual';
+      document.getElementById('display-pickup-sub').textContent = 'Obteniendo GPS...';
     };
 
     window.onload = async () => {
