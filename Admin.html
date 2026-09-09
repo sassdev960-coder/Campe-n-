@@ -6,201 +6,177 @@
     <title>Panel Admin - Moto Móvil</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-
-        :root {
-            --bg-body: #0b0f19;
-            --bg-surface: #151c2c;
-            --bg-surface-hover: #1e2638;
-            --border-color: #2a3441;
-            --primary: #f97316;
-            --primary-hover: #ea580c;
-            --primary-glow: 0 0 15px rgba(249, 115, 22, 0.3);
-            --text-main: #ffffff;
-            --text-secondary: #94a3b8;
-            --sidebar-width: 260px;
-            --topbar-height: 70px;
-        }
-
-        * { font-family: 'Inter', sans-serif; box-sizing: border-box; }
-        body { background-color: var(--bg-body); color: var(--text-main); -webkit-font-smoothing: antialiased; min-height: 100vh; }
-        h1,h2,h3,h4,h5,h6 { color: var(--text-main); font-weight: 700; }
-        p,span,div { color: inherit; }
-        .section-title { position: relative; padding-left: 16px; border-left: 4px solid var(--primary); color: var(--text-main); letter-spacing: -0.5px; }
-        .text-accent { color: var(--primary) !important; }
-        .text-secondary-custom { color: var(--text-secondary) !important; font-weight: 500; }
-
-        .form-control,.form-select {
-            background-color: #0f1523 !important;
-            border: 1px solid var(--border-color) !important;
-            color: #ffffff !important;
-            padding: 12px 16px; border-radius: 10px; font-size: 14px; transition: all 0.3s ease;
-        }
-        .form-control:focus,.form-select:focus { border-color: var(--primary) !important; box-shadow: 0 0 0 3px rgba(249,115,22,0.2) !important; }
-        .form-control::placeholder { color: #64748b !important; }
-        option { background-color: var(--bg-surface); color: #ffffff; }
-        label,.form-label { color: var(--text-secondary) !important; font-weight: 600; font-size: 13px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
-
-        .topbar {
-            position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-height);
-            background: rgba(21,28,44,0.95); backdrop-filter: blur(10px);
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 0 24px; z-index: 1030; border-bottom: 1px solid var(--border-color);
-        }
-        .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 20px; color: var(--text-main); letter-spacing: -0.5px; }
-        .brand i { color: var(--primary); font-size: 24px; }
-
-        .sidebar {
-            position: fixed; top: 0; left: -300px; bottom: 0; width: var(--sidebar-width);
-            background: var(--bg-surface); padding: 24px 16px; z-index: 1040; overflow-y: auto;
-            border-right: 1px solid var(--border-color); transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        @media (min-width: 992px) {
-            .sidebar { left: 0; top: var(--topbar-height); }
-            .main-content { margin-left: var(--sidebar-width); margin-top: var(--topbar-height); padding: 32px; }
-        }
-        @media (max-width: 991.98px) {
-            .sidebar.show { left: 0; }
-            .sidebar-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1035; display: none; backdrop-filter: blur(4px); }
-            .sidebar-overlay.show { display: block; }
-            .main-content { margin-top: var(--topbar-height); padding: 20px; }
-        }
-        .sidebar .nav-link {
-            color: var(--text-secondary); text-decoration: none; display: flex; align-items: center; gap: 14px;
-            padding: 14px 18px; border-radius: 10px; margin-bottom: 8px; transition: all 0.2s ease; font-size: 15px; font-weight: 600;
-        }
-        .sidebar .nav-link:hover { background: rgba(249,115,22,0.1); color: var(--primary); }
-        .sidebar .nav-link.active { background: var(--primary); color: #ffffff; box-shadow: var(--primary-glow); }
-        .sidebar .nav-link i { font-size: 18px; width: 24px; text-align: center; }
-
-        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
-        .data-card {
-            background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 14px;
-            padding: 20px; display: flex; flex-direction: column; gap: 14px;
-            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-        }
-        .data-card:hover { border-color: var(--primary); box-shadow: 0 10px 30px rgba(0,0,0,0.5); transform: translateY(-4px); }
-        .data-card-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 4px; }
-        .data-card-title { font-size: 16px; font-weight: 700; margin: 0; }
-        .data-card-subtitle { font-size: 12px; color: var(--text-secondary); font-weight: 500; display: block; margin-top: 4px; }
-        .info-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--text-secondary); }
-        .info-row i { color: var(--primary); width: 18px; text-align: center; font-size: 15px; }
-        .info-row strong { color: var(--text-main); font-weight: 600; }
-        .data-card-actions { margin-top: auto; padding-top: 15px; border-top: 1px solid var(--border-color); display: flex; gap: 8px; flex-wrap: wrap; }
-
-        .table-container { background: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; overflow-x: auto; }
-        .table-custom { width: 100%; border-collapse: collapse; margin: 0; }
-        .table-custom th { background-color: #1a2235; color: var(--text-secondary); padding: 14px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid var(--border-color); }
-        .table-custom td { padding: 14px; font-size: 14px; border-bottom: 1px solid var(--border-color); }
-        .table-custom tbody tr:hover { background-color: rgba(255,255,255,0.02); }
-
-        .badge-custom { font-size: 11px; font-weight: 700; padding: 6px 12px; border-radius: 8px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 6px; }
-        .badge-pendiente { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
-        .badge-aprobada { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
-        .badge-rechazada { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
-        .badge-info { background: rgba(56,189,248,0.15); color: #38bdf8; border: 1px solid rgba(56,189,248,0.3); }
-        .badge-neutral { background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3); }
-
-        .btn { font-weight: 600; border-radius: 8px; font-size: 13px; padding: 10px 16px; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-primary { background: var(--primary); border: none; color: #ffffff; box-shadow: var(--primary-glow); }
-        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
-        .btn-outline-light { border: 1px solid var(--border-color); color: var(--text-main); background: transparent; }
-        .btn-outline-light:hover { background: rgba(255,255,255,0.05); color: var(--text-main); border-color: var(--text-secondary); }
-        .btn-danger-custom { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
-        .btn-danger-custom:hover { background: #ef4444; color: white; }
-
-        .modal-content { background: var(--bg-surface); border: 1px solid var(--border-color); border-top: 4px solid var(--primary); border-radius: 14px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.7); }
-        .modal-header { border-bottom: 1px solid var(--border-color); padding: 16px 20px; }
-        .modal-body { padding: 20px; }
-        .modal-footer { border-top: 1px solid var(--border-color); padding: 16px 20px; }
-        .data-box-highlight { background: rgba(249,115,22,0.05); border: 1px solid rgba(249,115,22,0.2); border-radius: 12px; padding: 16px; }
-
-        #loadingScreen, #authScreen { position: fixed; inset: 0; background: var(--bg-body); z-index: 9999; }
-        #authScreen { display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .auth-box { background: var(--bg-surface); padding: 40px; border-radius: 20px; width: 100%; max-width: 420px; border: 1px solid var(--border-color); box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
-        .spinner { width: 50px; height: 50px; border: 4px solid rgba(249,115,22,0.2); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 24px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        .stat-card { padding: 15px 12px; text-align: center; }
-        .stat-card i { font-size: 24px; margin-bottom: 10px; color: var(--primary); }
-        .stat-card h6 { color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-        .stat-card h2 { font-size: 24px; margin: 0; letter-spacing: -0.5px; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
-
-        @keyframes ring {
-            0% { transform: rotate(0); }
-            10% { transform: rotate(15deg); }
-            20% { transform: rotate(-15deg); }
-            30% { transform: rotate(10deg); }
-            40% { transform: rotate(-10deg); }
-            50% { transform: rotate(5deg); }
-            60% { transform: rotate(-5deg); }
-            70% { transform: rotate(0); }
-        }
-        .ringing { animation: ring 0.5s ease-in-out; color: var(--primary) !important; }
-
-        .assign-panel { background: rgba(0,0,0,0.2); padding: 10px; border-radius: 10px; margin-top: 8px; }
-        .assign-panel select, .assign-panel button { font-size: 12px; padding: 6px 10px; }
-        
-        /* Estilos adicionales para el modal de conductor */
-        #driverDetailsModal .modal-dialog {
-            max-width: 900px;
-        }
-        .info-section {
-            background: rgba(0,0,0,0.2);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 15px;
-        }
-        .info-section h6 {
-            margin-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 8px;
-        }
+        :root{--bg-body:#0b0f19;--bg-surface:#151c2c;--bg-surface-hover:#1e2638;--border-color:#2a3441;--primary:#f97316;--primary-hover:#ea580c;--primary-glow:0 0 15px rgba(249,115,22,0.3);--text-main:#ffffff;--text-secondary:#94a3b8;--green-online:#22c55e;--red-alert:#ef4444;--blue-info:#3b82f6;--purple-msg:#8b5cf6;--yellow-busy:#f59e0b;--whatsapp:#25D366;--sidebar-width:260px;--topbar-height:70px;}
+        *{font-family:'Inter',sans-serif;box-sizing:border-box;}
+        body{background-color:var(--bg-body);color:var(--text-main);-webkit-font-smoothing:antialiased;min-height:100vh;}
+        h1,h2,h3,h4,h5,h6{color:var(--text-main);font-weight:700;}
+        .section-title{position:relative;padding-left:16px;border-left:4px solid var(--primary);color:var(--text-main);letter-spacing:-0.5px;}
+        .text-accent{color:var(--primary)!important;}
+        .text-secondary-custom{color:var(--text-secondary)!important;font-weight:500;}
+        .form-control,.form-select{background-color:#0f1523!important;border:1px solid var(--border-color)!important;color:#fff!important;padding:12px 16px;border-radius:10px;font-size:14px;transition:all .3s ease;}
+        .form-control:focus,.form-select:focus{border-color:var(--primary)!important;box-shadow:0 0 0 3px rgba(249,115,22,0.2)!important;}
+        .form-control::placeholder{color:#64748b!important;}
+        option{background-color:var(--bg-surface);color:#fff;}
+        label,.form-label{color:var(--text-secondary)!important;font-weight:600;font-size:13px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;}
+        .topbar{position:fixed;top:0;left:0;right:0;height:var(--topbar-height);background:rgba(21,28,44,0.95);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:space-between;padding:0 24px;z-index:1030;border-bottom:1px solid var(--border-color);}
+        .brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:20px;color:var(--text-main);letter-spacing:-0.5px;}
+        .brand i{color:var(--primary);font-size:24px;}
+        .sidebar{position:fixed;top:0;left:-300px;bottom:0;width:var(--sidebar-width);background:var(--bg-surface);padding:24px 16px;z-index:1040;overflow-y:auto;border-right:1px solid var(--border-color);transition:left .3s cubic-bezier(0.4,0,0.2,1);}
+        @media(min-width:992px){.sidebar{left:0;top:var(--topbar-height);}.main-content{margin-left:var(--sidebar-width);margin-top:var(--topbar-height);padding:24px;}}
+        @media(max-width:991.98px){.sidebar.show{left:0;}.sidebar-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:1035;display:none;backdrop-filter:blur(4px);}.sidebar-overlay.show{display:block;}.main-content{margin-top:var(--topbar-height);padding:16px;}}
+        .sidebar .nav-link{color:var(--text-secondary);text-decoration:none;display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:10px;margin-bottom:8px;transition:all .2s ease;font-size:15px;font-weight:600;position:relative;}
+        .sidebar .nav-link:hover{background:rgba(249,115,22,0.1);color:var(--primary);}
+        .sidebar .nav-link.active{background:var(--primary);color:#fff;box-shadow:var(--primary-glow);}
+        .sidebar .nav-link i{font-size:18px;width:24px;text-align:center;}
+        .sidebar .nav-link .side-badge{position:absolute;right:14px;top:50%;transform:translateY(-50%);background:var(--red-alert);color:#fff;font-size:11px;font-weight:700;min-width:20px;height:20px;border-radius:10px;display:none;align-items:center;justify-content:center;padding:0 6px;}
+        .cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px;}
+        .data-card{background:var(--bg-surface);border:1px solid var(--border-color);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px;transition:transform .2s,box-shadow .2s,border-color .2s;}
+        .data-card:hover{border-color:var(--primary);box-shadow:0 10px 30px rgba(0,0,0,0.5);transform:translateY(-4px);}
+        .data-card-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--border-color);padding-bottom:12px;margin-bottom:4px;}
+        .data-card-title{font-size:16px;font-weight:700;margin:0;}
+        .data-card-subtitle{font-size:12px;color:var(--text-secondary);font-weight:500;display:block;margin-top:4px;}
+        .info-row{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-secondary);}
+        .info-row i{color:var(--primary);width:18px;text-align:center;font-size:15px;}
+        .info-row strong{color:var(--text-main);font-weight:600;}
+        .data-card-actions{margin-top:auto;padding-top:15px;border-top:1px solid var(--border-color);display:flex;gap:8px;flex-wrap:wrap;}
+        .table-container{background:var(--bg-surface);border:1px solid var(--border-color);border-radius:12px;overflow:hidden;overflow-x:auto;}
+        .table-custom{width:100%;border-collapse:collapse;margin:0;}
+        .table-custom th{background-color:#1a2235;color:var(--text-secondary);padding:14px;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid var(--border-color);}
+        .table-custom td{padding:14px;font-size:14px;border-bottom:1px solid var(--border-color);}
+        .table-custom tbody tr:hover{background-color:rgba(255,255,255,0.02);}
+        .badge-custom{font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;text-transform:uppercase;letter-spacing:.5px;display:inline-flex;align-items:center;gap:6px;}
+        .badge-pendiente{background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);}
+        .badge-aprobada{background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(16,185,129,0.3);}
+        .badge-rechazada{background:rgba(239,68,68,0.15);color:#f87171;border:1px solid rgba(239,68,68,0.3);}
+        .badge-info{background:rgba(56,189,248,0.15);color:#38bdf8;border:1px solid rgba(56,189,248,0.3);}
+        .badge-neutral{background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.3);}
+        .btn{font-weight:600;border-radius:8px;font-size:13px;padding:10px 16px;transition:all .2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;}
+        .btn-primary{background:var(--primary);border:none;color:#fff;box-shadow:var(--primary-glow);}
+        .btn-primary:hover{background:var(--primary-hover);transform:translateY(-2px);}
+        .btn-outline-light{border:1px solid var(--border-color);color:var(--text-main);background:transparent;}
+        .btn-outline-light:hover{background:rgba(255,255,255,0.05);color:var(--text-main);border-color:var(--text-secondary);}
+        .btn-danger-custom{background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.3);}
+        .btn-danger-custom:hover{background:#ef4444;color:#fff;}
+        .modal-content{background:var(--bg-surface);border:1px solid var(--border-color);border-top:4px solid var(--primary);border-radius:14px;box-shadow:0 25px 50px -12px rgba(0,0,0,0.7);}
+        .modal-header{border-bottom:1px solid var(--border-color);padding:16px 20px;}
+        .modal-body{padding:20px;}
+        .modal-footer{border-top:1px solid var(--border-color);padding:16px 20px;}
+        #loadingScreen,#authScreen{position:fixed;inset:0;background:var(--bg-body);z-index:9999;}
+        #authScreen{display:flex;align-items:center;justify-content:center;padding:20px;}
+        .auth-box{background:var(--bg-surface);padding:40px;border-radius:20px;width:100%;max-width:420px;border:1px solid var(--border-color);box-shadow:0 20px 40px rgba(0,0,0,0.5);}
+        .spinner{width:50px;height:50px;border:4px solid rgba(249,115,22,0.2);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin-bottom:24px;}
+        @keyframes spin{to{transform:rotate(360deg);}}
+        .stat-card{padding:15px 12px;text-align:center;}
+        .stat-card i{font-size:24px;margin-bottom:10px;color:var(--primary);}
+        .stat-card h6{color:var(--text-secondary);font-size:12px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+        .stat-card h2{font-size:24px;margin:0;letter-spacing:-0.5px;}
+        @keyframes ring{0%{transform:rotate(0);}10%{transform:rotate(15deg);}20%{transform:rotate(-15deg);}30%{transform:rotate(10deg);}40%{transform:rotate(-10deg);}50%{transform:rotate(5deg);}60%{transform:rotate(-5deg);}70%{transform:rotate(0);}}
+        .ringing{animation:ring .5s ease-in-out;color:var(--primary)!important;}
+        .assign-panel{background:rgba(0,0,0,0.2);padding:10px;border-radius:10px;margin-top:8px;}
+        .assign-panel select,.assign-panel button{font-size:12px;padding:6px 10px;}
+        .dispatch-fullscreen{position:relative;width:100%;height:calc(100vh - var(--topbar-height) - 48px);min-height:400px;border-radius:14px;overflow:hidden;border:1px solid var(--border-color);}
+        #dispatchMap{width:100%;height:100%;}
+        .dispatch-top-overlay{position:absolute;top:12px;left:12px;right:12px;z-index:10;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;flex-wrap:wrap;gap:8px;}
+        .dispatch-top-overlay>*{pointer-events:auto;}
+        .dispatch-stats-pill{background:rgba(21,28,44,0.92);backdrop-filter:blur(12px);border:1px solid var(--border-color);border-radius:12px;padding:10px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:14px;}
+        .dispatch-stats-pill .dstat{display:flex;align-items:center;gap:6px;color:var(--text-secondary);}
+        .dispatch-stats-pill .dstat b{color:var(--text-main);font-size:15px;}
+        .dispatch-stats-pill .dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+        .dispatch-stats-pill .dot.green{background:var(--green-online);box-shadow:0 0 6px var(--green-online);}
+        .dispatch-stats-pill .dot.red{background:var(--red-alert);box-shadow:0 0 6px var(--red-alert);}
+        .dispatch-radius-select{background:rgba(21,28,44,0.92);backdrop-filter:blur(12px);border:1px solid var(--border-color);border-radius:10px;padding:8px 12px;color:#fff;font-size:13px;font-weight:600;outline:none;cursor:pointer;}
+        .dispatch-legend{position:absolute;bottom:16px;left:16px;z-index:10;background:rgba(21,28,44,0.92);backdrop-filter:blur(10px);border:1px solid var(--border-color);border-radius:10px;padding:10px 14px;font-size:11px;display:flex;flex-direction:column;gap:6px;}
+        .dispatch-legend-item{display:flex;align-items:center;gap:8px;color:var(--text-secondary);}
+        .dispatch-legend-item .lg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+        .dispatch-ride-marker{width:38px;height:38px;background:var(--red-alert);border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;cursor:pointer;}
+        .dispatch-ride-marker i{transform:rotate(45deg);color:#fff;font-size:15px;}
+        .dispatch-ride-marker.waiting{animation:markerBlink 0.8s infinite;}
+        @keyframes markerBlink{0%,100%{opacity:1;}50%{opacity:0.4;}}
+        .dispatch-driver-marker{width:34px;height:34px;background:var(--green-online);border-radius:50%;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;transition:all 0.3s;}
+        .dispatch-driver-marker.busy{background:var(--yellow-busy);}
+        .dispatch-driver-marker.highlighted{border:3px solid var(--primary);box-shadow:0 0 14px rgba(249,115,22,0.9);transform:scale(1.2);}
+        .dispatch-sheet{position:absolute;bottom:0;left:0;right:0;z-index:20;background:rgba(15,20,32,0.96);backdrop-filter:blur(16px);border-top:1px solid var(--border-color);border-radius:18px 18px 0 0;padding:14px 16px 20px;max-height:42%;overflow-y:auto;transform:translateY(110%);transition:transform 0.35s cubic-bezier(0.16,1,0.3,1);}
+        .dispatch-sheet.open{transform:translateY(0);}
+        .dispatch-sheet-handle{width:40px;height:4px;background:var(--border-color);border-radius:4px;margin:0 auto 12px;}
+        .dispatch-sheet-close{position:absolute;top:12px;right:14px;width:30px;height:30px;border-radius:50%;background:var(--bg-surface-hover);border:none;color:var(--text-secondary);font-size:13px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+        .dispatch-sheet-ride{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border-color);}
+        .dispatch-sheet-ride .ride-info{flex:1;min-width:0;}
+        .dispatch-sheet-ride .ride-route{font-size:13px;color:var(--text-main);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .dispatch-sheet-ride .ride-price{font-size:18px;font-weight:800;color:var(--primary);flex-shrink:0;margin-left:12px;}
+        .dispatch-sheet-ride .ride-wait-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;margin-top:4px;display:inline-block;}
+        .ride-wait-badge.ok{background:rgba(34,197,94,0.15);color:var(--green-online);}
+        .ride-wait-badge.late{background:rgba(245,158,11,0.15);color:var(--yellow-busy);}
+        .ride-wait-badge.critical{background:rgba(239,68,68,0.2);color:#f87171;animation:markerBlink 0.8s infinite;}
+        .dispatch-driver-chip{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg-surface-hover);border:1px solid var(--border-color);border-radius:12px;margin-bottom:6px;transition:all 0.2s;}
+        .dispatch-driver-chip.suggested{border-color:var(--primary);background:rgba(249,115,22,0.08);box-shadow:0 0 12px rgba(249,115,22,0.15);}
+        .dispatch-driver-chip.busy-chip{opacity:0.7;}
+        .driver-chip-avatar{width:36px;height:36px;border-radius:50%;flex-shrink:0;background:var(--bg-surface);display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--primary);border:2px solid var(--border-color);}
+        .dispatch-driver-chip.suggested .driver-chip-avatar{border-color:var(--primary);}
+        .driver-chip-info{flex:1;min-width:0;}
+        .driver-chip-info .dc-name{font-size:12px;font-weight:700;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .driver-chip-info .dc-meta{font-size:10px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;margin-top:1px;}
+        .driver-chip-info .dc-meta .dist{color:var(--primary);font-weight:700;}
+        .suggested-mini-tag{font-size:8px;font-weight:800;text-transform:uppercase;background:var(--primary);color:#fff;padding:1px 6px;border-radius:8px;margin-left:4px;}
+        .busy-mini-tag{font-size:8px;font-weight:700;text-transform:uppercase;background:rgba(245,158,11,0.2);color:var(--yellow-busy);padding:1px 6px;border-radius:8px;margin-left:4px;}
+        .driver-chip-actions{display:flex;gap:5px;flex-shrink:0;align-items:center;}
+        .chip-btn{width:32px;height:32px;border-radius:8px;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;transition:all 0.2s;color:#fff;}
+        .chip-btn:hover{transform:translateY(-1px);}
+        .chip-btn:active{transform:scale(0.9);}
+        .chip-btn.wa{background:var(--whatsapp);}
+        .chip-btn.ph{background:var(--blue-info);}
+        .chip-btn.ch{background:var(--purple-msg);}
+        .chip-assign-btn{background:var(--primary);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-weight:700;cursor:pointer;font-size:11px;display:inline-flex;align-items:center;gap:4px;transition:all 0.2s;flex-shrink:0;}
+        .chip-assign-btn:hover{background:var(--primary-hover);}
+        .chip-assign-btn:active{transform:scale(0.95);}
+        .dispatch-no-drivers{text-align:center;padding:16px;color:var(--text-secondary);font-size:13px;}
+        .dispatch-no-drivers i{font-size:24px;display:block;margin-bottom:8px;color:var(--border-color);}
+        .dispatch-toast{position:fixed;top:80px;right:24px;z-index:9999;background:var(--bg-surface);border:1px solid var(--primary);border-left:4px solid var(--primary);border-radius:12px;padding:16px 20px;box-shadow:0 10px 40px rgba(0,0,0,0.6);display:flex;align-items:center;gap:12px;max-width:360px;transform:translateX(120%);transition:transform 0.4s cubic-bezier(0.16,1,0.3,1);}
+        .dispatch-toast.show{transform:translateX(0);}
+        .dispatch-toast i{font-size:22px;color:var(--primary);}
+        .dispatch-toast .toast-body{font-size:13px;}
+        .dispatch-toast .toast-body b{display:block;font-size:14px;margin-bottom:2px;}
+        .dispatch-toast .toast-body span{color:var(--text-secondary);}
+        .mapboxgl-ctrl-bottom-left,.mapboxgl-ctrl-bottom-right{display:none!important;}
     </style>
 </head>
 <body>
-
-    <!-- Pantalla de Carga -->
-    <div id="loadingScreen" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
+    <div id="loadingScreen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
         <div class="spinner"></div>
         <div class="fw-bold fs-5 text-accent">Iniciando sistema...</div>
     </div>
-
-    <!-- Pantalla Auth -->
-    <div id="authScreen" style="display: none;"></div>
-
-    <!-- Overlay móvil -->
+    <div id="authScreen" style="display:none;"></div>
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-    <!-- Panel Principal -->
     <div id="adminPanel" style="display:none;">
-        <!-- Topbar -->
         <div class="topbar">
             <div class="d-flex align-items-center">
-                <button class="btn btn-link p-0 me-3 d-lg-none" style="color: var(--text-main); font-size: 22px;" onclick="openSidebar()">
-                    <i class="fas fa-bars"></i>
-                </button>
+                <button class="btn btn-link p-0 me-3 d-lg-none" style="color:var(--text-main);font-size:22px;" onclick="openSidebar()"><i class="fas fa-bars"></i></button>
                 <div class="brand"><i class="fas fa-motorcycle"></i> MOTO MÓVIL</div>
             </div>
             <div class="d-flex align-items-center gap-3">
-                <button class="btn btn-link text-white p-0 position-relative" onclick="goToPendingApps()" title="Notificaciones" style="text-decoration: none;">
+                <button class="btn btn-link text-white p-0 position-relative" onclick="goToPendingApps()" style="text-decoration:none;">
                     <i class="fas fa-bell fs-5" id="bellIcon"></i>
-                    <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-dark" style="display: none; font-size: 10px; padding: 3px 6px;">0</span>
+                    <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border border-dark" style="display:none;font-size:10px;padding:3px 6px;">0</span>
                 </button>
-                <button class="btn btn-outline-light btn-sm" onclick="logoutAdmin()">
-                    <i class="fas fa-sign-out-alt text-danger"></i> Salir
-                </button>
+                <button class="btn btn-outline-light btn-sm" onclick="logoutAdmin()"><i class="fas fa-sign-out-alt text-danger"></i> Salir</button>
             </div>
         </div>
 
-        <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
             <div class="d-flex align-items-center justify-content-between mb-4 px-2">
-                <span class="fw-bold text-accent" style="font-size:13px; text-transform:uppercase; letter-spacing:1px;">Menú Principal</span>
+                <span class="fw-bold text-accent" style="font-size:13px;text-transform:uppercase;letter-spacing:1px;">Menú Principal</span>
                 <button class="btn-close btn-close-white d-lg-none" onclick="closeSidebar()"></button>
             </div>
             <a href="#" class="nav-link active" data-section="dashboard" onclick="navigateTo('dashboard')"><i class="fas fa-chart-pie"></i> Dashboard</a>
+            <a href="#" class="nav-link" data-section="despacho" onclick="navigateTo('despacho')">
+                <i class="fas fa-map-marked-alt"></i> Despacho en Vivo
+                <span class="side-badge" id="dispatchBadge">0</span>
+            </a>
             <a href="#" class="nav-link" data-section="aplicaciones" onclick="navigateTo('aplicaciones')"><i class="fas fa-id-card"></i> Solicitudes</a>
             <a href="#" class="nav-link" data-section="conductores" onclick="navigateTo('conductores')"><i class="fas fa-users"></i> Conductores</a>
             <a href="#" class="nav-link" data-section="billetera" onclick="navigateTo('billetera')"><i class="fas fa-wallet"></i> Billetera</a>
@@ -208,20 +184,45 @@
             <a href="#" class="nav-link" data-section="viajes" onclick="navigateTo('viajes')"><i class="fas fa-route"></i> Viajes</a>
         </div>
 
-        <!-- Contenido principal -->
         <div class="main-content">
-            <!-- Dashboard -->
             <div id="section-dashboard" class="section">
                 <h2 class="section-title mb-4 fs-4">Resumen General</h2>
                 <div class="row g-3">
-                    <div class="col-6 col-lg-3"><div class="data-card stat-card"><i class="fas fa-user-check"></i><h6>Conductores</h6><h2 id="statDrivers" class="text-white">0</h2></div></div>
-                    <div class="col-6 col-lg-3"><div class="data-card stat-card"><i class="fas fa-clock"></i><h6>Pendientes</h6><h2 id="statPendingApps" class="text-white">0</h2></div></div>
-                    <div class="col-6 col-lg-3"><div class="data-card stat-card"><i class="fas fa-motorcycle"></i><h6>Viajes Hoy</h6><h2 id="statRidesToday" class="text-white">0</h2></div></div>
-                    <div class="col-6 col-lg-3"><div class="data-card stat-card border-0" style="background: linear-gradient(145deg, #1e293b, #0f172a);"><i class="fas fa-coins text-success"></i><h6>Ganancias Totales</h6><h2 id="statTotalEarnings" class="text-success">Bs 0</h2></div></div>
+                    <div class="col-6 col-lg-3"><div class="data-card stat-card"><i class="fas fa-user-check"></i><h6>Conductores</h6><h2 id="statDrivers">0</h2></div></div>
+                    <div class="col-6 col-lg-3"><div class="data-card stat-card"><i class="fas fa-clock"></i><h6>Pendientes</h6><h2 id="statPendingApps">0</h2></div></div>
+                    <div class="col-6 col-lg-3"><div class="data-card stat-card"><i class="fas fa-motorcycle"></i><h6>Viajes Hoy</h6><h2 id="statRidesToday">0</h2></div></div>
+                    <div class="col-6 col-lg-3"><div class="data-card stat-card border-0" style="background:linear-gradient(145deg,#1e293b,#0f172a);"><i class="fas fa-coins text-success"></i><h6>Ganancias Totales</h6><h2 id="statTotalEarnings" class="text-success">Bs 0</h2></div></div>
                 </div>
             </div>
 
-            <!-- Solicitudes -->
+            <div id="section-despacho" class="section" style="display:none;">
+                <div class="dispatch-fullscreen">
+                    <div id="dispatchMap"></div>
+                    <div class="dispatch-top-overlay">
+                        <div class="dispatch-stats-pill">
+                            <span class="dstat"><span class="dot green"></span> <b id="dispatchOnlineCount">0</b> en línea</span>
+                            <span class="dstat"><span class="dot red"></span> <b id="dispatchPendingCount">0</b> pendientes</span>
+                        </div>
+                        <select id="dispatchRadius" class="dispatch-radius-select" onchange="onRadiusChange()">
+                            <option value="1">📡 1 km</option>
+                            <option value="3" selected>📡 3 km</option>
+                            <option value="5">📡 5 km</option>
+                        </select>
+                    </div>
+                    <div class="dispatch-legend">
+                        <div class="dispatch-legend-item"><span class="lg-dot" style="background:var(--red-alert);"></span> Solicitud</div>
+                        <div class="dispatch-legend-item"><span class="lg-dot" style="background:var(--green-online);"></span> Disponible</div>
+                        <div class="dispatch-legend-item"><span class="lg-dot" style="background:var(--yellow-busy);"></span> En viaje</div>
+                        <div class="dispatch-legend-item"><span class="lg-dot" style="background:var(--primary);"></span> Sugerido</div>
+                    </div>
+                    <div class="dispatch-sheet" id="dispatchSheet">
+                        <div class="dispatch-sheet-handle"></div>
+                        <button class="dispatch-sheet-close" onclick="closeDispatchSheet()"><i class="fas fa-times"></i></button>
+                        <div id="dispatchSheetContent"></div>
+                    </div>
+                </div>
+            </div>
+
             <div id="section-aplicaciones" class="section" style="display:none;">
                 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                     <h2 class="section-title m-0 fs-4">Solicitudes de Ingreso</h2>
@@ -235,13 +236,11 @@
                 <div class="cards-grid" id="applicationsGrid"></div>
             </div>
 
-            <!-- Conductores -->
             <div id="section-conductores" class="section" style="display:none;">
                 <h2 class="section-title mb-4 fs-4">Flota Activa</h2>
                 <div class="cards-grid" id="driversGrid"></div>
             </div>
 
-            <!-- Billetera -->
             <div id="section-billetera" class="section" style="display:none;">
                 <h2 class="section-title mb-4 fs-4">Gestión de Finanzas</h2>
                 <div class="data-card mb-4">
@@ -257,13 +256,12 @@
                 <div class="table-container"><table class="table-custom"><thead><tr><th>Conductor</th><th>Monto</th><th>Tipo</th><th>Concepto</th><th>Fecha</th></tr></thead><tbody id="transactionsTable"></tbody></table></div>
             </div>
 
-            <!-- Central -->
             <div id="section-central" class="section" style="display:none;">
                 <h2 class="section-title mb-4 fs-4">Comunicaciones Centrales</h2>
                 <div class="data-card mb-4">
                     <div class="row g-3">
                         <div class="col-12 col-md-4"><label>Destinatario</label><select class="form-select" id="centralTarget"><option value="all">Toda la Flota (Global)</option></select></div>
-                        <div class="col-12 col-md-8"><label>Mensaje a transmitir</label><input type="text" class="form-control" id="centralMessage" placeholder="Redacta el aviso aquí..."></div>
+                        <div class="col-12 col-md-8"><label>Mensaje</label><input type="text" class="form-control" id="centralMessage" placeholder="Redacta el aviso aquí..."></div>
                     </div>
                     <div class="mt-3"><button class="btn btn-primary" onclick="sendCentralMessage()"><i class="fas fa-paper-plane"></i> Emitir Comunicado</button></div>
                 </div>
@@ -271,18 +269,16 @@
                 <div class="table-container"><table class="table-custom"><thead><tr><th>Destinatario</th><th>Mensaje</th><th>Fecha y Hora</th></tr></thead><tbody id="centralMessagesTable"></tbody></table></div>
             </div>
 
-            <!-- Viajes -->
             <div id="section-viajes" class="section" style="display:none;">
                 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                     <h2 class="section-title m-0 fs-4">Monitoreo de Viajes</h2>
                     <select class="form-select w-auto py-1" id="rideFilter" onchange="loadRides()">
-                        <option value="todos">Todos los Estados</option>
+                        <option value="todos">Todos</option>
                         <option value="pendiente">Pendientes</option>
                         <option value="aceptado">Aceptados</option>
                         <option value="en_curso">En Ruta</option>
                         <option value="completado">Finalizados</option>
                         <option value="cancelado">Cancelados</option>
-                        <option value="rechazado">Rechazados</option>
                     </select>
                 </div>
                 <div class="cards-grid" id="ridesGrid"></div>
@@ -290,597 +286,707 @@
         </div>
     </div>
 
-    <!-- Modal Ver Credenciales -->
-    <div class="modal fade" id="credentialsModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title text-white fw-bold fs-6"><i class="fas fa-shield-alt text-accent me-2"></i> Credenciales</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="credentialsContent" class="d-flex flex-column gap-3"></div>
-                </div>
-                <div class="modal-footer p-2">
-                    <button class="btn btn-outline-light w-100" data-bs-dismiss="modal">Cerrar</button>
-                </div>
-            </div>
+    <div class="dispatch-toast" id="dispatchToast">
+        <i class="fas fa-bell"></i>
+        <div class="toast-body">
+            <b id="dispatchToastTitle">Nueva solicitud</b>
+            <span id="dispatchToastMsg">Viaje pendiente</span>
         </div>
     </div>
 
-    <!-- Modal Detalles del Conductor -->
-    <div class="modal fade" id="driverDetailsModal" tabindex="-1" aria-labelledby="driverDetailsModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title text-white fw-bold fs-6" id="driverDetailsModalLabel">
-                        <i class="fas fa-id-card text-accent me-2"></i> Ficha del Conductor
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" id="driverDetailsContent">
-                    <!-- Contenido dinámico -->
-                </div>
-                <div class="modal-footer p-2">
-                    <button class="btn btn-outline-light" data-bs-dismiss="modal">Cerrar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal Editar Conductor -->
-    <div class="modal fade" id="editDriverModal" tabindex="-1" aria-labelledby="editDriverModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title text-white fw-bold fs-6" id="editDriverModalLabel">
-                        <i class="fas fa-edit text-accent me-2"></i> Editar Información del Conductor
-                    </h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editDriverForm">
-                        <input type="hidden" id="editDriverId">
-                        <div class="mb-3">
-                            <label for="editFullName" class="form-label">Nombre completo</label>
-                            <input type="text" class="form-control" id="editFullName" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editPhone" class="form-label">Teléfono</label>
-                            <input type="text" class="form-control" id="editPhone" required>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="editVehicleModel" class="form-label">Modelo de vehículo</label>
-                                <input type="text" class="form-control" id="editVehicleModel">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="editVehiclePlate" class="form-label">Placa</label>
-                                <input type="text" class="form-control" id="editVehiclePlate">
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="editHomeAddress" class="form-label">Dirección de domicilio</label>
-                            <input type="text" class="form-control" id="editHomeAddress">
-                        </div>
-                        <div class="mb-3">
-                            <label for="editNotes" class="form-label">Notas del administrador</label>
-                            <textarea class="form-control" id="editNotes" rows="3"></textarea>
-                        </div>
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="editIsActive">
-                            <label class="form-check-label text-white" for="editIsActive">Conductor activo</label>
-                        </div>
-                        <div class="form-check form-switch mb-3">
-                            <input class="form-check-input" type="checkbox" id="editProfileCompleted">
-                            <label class="form-check-label text-white" for="editProfileCompleted">Perfil completado</label>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="saveDriverEdit()">Guardar cambios</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div class="modal fade" id="credentialsModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title text-white fw-bold fs-6"><i class="fas fa-shield-alt text-accent me-2"></i> Credenciales</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><div id="credentialsContent" class="d-flex flex-column gap-3"></div></div><div class="modal-footer p-2"><button class="btn btn-outline-light w-100" data-bs-dismiss="modal">Cerrar</button></div></div></div></div>
+    <div class="modal fade" id="driverDetailsModal" tabindex="-1"><div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title text-white fw-bold fs-6"><i class="fas fa-id-card text-accent me-2"></i> Ficha del Conductor</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body" id="driverDetailsContent"></div><div class="modal-footer p-2"><button class="btn btn-outline-light" data-bs-dismiss="modal">Cerrar</button></div></div></div></div>
+    <div class="modal fade" id="editDriverModal" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content"><div class="modal-header"><h5 class="modal-title text-white fw-bold fs-6"><i class="fas fa-edit text-accent me-2"></i> Editar Conductor</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div><div class="modal-body"><form id="editDriverForm"><input type="hidden" id="editDriverId"><div class="mb-3"><label class="form-label">Nombre completo</label><input type="text" class="form-control" id="editFullName" required></div><div class="mb-3"><label class="form-label">Teléfono</label><input type="text" class="form-control" id="editPhone" required></div><div class="row"><div class="col-md-6 mb-3"><label class="form-label">Modelo</label><input type="text" class="form-control" id="editVehicleModel"></div><div class="col-md-6 mb-3"><label class="form-label">Placa</label><input type="text" class="form-control" id="editVehiclePlate"></div></div><div class="mb-3"><label class="form-label">Dirección</label><input type="text" class="form-control" id="editHomeAddress"></div><div class="mb-3"><label class="form-label">Notas</label><textarea class="form-control" id="editNotes" rows="3"></textarea></div><div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" id="editIsActive"><label class="form-check-label text-white" for="editIsActive">Activo</label></div><div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" id="editProfileCompleted"><label class="form-check-label text-white" for="editProfileCompleted">Perfil completado</label></div></form></div><div class="modal-footer"><button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" onclick="saveDriverEdit()">Guardar</button></div></div></div></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <script>
-        const supabaseUrl = 'https://uwdojchfwmaczgdthtfr.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3ZG9qY2hmd21hY3pnZHRodGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDQ4NDEsImV4cCI6MjEwMjcyMDg0MX0.jafGOwlItnzSoZ6yYlpaae16S2nlSDpPIS2316ZPJak';
-        const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+        var supabaseUrl = 'https://uwdojchfwmaczgdthtfr.supabase.co';
+        var supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3ZG9qY2hmd21hY3pnZHRodGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDQ4NDEsImV4cCI6MjEwMjcyMDg0MX0.jafGOwlItnzSoZ6yYlpaae16S2nlSDpPIS2316ZPJak';
+        var supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+        mapboxgl.accessToken = 'pk.eyJ1IjoiYXJuZWx2emwiLCJhIjoiY21zd2p2bmc3MW0xODJ4b284d3Zld3g4ZiJ9.zYnczMSu1o0ZaWKdRIo-Ww';
 
-        let currentAdmin = null;
-        let allApplicationsData = [];
-        let unreadNotifications = 0;
-        let availableDriversCache = [];
-        let currentDriverData = null; // Almacena datos del conductor en edición
+        var currentAdmin = null;
+        var allApplicationsData = [];
+        var unreadNotifications = 0;
+        var availableDriversCache = [];
+        var currentDriverData = null;
+        var dispatchMap = null;
+        var dispatchMapInitialized = false;
+        var dispatchRideMarkers = {};
+        var dispatchDriverMarkers = {};
+        var dispatchRidesCache = [];
+        var dispatchDriversCache = [];
+        var selectedDispatchRide = null;
+        var dispatchAudioCtx = null;
+        var dispatchRefreshTimer = null;
 
-        // ---------- Funciones de navegación y UI ----------
-        function openSidebar() {
-            if (window.innerWidth < 992) {
-                document.getElementById('sidebar').classList.add('show');
-                document.getElementById('sidebarOverlay').classList.add('show');
-            }
-        }
-        function closeSidebar() {
-            document.getElementById('sidebar').classList.remove('show');
-            document.getElementById('sidebarOverlay').classList.remove('show');
-        }
+        function openSidebar() { if (window.innerWidth < 992) { document.getElementById('sidebar').classList.add('show'); document.getElementById('sidebarOverlay').classList.add('show'); } }
+        function closeSidebar() { document.getElementById('sidebar').classList.remove('show'); document.getElementById('sidebarOverlay').classList.remove('show'); }
         function navigateTo(section) {
-            document.querySelectorAll('.section').forEach(s => s.style.display = 'none');
+            var sections = document.querySelectorAll('.section');
+            for (var i = 0; i < sections.length; i++) { sections[i].style.display = 'none'; }
             document.getElementById('section-' + section).style.display = 'block';
-            document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
-            document.querySelector(`.nav-link[data-section="${section}"]`).classList.add('active');
+            var links = document.querySelectorAll('.sidebar .nav-link');
+            for (var j = 0; j < links.length; j++) { links[j].classList.remove('active'); }
+            document.querySelector('.nav-link[data-section="' + section + '"]').classList.add('active');
             closeSidebar();
-            
-            switch(section) {
-                case 'dashboard': loadDashboard(); break;
-                case 'aplicaciones': loadApplications(); break;
-                case 'conductores': loadDrivers(); break;
-                case 'billetera': loadWalletDrivers(); loadTransactions(); break;
-                case 'central': loadCentralTargets(); loadCentralMessages(); break;
-                case 'viajes': loadRides(); break;
-            }
+            if (section === 'dashboard') loadDashboard();
+            else if (section === 'despacho') initDispatch();
+            else if (section === 'aplicaciones') loadApplications();
+            else if (section === 'conductores') loadDrivers();
+            else if (section === 'billetera') { loadWalletDrivers(); loadTransactions(); }
+            else if (section === 'central') { loadCentralTargets(); loadCentralMessages(); }
+            else if (section === 'viajes') loadRides();
         }
-
-        function goToPendingApps() {
-            unreadNotifications = 0;
-            updateNotificationBadge();
-            navigateTo('aplicaciones');
-            document.getElementById('filterStatus').value = 'pendiente';
-            loadApplications();
-        }
-
+        function goToPendingApps() { unreadNotifications = 0; updateNotificationBadge(); navigateTo('aplicaciones'); document.getElementById('filterStatus').value = 'pendiente'; loadApplications(); }
         function updateNotificationBadge() {
-            const badge = document.getElementById('notifBadge');
-            const bell = document.getElementById('bellIcon');
-            if (unreadNotifications > 0) {
-                badge.style.display = 'block';
-                badge.textContent = unreadNotifications > 99 ? '99+' : unreadNotifications;
-                bell.classList.add('ringing');
-                setTimeout(() => bell.classList.remove('ringing'), 500);
-            } else {
-                badge.style.display = 'none';
-            }
+            var badge = document.getElementById('notifBadge');
+            var bell = document.getElementById('bellIcon');
+            if (unreadNotifications > 0) { badge.style.display = 'block'; badge.textContent = unreadNotifications > 99 ? '99+' : unreadNotifications; bell.classList.add('ringing'); setTimeout(function() { bell.classList.remove('ringing'); }, 500); }
+            else { badge.style.display = 'none'; }
+        }
+        function updateDispatchBadge() {
+            var badge = document.getElementById('dispatchBadge');
+            var count = dispatchRidesCache.length;
+            if (count > 0) { badge.style.display = 'flex'; badge.textContent = count; }
+            else { badge.style.display = 'none'; }
         }
 
-        // ---------- Realtime ----------
         function setupRealtimeSubscriptions() {
-            supabaseClient
-                .channel('admin-realtime')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'driver_applications' }, payload => {
-                    unreadNotifications++;
-                    updateNotificationBadge();
-                    loadDashboard();
-                    const isAppsSection = document.getElementById('section-aplicaciones').style.display === 'block';
-                    const isPendingFilter = document.getElementById('filterStatus').value === 'pendiente';
-                    if (isAppsSection && isPendingFilter) loadApplications();
+            supabaseClient.channel('admin-realtime')
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'driver_applications' }, function(payload) {
+                    unreadNotifications++; updateNotificationBadge(); loadDashboard();
                 })
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rides' }, payload => {
-                    unreadNotifications++;
-                    updateNotificationBadge();
-                    loadDashboard();
-                    loadRides();
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rides' }, function(payload) {
+                    var ride = payload.new;
+                    unreadNotifications++; updateNotificationBadge();
+                    loadDashboard(); loadRides();
+                    if (ride.status === 'pendiente') {
+                        playDispatchAlert();
+                        showDispatchToast('🔔 Nueva solicitud de viaje', ride.origin_address || 'Origen sin especificar');
+                        refreshDispatchData();
+                        var isDispatchVisible = document.getElementById('section-despacho').style.display === 'block';
+                        if (isDispatchVisible && ride.origin_lat && ride.origin_lng && dispatchMap && dispatchMapInitialized) {
+                            dispatchMap.flyTo({ center: [parseFloat(ride.origin_lng), parseFloat(ride.origin_lat)], zoom: 15, duration: 1000 });
+                            setTimeout(function() { selectDispatchRide(ride.id); }, 1200);
+                        }
+                    }
                 })
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rides' }, payload => {
-                    loadRides();
-                    loadDashboard();
+                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rides' }, function(payload) {
+                    loadRides(); loadDashboard(); refreshDispatchData();
                 })
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_status' }, payload => {
-                    loadDrivers();
-                    loadAvailableDrivers();
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_status' }, function(payload) {
+                    loadDrivers(); loadAvailableDrivers();
+                    if (payload.new && payload.new.is_online && payload.new.latitude && payload.new.longitude) {
+                        updateSingleDriverMarker(payload.new);
+                    } else if (payload.new && dispatchDriverMarkers[payload.new.driver_id]) {
+                        try { dispatchDriverMarkers[payload.new.driver_id].remove(); } catch(e) {}
+                        delete dispatchDriverMarkers[payload.new.driver_id];
+                    }
                 })
-                .subscribe((status) => {
-                    console.log('Estado Realtime:', status);
-                });
+                .subscribe(function(status) { console.log('Realtime:', status); });
         }
 
-        // ---------- Inicialización ----------
         async function initApp() {
-            const { data: sessionData } = await supabaseClient.auth.getSession();
-            if (sessionData?.session) {
-                currentAdmin = sessionData.session.user;
+            var result = await supabaseClient.auth.getSession();
+            if (result.data && result.data.session) {
+                currentAdmin = result.data.session.user;
                 document.getElementById('loadingScreen').style.display = 'none';
                 document.getElementById('adminPanel').style.display = 'block';
                 setupRealtimeSubscriptions();
                 navigateTo('dashboard');
-            } else {
-                showLoginForm();
-            }
+            } else { showLoginForm(); }
         }
-
         function showLoginForm() {
             document.getElementById('loadingScreen').style.display = 'none';
             document.getElementById('authScreen').style.display = 'flex';
-            document.getElementById('authScreen').innerHTML = `
-                <div class="auth-box text-center">
-                    <div class="mb-4">
-                        <i class="fas fa-motorcycle text-accent" style="font-size: 40px;"></i>
-                        <h3 class="fw-bold text-white mt-3">Panel Admin</h3>
-                        <p class="text-secondary-custom">Ingresa tus credenciales para continuar</p>
-                    </div>
-                    <input type="email" id="loginEmail" class="form-control mb-3" placeholder="Correo electrónico">
-                    <input type="password" id="loginPassword" class="form-control mb-4" placeholder="Contraseña">
-                    <button class="btn btn-primary w-100 py-3" onclick="loginAdmin()">Iniciar Sesión</button>
-                </div>
-            `;
+            document.getElementById('authScreen').innerHTML = '<div class="auth-box text-center"><div class="mb-4"><i class="fas fa-motorcycle text-accent" style="font-size:40px;"></i><h3 class="fw-bold text-white mt-3">Panel Admin</h3><p class="text-secondary-custom">Ingresa tus credenciales</p></div><input type="email" id="loginEmail" class="form-control mb-3" placeholder="Correo electrónico"><input type="password" id="loginPassword" class="form-control mb-4" placeholder="Contraseña"><button class="btn btn-primary w-100 py-3" onclick="loginAdmin()">Iniciar Sesión</button></div>';
         }
-
         async function loginAdmin() {
-            const email = document.getElementById('loginEmail').value.trim();
-            const password = document.getElementById('loginPassword').value;
+            var email = document.getElementById('loginEmail').value.trim();
+            var password = document.getElementById('loginPassword').value;
             if (!email || !password) return alert('Completa los campos.');
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-            if (error) return alert('Error: ' + error.message);
-            currentAdmin = data.user;
+            var result = await supabaseClient.auth.signInWithPassword({ email: email, password: password });
+            if (result.error) return alert('Error: ' + result.error.message);
+            currentAdmin = result.data.user;
             document.getElementById('authScreen').style.display = 'none';
             document.getElementById('adminPanel').style.display = 'block';
             setupRealtimeSubscriptions();
             navigateTo('dashboard');
         }
+        async function logoutAdmin() { await supabaseClient.auth.signOut(); location.reload(); }
 
-        async function logoutAdmin() {
-            await supabaseClient.auth.signOut();
-            location.reload();
-        }
-
-        // ---------- Dashboard ----------
         async function loadDashboard() {
             try {
-                const { count: driversCount } = await supabaseClient.from('drivers').select('*', { count: 'exact', head: true }).eq('is_active', true);
-                document.getElementById('statDrivers').textContent = driversCount || 0;
-
-                const { count: pendingApps } = await supabaseClient.from('driver_applications').select('*', { count: 'exact', head: true }).eq('status', 'pendiente');
-                document.getElementById('statPendingApps').textContent = pendingApps || 0;
-
-                const today = new Date().toISOString().split('T')[0];
-                const { count: ridesToday } = await supabaseClient.from('rides').select('*', { count: 'exact', head: true }).gte('created_at', today);
-                document.getElementById('statRidesToday').textContent = ridesToday || 0;
-
-                const { data: completedRides } = await supabaseClient.from('rides').select('price').eq('status', 'completado');
-                if (completedRides) {
-                    const total = completedRides.reduce((sum, r) => sum + parseFloat(r.price || 0), 0);
-                    document.getElementById('statTotalEarnings').textContent = `Bs ${total.toFixed(2)}`;
+                var r1 = await supabaseClient.from('drivers').select('*', { count: 'exact', head: true }).eq('is_active', true);
+                document.getElementById('statDrivers').textContent = r1.count || 0;
+                var r2 = await supabaseClient.from('driver_applications').select('*', { count: 'exact', head: true }).eq('status', 'pendiente');
+                document.getElementById('statPendingApps').textContent = r2.count || 0;
+                var today = new Date().toISOString().split('T')[0];
+                var r3 = await supabaseClient.from('rides').select('*', { count: 'exact', head: true }).gte('created_at', today);
+                document.getElementById('statRidesToday').textContent = r3.count || 0;
+                var r4 = await supabaseClient.from('rides').select('price').eq('status', 'completado');
+                if (r4.data) {
+                    var total = 0;
+                    for (var i = 0; i < r4.data.length; i++) { total += parseFloat(r4.data[i].price || 0); }
+                    document.getElementById('statTotalEarnings').textContent = 'Bs ' + total.toFixed(2);
                 }
             } catch (err) { console.error('Error dashboard:', err); }
         }
 
-        // ---------- Solicitudes ----------
-        async function loadApplications() {
-            const filter = document.getElementById('filterStatus').value;
-            let query = supabaseClient.from('driver_applications').select('*').order('created_at', { ascending: false });
-            if (filter !== 'todas') query = query.eq('status', filter);
-            const { data, error } = await query;
-            if (error) return;
-            allApplicationsData = data || [];
-            const grid = document.getElementById('applicationsGrid');
-            grid.innerHTML = '';
-
-            if (allApplicationsData.length === 0) {
-                grid.innerHTML = `
-                    <div class="data-card w-100 text-center py-5" style="grid-column: 1 / -1;">
-                        <i class="fas fa-inbox mb-3 text-secondary-custom" style="font-size: 35px;"></i>
-                        <h6 class="text-white">Bandeja Vacía</h6>
-                        <p class="text-secondary-custom mb-0 fs-6">No hay solicitudes que coincidan con este filtro.</p>
-                    </div>`;
-                return;
-            }
-
-            allApplicationsData.forEach(app => {
-                let badgeClass = 'badge-neutral';
-                if(app.status === 'pendiente') badgeClass = 'badge-pendiente';
-                if(app.status === 'aprobada') badgeClass = 'badge-aprobada';
-                if(app.status === 'rechazada') badgeClass = 'badge-rechazada';
-
-                grid.innerHTML += `
-                    <div class="data-card p-3">
-                        <div class="data-card-header border-0 pb-0">
-                            <div>
-                                <h4 class="data-card-title">${app.full_name}</h4>
-                                <span class="data-card-subtitle"><i class="far fa-calendar-alt me-1"></i> ${new Date(app.created_at).toLocaleDateString()}</span>
-                            </div>
-                            <span class="badge-custom ${badgeClass}">${app.status}</span>
-                        </div>
-                        <hr style="border-color: var(--border-color); margin: 8px 0;">
-                        <div class="info-row"><i class="fas fa-phone-alt"></i> <span><strong>${app.phone}</strong></span></div>
-                        <div class="info-row"><i class="fas fa-align-left"></i> <span><strong>${app.notes || 'Sin notas'}</strong></span></div>
-                        <div class="data-card-actions pt-2 mt-2">
-                            ${app.status === 'pendiente' ? `
-                                <button class="btn btn-primary flex-grow-1 py-1" onclick="viewCredentials('${app.id}')">
-                                    <i class="fas fa-check"></i> Aprobar
-                                </button>
-                                <button class="btn btn-danger-custom py-1" onclick="rejectApplication('${app.id}')">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            ` : `
-                                <button class="btn btn-outline-light w-100 py-1" onclick="viewCredentials('${app.id}')">
-                                    <i class="fas fa-id-card-clip"></i> Credenciales
-                                </button>
-                            `}
-                        </div>
-                    </div>
-                `;
-            });
+        function haversineDistance(lat1, lon1, lat2, lon2) {
+            var R = 6371;
+            var dLat = (lat2 - lat1) * Math.PI / 180;
+            var dLon = (lon2 - lon1) * Math.PI / 180;
+            var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+        function calculateETA(distanceKm) {
+            var speedKmh = 30;
+            var hours = distanceKm / speedKmh;
+            return Math.max(1, Math.round(hours * 60));
+        }
+        function playDispatchAlert() {
+            try {
+                if (!dispatchAudioCtx) dispatchAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                var now = dispatchAudioCtx.currentTime;
+                var o1 = dispatchAudioCtx.createOscillator(); var g1 = dispatchAudioCtx.createGain();
+                o1.connect(g1); g1.connect(dispatchAudioCtx.destination);
+                o1.type = 'sine'; o1.frequency.setValueAtTime(880, now);
+                g1.gain.setValueAtTime(0.3, now); g1.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                o1.start(now); o1.stop(now + 0.3);
+                var o2 = dispatchAudioCtx.createOscillator(); var g2 = dispatchAudioCtx.createGain();
+                o2.connect(g2); g2.connect(dispatchAudioCtx.destination);
+                o2.type = 'sine'; o2.frequency.setValueAtTime(1174.66, now + 0.15);
+                g2.gain.setValueAtTime(0.3, now + 0.15); g2.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                o2.start(now + 0.15); o2.stop(now + 0.5);
+            } catch (e) {}
+        }
+        function showDispatchToast(title, msg) {
+            document.getElementById('dispatchToastTitle').textContent = title;
+            document.getElementById('dispatchToastMsg').textContent = msg;
+            var toast = document.getElementById('dispatchToast');
+            toast.classList.add('show');
+            setTimeout(function() { toast.classList.remove('show'); }, 5000);
         }
 
-        async function viewCredentials(appId) {
-            const app = allApplicationsData.find(a => a.id === appId);
-            if (!app) return;
+        function initDispatch() {
+            if (!dispatchMapInitialized) {
+                dispatchMap = new mapboxgl.Map({
+                    container: 'dispatchMap',
+                    style: 'mapbox://styles/mapbox/dark-v11',
+                    center: [-63.1821, -17.7833],
+                    zoom: 13,
+                    attributionControl: false
+                });
+                dispatchMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
+                dispatchMap.on('load', function() {
+                    dispatchMapInitialized = true;
+                    dispatchMap.addSource('dispatch-radius', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+                    dispatchMap.addLayer({ id: 'dispatch-radius-fill', type: 'fill', source: 'dispatch-radius', paint: { 'fill-color': '#f97316', 'fill-opacity': 0.08 } });
+                    dispatchMap.addLayer({ id: 'dispatch-radius-line', type: 'line', source: 'dispatch-radius', paint: { 'line-color': '#f97316', 'line-width': 2, 'line-opacity': 0.5 } });
+                    dispatchMap.addSource('dispatch-line', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+                    dispatchMap.addLayer({ id: 'dispatch-line-layer', type: 'line', source: 'dispatch-line', paint: { 'line-color': '#f97316', 'line-width': 3, 'line-dasharray': [2, 2] } });
+                    refreshDispatchData();
+                    setTimeout(function() { refreshDispatchData(); }, 2000);
+                    setTimeout(function() { refreshDispatchData(); }, 5000);
+                });
+            } else {
+                dispatchMap.resize();
+                refreshDispatchData();
+            }
+            if (dispatchRefreshTimer) clearInterval(dispatchRefreshTimer);
+            dispatchRefreshTimer = setInterval(function() {
+                var isDispatchVisible = document.getElementById('section-despacho').style.display === 'block';
+                if (isDispatchVisible) { refreshDispatchData(); }
+            }, 8000);
+        }
 
-            const modal = new bootstrap.Modal(document.getElementById('credentialsModal'));
-            const contentDiv = document.getElementById('credentialsContent');
-            contentDiv.innerHTML = `
-                <div class="text-center py-4">
-                    <div class="spinner mx-auto" style="width:40px; height:40px;"></div>
-                    <h6 class="text-white fw-bold">Procesando...</h6>
-                </div>
-            `;
-            modal.show();
-
+        async function refreshDispatchData() {
             try {
-                const requestBody = { application_id: app.id, full_name: app.full_name, phone: app.phone };
-                const { data, error } = await supabaseClient.functions.invoke('create-driver-user', { body: requestBody });
-                if (error || (data && data.success === false)) {
-                    contentDiv.innerHTML = `<div class="alert bg-danger text-white border-0"><small>${error ? error.message : data.error}</small></div>`;
-                    return;
+                var ridesResult = await supabaseClient
+                    .from('rides')
+                    .select('*, passengers(full_name, phone)')
+                    .eq('status', 'pendiente')
+                    .order('created_at', { ascending: true });
+                var allRides = ridesResult.data || [];
+                dispatchRidesCache = [];
+                for (var i = 0; i < allRides.length; i++) {
+                    var rLat = parseFloat(allRides[i].origin_lat);
+                    var rLng = parseFloat(allRides[i].origin_lng);
+                    if (!isNaN(rLat) && !isNaN(rLng) && rLat !== 0 && rLng !== 0) {
+                        dispatchRidesCache.push(allRides[i]);
+                    }
                 }
 
-                const tempPassword = data.temp_password;
-                const displayPhone = data.phone;
-                contentDiv.innerHTML = `
-                    <div class="d-flex align-items-center gap-3 mb-2 p-2 rounded-3" style="background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.2);">
-                        <div class="bg-dark rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; border: 2px solid #34d399;">
-                            <i class="fas fa-check text-success"></i>
-                        </div>
-                        <div>
-                            <h5 class="text-white fw-bold mb-0">${app.full_name}</h5>
-                            <span class="text-success" style="font-size: 11px;">Cuenta Aprobada Exitosamente</span>
-                        </div>
-                    </div>
-                    <div class="data-box-highlight mt-2 p-3">
-                        <div class="mb-3">
-                            <span class="text-secondary-custom d-block" style="font-size: 11px;">USUARIO / TELÉFONO</span>
-                            <strong class="text-white fs-6">${displayPhone}</strong>
-                        </div>
-                        <div>
-                            <span class="text-secondary-custom d-block mb-1" style="font-size: 11px;">CONTRASEÑA</span>
-                            <div class="d-flex justify-content-between align-items-center bg-dark p-2 rounded-3 border">
-                                <strong class="text-white fs-5" style="letter-spacing: 2px;">${tempPassword}</strong>
-                                <button class="btn btn-outline-light btn-sm py-1" onclick="navigator.clipboard.writeText('${tempPassword}'); alert('Copiado!');">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                loadApplications();
-                loadDrivers();
-                loadDashboard();
-            } catch (err) {
-                contentDiv.innerHTML = `<div class="alert bg-danger text-white border-0"><small>${err.message}</small></div>`;
+                var statusResult = await supabaseClient
+                    .from('driver_status')
+                    .select('driver_id, is_online, latitude, longitude, last_updated')
+                    .eq('is_online', true);
+                var onlineStatus = statusResult.data || [];
+                console.log('📡 Conductores online en BD:', onlineStatus.length);
+
+                var driverIds = [];
+                for (var k = 0; k < onlineStatus.length; k++) { driverIds.push(onlineStatus[k].driver_id); }
+
+                var driversData = [];
+                if (driverIds.length > 0) {
+                    var driversResult = await supabaseClient
+                        .from('drivers')
+                        .select('id, full_name, phone, vehicle_plate, vehicle_model')
+                        .in('id', driverIds);
+                    driversData = driversResult.data || [];
+                }
+
+                var busyDriverIds = {};
+                if (driverIds.length > 0) {
+                    var busyResult = await supabaseClient
+                        .from('rides')
+                        .select('driver_id')
+                        .in('status', ['aceptado', 'llegado_origen', 'en_curso'])
+                        .in('driver_id', driverIds);
+                    var busyData = busyResult.data || [];
+                    for (var b = 0; b < busyData.length; b++) { busyDriverIds[busyData[b].driver_id] = true; }
+                }
+
+                dispatchDriversCache = [];
+                for (var m = 0; m < onlineStatus.length; m++) {
+                    var s = onlineStatus[m];
+                    var sLat = parseFloat(s.latitude);
+                    var sLng = parseFloat(s.longitude);
+                    if (isNaN(sLat) || isNaN(sLng) || sLat === 0 || sLng === 0) {
+                        console.log('⚠️ Conductor sin GPS válido: ' + s.driver_id);
+                        continue;
+                    }
+                    var dInfo = null;
+                    for (var n = 0; n < driversData.length; n++) {
+                        if (driversData[n].id === s.driver_id) { dInfo = driversData[n]; break; }
+                    }
+                    dispatchDriversCache.push({
+                        driver_id: s.driver_id,
+                        latitude: sLat,
+                        longitude: sLng,
+                        last_updated: s.last_updated,
+                        full_name: dInfo ? dInfo.full_name : 'Conductor',
+                        phone: dInfo ? (dInfo.phone || '') : '',
+                        vehicle_plate: dInfo ? (dInfo.vehicle_plate || '') : '',
+                        vehicle_model: dInfo ? (dInfo.vehicle_model || '') : '',
+                        is_busy: busyDriverIds[s.driver_id] ? true : false
+                    });
+                }
+                console.log('🏍️ Conductores con GPS para mostrar: ' + dispatchDriversCache.length);
+                for (var dbg = 0; dbg < dispatchDriversCache.length; dbg++) {
+                    console.log('  → ' + dispatchDriversCache[dbg].full_name + ' [' + dispatchDriversCache[dbg].latitude + ', ' + dispatchDriversCache[dbg].longitude + '] busy=' + dispatchDriversCache[dbg].is_busy);
+                }
+
+                document.getElementById('dispatchOnlineCount').textContent = dispatchDriversCache.length;
+                document.getElementById('dispatchPendingCount').textContent = dispatchRidesCache.length;
+                updateDispatchBadge();
+                renderDispatchMarkers();
+
+                if (selectedDispatchRide) {
+                    var stillExists = false;
+                    for (var q = 0; q < dispatchRidesCache.length; q++) {
+                        if (dispatchRidesCache[q].id === selectedDispatchRide.id) { stillExists = true; renderDispatchPanel(dispatchRidesCache[q]); break; }
+                    }
+                    if (!stillExists) { closeDispatchSheet(); }
+                }
+            } catch (err) { console.error('Error refreshDispatchData:', err); }
+        }
+
+        function renderDispatchMarkers() {
+            if (!dispatchMap || !dispatchMapInitialized) {
+                console.log('⚠️ renderDispatchMarkers: mapa no listo');
+                return;
+            }
+            console.log('🎨 renderDispatchMarkers: ' + dispatchRidesCache.length + ' rides, ' + dispatchDriversCache.length + ' drivers');
+
+            var rideIds = {};
+            for (var i = 0; i < dispatchRidesCache.length; i++) { rideIds[dispatchRidesCache[i].id] = true; }
+            var markerKeys = Object.keys(dispatchRideMarkers);
+            for (var j = 0; j < markerKeys.length; j++) {
+                if (!rideIds[markerKeys[j]]) {
+                    try { dispatchRideMarkers[markerKeys[j]].remove(); } catch(e) {}
+                    delete dispatchRideMarkers[markerKeys[j]];
+                }
+            }
+            for (var r = 0; r < dispatchRidesCache.length; r++) {
+                var ride = dispatchRidesCache[r];
+                var waitMin = Math.floor((Date.now() - new Date(ride.created_at).getTime()) / 60000);
+                var rideLng = parseFloat(ride.origin_lng);
+                var rideLat = parseFloat(ride.origin_lat);
+                if (isNaN(rideLng) || isNaN(rideLat)) continue;
+                if (dispatchRideMarkers[ride.id]) {
+                    dispatchRideMarkers[ride.id].setLngLat([rideLng, rideLat]);
+                } else {
+                    (function(rd, wm, rlng, rlat) {
+                        var el = document.createElement('div');
+                        el.className = 'dispatch-ride-marker' + (wm >= 3 ? ' waiting' : '');
+                        el.innerHTML = '<i class="fas fa-user"></i>';
+                        el.addEventListener('click', function(ev) {
+                            ev.stopPropagation();
+                            selectDispatchRide(rd.id);
+                        });
+                        dispatchRideMarkers[rd.id] = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+                            .setLngLat([rlng, rlat])
+                            .addTo(dispatchMap);
+                        console.log('📍 Marcador de solicitud creado: ' + rd.id.substring(0,8));
+                    })(ride, waitMin, rideLng, rideLat);
+                }
+            }
+
+            var driverIdsMap = {};
+            for (var d = 0; d < dispatchDriversCache.length; d++) { driverIdsMap[dispatchDriversCache[d].driver_id] = true; }
+            var driverMarkerKeys = Object.keys(dispatchDriverMarkers);
+            for (var e = 0; e < driverMarkerKeys.length; e++) {
+                if (!driverIdsMap[driverMarkerKeys[e]]) {
+                    try { dispatchDriverMarkers[driverMarkerKeys[e]].remove(); } catch(ex) {}
+                    delete dispatchDriverMarkers[driverMarkerKeys[e]];
+                }
+            }
+
+            var createdCount = 0;
+            var updatedCount = 0;
+            for (var f = 0; f < dispatchDriversCache.length; f++) {
+                var driver = dispatchDriversCache[f];
+                var drvLng = parseFloat(driver.longitude);
+                var drvLat = parseFloat(driver.latitude);
+                if (isNaN(drvLng) || isNaN(drvLat)) {
+                    console.log('⚠️ Coordenadas inválidas para: ' + driver.full_name);
+                    continue;
+                }
+                if (dispatchDriverMarkers[driver.driver_id]) {
+                    dispatchDriverMarkers[driver.driver_id].setLngLat([drvLng, drvLat]);
+                    var existingEl = dispatchDriverMarkers[driver.driver_id].getElement();
+                    if (driver.is_busy) { existingEl.classList.add('busy'); }
+                    else { existingEl.classList.remove('busy'); }
+                    updatedCount++;
+                } else {
+                    (function(drv, dlng, dlat) {
+                        var dEl = document.createElement('div');
+                        dEl.className = 'dispatch-driver-marker' + (drv.is_busy ? ' busy' : '');
+                        dEl.innerHTML = '<i class="fas fa-motorcycle"></i>';
+                        dEl.style.cursor = 'pointer';
+                        dEl.title = drv.full_name + (drv.is_busy ? ' (En viaje)' : ' (Disponible)');
+                        dispatchDriverMarkers[drv.driver_id] = new mapboxgl.Marker({ element: dEl })
+                            .setLngLat([dlng, dlat])
+                            .addTo(dispatchMap);
+                        createdCount++;
+                        console.log('🏍️ Marcador conductor creado: ' + drv.full_name + ' [' + dlat + ', ' + dlng + ']');
+                    })(driver, drvLng, drvLat);
+                }
+            }
+            console.log('🏍️ Conductores: ' + createdCount + ' creados, ' + updatedCount + ' actualizados');
+        }
+
+        function updateSingleDriverMarker(statusData) {
+            if (!dispatchMap || !dispatchMapInitialized) return;
+            var lat = parseFloat(statusData.latitude);
+            var lng = parseFloat(statusData.longitude);
+            if (isNaN(lat) || isNaN(lng)) return;
+            if (dispatchDriverMarkers[statusData.driver_id]) {
+                dispatchDriverMarkers[statusData.driver_id].setLngLat([lng, lat]);
+            } else {
+                refreshDispatchData();
             }
         }
 
-        async function rejectApplication(appId) {
-            if(confirm("¿Rechazar esta solicitud?")) {
-                await supabaseClient.from('driver_applications').update({ status: 'rechazada' }).eq('id', appId);
-                loadApplications();
-                loadDashboard();
+        function selectDispatchRide(rideId) {
+            var ride = null;
+            for (var i = 0; i < dispatchRidesCache.length; i++) {
+                if (dispatchRidesCache[i].id === rideId) { ride = dispatchRidesCache[i]; break; }
+            }
+            if (!ride) return;
+            selectedDispatchRide = ride;
+            if (dispatchMap && dispatchMapInitialized) {
+                var rlng = parseFloat(ride.origin_lng);
+                var rlat = parseFloat(ride.origin_lat);
+                dispatchMap.flyTo({ center: [rlng, rlat], zoom: 15, duration: 800 });
+                drawDispatchRadius(rlat, rlng);
+            }
+            renderDispatchPanel(ride);
+            document.getElementById('dispatchSheet').classList.add('open');
+        }
+
+        function closeDispatchSheet() {
+            selectedDispatchRide = null;
+            document.getElementById('dispatchSheet').classList.remove('open');
+            clearDispatchLine();
+            clearDispatchRadius();
+            clearHighlightedMarkers();
+        }
+
+        function onRadiusChange() {
+            if (selectedDispatchRide) {
+                var rlat = parseFloat(selectedDispatchRide.origin_lat);
+                var rlng = parseFloat(selectedDispatchRide.origin_lng);
+                drawDispatchRadius(rlat, rlng);
+                renderDispatchPanel(selectedDispatchRide);
             }
         }
 
-        // ---------- Conductores (mejorado) ----------
-        async function loadDrivers() {
-            const { data: drivers, error } = await supabaseClient
-                .from('drivers')
-                .select(`
-                    *,
-                    driver_status (is_online, latitude, longitude, battery_level, last_updated),
-                    wallets (balance)
-                `)
-                .order('created_at', { ascending: false });
-
-            const grid = document.getElementById('driversGrid');
-            grid.innerHTML = '';
-
-            if (error) {
-                console.error('Error al cargar conductores:', error);
-                grid.innerHTML = `<div class="data-card w-100 text-center py-5">
-                    <i class="fas fa-exclamation-triangle mb-3 text-danger" style="font-size: 35px;"></i>
-                    <h6 class="text-white">Error al cargar conductores</h6>
-                    <p class="text-secondary-custom mb-0 fs-6">${error.message}</p>
-                </div>`;
-                return;
+        function drawDispatchRadius(lat, lng) {
+            if (!dispatchMap || !dispatchMapInitialized) return;
+            var radiusKm = parseFloat(document.getElementById('dispatchRadius').value);
+            var circle = turf.circle([lng, lat], radiusKm, { steps: 64, units: 'kilometers' });
+            var src = dispatchMap.getSource('dispatch-radius');
+            if (src) { src.setData({ type: 'FeatureCollection', features: [circle] }); }
+        }
+        function clearDispatchRadius() {
+            if (dispatchMap && dispatchMapInitialized) {
+                var src = dispatchMap.getSource('dispatch-radius');
+                if (src) { src.setData({ type: 'FeatureCollection', features: [] }); }
             }
-
-            if (!drivers || drivers.length === 0) {
-                grid.innerHTML = `<div class="data-card w-100 text-center py-5">
-                    <i class="fas fa-users mb-3 text-secondary-custom" style="font-size: 35px;"></i>
-                    <h6 class="text-white">No hay conductores registrados</h6>
-                </div>`;
-                return;
+        }
+        function drawDispatchLine(driverLat, driverLng, rideLat, rideLng) {
+            if (!dispatchMap || !dispatchMapInitialized) return;
+            var line = { type: 'Feature', geometry: { type: 'LineString', coordinates: [[driverLng, driverLat], [rideLng, rideLat]] } };
+            var src = dispatchMap.getSource('dispatch-line');
+            if (src) { src.setData({ type: 'FeatureCollection', features: [line] }); }
+        }
+        function clearDispatchLine() {
+            if (dispatchMap && dispatchMapInitialized) {
+                var src = dispatchMap.getSource('dispatch-line');
+                if (src) { src.setData({ type: 'FeatureCollection', features: [] }); }
             }
+        }
+        function clearHighlightedMarkers() {
+            var keys = Object.keys(dispatchDriverMarkers);
+            for (var i = 0; i < keys.length; i++) {
+                try { dispatchDriverMarkers[keys[i]].getElement().classList.remove('highlighted'); } catch(e) {}
+            }
+        }
 
-            drivers.forEach(d => {
-                const isOnline = d.driver_status?.is_online || false;
-                const balance = parseFloat(d.wallets?.balance || 0).toFixed(2);
-                const vehicle = d.vehicle_model ? `${d.vehicle_model} ${d.vehicle_plate ? '· ' + d.vehicle_plate : ''}` : 'Sin vehículo registrado';
-                const address = d.home_address ? d.home_address : 'Sin dirección registrada';
-                const profileStatus = d.profile_completed 
-                    ? '<span class="badge-custom badge-aprobada">Completo</span>' 
-                    : '<span class="badge-custom badge-pendiente">Incompleto</span>';
+        function getWaitBadge(createdAt) {
+            var waitMin = Math.floor((Date.now() - new Date(createdAt).getTime()) / 60000);
+            if (waitMin >= 5) return '<span class="ride-wait-badge critical">⏰ ' + waitMin + ' min</span>';
+            if (waitMin >= 3) return '<span class="ride-wait-badge late">⏱️ ' + waitMin + ' min</span>';
+            return '<span class="ride-wait-badge ok">✓ Nuevo</span>';
+        }
 
-                grid.innerHTML += `
-                    <div class="data-card p-3">
-                        <div class="data-card-header border-0 pb-0">
-                            <div>
-                                <h4 class="data-card-title d-flex align-items-center gap-2">
-                                    ${d.full_name}
-                                    ${isOnline ? '<span class="badge-custom badge-aprobada" style="font-size:10px;">En línea</span>' : '<span class="badge-custom badge-neutral" style="font-size:10px;">Offline</span>'}
-                                </h4>
-                                <span class="data-card-subtitle">
-                                    <i class="fas fa-mobile-alt me-1"></i> ${d.phone}
-                                </span>
-                            </div>
-                            ${d.avatar_url ? `<img src="${d.avatar_url}" alt="Avatar" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">` : '<i class="fas fa-user-circle text-secondary-custom" style="font-size:50px;"></i>'}
-                        </div>
-                        <hr style="border-color: var(--border-color); margin: 8px 0;">
-                        
-                        <div class="info-row"><i class="fas fa-motorcycle"></i> <span>${vehicle}</span></div>
-                        <div class="info-row"><i class="fas fa-home"></i> <span class="text-truncate">${address}</span></div>
-                        <div class="info-row">
-                            <i class="fas fa-wallet text-accent"></i> 
-                            <span>Bs ${balance}</span>
-                        </div>
-                        
-                        <div class="d-flex justify-content-between align-items-center mt-1">
-                            <span class="text-secondary-custom" style="font-size:11px;">Perfil: ${profileStatus}</span>
-                            <button class="btn btn-outline-light btn-sm py-1" onclick="showDriverDetails('${d.id}')">
-                                <i class="fas fa-eye"></i> Ver detalles
-                            </button>
-                        </div>
-                    </div>
-                `;
+        function renderDispatchPanel(ride) {
+            var contentDiv = document.getElementById('dispatchSheetContent');
+            var radiusKm = parseFloat(document.getElementById('dispatchRadius').value);
+            var driversWithDistance = [];
+            for (var i = 0; i < dispatchDriversCache.length; i++) {
+                var d = dispatchDriversCache[i];
+                var dist = haversineDistance(ride.origin_lat, ride.origin_lng, d.latitude, d.longitude);
+                driversWithDistance.push({
+                    driver_id: d.driver_id, full_name: d.full_name, phone: d.phone,
+                    vehicle_plate: d.vehicle_plate, latitude: d.latitude, longitude: d.longitude,
+                    is_busy: d.is_busy, distance: dist, eta: calculateETA(dist)
+                });
+            }
+            driversWithDistance.sort(function(a, b) {
+                if (a.is_busy !== b.is_busy) return a.is_busy ? 1 : -1;
+                return a.distance - b.distance;
             });
-        }
+            var availableDrivers = [];
+            var busyDrivers = [];
+            for (var j = 0; j < driversWithDistance.length; j++) {
+                if (driversWithDistance[j].is_busy) { busyDrivers.push(driversWithDistance[j]); }
+                else { availableDrivers.push(driversWithDistance[j]); }
+            }
+            var suggestedDriver = availableDrivers.length > 0 ? availableDrivers[0] : null;
 
-        async function showDriverDetails(driverId) {
-            const modal = new bootstrap.Modal(document.getElementById('driverDetailsModal'));
-            const contentDiv = document.getElementById('driverDetailsContent');
-            
-            contentDiv.innerHTML = `
-                <div class="text-center py-4">
-                    <div class="spinner mx-auto" style="width:40px; height:40px;"></div>
-                    <h6 class="text-white fw-bold mt-3">Cargando información...</h6>
-                </div>
-            `;
-            modal.show();
-
-            const { data: driver, error } = await supabaseClient
-                .from('drivers')
-                .select(`
-                    *,
-                    driver_status (is_online, latitude, longitude, battery_level, last_updated),
-                    wallets (balance)
-                `)
-                .eq('id', driverId)
-                .maybeSingle();
-
-            if (error || !driver) {
-                contentDiv.innerHTML = `<div class="alert bg-danger text-white border-0">No se pudo cargar la información: ${error?.message || 'Conductor no encontrado'}</div>`;
-                return;
+            clearHighlightedMarkers();
+            if (suggestedDriver) {
+                drawDispatchLine(suggestedDriver.latitude, suggestedDriver.longitude, ride.origin_lat, ride.origin_lng);
+                if (dispatchDriverMarkers[suggestedDriver.driver_id]) {
+                    try { dispatchDriverMarkers[suggestedDriver.driver_id].getElement().classList.add('highlighted'); } catch(e) {}
+                }
+            } else {
+                clearDispatchLine();
             }
 
-            currentDriverData = driver; // Guardar para edición
+            var html = '';
+            html += '<div class="dispatch-sheet-ride">';
+            html += '<div class="ride-info">';
+            html += '<div class="ride-route"><i class="fas fa-circle text-success me-1" style="font-size:8px;"></i>' + (ride.origin_address || 'Origen') + ' <i class="fas fa-arrow-right mx-1" style="font-size:10px;color:var(--text-secondary);"></i> <i class="fas fa-circle text-danger me-1" style="font-size:8px;"></i>' + (ride.destination_address || 'Destino') + '</div>';
+            html += getWaitBadge(ride.created_at);
+            html += '</div>';
+            html += '<div class="ride-price">Bs ' + parseFloat(ride.price || 0).toFixed(2) + '</div>';
+            html += '</div>';
+            html += '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);margin-bottom:8px;"><i class="fas fa-motorcycle me-1" style="color:var(--primary);"></i> Conductores (' + radiusKm + ' km)</div>';
 
-            const isOnline = driver.driver_status?.is_online || false;
-            const battery = driver.driver_status?.battery_level;
-            const lat = driver.driver_status?.latitude;
-            const lng = driver.driver_status?.longitude;
-            const lastUpdate = driver.driver_status?.last_updated ? new Date(driver.driver_status.last_updated).toLocaleString() : 'Nunca';
-            const balance = parseFloat(driver.wallets?.balance || 0).toFixed(2);
-            
-            const homeMapLink = driver.home_lat && driver.home_lng 
-                ? `https://www.google.com/maps?q=${driver.home_lat},${driver.home_lng}` 
-                : null;
-            const currentMapLink = lat && lng 
-                ? `https://www.google.com/maps?q=${lat},${lng}` 
-                : null;
-
-            const identityCard = driver.identity_card || 'No registrada';
-            const utilityBill = driver.utility_bill_url 
-                ? `<a href="${driver.utility_bill_url}" target="_blank" class="text-accent text-decoration-none"><i class="fas fa-file-pdf me-1"></i>Ver factura</a>` 
-                : 'No subida';
-            const notes = driver.notes || 'Sin observaciones';
-
-            const profileStatus = driver.profile_completed 
-                ? '<span class="badge-custom badge-aprobada">Completo</span>' 
-                : '<span class="badge-custom badge-pendiente">Incompleto</span>';
-
-            contentDiv.innerHTML = `
-                <div class="d-flex align-items-center gap-3 mb-4">
-                    ${driver.avatar_url 
-                        ? `<img src="${driver.avatar_url}" alt="Avatar" style="width:70px; height:70px; border-radius:50%; object-fit:cover;">` 
-                        : '<i class="fas fa-user-circle text-secondary-custom" style="font-size:70px;"></i>'}
-                    <div>
-                        <h4 class="text-white fw-bold mb-0">${driver.full_name}</h4>
-                        <span class="text-secondary-custom">${driver.phone}</span>
-                        <div class="mt-1">${profileStatus} 
-                            ${isOnline ? '<span class="badge-custom badge-aprobada ms-1">En línea</span>' : '<span class="badge-custom badge-neutral ms-1">Offline</span>'}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <h6 class="text-white fw-bold mb-2"><i class="fas fa-motorcycle text-accent me-2"></i>Vehículo</h6>
-                        <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.2);">
-                            <p class="mb-1"><strong>Modelo:</strong> ${driver.vehicle_model || 'N/A'}</p>
-                            <p class="mb-1"><strong>Placa:</strong> ${driver.vehicle_plate || 'N/A'}</p>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="text-white fw-bold mb-2"><i class="fas fa-home text-accent me-2"></i>Domicilio</h6>
-                        <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.2);">
-                            <p class="mb-1">${driver.home_address || 'No registrada'}</p>
-                            ${homeMapLink ? `<a href="${homeMapLink}" target="_blank" class="text-accent text-decoration-none"><i class="fas fa-map-marker-alt me-1"></i>Ver en mapa</a>` : ''}
-                            ${driver.home_lat && driver.home_lng ? `<p class="mb-0 mt-1"><small>Lat: ${driver.home_lat.toFixed(5)}, Lng: ${driver.home_lng.toFixed(5)}</small></p>` : ''}
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <h6 class="text-white fw-bold mb-2"><i class="fas fa-id-card text-accent me-2"></i>Documentación</h6>
-                        <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.2);">
-                            <p class="mb-1"><strong>Cédula:</strong> ${identityCard}</p>
-                            <p class="mb-1"><strong>Factura de servicios:</strong> ${utilityBill}</p>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <h6 class="text-white fw-bold mb-2"><i class="fas fa-wallet text-accent me-2"></i>Finanzas</h6>
-                        <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.2);">
-                            <p class="mb-1">Saldo actual: <strong class="text-white">Bs ${balance}</strong></p>
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <h6 class="text-white fw-bold mb-2"><i class="fas fa-satellite-dish text-accent me-2"></i>Estado en tiempo real</h6>
-                        <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.2);">
-                            <p class="mb-1"><strong>En línea:</strong> ${isOnline ? 'Sí' : 'No'}</p>
-                            <p class="mb-1"><strong>Batería:</strong> ${battery !== null && battery !== undefined ? battery + '%' : 'No disponible'}</p>
-                            <p class="mb-1"><strong>Última actualización:</strong> ${lastUpdate}</p>
-                            ${currentMapLink ? `<a href="${currentMapLink}" target="_blank" class="text-accent text-decoration-none"><i class="fas fa-map-pin me-1"></i>Ubicación actual</a>` : '<span class="text-secondary-custom">Sin ubicación actual</span>'}
-                        </div>
-                    </div>
-
-                    <div class="col-12">
-                        <h6 class="text-white fw-bold mb-2"><i class="fas fa-sticky-note text-accent me-2"></i>Notas del administrador</h6>
-                        <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.2);">
-                            <p class="mb-0">${notes}</p>
-                        </div>
-                    </div>
-
-                    <div class="col-12">
-                        <h6 class="text-white fw-bold mb-2"><i class="fas fa-calendar-alt text-accent me-2"></i>Registro</h6>
-                        <div class="p-3 rounded-3" style="background: rgba(0,0,0,0.2);">
-                            <p class="mb-1"><strong>Fecha de alta:</strong> ${new Date(driver.created_at).toLocaleString()}</p>
-                            <p class="mb-0"><strong>ID interno:</strong> ${driver.id}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-end gap-2 mt-3">
-                    <button class="btn btn-primary" onclick="openEditDriverModal()">
-                        <i class="fas fa-edit"></i> Editar información
-                    </button>
-                </div>
-            `;
+            if (driversWithDistance.length === 0) {
+                html += '<div class="dispatch-no-drivers"><i class="fas fa-user-slash"></i>No hay conductores en línea</div>';
+            } else {
+                if (suggestedDriver) {
+                    html += renderDriverChip(suggestedDriver, ride, true);
+                }
+                for (var o = 1; o < availableDrivers.length; o++) {
+                    html += renderDriverChip(availableDrivers[o], ride, false);
+                }
+                if (busyDrivers.length > 0) {
+                    html += '<div style="font-size:9px;color:var(--text-secondary);margin:8px 0 4px;text-transform:uppercase;letter-spacing:1px;">En viaje (ocupados)</div>';
+                    for (var b = 0; b < busyDrivers.length; b++) {
+                        html += renderDriverChip(busyDrivers[b], ride, false);
+                    }
+                }
+            }
+            contentDiv.innerHTML = html;
         }
 
-        // Función para abrir el modal de edición con los datos actuales
+        function renderDriverChip(driver, ride, isSuggested) {
+            var distStr = driver.distance < 1 ? Math.round(driver.distance * 1000) + ' m' : driver.distance.toFixed(1) + ' km';
+            var phoneClean = (driver.phone || '').replace(/[^0-9]/g, '');
+            var waPhone = '';
+            if (phoneClean.length >= 7) {
+                if (phoneClean.indexOf('591') === 0) { waPhone = phoneClean; }
+                else { waPhone = '591' + phoneClean; }
+            }
+            var safeName = driver.full_name.replace(/'/g, '').replace(/"/g, '');
+            var safeOrigin = (ride.origin_address || 'la zona').replace(/'/g, '').replace(/"/g, '');
+            var waMsg = encodeURIComponent('Hola ' + driver.full_name.split(' ')[0] + ', Central Moto Movil: hay un viaje disponible cerca de ' + (ride.origin_address || 'la zona') + '. Puedes tomarlo?');
+
+            var cls = 'dispatch-driver-chip';
+            if (isSuggested) cls += ' suggested';
+            if (driver.is_busy) cls += ' busy-chip';
+
+            var html = '<div class="' + cls + '">';
+            html += '<div class="driver-chip-avatar"><i class="fas fa-motorcycle"></i></div>';
+            html += '<div class="driver-chip-info">';
+            html += '<div class="dc-name">' + driver.full_name;
+            if (isSuggested) html += '<span class="suggested-mini-tag">MAS CERCANO</span>';
+            if (driver.is_busy) html += '<span class="busy-mini-tag">EN VIAJE</span>';
+            html += '</div>';
+            html += '<div class="dc-meta"><span class="dist">' + distStr + '</span><span>' + driver.eta + ' min</span>';
+            if (driver.vehicle_plate) html += '<span>' + driver.vehicle_plate + '</span>';
+            html += '</div></div>';
+            html += '<div class="driver-chip-actions">';
+            if (waPhone) {
+                html += '<button class="chip-btn wa" title="WhatsApp" onclick="window.open(\'https://wa.me/' + waPhone + '?text=' + waMsg + '\',\'_blank\')"><i class="fab fa-whatsapp"></i></button>';
+            }
+            if (phoneClean.length >= 7) {
+                html += '<button class="chip-btn ph" title="Llamar" onclick="window.location.href=\'tel:+' + phoneClean + '\'"><i class="fas fa-phone"></i></button>';
+            }
+            html += '<button class="chip-btn ch" title="Chat interno" onclick="sendDispatchChat(\'' + driver.driver_id + '\',\'' + safeName + '\',\'' + safeOrigin + '\')"><i class="fas fa-comment-dots"></i></button>';
+            if (driver.is_busy) {
+                html += '<button class="chip-assign-btn" style="background:var(--yellow-busy);" title="Asignar (está en viaje)" onclick="assignBusyDriver(\'' + ride.id + '\',\'' + driver.driver_id + '\',\'' + safeName + '\')"><i class="fas fa-check"></i></button>';
+            } else {
+                html += '<button class="chip-assign-btn" title="Asignar" onclick="assignDispatchRide(\'' + ride.id + '\',\'' + driver.driver_id + '\')"><i class="fas fa-check"></i></button>';
+            }
+            html += '</div></div>';
+            return html;
+        }
+
+        async function assignDispatchRide(rideId, driverId) {
+            if (!confirm('¿Asignar este viaje al conductor?')) return;
+            try {
+                var result = await supabaseClient.from('rides').update({ driver_id: driverId, status: 'aceptado' }).eq('id', rideId).select();
+                if (result.error) { alert('Error: ' + result.error.message); return; }
+                if (!result.data || result.data.length === 0) { alert('No se pudo actualizar.'); return; }
+                showDispatchToast('✅ Viaje asignado', 'El conductor recibirá la notificación.');
+                closeDispatchSheet();
+                refreshDispatchData();
+                loadRides();
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+
+        async function assignBusyDriver(rideId, driverId, driverName) {
+            var confirmMsg = driverName + ' está en un viaje actualmente.\n\nSi le asignas este nuevo viaje, lo recibirá cuando finalice el actual.\n\n¿Deseas asignar de todas formas?';
+            if (!confirm(confirmMsg)) return;
+            try {
+                var result = await supabaseClient.from('rides').update({ driver_id: driverId, status: 'aceptado' }).eq('id', rideId).select();
+                if (result.error) { alert('Error: ' + result.error.message); return; }
+                if (!result.data || result.data.length === 0) { alert('No se pudo actualizar.'); return; }
+                showDispatchToast('✅ Viaje asignado', driverName + ' recibirá la notificación al terminar su viaje actual.');
+                closeDispatchSheet();
+                refreshDispatchData();
+                loadRides();
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+
+        async function sendDispatchChat(driverId, driverName, originAddress) {
+            var msg = 'Central Moto Móvil: Tienes un viaje sugerido cerca de ' + (originAddress || 'la zona') + '. Revisa tu app.';
+            try {
+                var result = await supabaseClient.from('central_messages').insert({ driver_id: driverId, message: msg, is_read: false, created_by: currentAdmin.id });
+                if (result.error) { alert('Error: ' + result.error.message); return; }
+                showDispatchToast('✉️ Mensaje enviado', 'Mensaje interno a ' + driverName);
+            } catch (err) { alert('Error: ' + err.message); }
+        }
+
+        async function loadApplications() {
+            var filter = document.getElementById('filterStatus').value;
+            var query = supabaseClient.from('driver_applications').select('*').order('created_at', { ascending: false });
+            if (filter !== 'todas') query = query.eq('status', filter);
+            var result = await query;
+            if (result.error) return;
+            allApplicationsData = result.data || [];
+            var grid = document.getElementById('applicationsGrid');
+            grid.innerHTML = '';
+            if (allApplicationsData.length === 0) {
+                grid.innerHTML = '<div class="data-card w-100 text-center py-5" style="grid-column:1/-1;"><i class="fas fa-inbox mb-3 text-secondary-custom" style="font-size:35px;"></i><h6 class="text-white">Bandeja Vacía</h6></div>';
+                return;
+            }
+            for (var i = 0; i < allApplicationsData.length; i++) {
+                var app = allApplicationsData[i];
+                var badgeClass = 'badge-neutral';
+                if (app.status === 'pendiente') badgeClass = 'badge-pendiente';
+                if (app.status === 'aprobada') badgeClass = 'badge-aprobada';
+                if (app.status === 'rechazada') badgeClass = 'badge-rechazada';
+                var actions = '';
+                if (app.status === 'pendiente') {
+                    actions = '<button class="btn btn-primary flex-grow-1 py-1" onclick="viewCredentials(\'' + app.id + '\')"><i class="fas fa-check"></i> Aprobar</button><button class="btn btn-danger-custom py-1" onclick="rejectApplication(\'' + app.id + '\')"><i class="fas fa-times"></i></button>';
+                } else {
+                    actions = '<button class="btn btn-outline-light w-100 py-1" onclick="viewCredentials(\'' + app.id + '\')"><i class="fas fa-id-card-clip"></i> Credenciales</button>';
+                }
+                grid.innerHTML += '<div class="data-card p-3"><div class="data-card-header border-0 pb-0"><div><h4 class="data-card-title">' + app.full_name + '</h4><span class="data-card-subtitle">' + new Date(app.created_at).toLocaleDateString() + '</span></div><span class="badge-custom ' + badgeClass + '">' + app.status + '</span></div><hr style="border-color:var(--border-color);margin:8px 0;"><div class="info-row"><i class="fas fa-phone-alt"></i> <span><strong>' + app.phone + '</strong></span></div><div class="data-card-actions pt-2 mt-2">' + actions + '</div></div>';
+            }
+        }
+        async function viewCredentials(appId) {
+            var app = null;
+            for (var i = 0; i < allApplicationsData.length; i++) { if (allApplicationsData[i].id === appId) { app = allApplicationsData[i]; break; } }
+            if (!app) return;
+            var modal = new bootstrap.Modal(document.getElementById('credentialsModal'));
+            var contentDiv = document.getElementById('credentialsContent');
+            contentDiv.innerHTML = '<div class="text-center py-4"><div class="spinner mx-auto" style="width:40px;height:40px;"></div><h6 class="text-white fw-bold">Procesando...</h6></div>';
+            modal.show();
+            try {
+                var result = await supabaseClient.functions.invoke('create-driver-user', { body: { application_id: app.id, full_name: app.full_name, phone: app.phone } });
+                if (result.error || (result.data && result.data.success === false)) {
+                    contentDiv.innerHTML = '<div class="alert bg-danger text-white border-0"><small>' + (result.error ? result.error.message : result.data.error) + '</small></div>';
+                    return;
+                }
+                contentDiv.innerHTML = '<div class="p-3 rounded-3" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2);"><h5 class="text-white fw-bold mb-1">' + app.full_name + '</h5><span class="text-success" style="font-size:12px;">✅ Cuenta aprobada</span></div><div class="mt-3 p-3" style="background:rgba(249,115,22,0.05);border:1px solid rgba(249,115,22,0.2);border-radius:12px;"><div class="mb-2"><small class="text-secondary-custom">TELÉFONO</small><div class="text-white fw-bold">' + result.data.phone + '</div></div><div><small class="text-secondary-custom">CONTRASEÑA</small><div class="d-flex align-items-center gap-2"><strong class="text-white fs-5">' + result.data.temp_password + '</strong><button class="btn btn-outline-light btn-sm" onclick="navigator.clipboard.writeText(\'' + result.data.temp_password + '\');alert(\'Copiado!\');"><i class="fas fa-copy"></i></button></div></div></div>';
+                loadApplications(); loadDrivers(); loadDashboard();
+            } catch (err) { contentDiv.innerHTML = '<div class="alert bg-danger text-white border-0"><small>' + err.message + '</small></div>'; }
+        }
+        async function rejectApplication(appId) {
+            if (confirm('¿Rechazar esta solicitud?')) {
+                await supabaseClient.from('driver_applications').update({ status: 'rechazada' }).eq('id', appId);
+                loadApplications(); loadDashboard();
+            }
+        }
+
+        async function loadDrivers() {
+            var result = await supabaseClient.from('drivers').select('*, driver_status (is_online, latitude, longitude, last_updated), wallets (balance)').order('created_at', { ascending: false });
+            var grid = document.getElementById('driversGrid');
+            grid.innerHTML = '';
+            if (result.error) { grid.innerHTML = '<div class="data-card w-100 text-center py-5"><h6 class="text-white">Error al cargar</h6></div>'; return; }
+            var drivers = result.data || [];
+            if (drivers.length === 0) { grid.innerHTML = '<div class="data-card w-100 text-center py-5"><h6 class="text-white">No hay conductores</h6></div>'; return; }
+            for (var i = 0; i < drivers.length; i++) {
+                var d = drivers[i];
+                var isOnline = d.driver_status ? (d.driver_status.is_online || false) : false;
+                var balance = parseFloat(d.wallets ? (d.wallets.balance || 0) : 0).toFixed(2);
+                var vehicle = d.vehicle_model ? (d.vehicle_model + (d.vehicle_plate ? ' · ' + d.vehicle_plate : '')) : 'Sin vehículo';
+                grid.innerHTML += '<div class="data-card p-3"><div class="data-card-header border-0 pb-0"><div><h4 class="data-card-title">' + d.full_name + (isOnline ? ' <span class="badge-custom badge-aprobada" style="font-size:10px;">En línea</span>' : ' <span class="badge-custom badge-neutral" style="font-size:10px;">Offline</span>') + '</h4><span class="data-card-subtitle">' + d.phone + '</span></div>' + (d.avatar_url ? '<img src="' + d.avatar_url + '" style="width:50px;height:50px;border-radius:50%;object-fit:cover;">' : '<i class="fas fa-user-circle text-secondary-custom" style="font-size:50px;"></i>') + '</div><hr style="border-color:var(--border-color);margin:8px 0;"><div class="info-row"><i class="fas fa-motorcycle"></i> <span>' + vehicle + '</span></div><div class="info-row"><i class="fas fa-wallet text-accent"></i> <span>Bs ' + balance + '</span></div><div class="d-flex justify-content-end mt-1"><button class="btn btn-outline-light btn-sm py-1" onclick="showDriverDetails(\'' + d.id + '\')"><i class="fas fa-eye"></i> Ver</button></div></div>';
+            }
+        }
+        async function showDriverDetails(driverId) {
+            var modal = new bootstrap.Modal(document.getElementById('driverDetailsModal'));
+            var contentDiv = document.getElementById('driverDetailsContent');
+            contentDiv.innerHTML = '<div class="text-center py-4"><div class="spinner mx-auto" style="width:40px;height:40px;"></div></div>';
+            modal.show();
+            var result = await supabaseClient.from('drivers').select('*, driver_status (is_online), wallets (balance)').eq('id', driverId).maybeSingle();
+            if (result.error || !result.data) { contentDiv.innerHTML = '<div class="alert bg-danger text-white">Error</div>'; return; }
+            currentDriverData = result.data;
+            var d = result.data;
+            contentDiv.innerHTML = '<div class="d-flex align-items-center gap-3 mb-3"><h4 class="text-white fw-bold mb-0">' + d.full_name + '</h4></div><div class="row g-3"><div class="col-md-6"><div class="p-3 rounded-3" style="background:rgba(0,0,0,0.2);"><strong>Vehículo:</strong> ' + (d.vehicle_model || 'N/A') + '<br><strong>Placa:</strong> ' + (d.vehicle_plate || 'N/A') + '</div></div><div class="col-md-6"><div class="p-3 rounded-3" style="background:rgba(0,0,0,0.2);"><strong>Saldo:</strong> Bs ' + parseFloat(d.wallets ? d.wallets.balance : 0).toFixed(2) + '</div></div></div><div class="d-flex justify-content-end mt-3"><button class="btn btn-primary" onclick="openEditDriverModal()"><i class="fas fa-edit"></i> Editar</button></div>';
+        }
         function openEditDriverModal() {
             if (!currentDriverData) return;
             document.getElementById('editDriverId').value = currentDriverData.id;
@@ -892,273 +998,143 @@
             document.getElementById('editNotes').value = currentDriverData.notes || '';
             document.getElementById('editIsActive').checked = currentDriverData.is_active;
             document.getElementById('editProfileCompleted').checked = currentDriverData.profile_completed;
-
-            const editModal = new bootstrap.Modal(document.getElementById('editDriverModal'));
+            var editModal = new bootstrap.Modal(document.getElementById('editDriverModal'));
             editModal.show();
         }
-
-        // Guardar cambios del conductor
         async function saveDriverEdit() {
-            const driverId = document.getElementById('editDriverId').value;
-            const fullName = document.getElementById('editFullName').value.trim();
-            const phone = document.getElementById('editPhone').value.trim();
-            const vehicleModel = document.getElementById('editVehicleModel').value.trim();
-            const vehiclePlate = document.getElementById('editVehiclePlate').value.trim();
-            const homeAddress = document.getElementById('editHomeAddress').value.trim();
-            const notes = document.getElementById('editNotes').value.trim();
-            const isActive = document.getElementById('editIsActive').checked;
-            const profileCompleted = document.getElementById('editProfileCompleted').checked;
-
-            if (!fullName || !phone) {
-                alert('El nombre y el teléfono son obligatorios.');
-                return;
-            }
-
-            const updateData = {
-                full_name: fullName,
-                phone: phone,
-                vehicle_model: vehicleModel,
-                vehicle_plate: vehiclePlate,
-                home_address: homeAddress,
-                notes: notes,
-                is_active: isActive,
-                profile_completed: profileCompleted
-            };
-
-            const { error } = await supabaseClient
-                .from('drivers')
-                .update(updateData)
-                .eq('id', driverId);
-
-            if (error) {
-                alert('Error al guardar: ' + error.message);
-                return;
-            }
-
-            alert('Datos actualizados correctamente');
+            var driverId = document.getElementById('editDriverId').value;
+            var fullName = document.getElementById('editFullName').value.trim();
+            var phone = document.getElementById('editPhone').value.trim();
+            if (!fullName || !phone) { alert('Nombre y teléfono obligatorios.'); return; }
+            var result = await supabaseClient.from('drivers').update({
+                full_name: fullName, phone: phone,
+                vehicle_model: document.getElementById('editVehicleModel').value.trim(),
+                vehicle_plate: document.getElementById('editVehiclePlate').value.trim(),
+                home_address: document.getElementById('editHomeAddress').value.trim(),
+                notes: document.getElementById('editNotes').value.trim(),
+                is_active: document.getElementById('editIsActive').checked,
+                profile_completed: document.getElementById('editProfileCompleted').checked
+            }).eq('id', driverId);
+            if (result.error) { alert('Error: ' + result.error.message); return; }
+            alert('Actualizado');
             bootstrap.Modal.getInstance(document.getElementById('editDriverModal')).hide();
-            // Recargar lista y detalles
             loadDrivers();
-            if (document.getElementById('section-conductores').style.display === 'block') {
-                // Si estamos en la sección de conductores, recargamos
-            }
         }
 
-        // ---------- Viajes ----------
         async function loadRides() {
-            const filter = document.getElementById('rideFilter').value;
-            let query = supabaseClient.from('rides')
-                .select(`*, passengers(full_name, phone), drivers(full_name, phone)`)
-                .order('created_at', { ascending: false })
-                .limit(50);
+            var filter = document.getElementById('rideFilter').value;
+            var query = supabaseClient.from('rides').select('*, passengers(full_name, phone), drivers(full_name, phone)').order('created_at', { ascending: false }).limit(50);
             if (filter !== 'todos') query = query.eq('status', filter);
-            const { data: rides, error } = await query;
-            if (error) { console.error('Error loading rides:', error); return; }
-            
-            const grid = document.getElementById('ridesGrid');
+            var result = await query;
+            if (result.error) return;
+            var rides = result.data || [];
+            var grid = document.getElementById('ridesGrid');
             grid.innerHTML = '';
-            if (!rides || rides.length === 0) {
-                grid.innerHTML = `<div class="data-card w-100 text-center py-5"><i class="fas fa-road mb-3 text-secondary-custom" style="font-size:35px;"></i><h6 class="text-white">Sin viajes</h6></div>`;
-                return;
-            }
-
+            if (rides.length === 0) { grid.innerHTML = '<div class="data-card w-100 text-center py-5"><h6 class="text-white">Sin viajes</h6></div>'; return; }
             await loadAvailableDrivers();
-
-            rides.forEach(ride => {
-                let badgeClass = 'badge-neutral';
-                if(ride.status === 'pendiente') badgeClass = 'badge-pendiente';
-                else if(ride.status === 'aceptado') badgeClass = 'badge-aprobada';
-                else if(ride.status === 'en_curso') badgeClass = 'badge-info';
-                else if(ride.status === 'completado') badgeClass = 'badge-aprobada';
-                else if(ride.status === 'cancelado' || ride.status === 'rechazado') badgeClass = 'badge-rechazada';
-
-                const passengerName = ride.passengers?.full_name || 'Pasajero';
-                const passengerPhone = ride.passengers?.phone || '';
-                const driverName = ride.drivers?.full_name || 'Sin Asignar';
-                const driverPhone = ride.drivers?.phone || '';
-
-                let assignHtml = '';
+            for (var i = 0; i < rides.length; i++) {
+                var ride = rides[i];
+                var badgeClass = 'badge-neutral';
+                if (ride.status === 'pendiente') badgeClass = 'badge-pendiente';
+                else if (ride.status === 'aceptado' || ride.status === 'completado') badgeClass = 'badge-aprobada';
+                else if (ride.status === 'en_curso') badgeClass = 'badge-info';
+                else if (ride.status === 'cancelado' || ride.status === 'rechazado') badgeClass = 'badge-rechazada';
+                var passengerName = ride.passengers ? (ride.passengers.full_name || 'Pasajero') : 'Pasajero';
+                var driverName = ride.drivers ? (ride.drivers.full_name || 'Sin asignar') : 'Sin asignar';
+                var assignHtml = '';
                 if (ride.status === 'pendiente' && !ride.driver_id) {
-                    assignHtml = `
-                        <div class="assign-panel">
-                            <label class="text-secondary-custom mb-1" style="font-size:11px;">Asignar conductor</label>
-                            <div class="d-flex gap-2">
-                                <select class="form-select form-select-sm" id="driverSelect-${ride.id}">
-                                    <option value="">Seleccionar...</option>
-                                    ${availableDriversCache.map(d => `<option value="${d.id}">${d.full_name} ${d.is_online ? '(🟢 En línea)' : '(🔴 Off)'}</option>`).join('')}
-                                </select>
-                                <button class="btn btn-primary btn-sm" onclick="assignDriver('${ride.id}')">Asignar</button>
-                            </div>
-                        </div>
-                    `;
+                    var options = '<option value="">Seleccionar...</option>';
+                    for (var j = 0; j < availableDriversCache.length; j++) {
+                        var ad = availableDriversCache[j];
+                        options += '<option value="' + ad.id + '">' + ad.full_name + (ad.is_online ? ' 🟢' : ' 🔴') + '</option>';
+                    }
+                    assignHtml = '<div class="assign-panel"><select class="form-select form-select-sm" id="driverSelect-' + ride.id + '">' + options + '</select><button class="btn btn-primary btn-sm mt-1" onclick="assignDriver(\'' + ride.id + '\')">Asignar</button></div>';
                 }
-
-                grid.innerHTML += `
-                    <div class="data-card p-3">
-                        <div class="data-card-header border-0 pb-0">
-                            <h4 class="data-card-title">Viaje #${ride.id.slice(0,5).toUpperCase()}</h4>
-                            <span class="badge-custom ${badgeClass}">${ride.status.replace('_',' ')}</span>
-                        </div>
-                        <hr style="border-color: var(--border-color); margin: 8px 0;">
-                        <div class="info-row"><i class="fas fa-user text-accent"></i> <span><strong>${passengerName}</strong> ${passengerPhone ? '· '+passengerPhone : ''}</span></div>
-                        <div class="info-row"><i class="fas fa-motorcycle text-info"></i> <span><strong>${driverName}</strong> ${driverPhone ? '· '+driverPhone : ''}</span></div>
-                        <div class="info-row"><i class="fas fa-map-marker-alt text-danger"></i> <span class="text-truncate">${ride.origin_address || 'Origen desconocido'}</span></div>
-                        <div class="info-row"><i class="fas fa-flag-checkered text-success"></i> <span class="text-truncate">${ride.destination_address || 'Destino desconocido'}</span></div>
-                        <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2 border-secondary">
-                            <span class="text-secondary-custom" style="font-size:11px;">TARIFA</span>
-                            <strong class="text-accent fs-5">Bs ${parseFloat(ride.price || 0).toFixed(2)}</strong>
-                        </div>
-                        ${assignHtml}
-                    </div>
-                `;
-            });
+                grid.innerHTML += '<div class="data-card p-3"><div class="data-card-header border-0 pb-0"><h4 class="data-card-title">#' + ride.id.slice(0,5).toUpperCase() + '</h4><span class="badge-custom ' + badgeClass + '">' + ride.status.replace('_',' ') + '</span></div><hr style="border-color:var(--border-color);margin:8px 0;"><div class="info-row"><i class="fas fa-user"></i> <span>' + passengerName + '</span></div><div class="info-row"><i class="fas fa-motorcycle"></i> <span>' + driverName + '</span></div><div class="info-row"><i class="fas fa-map-marker-alt text-danger"></i> <span class="text-truncate">' + (ride.origin_address || 'Origen') + '</span></div><div class="d-flex justify-content-between mt-2 pt-2 border-top" style="border-color:var(--border-color)!important;"><span class="text-secondary-custom" style="font-size:11px;">TARIFA</span><strong class="text-accent fs-5">Bs ' + parseFloat(ride.price || 0).toFixed(2) + '</strong></div>' + assignHtml + '</div>';
+            }
         }
-
         async function loadAvailableDrivers() {
             try {
-                const { data: drivers, error } = await supabaseClient
-                    .from('drivers')
-                    .select('id, full_name')
-                    .eq('is_active', true);
-                if (error) throw error;
-
-                const { data: onlineStatus } = await supabaseClient
-                    .from('driver_status')
-                    .select('driver_id')
-                    .eq('is_online', true);
-                
-                const onlineIds = new Set((onlineStatus || []).map(s => s.driver_id));
-                
-                availableDriversCache = (drivers || []).map(d => ({
-                    ...d,
-                    is_online: onlineIds.has(d.id)
-                }));
-            } catch (err) {
-                console.error('Error loading drivers:', err);
+                var dResult = await supabaseClient.from('drivers').select('id, full_name').eq('is_active', true);
+                var drivers = dResult.data || [];
+                var sResult = await supabaseClient.from('driver_status').select('driver_id').eq('is_online', true);
+                var onlineIds = {};
+                var statuses = sResult.data || [];
+                for (var i = 0; i < statuses.length; i++) { onlineIds[statuses[i].driver_id] = true; }
                 availableDriversCache = [];
-            }
+                for (var j = 0; j < drivers.length; j++) {
+                    availableDriversCache.push({ id: drivers[j].id, full_name: drivers[j].full_name, is_online: onlineIds[drivers[j].id] ? true : false });
+                }
+            } catch (err) { availableDriversCache = []; }
         }
-
         async function assignDriver(rideId) {
-            const select = document.getElementById(`driverSelect-${rideId}`);
+            var select = document.getElementById('driverSelect-' + rideId);
             if (!select) return;
-            const driverId = select.value;
+            var driverId = select.value;
             if (!driverId) return alert('Selecciona un conductor');
-            
-            const { data, error } = await supabaseClient
-                .from('rides')
-                .update({ 
-                    driver_id: driverId,
-                    status: 'aceptado'
-                })
-                .eq('id', rideId)
-                .select();
-                
-            if (error) return alert('Error al asignar: ' + error.message);
-            
-            if (!data || data.length === 0) {
-                return alert('No se pudo actualizar el viaje. Verifica los permisos RLS en Supabase.');
-            }
-            
-            alert('Conductor asignado correctamente');
-            loadRides();
+            var result = await supabaseClient.from('rides').update({ driver_id: driverId, status: 'aceptado' }).eq('id', rideId).select();
+            if (result.error) return alert('Error: ' + result.error.message);
+            alert('Conductor asignado');
+            loadRides(); refreshDispatchData();
         }
 
-        // ---------- Billetera ----------
         async function loadWalletDrivers() {
-            const { data: drivers } = await supabaseClient.from('drivers').select('id, full_name');
-            const select = document.getElementById('walletDriverSelect');
+            var result = await supabaseClient.from('drivers').select('id, full_name');
+            var select = document.getElementById('walletDriverSelect');
             select.innerHTML = '<option value="">Selecciona conductor</option>';
-            if (drivers) drivers.forEach(d => {
-                select.innerHTML += `<option value="${d.id}">${d.full_name}</option>`;
-            });
+            var drivers = result.data || [];
+            for (var i = 0; i < drivers.length; i++) { select.innerHTML += '<option value="' + drivers[i].id + '">' + drivers[i].full_name + '</option>'; }
         }
-
         async function rechargeWallet() {
-            const driverId = document.getElementById('walletDriverSelect').value;
-            const amount = parseFloat(document.getElementById('walletAmount').value);
-            const description = document.getElementById('walletDescription').value.trim();
-            if (!driverId || !amount || amount <= 0) return alert('Completa los campos correctamente');
-            const { error } = await supabaseClient.from('wallet_transactions').insert({
-                driver_id: driverId,
-                amount: amount,
-                type: 'recarga',
-                description: description || 'Recarga manual',
-                created_by: currentAdmin.id
-            });
-            if (error) return alert('Error: ' + error.message);
-            const { data: wallet } = await supabaseClient.from('wallets').select('balance').eq('driver_id', driverId).maybeSingle();
-            const newBalance = (wallet?.balance || 0) + amount;
-            await supabaseClient.from('wallets').upsert({ driver_id: driverId, balance: newBalance, updated_at: new Date().toISOString() });
+            var driverId = document.getElementById('walletDriverSelect').value;
+            var amount = parseFloat(document.getElementById('walletAmount').value);
+            var description = document.getElementById('walletDescription').value.trim();
+            if (!driverId || !amount || amount <= 0) return alert('Completa los campos');
+            await supabaseClient.from('wallet_transactions').insert({ driver_id: driverId, amount: amount, type: 'recarga', description: description || 'Recarga manual', created_by: currentAdmin.id });
+            var walletResult = await supabaseClient.from('wallets').select('balance').eq('driver_id', driverId).maybeSingle();
+            var currentBal = walletResult.data ? walletResult.data.balance : 0;
+            await supabaseClient.from('wallets').upsert({ driver_id: driverId, balance: currentBal + amount, updated_at: new Date().toISOString() });
             alert('Recarga realizada');
             loadTransactions();
         }
-
         async function loadTransactions() {
-            const { data, error } = await supabaseClient
-                .from('wallet_transactions')
-                .select(`*, drivers(full_name)`)
-                .order('created_at', { ascending: false })
-                .limit(50);
-            const tbody = document.getElementById('transactionsTable');
+            var result = await supabaseClient.from('wallet_transactions').select('*, drivers(full_name)').order('created_at', { ascending: false }).limit(50);
+            var tbody = document.getElementById('transactionsTable');
             tbody.innerHTML = '';
-            if (data) data.forEach(tx => {
-                const typeBadge = tx.type === 'recarga' ? 'badge-aprobada' : (tx.type === 'retiro' ? 'badge-rechazada' : 'badge-info');
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${tx.drivers?.full_name || 'Desconocido'}</td>
-                        <td class="${tx.amount >= 0 ? 'text-success' : 'text-danger'}">Bs ${parseFloat(tx.amount).toFixed(2)}</td>
-                        <td><span class="badge-custom ${typeBadge}">${tx.type}</span></td>
-                        <td>${tx.description || ''}</td>
-                        <td>${new Date(tx.created_at).toLocaleString()}</td>
-                    </tr>
-                `;
-            });
+            var txs = result.data || [];
+            for (var i = 0; i < txs.length; i++) {
+                var tx = txs[i];
+                tbody.innerHTML += '<tr><td>' + (tx.drivers ? tx.drivers.full_name : '?') + '</td><td class="' + (tx.amount >= 0 ? 'text-success' : 'text-danger') + '">Bs ' + parseFloat(tx.amount).toFixed(2) + '</td><td>' + tx.type + '</td><td>' + (tx.description || '') + '</td><td>' + new Date(tx.created_at).toLocaleString() + '</td></tr>';
+            }
         }
 
-        // ---------- Central ----------
         async function loadCentralTargets() {
-            const { data: drivers } = await supabaseClient.from('drivers').select('id, full_name');
-            const select = document.getElementById('centralTarget');
+            var result = await supabaseClient.from('drivers').select('id, full_name');
+            var select = document.getElementById('centralTarget');
             select.innerHTML = '<option value="all">Toda la Flota (Global)</option>';
-            if (drivers) drivers.forEach(d => {
-                select.innerHTML += `<option value="${d.id}">${d.full_name}</option>`;
-            });
+            var drivers = result.data || [];
+            for (var i = 0; i < drivers.length; i++) { select.innerHTML += '<option value="' + drivers[i].id + '">' + drivers[i].full_name + '</option>'; }
         }
-
         async function sendCentralMessage() {
-            const target = document.getElementById('centralTarget').value;
-            const message = document.getElementById('centralMessage').value.trim();
+            var target = document.getElementById('centralTarget').value;
+            var message = document.getElementById('centralMessage').value.trim();
             if (!message) return alert('Escribe un mensaje');
-            const insertData = {
-                message: message,
-                is_read: false,
-                created_by: currentAdmin.id
-            };
+            var insertData = { message: message, is_read: false, created_by: currentAdmin.id };
             if (target !== 'all') insertData.driver_id = target;
-            const { error } = await supabaseClient.from('central_messages').insert(insertData);
-            if (error) return alert('Error: ' + error.message);
+            var result = await supabaseClient.from('central_messages').insert(insertData);
+            if (result.error) return alert('Error: ' + result.error.message);
             document.getElementById('centralMessage').value = '';
             loadCentralMessages();
         }
-
         async function loadCentralMessages() {
-            const { data, error } = await supabaseClient
-                .from('central_messages')
-                .select(`*, drivers(full_name)`)
-                .order('created_at', { ascending: false })
-                .limit(50);
-            const tbody = document.getElementById('centralMessagesTable');
+            var result = await supabaseClient.from('central_messages').select('*, drivers(full_name)').order('created_at', { ascending: false }).limit(50);
+            var tbody = document.getElementById('centralMessagesTable');
             tbody.innerHTML = '';
-            if (data) data.forEach(msg => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${msg.driver_id ? msg.drivers?.full_name : 'Global'}</td>
-                        <td>${msg.message}</td>
-                        <td>${new Date(msg.created_at).toLocaleString()}</td>
-                    </tr>
-                `;
-            });
+            var msgs = result.data || [];
+            for (var i = 0; i < msgs.length; i++) {
+                var msg = msgs[i];
+                tbody.innerHTML += '<tr><td>' + (msg.driver_id ? (msg.drivers ? msg.drivers.full_name : 'Conductor') : 'Global') + '</td><td>' + msg.message + '</td><td>' + new Date(msg.created_at).toLocaleString() + '</td></tr>';
+            }
         }
 
         window.addEventListener('load', initApp);
