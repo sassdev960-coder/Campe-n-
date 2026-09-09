@@ -1675,14 +1675,23 @@
     }
 
     // ========== MAP MATCHING / SNAP TO ROAD ==========
+       // ========== ANCLAR A LA CARRETERA (USANDO DIRECTIONS API) ==========
     async function snapToRoad(lat, lng) {
       console.log('🚗 [SNAP TO ROAD] Iniciando con coordenadas:', { lat, lng });
 
-      const url = `https://api.mapbox.com/matching/v5/mapbox/driving/${lng},${lat}?access_token=${mapboxgl.accessToken}&geometries=geojson&radiuses=50`;
+      // Estrategia: Creamos un segundo punto a ~3 metros al norte para que Mapbox
+      // nos devuelva el punto más cercano en la red de carreteras.
+      const offsetMeters = 3;
+      const degreesPerMeter = 1 / 111111; // 1 grado ≈ 111,111 metros
+      const offsetLat = lat + (offsetMeters * degreesPerMeter);
+
+      // Usamos Directions API en lugar de Map Matching (que requiere mínimo 2 puntos)
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${lng},${lat};${lng},${offsetLat}?access_token=${mapboxgl.accessToken}&geometries=geojson&steps=false&overview=false`;
+      
       console.log('🔗 [SNAP TO ROAD] URL:', url);
 
       try {
-        console.log('📡 [SNAP TO ROAD] Enviando petición a Mapbox...');
+        console.log('📡 [SNAP TO ROAD] Enviando petición a Mapbox Directions...');
         const response = await fetch(url);
         console.log('📡 [SNAP TO ROAD] Status HTTP:', response.status, response.statusText);
 
@@ -1701,23 +1710,25 @@
           return { lat, lng, success: false, reason: data.code };
         }
 
-        if (data.matchings && data.matchings.length > 0) {
-          const snappedCoords = data.matchings[0].geometry.coordinates[0];
-          const snappedLat = snappedCoords[1];
-          const snappedLng = snappedCoords[0];
+        // ¡Aquí está la magia! Los 'waypoints' contienen las coordenadas YA ANCLADAS a la carretera
+        if (data.waypoints && data.waypoints.length > 0) {
+          const snappedLocation = data.waypoints[0].location; // [lng, lat]
+          const snappedLng = snappedLocation[0];
+          const snappedLat = snappedLocation[1];
 
           const distanceMeters = calculateDistance(lat, lng, snappedLat, snappedLng) * 1000;
 
           console.log('✅ [SNAP TO ROAD] ¡ÉXITO! Coordenada anclada a la vía:', {
             original: { lat, lng },
             snapped: { lat: snappedLat, lng: snappedLng },
-            distancia_metros: distanceMeters.toFixed(2)
+            distancia_metros: distanceMeters.toFixed(2),
+            nombre_via: data.waypoints[0].name || 'Desconocida'
           });
 
           return { lat: snappedLat, lng: snappedLng, success: true };
         } else {
-          console.warn('⚠️ [SNAP TO ROAD] No se encontraron vías cercanas. Usando coordenada cruda.');
-          return { lat, lng, success: false, reason: 'No matchings found' };
+          console.warn('⚠️ [SNAP TO ROAD] Sin waypoints. Usando coordenada cruda.');
+          return { lat, lng, success: false, reason: 'No waypoints found' };
         }
       } catch (error) {
         console.error('❌ [SNAP TO ROAD] Error de red o fetch:', error);
