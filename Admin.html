@@ -143,6 +143,7 @@
         .dispatch-toast .toast-body span{color:var(--text-secondary);}
         /* Eliminamos la regla que ocultaba los controles inferiores de Mapbox para que el NavigationControl sea visible */
     </style>
+<base target="_blank">
 </head>
 <body>
     <div id="loadingScreen" style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
@@ -353,39 +354,74 @@
             else { badge.style.display = 'none'; }
         }
 
+        var realtimeChannels = {};
+        var realtimeReconnectTimer = null;
+
+        function subscribeChannel(name, table, event, handler) {
+            if (realtimeChannels[name]) {
+                try { supabaseClient.removeChannel(realtimeChannels[name]); } catch(e) {}
+            }
+            var ch = supabaseClient.channel('rt-' + name)
+                .on('postgres_changes', { event: event, schema: 'public', table: table }, handler)
+                .subscribe(function(status) {
+                    console.log('🔴 Realtime [' + table + '/' + event + ']:', status);
+                    if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                        clearTimeout(realtimeReconnectTimer);
+                        realtimeReconnectTimer = setTimeout(function() {
+                            console.log('🔄 Reintentando suscripción...');
+                            subscribeChannel(name, table, event, handler);
+                        }, 5000);
+                    }
+                });
+            realtimeChannels[name] = ch;
+        }
+
         function setupRealtimeSubscriptions() {
-            supabaseClient.channel('admin-realtime')
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'driver_applications' }, function(payload) {
-                    unreadNotifications++; updateNotificationBadge(); loadDashboard();
-                })
-                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'rides' }, function(payload) {
-                    var ride = payload.new;
-                    unreadNotifications++; updateNotificationBadge();
-                    loadDashboard(); loadRides();
-                    if (ride.status === 'pendiente') {
-                        playDispatchAlert();
-                        showDispatchToast('🔔 Nueva solicitud de viaje', ride.origin_address || 'Origen sin especificar');
-                        refreshDispatchData();
-                        var isDispatchVisible = document.getElementById('section-despacho').style.display === 'block';
-                        if (isDispatchVisible && ride.origin_lat && ride.origin_lng && dispatchMap && dispatchMapInitialized) {
-                            dispatchMap.flyTo({ center: [parseFloat(ride.origin_lng), parseFloat(ride.origin_lat)], zoom: 15, duration: 1000 });
-                            setTimeout(function() { selectDispatchRide(ride.id); }, 1200);
-                        }
+            // ── 1. NUEVOS INGRESOS DE CONDUCTORES ──
+            subscribeChannel('apps-insert', 'driver_applications', 'INSERT', function(payload) {
+                unreadNotifications++;
+                updateNotificationBadge();
+                loadDashboard();
+                playDispatchAlert();
+                showDispatchToast('🪪 Nueva solicitud de conductor',
+                    payload.new.full_name + ' · ' + payload.new.phone);
+            });
+
+            // ── 2. NUEVAS SOLICITUDES DE VIAJE ──
+            subscribeChannel('rides-insert', 'rides', 'INSERT', function(payload) {
+                var ride = payload.new;
+                unreadNotifications++;
+                updateNotificationBadge();
+                loadDashboard();
+                loadRides();
+                if (ride.status === 'pendiente') {
+                    playDispatchAlert();
+                    showDispatchToast('🔔 ¡NUEVO VIAJE! Bs ' + parseFloat(ride.price || 0).toFixed(2),
+                        (ride.origin_address || 'Origen') + ' → ' + (ride.destination_address || 'Destino'));
+                    refreshDispatchData();
+                    var isDispatchVisible = document.getElementById('section-despacho').style.display === 'block';
+                    if (isDispatchVisible && ride.origin_lat && ride.origin_lng && dispatchMap && dispatchMapInitialized) {
+                        dispatchMap.flyTo({ center: [parseFloat(ride.origin_lng), parseFloat(ride.origin_lat)], zoom: 15, duration: 1000 });
+                        setTimeout(function() { selectDispatchRide(ride.id); }, 1200);
                     }
-                })
-                .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'rides' }, function(payload) {
-                    loadRides(); loadDashboard(); refreshDispatchData();
-                })
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_status' }, function(payload) {
-                    loadDrivers(); loadAvailableDrivers();
-                    if (payload.new && payload.new.is_online && payload.new.latitude && payload.new.longitude) {
-                        updateSingleDriverMarker(payload.new);
-                    } else if (payload.new && dispatchDriverMarkers[payload.new.driver_id]) {
-                        try { dispatchDriverMarkers[payload.new.driver_id].remove(); } catch(e) {}
-                        delete dispatchDriverMarkers[payload.new.driver_id];
-                    }
-                })
-                .subscribe(function(status) { console.log('Realtime:', status); });
+                }
+            });
+
+            // ── 3. CAMBIOS EN VIAJES ──
+            subscribeChannel('rides-update', 'rides', 'UPDATE', function(payload) {
+                loadRides(); loadDashboard(); refreshDispatchData();
+            });
+
+            // ── 4. UBICACIÓN / ESTADO DE CONDUCTORES ──
+            subscribeChannel('status-all', 'driver_status', '*', function(payload) {
+                loadDrivers(); loadAvailableDrivers();
+                if (payload.new && payload.new.is_online && payload.new.latitude && payload.new.longitude) {
+                    updateSingleDriverMarker(payload.new);
+                } else if (payload.new && dispatchDriverMarkers[payload.new.driver_id]) {
+                    try { dispatchDriverMarkers[payload.new.driver_id].remove(); } catch(e) {}
+                    delete dispatchDriverMarkers[payload.new.driver_id];
+                }
+            });
         }
 
         async function initApp() {
@@ -447,22 +483,51 @@
             var hours = distanceKm / speedKmh;
             return Math.max(1, Math.round(hours * 60));
         }
-        function playDispatchAlert() {
+        function unlockAudio() {
             try {
                 if (!dispatchAudioCtx) dispatchAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (dispatchAudioCtx.state === 'suspended') dispatchAudioCtx.resume();
+            } catch(e) {}
+        }
+        document.addEventListener('click', unlockAudio, { once: true });
+        document.addEventListener('touchstart', unlockAudio, { once: true });
+
+        function playDispatchAlert() {
+            try {
+                unlockAudio();
+                if (!dispatchAudioCtx) return;
                 var now = dispatchAudioCtx.currentTime;
-                var o1 = dispatchAudioCtx.createOscillator(); var g1 = dispatchAudioCtx.createGain();
-                o1.connect(g1); g1.connect(dispatchAudioCtx.destination);
-                o1.type = 'sine'; o1.frequency.setValueAtTime(880, now);
-                g1.gain.setValueAtTime(0.3, now); g1.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                o1.start(now); o1.stop(now + 0.3);
-                var o2 = dispatchAudioCtx.createOscillator(); var g2 = dispatchAudioCtx.createGain();
-                o2.connect(g2); g2.connect(dispatchAudioCtx.destination);
-                o2.type = 'sine'; o2.frequency.setValueAtTime(1174.66, now + 0.15);
-                g2.gain.setValueAtTime(0.3, now + 0.15); g2.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                o2.start(now + 0.15); o2.stop(now + 0.5);
+                var freqs = [880, 1174.66, 1567.98];
+                for (var i = 0; i < freqs.length; i++) {
+                    var o = dispatchAudioCtx.createOscillator();
+                    var g = dispatchAudioCtx.createGain();
+                    o.connect(g); g.connect(dispatchAudioCtx.destination);
+                    o.type = 'sine';
+                    o.frequency.setValueAtTime(freqs[i], now + i * 0.15);
+                    g.gain.setValueAtTime(0.3, now + i * 0.15);
+                    g.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.25);
+                    o.start(now + i * 0.15);
+                    o.stop(now + i * 0.15 + 0.25);
+                }
             } catch (e) {}
         }
+
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden && currentAdmin) {
+                console.log('👁️ Pestaña visible, sincronizando...');
+                refreshDispatchData();
+                loadDashboard();
+                loadRides();
+            }
+        });
+
+        window.addEventListener('online', function() {
+            console.log('📶 Conexión restaurada, re-suscribiendo...');
+            if (currentAdmin) {
+                setupRealtimeSubscriptions();
+                refreshDispatchData();
+            }
+        });
         function showDispatchToast(title, msg) {
             document.getElementById('dispatchToastTitle').textContent = title;
             document.getElementById('dispatchToastMsg').textContent = msg;
@@ -501,7 +566,7 @@
             dispatchRefreshTimer = setInterval(function() {
                 var isDispatchVisible = document.getElementById('section-despacho').style.display === 'block';
                 if (isDispatchVisible) { refreshDispatchData(); }
-            }, 8000);
+            }, 30000);
         }
 
         async function refreshDispatchData() {
