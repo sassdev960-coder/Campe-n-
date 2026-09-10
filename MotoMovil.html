@@ -319,6 +319,22 @@
       transition: all 0.2s;
     }
 
+    .btn-confirm-map.show,
+    .btn-confirm-pickup.show {
+      animation: slideUpFade 0.3s ease-out;
+    }
+
+    @keyframes slideUpFade {
+      from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+    }
+
     .btn-confirm-map {
       bottom: calc(var(--nav-height) + var(--safe-bottom) + 230px);
       background: var(--primary);
@@ -385,6 +401,8 @@
       padding: 0.5rem 0;
       gap: 0.8rem;
       cursor: pointer;
+      position: relative;
+      transition: all 0.2s;
     }
 
     .input-row:first-child {
@@ -392,7 +410,20 @@
     }
 
     .input-row:active {
-      background: rgba(255,255,255,0.05);
+      background: rgba(255,122,0,0.1);
+      transform: scale(0.98);
+    }
+
+    /* Flecha indicadora de que es clickeable */
+    .input-row::after {
+      content: '›';
+      position: absolute;
+      right: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      font-weight: 300;
     }
 
     .dot-icon {
@@ -413,6 +444,7 @@
     .address-info {
       flex: 1;
       overflow: hidden;
+      padding-right: 20px;
     }
 
     .address-title {
@@ -422,6 +454,13 @@
       overflow: hidden;
       text-overflow: ellipsis;
       color: var(--text-dark);
+    }
+
+    /* Indicador de confirmado */
+    .address-title.confirmed::after {
+      content: ' ✓';
+      color: #00C853;
+      font-weight: bold;
     }
 
     .address-sub {
@@ -1232,7 +1271,7 @@
   <script>
     // ========== API KEYS ==========
     const GEOAPIFY_KEY = 'edb4019109d84d1c87bd40479c7de391';
-    mapboxgl.accessToken = 'pk.eyJ1IjoiYXJuZWx2emwiLCJhIjoiY21zd2p2bmc3MW0xODJ4b284d3Zld3g4ZiJ9.zYnczMSu1o0ZaWKdRIo-Ww';
+    mapboxgl.accessToken = 'pk.eyJ1IjoiYXJuZWx2ZiLCJhIjoiY21zd2p2bmc3MW0xODJ4b284d3Zld3g4ZiJ9.zYnczMSu1o0ZaWKdRIo-Ww';
 
     // ========== SUPABASE ==========
     const supabaseUrl = 'https://uwdojchfwmaczgdthtfr.supabase.co';
@@ -1338,6 +1377,14 @@
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
       const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
       return R * c;
+    }
+
+    function markAsConfirmed(element, isConfirmed) {
+      if (isConfirmed) {
+        element.classList.add('confirmed');
+      } else {
+        element.classList.remove('confirmed');
+      }
     }
 
     // ========== NAVEGACIÓN ==========
@@ -1818,6 +1865,7 @@
 
       displayDropoff.textContent = address;
       displayDropoffSub.textContent = 'Ubicación en mapa';
+      markAsConfirmed(displayDropoff, true);
     }
 
     async function calcularDistanciaRuta(origenLat, origenLng, destinoLat, destinoLng) {
@@ -1865,7 +1913,9 @@
       setCentralPinMode('pickup');
 
       btnConfirmMap.style.display = 'none';
+      btnConfirmMap.classList.remove('show');
       btnConfirmPickup.style.display = 'flex';
+      btnConfirmPickup.classList.add('show');
       mapInstruction.style.display = 'block';
 
       rideOptionsContainer.classList.add('hidden');
@@ -1886,7 +1936,9 @@
       setCentralPinMode('destination');
 
       btnConfirmPickup.style.display = 'none';
+      btnConfirmPickup.classList.remove('show');
       btnConfirmMap.style.display = 'flex';
+      btnConfirmMap.classList.add('show');
       mapInstruction.style.display = 'none';
 
       rideOptionsContainer.classList.add('hidden');
@@ -1999,7 +2051,7 @@
       }
     }
 
-    // ========== INICIALIZAR MAPA ==========
+    // ========== INICIALIZAR MAPA (ACTUALIZADO) ==========
     function initMap(lat, lng) {
       if (map) return;
 
@@ -2072,8 +2124,11 @@
           console.warn('⚠️ [MAPA] No se pudo disparar geolocate automáticamente:', e);
         }
 
-        if (!destLat && !isSelectingPickup) {
-          startDestinationSelectionMode();
+        // ✅ CAMBIO CLAVE: NO iniciar automáticamente en modo destino
+        // Dejar que el usuario decida qué seleccionar primero
+        if (!destLat && !isSelectingPickup && !snappedPickupLat) {
+          console.log('🗺️ [MAPA] Esperando selección del usuario');
+          // No hacer nada - el usuario puede tocar origen o destino
         }
       });
 
@@ -2108,9 +2163,22 @@
       searchTimer = setTimeout(() => performSearch(query), 500);
     });
 
+    // ========== CLICKS EN FILAS (ACTUALIZADO) ==========
     dropoffRow.addEventListener('click', () => {
-      console.log('🟠 [UI] Click en fila destino, abriendo buscador');
-      searchButton.click();
+      console.log('🟠 [UI] Click en fila destino');
+      
+      // Si ya hay un destino confirmado, permitir editarlo
+      if (destLat && destLng) {
+        console.log('🟠 [UI] Editando destino existente');
+        enableDestinationSelectionUI();
+        map.flyTo({
+          center: [destLng, destLat],
+          zoom: 17,
+          essential: true
+        });
+      } else {
+        searchButton.click();
+      }
     });
 
     pickupRow.addEventListener('click', () => {
@@ -2254,7 +2322,7 @@
       }
     }
 
-    // ========== CONFIRMAR ORIGEN ==========
+    // ========== CONFIRMAR ORIGEN (ACTUALIZADO) ==========
     btnConfirmPickup.addEventListener('click', async () => {
       console.log('✅ [ORIGEN] Usuario confirmó punto de partida');
 
@@ -2267,6 +2335,7 @@
 
       centerPin.style.display = 'none';
       btnConfirmPickup.style.display = 'none';
+      btnConfirmPickup.classList.remove('show');
       mapInstruction.style.display = 'none';
       pinTooltip.classList.remove('show');
       centerPin.classList.remove('pickup-mode');
@@ -2277,13 +2346,17 @@
       const address = await obtenerDireccion(snappedPickupLat, snappedPickupLng);
 
       displayPickup.textContent = address;
-      displayPickupSub.textContent = '✅ Punto de partida fijado en la vía';
+      displayPickupSub.textContent = '✅ Origen confirmado · Toca para cambiar';
+      markAsConfirmed(displayPickup, true);
 
       console.log('📝 [ORIGEN] Dirección de origen guardada:', address);
 
+      // ✅ NUEVO: Después de confirmar origen, ir automáticamente a destino
       if (!destLat || !destLng) {
-        console.log('🟠 [ORIGEN] No hay destino todavía, iniciando selección de destino');
-        startDestinationSelectionMode();
+        console.log('🟠 [ORIGEN] Ahora selecciona destino');
+        setTimeout(() => {
+          startDestinationSelectionMode();
+        }, 500);
       } else {
         console.log('💰 [ORIGEN] Destino ya existe, recalculando ruta final');
         displayDropoffSub.textContent = 'Recalculando ruta...';
@@ -2293,7 +2366,7 @@
       }
     });
 
-    // ========== CONFIRMAR DESTINO ==========
+    // ========== CONFIRMAR DESTINO (ACTUALIZADO) ==========
     btnConfirmMap.addEventListener('click', async () => {
       console.log('🟠 [DESTINO] Usuario confirmó destino');
 
@@ -2303,6 +2376,7 @@
 
       centerPin.style.display = 'none';
       btnConfirmMap.style.display = 'none';
+      btnConfirmMap.classList.remove('show');
       pinTooltip.classList.remove('show');
       centerPin.classList.remove('pickup-mode');
 
@@ -2329,15 +2403,21 @@
 
       const originAddress = await obtenerDireccion(originLat, originLng);
       displayPickup.textContent = originAddress;
-      displayPickupSub.textContent = snappedPickupLat ? '✅ Punto de partida fijado en la vía' : 'Ubicación actual ajustada';
+      displayPickupSub.textContent = '✅ Origen confirmado · Toca para cambiar';
+      markAsConfirmed(displayPickup, true);
+
+      // ✅ NUEVO: Marcar destino como confirmado
+      const destAddress = await obtenerDireccion(destLat, destLng);
+      displayDropoff.textContent = destAddress;
+      displayDropoffSub.textContent = '✅ Destino confirmado · Toca para cambiar';
+      markAsConfirmed(displayDropoff, true);
 
       rideOptionsContainer.classList.remove('hidden');
       btnRequestRide.classList.remove('hidden');
       cargoBox.style.display = 'block';
 
-      displayDropoffSub.textContent = 'Calculando ruta exacta...';
+      // Recalcular ruta final
       await updatePriceAndAddress(destLat, destLng, true);
-      displayDropoffSub.textContent = 'Ubicación en mapa';
     });
 
     // ========== PEDIR VIAJE ==========
@@ -2771,11 +2851,15 @@
 
       displayPickup.textContent = 'Mi ubicación actual';
       displayPickupSub.textContent = 'Obteniendo GPS...';
+      markAsConfirmed(displayPickup, false);
+
       displayDropoff.textContent = '¿A dónde vas?';
       displayDropoffSub.textContent = 'Toca para buscar destino en el mapa';
+      markAsConfirmed(displayDropoff, false);
 
       if (map) {
-        startDestinationSelectionMode();
+        console.log('🗺️ [RESET] Esperando selección del usuario');
+        // No iniciar automáticamente ningún modo
       }
     };
 
