@@ -212,10 +212,10 @@
       background: rgba(255,122,0,0.1);
     }
 
-    /* Pin central - AJUSTADO para mejor espaciado */
+    /* Pin central */
     .center-fixed-pin {
       position: absolute;
-      top: 42%; /* ✅ Antes 50%, ahora más arriba para separar del botón */
+      top: 42%;
       left: 50%;
       transform: translate(-50%, -100%);
       z-index: 1000;
@@ -254,11 +254,11 @@
       margin-top: 4px;
     }
 
-    /* Tooltip del pin - AJUSTADO con más margen */
+    /* Tooltip del pin */
     .pin-tooltip {
       position: absolute;
       bottom: 100%;
-      margin-bottom: 28px; /* ✅ Antes 22px, más espacio del pin */
+      margin-bottom: 28px;
       background: var(--white);
       color: var(--text-dark);
       padding: 0.7rem 1.1rem;
@@ -291,14 +291,13 @@
       text-align: center;
     }
 
-    /* Precio en tooltip - AJUSTADO */
     .pin-tooltip-price {
       font-weight: 800;
-      font-size: 0.85rem; /* ✅ Más pequeño para no competir con la dirección */
+      font-size: 0.85rem;
       transition: color 0.3s;
     }
 
-    /* Botones flotantes - AJUSTADOS para mejor espaciado */
+    /* ✅ BOTONES FLOTANTES CORREGIDOS */
     .btn-confirm-map,
     .btn-confirm-pickup {
       position: absolute;
@@ -310,8 +309,8 @@
       border-radius: 25px;
       font-weight: 700;
       font-size: 1rem;
-      box-shadow: var(--shadow-md);
-      z-index: 999;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      z-index: 1002; /* ✅ Por encima del bottom-sheet (1000) y bottom-nav (1001) */
       display: none;
       cursor: pointer;
       white-space: nowrap;
@@ -321,18 +320,25 @@
     }
 
     .btn-confirm-map {
-      bottom: 220px;
+      bottom: calc(var(--nav-height) + var(--safe-bottom) + 230px);
       background: var(--primary);
     }
 
     .btn-confirm-pickup {
-      bottom: 380px; /* ✅ Antes 280px, ahora más abajo (lejos del pin) */
+      bottom: calc(var(--nav-height) + var(--safe-bottom) + 160px); /* ✅ Dinámico */
       background: #00C853;
+      animation: pulse-green 2s ease-in-out infinite;
     }
 
-    .btn-confirm-pickup:active {
-      background: #009624;
-      transform: translateX(-50%) scale(0.98);
+    @keyframes pulse-green {
+      0%, 100% { box-shadow: 0 8px 24px rgba(0, 200, 83, 0.4); }
+      50%      { box-shadow: 0 8px 32px rgba(0, 200, 83, 0.75); }
+    }
+
+    .btn-confirm-pickup:active,
+    .btn-confirm-map:active {
+      transform: translateX(-50%) scale(0.97);
+      filter: brightness(0.92);
     }
 
     .map-instruction {
@@ -516,9 +522,7 @@
     }
 
     @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
+      to { transform: rotate(360deg); }
     }
 
     .driver-panel {
@@ -1228,7 +1232,7 @@
   <script>
     // ========== API KEYS ==========
     const GEOAPIFY_KEY = 'edb4019109d84d1c87bd40479c7de391';
-    mapboxgl.accessToken = 'pk.eyJ1IjoiYXJuZWx2emwiLCJhIjoiY21zd2p2bmc3MW0xODJ4b284d3Zld3g4ZiJ9.zYnczMSu1o0ZaWKdRIo-Ww';
+    mapboxgl.accessToken = 'pk.eyJ1IjoiYXJuZWx2ZiLCJhIjoiY21zd2p2bmc3MW0xODJ4b284d3Zld3g4ZiJ9.zYnczMSu1o0ZaWKdRIo-Ww';
 
     // ========== SUPABASE ==========
     const supabaseUrl = 'https://uwdojchfwmaczgdthtfr.supabase.co';
@@ -1677,11 +1681,10 @@
       }
     }
 
-    // ========== ANCLAR A LA CARRETERA (CON VALIDACIÓN) ==========
+    // ========== ANCLAR A LA CARRETERA ==========
     async function snapToRoad(lat, lng) {
       console.log('🚗 [SNAP TO ROAD] Iniciando con coordenadas:', { lat, lng });
 
-      // Offset muy pequeño (0.5 metros) para no empujar a otra calle
       const offsetMeters = 0.5;
       const degreesPerMeter = 1 / 111111;
       const offsetLat = lat + (offsetMeters * degreesPerMeter);
@@ -1717,8 +1720,6 @@
 
           console.log('📏 [SNAP TO ROAD] Distancia al punto anclado:', distanceMeters.toFixed(2), 'm');
 
-          // ✅ VALIDACIÓN CRÍTICA: Si el punto anclado está a más de 30 metros,
-          // significa que Mapbox se fue a la calle equivocada. Usamos el punto original.
           if (distanceMeters > 30) {
             console.warn(`⚠️ [SNAP TO ROAD] Punto anclado DEMASIADO LEJOS (${distanceMeters.toFixed(2)}m). ` +
                         `Probablemente se fue a otra calle. Usando coordenada original.`);
@@ -1932,7 +1933,7 @@
 
       pinTooltip.classList.add('show');
       pinTooltipAddress.textContent = 'Buscando calle cercana...';
-      pinTooltipPrice.textContent = ''; // ✅ Ocultar precio durante selección
+      pinTooltipPrice.textContent = '';
       pinTooltipPrice.style.visibility = 'hidden';
 
       const snapped = await snapToRoad(lat, lng);
@@ -1951,7 +1952,6 @@
 
       pinTooltipAddress.textContent = address;
       
-      // ✅ Mostrar mensaje según el éxito del anclaje
       if (snapped.success) {
         pinTooltipPrice.textContent = '📍 ' + (snapped.streetName || 'En la vía');
         pinTooltipPrice.style.color = '#00C853';
@@ -1964,10 +1964,9 @@
 
       updateTempPickupMarker(snappedPickupLat, snappedPickupLng);
 
-      // ✅ NO recalcular precio aquí si el destino está muy cerca (evita el Bs 4.00 molesto)
       if (destLat && destLng) {
         const distance = calculateDistance(snappedPickupLat, snappedPickupLng, destLat, destLng);
-        if (distance > 0.05) { // Solo recalcular si hay más de 50 metros reales
+        if (distance > 0.05) {
           console.log('💰 [ORIGEN] Recalculando precio...');
           updatePriceAndAddress(destLat, destLng, true);
         }
