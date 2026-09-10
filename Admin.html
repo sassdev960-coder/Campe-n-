@@ -5,19 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Moto Campeón · Centro de Control</title>
 
-  <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-  <!-- Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
@@ -51,64 +42,216 @@
       --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
       --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
       --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
-      --shadow-glow: 0 0 40px var(--primary-glow);
       --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html, body {
-      height: 100%;
-      overflow: hidden;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Inter', -apple-system, sans-serif;
       background: var(--bg-dark);
       color: var(--text-main);
       display: flex;
       flex-direction: column;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* Scrollbar elegante */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-    }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
 
-    /* ========== HEADER PREMIUM ========== */
+    /* ========== LOGIN ========== */
+    .login-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-dark);
+      z-index: 20000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.5s ease;
+    }
+
+    .login-overlay.hidden { opacity: 0; pointer-events: none; }
+
+    .login-container {
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+      animation: loginAppear 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes loginAppear {
+      from { opacity: 0; transform: translateY(30px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .login-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-xl);
+      padding: 40px 32px;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+    }
+
+    .login-logo { text-align: center; margin-bottom: 32px; }
+
+    .login-logo-icon {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: var(--radius-lg);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 32px var(--primary-glow);
+      animation: logoFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes logoFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    .login-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 4px; }
+    .login-title span { color: var(--primary); }
+
+    .login-subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .login-form { display: flex; flex-direction: column; gap: 16px; }
+
+    .input-group { position: relative; }
+
+    .input-group > i {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      transition: var(--transition);
+      z-index: 2;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 14px 48px;
+      background: var(--bg-hover);
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius-md);
+      color: var(--text-main);
+      font-size: 0.95rem;
+      font-family: 'Inter', sans-serif;
+      transition: var(--transition);
+      outline: none;
+    }
+
+    .input-group input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(255, 122, 0, 0.1);
+    }
+
+    .input-group input:focus ~ i { color: var(--primary); }
+
+    .toggle-password {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      z-index: 2;
+    }
+
+    .toggle-password:hover { color: var(--primary); }
+
+    .login-btn {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border: none;
+      border-radius: var(--radius-md);
+      color: white;
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 8px;
+      box-shadow: 0 4px 20px var(--primary-glow);
+    }
+
+    .login-btn:hover { transform: translateY(-2px); }
+    .login-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .login-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--red);
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      font-size: 0.85rem;
+      font-weight: 500;
+      display: none;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .login-error.show { display: flex; animation: shake 0.4s ease; }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+
+    .login-footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* ========== HEADER ========== */
     .admin-header {
       height: var(--header-height);
-      background: linear-gradient(180deg, rgba(24, 24, 27, 0.95), rgba(24, 24, 27, 0.8));
+      background: linear-gradient(180deg, rgba(24,24,27,0.95), rgba(24,24,27,0.8));
       backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border-light);
       display: flex;
       align-items: center;
       padding: 0 24px;
-      gap: 24px;
+      gap: 20px;
       flex-shrink: 0;
       z-index: 1000;
-      position: relative;
     }
 
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 800;
-      font-size: 1.25rem;
-      letter-spacing: -0.5px;
-    }
+    .logo { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 1.2rem; }
 
     .logo-icon {
       width: 42px;
@@ -120,37 +263,13 @@
       justify-content: center;
       font-size: 1.3rem;
       box-shadow: 0 4px 20px var(--primary-glow);
-      animation: logoFloat 3s ease-in-out infinite;
     }
 
-    @keyframes logoFloat {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-3px); }
-    }
-
-    .logo-text {
-      display: flex;
-      flex-direction: column;
-      line-height: 1.1;
-    }
-
+    .logo-text { display: flex; flex-direction: column; line-height: 1.1; }
     .logo-text span { color: var(--primary); }
+    .logo-subtitle { font-size: 0.6rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; }
 
-    .logo-subtitle {
-      font-size: 0.65rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-    }
-
-    /* Stats en header */
-    .header-stats {
-      display: flex;
-      gap: 12px;
-      margin-left: auto;
-      align-items: center;
-    }
+    .header-stats { display: flex; gap: 12px; margin-left: auto; align-items: center; }
 
     .stat-chip {
       display: flex;
@@ -164,31 +283,16 @@
       font-weight: 600;
       border: 1px solid var(--border-light);
       transition: var(--transition);
-      cursor: default;
     }
 
-    .stat-chip:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
-    }
-
+    .stat-chip:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
     .stat-chip i { font-size: 0.9rem; }
     .stat-chip.online i { color: var(--green); }
     .stat-chip.rides i { color: var(--primary); }
     .stat-chip.pending i { color: var(--yellow); }
 
-    .stat-value {
-      font-size: 1.1rem;
-      font-weight: 800;
-      min-width: 20px;
-      text-align: center;
-    }
-
-    .stat-label {
-      color: var(--text-muted);
-      font-weight: 500;
-      font-size: 0.8rem;
-    }
+    .stat-value { font-size: 1.1rem; font-weight: 800; min-width: 20px; text-align: center; }
+    .stat-label { color: var(--text-muted); font-weight: 500; font-size: 0.75rem; }
 
     .pulse-dot {
       width: 8px;
@@ -212,6 +316,52 @@
       100% { transform: scale(1.6); opacity: 0; }
     }
 
+    .admin-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 12px;
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
+    }
+
+    .admin-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--purple), #7C3AED);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .admin-name { font-size: 0.85rem; font-weight: 600; }
+
+    .logout-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      border-radius: var(--radius-lg);
+      color: var(--red);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: 'Inter', sans-serif;
+    }
+
+    .logout-btn:hover {
+      background: var(--red);
+      color: white;
+      transform: translateY(-2px);
+    }
+
     .connection-status {
       display: flex;
       align-items: center;
@@ -230,61 +380,25 @@
       border-radius: 50%;
       background: var(--green);
       box-shadow: 0 0 10px var(--green-glow);
-      transition: var(--transition);
     }
 
-    .connection-dot.offline {
-      background: var(--red);
-      box-shadow: 0 0 10px var(--red-glow);
-    }
+    .connection-dot.offline { background: var(--red); }
 
-    /* ========== LAYOUT PRINCIPAL ========== */
-    .admin-main {
-      flex: 1;
-      display: flex;
-      overflow: hidden;
-      position: relative;
-    }
+    /* ========== MAIN ========== */
+    .admin-main { flex: 1; display: flex; overflow: hidden; position: relative; }
 
-    /* ========== MAPA ========== */
-    .map-container {
-      flex: 1;
-      position: relative;
-      background: #0f0f10;
-    }
-
-    #admin-map {
-      width: 100%;
-      height: 100%;
-      z-index: 1;
-      background: #0f0f10;
-    }
-
-    /* Leaflet dark theme */
-    .leaflet-container {
-      background: #0f0f10;
-    }
+    .map-container { flex: 1; position: relative; background: #0f0f10; }
+    #admin-map { width: 100%; height: 100%; z-index: 1; background: #0f0f10; }
 
     .leaflet-popup-content-wrapper {
       background: var(--bg-card-solid);
       color: var(--text-main);
       border-radius: var(--radius-md);
       border: 1px solid var(--border-light);
-      box-shadow: var(--shadow-lg);
     }
 
-    .leaflet-popup-tip {
-      background: var(--bg-card-solid);
-    }
+    .leaflet-popup-tip { background: var(--bg-card-solid); }
 
-    .leaflet-popup-content {
-      margin: 12px 16px;
-      font-family: 'Inter', sans-serif;
-      font-size: 0.85rem;
-      line-height: 1.6;
-    }
-
-    /* Controles del mapa */
     .map-controls {
       position: absolute;
       top: 20px;
@@ -312,19 +426,9 @@
       box-shadow: var(--shadow-md);
     }
 
-    .map-control-btn:hover {
-      background: var(--bg-hover);
-      transform: scale(1.05);
-      border-color: var(--primary);
-    }
+    .map-control-btn:hover { background: var(--bg-hover); transform: scale(1.05); }
+    .map-control-btn.active { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
 
-    .map-control-btn.active {
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      border-color: transparent;
-      box-shadow: 0 4px 20px var(--primary-glow);
-    }
-
-    /* Leyenda del mapa */
     .map-legend {
       position: absolute;
       bottom: 24px;
@@ -347,51 +451,27 @@
       margin-bottom: 12px;
     }
 
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 0.8rem;
-      margin-bottom: 8px;
-      color: var(--text-secondary);
-    }
-
+    .legend-item { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; margin-bottom: 8px; color: var(--text-secondary); }
     .legend-item:last-child { margin-bottom: 0; }
 
-    .legend-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.9);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    }
-
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.9); }
     .legend-dot.driver { background: var(--green); box-shadow: 0 0 12px var(--green-glow); }
-    .legend-dot.passenger { background: var(--blue); box-shadow: 0 0 12px var(--blue-glow); }
     .legend-dot.pending { background: var(--yellow); box-shadow: 0 0 12px var(--yellow-glow); }
     .legend-dot.active-ride { background: var(--primary); box-shadow: 0 0 12px var(--primary-glow); }
 
-    /* ========== SIDEBAR PREMIUM ========== */
+    /* ========== SIDEBAR ========== */
     .admin-sidebar {
       width: 400px;
-      background: linear-gradient(180deg, rgba(24, 24, 27, 0.95), rgba(18, 18, 20, 0.98));
+      background: linear-gradient(180deg, rgba(24,24,27,0.95), rgba(18,18,20,0.98));
       backdrop-filter: blur(20px);
       border-left: 1px solid var(--border-light);
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
       overflow: hidden;
-      position: relative;
     }
 
-    /* Tabs */
-    .sidebar-tabs {
-      display: flex;
-      padding: 12px;
-      gap: 8px;
-      border-bottom: 1px solid var(--border-light);
-      flex-shrink: 0;
-    }
+    .sidebar-tabs { display: flex; padding: 12px; gap: 8px; border-bottom: 1px solid var(--border-light); }
 
     .sidebar-tab {
       flex: 1;
@@ -412,16 +492,8 @@
       font-family: 'Inter', sans-serif;
     }
 
-    .sidebar-tab:hover {
-      color: var(--text-main);
-      background: var(--bg-hover);
-    }
-
-    .sidebar-tab.active {
-      color: var(--primary);
-      background: rgba(255, 122, 0, 0.1);
-    }
-
+    .sidebar-tab:hover { color: var(--text-main); background: var(--bg-hover); }
+    .sidebar-tab.active { color: var(--primary); background: rgba(255, 122, 0, 0.1); }
     .sidebar-tab i { font-size: 1rem; }
 
     .tab-badge {
@@ -434,17 +506,9 @@
       padding: 2px 7px;
       border-radius: 10px;
       font-weight: 700;
-      box-shadow: 0 2px 8px var(--primary-glow);
     }
 
-    /* Contenido de tabs */
-    .sidebar-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-      scroll-behavior: smooth;
-    }
-
+    .sidebar-content { flex: 1; overflow-y: auto; padding: 16px; }
     .tab-panel { display: none; animation: fadeIn 0.3s ease; }
     .tab-panel.active { display: block; }
 
@@ -453,10 +517,47 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* ========== TARJETAS DE VIAJE PREMIUM ========== */
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      text-align: center;
+      transition: var(--transition);
+    }
+
+    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+    .stat-card-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .stat-card-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border-light); }
+
+    /* ========== RIDE CARDS ========== */
     .ride-card {
       background: var(--bg-card);
-      backdrop-filter: blur(10px);
       border: 1px solid var(--border-light);
       border-radius: var(--radius-lg);
       padding: 16px;
@@ -465,49 +566,29 @@
       transition: var(--transition);
       position: relative;
       overflow: hidden;
-      animation: slideInRight 0.4s ease;
     }
 
-    @keyframes slideInRight {
-      from { opacity: 0; transform: translateX(20px); }
-      to { opacity: 1; transform: translateX(0); }
-    }
-
-    .ride-card:hover {
-      transform: translateY(-3px) scale(1.01);
-      box-shadow: var(--shadow-lg);
-      border-color: rgba(255, 122, 0, 0.3);
-    }
+    .ride-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: rgba(255, 122, 0, 0.3); }
 
     .ride-card::before {
       content: '';
       position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
+      left: 0; top: 0; bottom: 0;
       width: 4px;
       background: var(--status-color, var(--text-muted));
-      box-shadow: 0 0 20px var(--status-color, transparent);
     }
 
     .ride-card.status-pendiente { --status-color: var(--yellow); }
     .ride-card.status-aceptado { --status-color: var(--blue); }
     .ride-card.status-en_curso { --status-color: var(--green); }
-    .ride-card.status-completado { --status-color: var(--text-muted); }
-    .ride-card.status-cancelado, .ride-card.status-rechazado { --status-color: var(--red); }
 
-    .ride-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 12px;
-    }
+    .ride-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
 
     .ride-id {
       font-size: 0.7rem;
       color: var(--text-muted);
-      font-family: 'SF Mono', 'Fira Code', monospace;
-      background: rgba(255, 255, 255, 0.05);
+      font-family: monospace;
+      background: rgba(255,255,255,0.05);
       padding: 4px 8px;
       border-radius: 6px;
     }
@@ -519,92 +600,21 @@
       border-radius: 20px;
       text-transform: uppercase;
       letter-spacing: 1px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .ride-status::before {
-      content: '';
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: currentColor;
-      animation: statusPulse 2s infinite;
-    }
-
-    @keyframes statusPulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
     }
 
     .ride-status.pendiente { background: rgba(245, 158, 11, 0.15); color: var(--yellow); }
     .ride-status.aceptado { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
     .ride-status.en_curso { background: rgba(16, 185, 129, 0.15); color: var(--green); }
-    .ride-status.completado { background: rgba(156, 163, 175, 0.15); color: var(--text-muted); }
-    .ride-status.cancelado, .ride-status.rechazado { background: rgba(239, 68, 68, 0.15); color: var(--red); }
 
-    .ride-route {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      margin-bottom: 12px;
-      position: relative;
-    }
+    .ride-route { margin-bottom: 12px; }
 
-    .route-point {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 0.85rem;
-      padding: 8px 0;
-      position: relative;
-    }
+    .route-point { display: flex; align-items: center; gap: 12px; font-size: 0.85rem; padding: 6px 0; }
 
-    .route-point:first-child { padding-top: 0; }
-    .route-point:last-child { padding-bottom: 0; }
+    .route-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .route-dot.origin { background: var(--green); box-shadow: 0 0 8px var(--green-glow); }
+    .route-dot.destination { background: var(--primary); box-shadow: 0 0 8px var(--primary-glow); }
 
-    .route-indicator {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0;
-      flex-shrink: 0;
-    }
-
-    .route-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      flex-shrink: 0;
-      position: relative;
-      z-index: 2;
-    }
-
-    .route-dot.origin {
-      background: var(--green);
-      box-shadow: 0 0 12px var(--green-glow);
-    }
-
-    .route-dot.destination {
-      background: var(--primary);
-      box-shadow: 0 0 12px var(--primary-glow);
-    }
-
-    .route-line {
-      width: 2px;
-      height: 20px;
-      background: linear-gradient(180deg, var(--green), var(--primary));
-      opacity: 0.5;
-    }
-
-    .route-text {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      flex: 1;
-      font-weight: 500;
-    }
+    .route-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; font-weight: 500; }
 
     .ride-footer {
       display: flex;
@@ -614,49 +624,12 @@
       border-top: 1px solid var(--border-light);
     }
 
-    .ride-price {
-      font-weight: 800;
-      color: var(--primary);
-      font-size: 1.2rem;
-      text-shadow: 0 0 20px var(--primary-glow);
-    }
+    .ride-price { font-weight: 800; color: var(--primary); font-size: 1.2rem; }
+    .ride-time { font-size: 0.75rem; color: var(--text-muted); }
 
-    .ride-time {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .ride-driver-info {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 12px;
-      padding: 10px 12px;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: var(--radius-sm);
-      font-size: 0.8rem;
-    }
-
-    .ride-driver-avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--green), #059669);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.7rem;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
-    /* ========== TARJETAS DE CONDUCTOR PREMIUM ========== */
+    /* ========== DRIVER CARDS ========== */
     .driver-card {
       background: var(--bg-card);
-      backdrop-filter: blur(10px);
       border: 1px solid var(--border-light);
       border-radius: var(--radius-lg);
       padding: 16px;
@@ -665,14 +638,9 @@
       align-items: center;
       gap: 14px;
       transition: var(--transition);
-      animation: slideInRight 0.4s ease;
     }
 
-    .driver-card:hover {
-      transform: translateX(-4px);
-      border-color: rgba(16, 185, 129, 0.3);
-      box-shadow: var(--shadow-md);
-    }
+    .driver-card:hover { transform: translateX(-4px); border-color: rgba(16, 185, 129, 0.3); }
 
     .driver-avatar-admin {
       width: 48px;
@@ -686,18 +654,9 @@
       font-size: 1.2rem;
       flex-shrink: 0;
       position: relative;
-      box-shadow: 0 4px 16px var(--green-glow);
-      transition: var(--transition);
     }
 
-    .driver-card:hover .driver-avatar-admin {
-      transform: scale(1.05);
-    }
-
-    .driver-avatar-admin.offline {
-      background: linear-gradient(135deg, #6B7280, #4B5563);
-      box-shadow: none;
-    }
+    .driver-avatar-admin.offline { background: linear-gradient(135deg, #6B7280, #4B5563); }
 
     .driver-status-dot {
       position: absolute;
@@ -708,49 +667,15 @@
       border-radius: 50%;
       background: var(--green);
       border: 3px solid var(--bg-card-solid);
-      box-shadow: 0 0 10px var(--green-glow);
     }
 
-    .driver-status-dot.offline {
-      background: #6B7280;
-      box-shadow: none;
-    }
+    .driver-status-dot.offline { background: #6B7280; }
 
-    .driver-info {
-      flex: 1;
-      min-width: 0;
-    }
+    .driver-info { flex: 1; min-width: 0; }
+    .driver-name-admin { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+    .driver-meta { font-size: 0.75rem; color: var(--text-muted); }
 
-    .driver-name-admin {
-      font-weight: 700;
-      font-size: 0.95rem;
-      margin-bottom: 4px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .driver-meta {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .driver-status-text {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .driver-status-text.online { color: var(--green); }
-    .driver-status-text.offline { color: var(--text-muted); }
-
-    .driver-actions-admin {
-      display: flex;
-      gap: 8px;
-    }
+    .driver-actions-admin { display: flex; gap: 8px; }
 
     .driver-action-btn {
       width: 36px;
@@ -761,34 +686,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.85rem;
       transition: var(--transition);
     }
 
-    .driver-action-btn.call {
-      background: rgba(16, 185, 129, 0.15);
-      color: var(--green);
-    }
+    .driver-action-btn.call { background: rgba(16, 185, 129, 0.15); color: var(--green); }
+    .driver-action-btn.locate { background: rgba(255, 122, 0, 0.15); color: var(--primary); }
+    .driver-action-btn:hover { transform: scale(1.1); }
 
-    .driver-action-btn.locate {
-      background: rgba(255, 122, 0, 0.15);
-      color: var(--primary);
-    }
-
-    .driver-action-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    /* ========== ACTIVIDAD PREMIUM ========== */
-    .activity-item {
-      display: flex;
-      gap: 14px;
-      padding: 14px 0;
-      border-bottom: 1px solid var(--border-light);
-      animation: fadeIn 0.3s ease;
-    }
-
+    /* ========== ACTIVITY ========== */
+    .activity-item { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border-light); }
     .activity-item:last-child { border-bottom: none; }
 
     .activity-icon {
@@ -798,59 +704,20 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.95rem;
       flex-shrink: 0;
-      transition: var(--transition);
-    }
-
-    .activity-item:hover .activity-icon {
-      transform: scale(1.1);
     }
 
     .activity-icon.ride { background: rgba(255, 122, 0, 0.15); color: var(--primary); }
     .activity-icon.driver { background: rgba(16, 185, 129, 0.15); color: var(--green); }
-    .activity-icon.alert { background: rgba(239, 68, 68, 0.15); color: var(--red); }
     .activity-icon.info { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
 
-    .activity-content {
-      flex: 1;
-      min-width: 0;
-    }
+    .activity-text { font-size: 0.85rem; margin-bottom: 4px; font-weight: 500; }
+    .activity-time { font-size: 0.7rem; color: var(--text-muted); }
 
-    .activity-text {
-      font-size: 0.85rem;
-      margin-bottom: 4px;
-      font-weight: 500;
-    }
+    .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+    .empty-state i { font-size: 3rem; margin-bottom: 16px; opacity: 0.2; display: block; }
 
-    .activity-time {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    /* ========== EMPTY STATE ========== */
-    .empty-state {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--text-muted);
-    }
-
-    .empty-state i {
-      font-size: 3.5rem;
-      margin-bottom: 16px;
-      opacity: 0.2;
-      display: block;
-    }
-
-    .empty-state p {
-      font-size: 0.9rem;
-      font-weight: 500;
-    }
-
-    /* ========== TOAST PREMIUM ========== */
+    /* ========== TOAST ========== */
     .toast-container {
       position: fixed;
       top: 90px;
@@ -867,7 +734,6 @@
       border-radius: var(--radius-lg);
       padding: 16px 20px;
       min-width: 320px;
-      max-width: 420px;
       box-shadow: var(--shadow-lg);
       animation: toastSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
       display: flex;
@@ -880,156 +746,26 @@
     .toast::before {
       content: '';
       position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
+      left: 0; top: 0; bottom: 0;
       width: 4px;
       background: var(--toast-color, var(--primary));
-      box-shadow: 0 0 20px var(--toast-color, var(--primary-glow));
     }
 
     .toast.success { --toast-color: var(--green); }
     .toast.warning { --toast-color: var(--yellow); }
     .toast.error { --toast-color: var(--red); }
-    .toast:not(.success):not(.warning):not(.error) { --toast-color: var(--primary); }
 
     @keyframes toastSlideIn {
       from { transform: translateX(120%); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
     }
 
-    .toast-icon {
-      font-size: 1.3rem;
-      color: var(--toast-color, var(--primary));
-    }
+    .toast-icon { font-size: 1.3rem; color: var(--toast-color, var(--primary)); }
+    .toast-title { font-weight: 700; font-size: 0.9rem; margin-bottom: 2px; }
+    .toast-message { font-size: 0.8rem; color: var(--text-secondary); }
 
-    .toast-content { flex: 1; }
-
-    .toast-title {
-      font-weight: 700;
-      font-size: 0.9rem;
-      margin-bottom: 2px;
-    }
-
-    .toast-message {
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-    }
-
-    /* ========== MODAL DETALLE ========== */
-    .modal-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(8px);
-      z-index: 5000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.3s ease;
-    }
-
-    .modal-overlay.active {
-      opacity: 1;
-      pointer-events: all;
-    }
-
-    .modal-content {
-      background: var(--bg-card-solid);
-      border: 1px solid var(--border-light);
-      border-radius: var(--radius-xl);
-      width: 90%;
-      max-width: 520px;
-      max-height: 85vh;
-      overflow-y: auto;
-      transform: translateY(30px) scale(0.95);
-      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-      box-shadow: var(--shadow-lg);
-    }
-
-    .modal-overlay.active .modal-content {
-      transform: translateY(0) scale(1);
-    }
-
-    .modal-header {
-      padding: 24px;
-      border-bottom: 1px solid var(--border-light);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .modal-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .modal-close {
-      background: var(--bg-hover);
-      border: none;
-      color: var(--text-secondary);
-      font-size: 1rem;
-      cursor: pointer;
-      width: 36px;
-      height: 36px;
-      border-radius: var(--radius-sm);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: var(--transition);
-    }
-
-    .modal-close:hover {
-      background: var(--red);
-      color: white;
-      transform: rotate(90deg);
-    }
-
-    .modal-body { padding: 24px; }
-
-    .detail-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 0;
-      border-bottom: 1px solid var(--border-light);
-      font-size: 0.9rem;
-    }
-
-    .detail-row:last-child { border-bottom: none; }
-
-    .detail-label {
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 500;
-    }
-
-    .detail-label i {
-      width: 20px;
-      color: var(--primary);
-    }
-
-    .detail-value {
-      font-weight: 600;
-      text-align: right;
-      max-width: 60%;
-    }
-
-    /* ========== MARCADORES CUSTOM PREMIUM ========== */
-    .custom-div-icon {
-      background: none;
-      border: none;
-    }
+    /* ========== MARKERS ========== */
+    .custom-div-icon { background: none; border: none; }
 
     .marker-wrapper {
       position: relative;
@@ -1053,31 +789,14 @@
       justify-content: center;
       font-size: 18px;
       color: white;
-      border: 3px solid rgba(255, 255, 255, 0.95);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      border: 3px solid rgba(255,255,255,0.95);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
       position: relative;
-      transition: var(--transition);
     }
 
-    .marker-circle.driver {
-      background: linear-gradient(135deg, var(--green), #059669);
-      box-shadow: 0 4px 20px var(--green-glow);
-    }
-
-    .marker-circle.passenger {
-      background: linear-gradient(135deg, var(--blue), #2563EB);
-      box-shadow: 0 4px 20px var(--blue-glow);
-    }
-
-    .marker-circle.pending {
-      background: linear-gradient(135deg, var(--yellow), #D97706);
-      box-shadow: 0 4px 20px var(--yellow-glow);
-    }
-
-    .marker-circle.active {
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      box-shadow: 0 4px 20px var(--primary-glow);
-    }
+    .marker-circle.driver { background: linear-gradient(135deg, var(--green), #059669); }
+    .marker-circle.pending { background: linear-gradient(135deg, var(--yellow), #D97706); }
+    .marker-circle.active { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
 
     .marker-circle.driver::after {
       content: '';
@@ -1091,53 +810,64 @@
 
     .marker-label {
       margin-top: 6px;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(10px);
+      background: rgba(0,0,0,0.85);
       color: white;
       font-size: 10px;
       font-weight: 700;
       padding: 4px 10px;
       border-radius: 12px;
       white-space: nowrap;
-      letter-spacing: 0.5px;
       text-transform: uppercase;
-      box-shadow: var(--shadow-sm);
     }
 
-    /* ========== RUTAS ANIMADAS ========== */
-    .route-line-animated {
-      stroke-dasharray: 12, 12;
-      animation: routeFlow 1.5s linear infinite;
+    /* ========== LOADING ========== */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg-dark);
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      transition: opacity 0.6s ease;
     }
 
-    @keyframes routeFlow {
-      from { stroke-dashoffset: 24; }
-      to { stroke-dashoffset: 0; }
+    .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+
+    .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border-light);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .btn-spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
     }
 
     /* ========== RESPONSIVE ========== */
     @media (max-width: 1000px) {
       .admin-sidebar {
         position: absolute;
-        right: 0;
-        top: 0;
-        bottom: 0;
+        right: 0; top: 0; bottom: 0;
         z-index: 999;
         transform: translateX(100%);
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: -20px 0 60px rgba(0, 0, 0, 0.5);
+        transition: transform 0.4s ease;
       }
-
-      .admin-sidebar.open {
-        transform: translateX(0);
-      }
-
-      .sidebar-toggle {
-        display: flex !important;
-      }
-
-      .header-stats .stat-label { display: none; }
-      .logo-subtitle { display: none; }
+      .admin-sidebar.open { transform: translateX(0); }
+      .sidebar-toggle { display: flex !important; }
+      .stat-label { display: none; }
     }
 
     .sidebar-toggle {
@@ -1156,154 +886,62 @@
       cursor: pointer;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 20px var(--primary-glow);
-      transition: var(--transition);
-    }
-
-    .sidebar-toggle:hover {
-      transform: scale(1.05);
-    }
-
-    /* Loading */
-    .loading-overlay {
-      position: fixed;
-      inset: 0;
-      background: var(--bg-dark);
-      z-index: 10000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 24px;
-      transition: opacity 0.6s ease;
-    }
-
-    .loading-overlay.hidden {
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .loading-logo {
-      font-size: 3rem;
-      animation: logoFloat 2s ease-in-out infinite;
-    }
-
-    .loading-spinner {
-      width: 48px;
-      height: 48px;
-      border: 3px solid var(--border-light);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .loading-text {
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-      font-weight: 500;
-    }
-
-    .loading-progress {
-      width: 200px;
-      height: 3px;
-      background: var(--border-light);
-      border-radius: 10px;
-      overflow: hidden;
-    }
-
-    .loading-progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--primary), var(--primary-dark));
-      border-radius: 10px;
-      animation: progress 2s ease-in-out infinite;
-    }
-
-    @keyframes progress {
-      0% { width: 0%; margin-left: 0; }
-      50% { width: 70%; margin-left: 15%; }
-      100% { width: 0%; margin-left: 100%; }
-    }
-
-    /* Stats cards en sidebar */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .stat-card {
-      background: var(--bg-card);
-      backdrop-filter: blur(10px);
-      border: 1px solid var(--border-light);
-      border-radius: var(--radius-md);
-      padding: 16px;
-      text-align: center;
-      transition: var(--transition);
-    }
-
-    .stat-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-md);
-    }
-
-    .stat-card-value {
-      font-size: 1.8rem;
-      font-weight: 800;
-      margin-bottom: 4px;
-      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-
-    .stat-card-label {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-weight: 600;
-    }
-
-    /* Section titles */
-    .section-title {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .section-title::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border-light);
     }
   </style>
 </head>
 <body>
 
-  <!-- Loading -->
-  <div class="loading-overlay" id="loading-overlay">
-    <div class="loading-logo">🏍️</div>
-    <div class="loading-spinner"></div>
-    <div class="loading-text">Conectando con la central...</div>
-    <div class="loading-progress">
-      <div class="loading-progress-bar"></div>
+  <!-- LOGIN -->
+  <div class="login-overlay" id="login-overlay">
+    <div class="login-container">
+      <div class="login-card">
+        <div class="login-logo">
+          <div class="login-logo-icon">🏍️</div>
+          <h1 class="login-title">Moto <span>Campeón</span></h1>
+          <p class="login-subtitle">Centro de Control</p>
+        </div>
+
+        <form class="login-form" id="login-form">
+          <div class="login-error" id="login-error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span id="login-error-text">Credenciales incorrectas</span>
+          </div>
+
+          <div class="input-group">
+            <input type="text" id="login-username" placeholder="Usuario" autocomplete="username" required>
+            <i class="fas fa-user"></i>
+          </div>
+
+          <div class="input-group">
+            <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password" required>
+            <i class="fas fa-lock"></i>
+            <button type="button" class="toggle-password" id="toggle-password">
+              <i class="fas fa-eye"></i>
+            </button>
+          </div>
+
+          <button type="submit" class="login-btn" id="login-btn">
+            <i class="fas fa-sign-in-alt"></i>
+            <span>Iniciar sesión</span>
+          </button>
+        </form>
+
+        <div class="login-footer">
+          <i class="fas fa-shield-alt"></i> Acceso restringido
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- Header -->
-  <header class="admin-header">
+  <!-- LOADING -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div style="font-size: 3rem;">🏍️</div>
+    <div class="loading-spinner"></div>
+    <div style="color: var(--text-secondary);">Conectando con la central...</div>
+  </div>
+
+  <!-- HEADER -->
+  <header class="admin-header" id="admin-header" style="display: none;">
     <div class="logo">
       <div class="logo-icon">🏍️</div>
       <div class="logo-text">
@@ -1329,6 +967,17 @@
         <span class="stat-value" id="stat-pending">0</span>
         <span class="stat-label">Pendientes</span>
       </div>
+
+      <div class="admin-info" id="admin-info">
+        <div class="admin-avatar" id="admin-avatar">A</div>
+        <span class="admin-name" id="admin-name">Admin</span>
+      </div>
+
+      <button class="logout-btn" id="logout-btn">
+        <i class="fas fa-sign-out-alt"></i>
+        Salir
+      </button>
+
       <div class="connection-status">
         <div class="connection-dot" id="connection-dot"></div>
         <span id="connection-text">En línea</span>
@@ -1336,24 +985,20 @@
     </div>
   </header>
 
-  <!-- Main -->
-  <main class="admin-main">
-    <!-- Mapa -->
+  <!-- MAIN -->
+  <main class="admin-main" id="admin-main" style="display: none;">
     <div class="map-container">
       <div id="admin-map"></div>
 
       <div class="map-controls">
-        <button class="map-control-btn" id="btn-center-map" title="Centrar mapa">
+        <button class="map-control-btn" id="btn-center-map" title="Centrar">
           <i class="fas fa-crosshairs"></i>
         </button>
         <button class="map-control-btn active" id="btn-fit-all" title="Ver todos">
           <i class="fas fa-expand"></i>
         </button>
-        <button class="map-control-btn active" id="btn-toggle-routes" title="Mostrar rutas">
+        <button class="map-control-btn active" id="btn-toggle-routes" title="Rutas">
           <i class="fas fa-route"></i>
-        </button>
-        <button class="map-control-btn" id="btn-dark-mode" title="Cambiar estilo">
-          <i class="fas fa-moon"></i>
         </button>
       </div>
 
@@ -1378,7 +1023,6 @@
       </button>
     </div>
 
-    <!-- Sidebar -->
     <aside class="admin-sidebar" id="admin-sidebar">
       <div class="sidebar-tabs">
         <button class="sidebar-tab active" data-tab="rides">
@@ -1398,7 +1042,6 @@
       </div>
 
       <div class="sidebar-content">
-        <!-- Panel Viajes -->
         <div class="tab-panel active" id="panel-rides">
           <div class="stats-grid">
             <div class="stat-card">
@@ -1414,13 +1057,11 @@
           <div id="rides-list"></div>
         </div>
 
-        <!-- Panel Conductores -->
         <div class="tab-panel" id="panel-drivers">
           <div class="section-title">Equipo de conductores</div>
           <div id="drivers-list"></div>
         </div>
 
-        <!-- Panel Actividad -->
         <div class="tab-panel" id="panel-activity">
           <div class="section-title">Actividad reciente</div>
           <div id="activity-list"></div>
@@ -1429,24 +1070,7 @@
     </aside>
   </main>
 
-  <!-- Toast container -->
   <div class="toast-container" id="toast-container"></div>
-
-  <!-- Modal detalle -->
-  <div class="modal-overlay" id="detail-modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-title">
-          <i class="fas fa-route" style="color: var(--primary);"></i>
-          Detalle del viaje
-        </div>
-        <button class="modal-close" id="modal-close">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-      <div class="modal-body" id="modal-body"></div>
-    </div>
-  </div>
 
   <script>
     // ========== CONFIGURACIÓN ==========
@@ -1454,48 +1078,214 @@
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3ZG9qY2hmd21hY3pnZHRodGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDQ4NDEsImV4cCI6MjEwMjcyMDg0MX0.jafGOwlItnzSoZ6yYlpaae16S2nlSDpPIS2316ZPJak';
     const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Centro por defecto (Santa Cruz, Bolivia)
     const DEFAULT_CENTER = [-17.7833, -63.1821];
     const DEFAULT_ZOOM = 13;
 
-    // ========== ESTADO ==========
-    let map;
-    let markers = {
-      drivers: new Map(),
-      rides: new Map()
-    };
+    // ========== AUTENTICACIÓN (IGUAL QUE EL PASAJERO, CON LOCALSTORAGE) ==========
+    const ADMIN_SESSION_KEY = 'moto_admin_session';
+    
+    // 🔑 CREDENCIALES - CAMBIA ESTOS VALORES
+    const ADMIN_USER = 'admin';
+    const ADMIN_PASS = 'admin123';
+    const ADMIN_NAME = 'Administrador Principal';
+
+    let currentAdmin = null;
+    let map = null;
+    let markers = { drivers: new Map(), rides: new Map() };
     let routeLines = new Map();
     let showRoutes = true;
     let drivers = [];
     let rides = [];
     let activity = [];
-    let driverPositions = new Map(); // Para interpolación suave
-    let animationFrameId = null;
+    let appInitialized = false;
 
-    // ========== INICIALIZAR MAPA ==========
+    // ========== VERIFICAR SESIÓN (IGUAL QUE checkPassengerRegistration) ==========
+    function checkAdminSession() {
+      console.log('🔐 [AUTH] Verificando sesión del admin');
+      const storedAdmin = localStorage.getItem(ADMIN_SESSION_KEY);
+
+      if (storedAdmin) {
+        try {
+          const data = JSON.parse(storedAdmin);
+          
+          // Verificar que no haya expirado (24 horas)
+          const sessionAge = Date.now() - data.timestamp;
+          const maxAge = 24 * 60 * 60 * 1000;
+
+          if (sessionAge < maxAge) {
+            currentAdmin = data.admin;
+            console.log('✅ [AUTH] Sesión válida:', currentAdmin);
+            return true;
+          } else {
+            console.log('⏰ [AUTH] Sesión expirada');
+            localStorage.removeItem(ADMIN_SESSION_KEY);
+          }
+        } catch (e) {
+          localStorage.removeItem(ADMIN_SESSION_KEY);
+        }
+      }
+
+      showLogin();
+      return false;
+    }
+
+    function showLogin() {
+      console.log('🔐 [AUTH] Mostrando login');
+      document.getElementById('login-overlay').classList.remove('hidden');
+      document.getElementById('admin-header').style.display = 'none';
+      document.getElementById('admin-main').style.display = 'none';
+    }
+
+    // ========== LOGIN ==========
+    async function handleAdminLogin(username, password) {
+      console.log('🔐 [AUTH] Intentando login:', username);
+
+      // Simular pequeña demora
+      await new Promise(r => setTimeout(r, 600));
+
+      if (username === ADMIN_USER && password === ADMIN_PASS) {
+        const admin = {
+          id: 'admin-001',
+          username: ADMIN_USER,
+          name: ADMIN_NAME
+        };
+
+        // Guardar en localStorage (IGUAL QUE EL PASAJERO)
+        currentAdmin = admin;
+        localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+          admin: admin,
+          timestamp: Date.now()
+        }));
+
+        console.log('✅ [AUTH] Login exitoso:', admin);
+        return { success: true, admin };
+      }
+
+      console.warn('❌ [AUTH] Credenciales incorrectas');
+      return { success: false, error: 'Usuario o contraseña incorrectos' };
+    }
+
+    // ========== LOGOUT ==========
+    function handleLogout() {
+      console.log('🚪 [AUTH] Cerrando sesión');
+      currentAdmin = null;
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      
+      // Limpiar suscripciones
+      if (window.rideSubscription) {
+        try { window.rideSubscription.unsubscribe(); } catch(e) {}
+      }
+
+      showLogin();
+      showToast('Sesión cerrada', 'Hasta pronto', 'info');
+    }
+
+    // ========== MOSTRAR INFO DEL ADMIN ==========
+    function showAdminInfo() {
+      if (!currentAdmin) return;
+      
+      document.getElementById('admin-avatar').textContent = 
+        (currentAdmin.name || 'A').charAt(0).toUpperCase();
+      document.getElementById('admin-name').textContent = 
+        currentAdmin.name || currentAdmin.username;
+    }
+
+    // ========== INICIALIZAR LOGIN ==========
+    function initAuthSystem() {
+      const loginForm = document.getElementById('login-form');
+      const loginBtn = document.getElementById('login-btn');
+      const loginError = document.getElementById('login-error');
+      const loginErrorText = document.getElementById('login-error-text');
+      const togglePasswordBtn = document.getElementById('toggle-password');
+      const logoutBtn = document.getElementById('logout-btn');
+
+      // Toggle password
+      togglePasswordBtn.addEventListener('click', () => {
+        const input = document.getElementById('login-password');
+        const icon = togglePasswordBtn.querySelector('i');
+        
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+          input.type = 'password';
+          icon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+      });
+
+      // Submit
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+        
+        if (!username || !password) {
+          loginErrorText.textContent = 'Completa todos los campos';
+          loginError.classList.add('show');
+          return;
+        }
+
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<div class="btn-spinner"></div><span>Verificando...</span>';
+        loginError.classList.remove('show');
+
+        const result = await handleAdminLogin(username, password);
+
+        if (result.success) {
+          showToast('Bienvenido', `Hola ${result.admin.name}`, 'success');
+          addActivity('info', 'fa-sign-in-alt', `${result.admin.name} inició sesión`);
+          
+          // Ocultar login, mostrar app
+          document.getElementById('login-overlay').classList.add('hidden');
+          document.getElementById('admin-header').style.display = 'flex';
+          document.getElementById('admin-main').style.display = 'flex';
+          
+          showAdminInfo();
+          loginForm.reset();
+          loginBtn.disabled = false;
+          loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i><span>Iniciar sesión</span>';
+          
+          startAdminApp();
+        } else {
+          loginErrorText.textContent = result.error;
+          loginError.classList.add('show');
+          loginBtn.disabled = false;
+          loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i><span>Iniciar sesión</span>';
+          document.getElementById('login-password').select();
+        }
+      });
+
+      // Logout
+      logoutBtn.addEventListener('click', () => {
+        if (confirm('¿Cerrar sesión?')) {
+          handleLogout();
+        }
+      });
+    }
+
+    // ========== MAPA ==========
     function initMap() {
+      if (map) return;
+
       map = L.map('admin-map', {
         zoomControl: false,
         attributionControl: false
       }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
 
-      // Tiles gratuitos de OpenStreetMap
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '© OpenStreetMap contributors'
+        attribution: '© OpenStreetMap'
       }).addTo(map);
 
-      // Control de zoom personalizado
       L.control.zoom({ position: 'bottomright' }).addTo(map);
-
       console.log('🗺️ [ADMIN] Mapa inicializado');
     }
 
-    // ========== MARCADORES CUSTOM ==========
+    // ========== MARCADORES ==========
     function createCustomIcon(type, label) {
       const icons = {
         driver: 'fa-motorcycle',
-        passenger: 'fa-user',
         pending: 'fa-clock',
         active: 'fa-motorcycle'
       };
@@ -1515,126 +1305,59 @@
       });
     }
 
-    // ========== INTERPOLACIÓN SUAVE DE MOVIMIENTO ==========
-    function lerp(start, end, factor) {
-      return start + (end - start) * factor;
-    }
-
-    function animateDriverMovement() {
-      const now = Date.now();
-      
-      drivers.forEach(driver => {
-        if (!driver.is_online || !driver.lat || !driver.lng) return;
-        
-        const posData = driverPositions.get(driver.id);
-        if (!posData) {
-          driverPositions.set(driver.id, {
-            current: [driver.lat, driver.lng],
-            target: [driver.lat, driver.lng],
-            lastUpdate: now
-          });
-          return;
-        }
-
-        // Actualizar target si hay nueva posición
-        if (posData.target[0] !== driver.lat || posData.target[1] !== driver.lng) {
-          posData.target = [driver.lat, driver.lng];
-        }
-
-        // Interpolar suavemente hacia el target
-        const factor = 0.1; // Suavidad
-        posData.current[0] = lerp(posData.current[0], posData.target[0], factor);
-        posData.current[1] = lerp(posData.current[1], posData.target[1], factor);
-
-        // Actualizar marcador
-        const marker = markers.drivers.get(driver.id);
-        if (marker) {
-          marker.setLatLng(posData.current);
-        }
-      });
-
-      animationFrameId = requestAnimationFrame(animateDriverMovement);
-    }
-
-    // ========== ACTUALIZAR MARCADORES DE CONDUCTORES ==========
     function updateDriverMarkers() {
-      // Limpiar marcadores que ya no existen
       markers.drivers.forEach((marker, id) => {
         const driver = drivers.find(d => d.id === id);
         if (!driver || !driver.is_online || !driver.lat || !driver.lng) {
           map.removeLayer(marker);
           markers.drivers.delete(id);
-          driverPositions.delete(id);
         }
       });
 
-      // Agregar/actualizar marcadores
       drivers.forEach(driver => {
         if (!driver.is_online || !driver.lat || !driver.lng) return;
 
-        const existingMarker = markers.drivers.get(driver.id);
-
-        if (existingMarker) {
-          // Solo actualizar el target, la animación hará el resto
-          const posData = driverPositions.get(driver.id);
-          if (posData) {
-            posData.target = [driver.lat, driver.lng];
-          }
+        const existing = markers.drivers.get(driver.id);
+        if (existing) {
+          existing.setLatLng([driver.lat, driver.lng]);
         } else {
           const marker = L.marker([driver.lat, driver.lng], {
             icon: createCustomIcon('driver', driver.full_name?.split(' ')[0] || 'Conductor')
           }).addTo(map);
 
           marker.bindPopup(`
-            <div style="text-align: center;">
-              <b style="font-size: 1rem;">🏍️ ${driver.full_name || 'Conductor'}</b><br>
-              <small style="color: #A1A1AA;">${driver.vehicle_plate || 'Sin placa'}</small><br>
-              <span style="color: #10B981; font-weight: 600;">● En línea</span>
-            </div>
+            <b>🏍️ ${driver.full_name || 'Conductor'}</b><br>
+            <small>${driver.vehicle_plate || 'Sin placa'}</small><br>
+            <span style="color: #10B981;">● En línea</span>
           `);
 
           markers.drivers.set(driver.id, marker);
-          driverPositions.set(driver.id, {
-            current: [driver.lat, driver.lng],
-            target: [driver.lat, driver.lng],
-            lastUpdate: Date.now()
-          });
         }
       });
     }
 
-    // ========== CREAR RUTA CON CURVA ==========
-    function createCurvedRoute(from, to, color) {
-      // Calcular punto medio con offset para crear curva
+    function createCurvedRoute(from, to) {
       const midLat = (from[0] + to[0]) / 2;
       const midLng = (from[1] + to[1]) / 2;
-      
-      // Offset perpendicular para la curva
       const dx = to[1] - from[1];
       const dy = to[0] - from[0];
       const distance = Math.sqrt(dx * dx + dy * dy);
-      const offset = distance * 0.15; // 15% de la distancia
+      const offset = distance * 0.15;
       
-      // Punto de control perpendicular
-      const controlLat = midLat + (-dx / distance) * offset;
-      const controlLng = midLng + (dy / distance) * offset;
+      const controlLat = midLat + (-dx / (distance || 1)) * offset;
+      const controlLng = midLng + (dy / (distance || 1)) * offset;
       
-      // Generar puntos de la curva Bézier
       const points = [];
-      const segments = 30;
-      for (let i = 0; i <= segments; i++) {
-        const t = i / segments;
-        const lat = Math.pow(1 - t, 2) * from[0] + 2 * (1 - t) * t * controlLat + Math.pow(t, 2) * to[0];
-        const lng = Math.pow(1 - t, 2) * from[1] + 2 * (1 - t) * t * controlLng + Math.pow(t, 2) * to[1];
+      for (let i = 0; i <= 30; i++) {
+        const t = i / 30;
+        const lat = Math.pow(1-t, 2) * from[0] + 2 * (1-t) * t * controlLat + Math.pow(t, 2) * to[0];
+        const lng = Math.pow(1-t, 2) * from[1] + 2 * (1-t) * t * controlLng + Math.pow(t, 2) * to[1];
         points.push([lat, lng]);
       }
-      
       return points;
     }
 
-    // ========== ACTUALIZAR MARCADORES DE VIAJES ==========
     function updateRideMarkers() {
-      // Limpiar marcadores de viajes completados/cancelados
       markers.rides.forEach((marker, id) => {
         const ride = rides.find(r => r.id === id);
         if (!ride || ['completado', 'cancelado', 'rechazado'].includes(ride.status)) {
@@ -1653,46 +1376,41 @@
         const isPending = ride.status === 'pendiente';
         const markerType = isPending ? 'pending' : 'active';
 
-        // Marcador en origen del pasajero
         if (ride.origin_lat && ride.origin_lng) {
-          const existingMarker = markers.rides.get(ride.id);
-
-          if (existingMarker) {
-            existingMarker.setLatLng([ride.origin_lat, ride.origin_lng]);
+          const existing = markers.rides.get(ride.id);
+          if (existing) {
+            existing.setLatLng([ride.origin_lat, ride.origin_lng]);
           } else {
             const marker = L.marker([ride.origin_lat, ride.origin_lng], {
               icon: createCustomIcon(markerType, isPending ? 'Pendiente' : 'En viaje')
             }).addTo(map);
 
             marker.bindPopup(`
-              <div style="text-align: center;">
-                <b>${isPending ? '⏳ Viaje pendiente' : '🏍️ Viaje en curso'}</b><br>
-                <small>De: ${ride.origin_address || 'Origen'}</small><br>
-                <small>A: ${ride.destination_address || 'Destino'}</small><br>
-                <b style="color: #FF7A00; font-size: 1.1rem;">Bs ${ride.price?.toFixed(2) || '0.00'}</b>
-              </div>
+              <b>${isPending ? '⏳ Pendiente' : '🏍️ En curso'}</b><br>
+              <small>De: ${ride.origin_address || 'Origen'}</small><br>
+              <small>A: ${ride.destination_address || 'Destino'}</small><br>
+              <b style="color: #FF7A00;">Bs ${ride.price?.toFixed(2) || '0.00'}</b>
             `);
 
             markers.rides.set(ride.id, marker);
           }
         }
 
-        // Dibujar ruta con curva elegante
         if (showRoutes && ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
           if (routeLines.has(ride.id)) {
             map.removeLayer(routeLines.get(ride.id));
           }
 
-          const from = [ride.origin_lat, ride.origin_lng];
-          const to = [ride.destination_lat, ride.destination_lng];
-          const curvedPoints = createCurvedRoute(from, to, isPending ? '#F59E0B' : '#FF7A00');
+          const points = createCurvedRoute(
+            [ride.origin_lat, ride.origin_lng],
+            [ride.destination_lat, ride.destination_lng]
+          );
 
-          const line = L.polyline(curvedPoints, {
+          const line = L.polyline(points, {
             color: isPending ? '#F59E0B' : '#FF7A00',
             weight: 4,
             opacity: 0.8,
-            dashArray: '12, 12',
-            className: 'route-line-animated'
+            dashArray: '12, 12'
           }).addTo(map);
 
           routeLines.set(ride.id, line);
@@ -1700,7 +1418,7 @@
       });
     }
 
-    // ========== RENDERIZAR LISTA DE VIAJES ==========
+    // ========== RENDERIZADO ==========
     function renderRidesList() {
       const container = document.getElementById('rides-list');
       const activeRides = rides.filter(r => !['completado', 'cancelado', 'rechazado'].includes(r.status));
@@ -1711,82 +1429,49 @@
       document.getElementById('stat-pending').textContent = rides.filter(r => r.status === 'pendiente').length;
       document.getElementById('total-rides').textContent = rides.length;
       
-      const totalRevenue = completedRides.reduce((sum, r) => sum + (r.price || 0), 0);
-      document.getElementById('total-revenue').textContent = `Bs ${totalRevenue.toFixed(0)}`;
+      const revenue = completedRides.reduce((s, r) => s + (r.price || 0), 0);
+      document.getElementById('total-revenue').textContent = `Bs ${revenue.toFixed(0)}`;
 
       if (activeRides.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <i class="fas fa-route"></i>
-            <p>No hay viajes activos</p>
-          </div>
-        `;
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-route"></i><p>No hay viajes activos</p></div>';
         return;
       }
 
-      container.innerHTML = activeRides.map(ride => {
-        const statusLabels = {
-          pendiente: 'Pendiente',
-          aceptado: 'Aceptado',
-          en_curso: 'En curso'
-        };
+      const statusLabels = { pendiente: 'Pendiente', aceptado: 'Aceptado', en_curso: 'En curso' };
 
-        return `
-          <div class="ride-card status-${ride.status}" onclick="showRideDetail('${ride.id}')">
-            <div class="ride-header">
-              <span class="ride-id">#${ride.id.substring(0, 8)}</span>
-              <span class="ride-status ${ride.status}">${statusLabels[ride.status] || ride.status}</span>
-            </div>
-            <div class="ride-route">
-              <div class="route-point">
-                <div class="route-indicator">
-                  <div class="route-dot origin"></div>
-                  <div class="route-line"></div>
-                </div>
-                <span class="route-text">${ride.origin_address || 'Origen'}</span>
-              </div>
-              <div class="route-point">
-                <div class="route-indicator">
-                  <div class="route-dot destination"></div>
-                </div>
-                <span class="route-text">${ride.destination_address || 'Destino'}</span>
-              </div>
-            </div>
-            <div class="ride-footer">
-              <span class="ride-price">Bs ${ride.price?.toFixed(2) || '0.00'}</span>
-              <span class="ride-time">
-                <i class="fas fa-clock"></i>
-                ${formatTime(ride.created_at)}
-              </span>
-            </div>
-            ${ride.driver_id ? `
-              <div class="ride-driver-info">
-                <div class="ride-driver-avatar">
-                  ${getDriverName(ride.driver_id).charAt(0).toUpperCase()}
-                </div>
-                <span>${getDriverName(ride.driver_id)}</span>
-              </div>
-            ` : ''}
+      container.innerHTML = activeRides.map(ride => `
+        <div class="ride-card status-${ride.status}">
+          <div class="ride-header">
+            <span class="ride-id">#${ride.id.substring(0, 8)}</span>
+            <span class="ride-status ${ride.status}">${statusLabels[ride.status] || ride.status}</span>
           </div>
-        `;
-      }).join('');
+          <div class="ride-route">
+            <div class="route-point">
+              <div class="route-dot origin"></div>
+              <span class="route-text">${ride.origin_address || 'Origen'}</span>
+            </div>
+            <div class="route-point">
+              <div class="route-dot destination"></div>
+              <span class="route-text">${ride.destination_address || 'Destino'}</span>
+            </div>
+          </div>
+          <div class="ride-footer">
+            <span class="ride-price">Bs ${ride.price?.toFixed(2) || '0.00'}</span>
+            <span class="ride-time">${formatTime(ride.created_at)}</span>
+          </div>
+        </div>
+      `).join('');
     }
 
-    // ========== RENDERIZAR LISTA DE CONDUCTORES ==========
     function renderDriversList() {
       const container = document.getElementById('drivers-list');
-      const onlineDrivers = drivers.filter(d => d.is_online);
+      const onlineCount = drivers.filter(d => d.is_online).length;
 
-      document.getElementById('badge-drivers').textContent = onlineDrivers.length;
-      document.getElementById('stat-drivers').textContent = onlineDrivers.length;
+      document.getElementById('badge-drivers').textContent = onlineCount;
+      document.getElementById('stat-drivers').textContent = onlineCount;
 
       if (drivers.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <i class="fas fa-motorcycle"></i>
-            <p>No hay conductores registrados</p>
-          </div>
-        `;
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-motorcycle"></i><p>No hay conductores</p></div>';
         return;
       }
 
@@ -1799,21 +1484,15 @@
           <div class="driver-info">
             <div class="driver-name-admin">${driver.full_name || 'Conductor'}</div>
             <div class="driver-meta">
-              <span>${driver.vehicle_plate || 'Sin placa'}</span>
-              <span class="driver-status-text ${driver.is_online ? 'online' : 'offline'}">
-                <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
+              ${driver.vehicle_plate || 'Sin placa'} · 
+              <span style="color: ${driver.is_online ? 'var(--green)' : 'var(--text-muted)'}">
                 ${driver.is_online ? 'En línea' : 'Desconectado'}
               </span>
             </div>
           </div>
           <div class="driver-actions-admin">
-            ${driver.phone ? `
-              <button class="driver-action-btn call" onclick="window.location.href='tel:${driver.phone}'" title="Llamar">
-                <i class="fas fa-phone"></i>
-              </button>
-            ` : ''}
             ${driver.lat && driver.lng ? `
-              <button class="driver-action-btn locate" onclick="focusOnDriver('${driver.id}')" title="Ver en mapa">
+              <button class="driver-action-btn locate" onclick="focusOnDriver('${driver.id}')">
                 <i class="fas fa-crosshairs"></i>
               </button>
             ` : ''}
@@ -1822,17 +1501,11 @@
       `).join('');
     }
 
-    // ========== RENDERIZAR ACTIVIDAD ==========
     function renderActivity() {
       const container = document.getElementById('activity-list');
 
       if (activity.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <i class="fas fa-bell"></i>
-            <p>Sin actividad reciente</p>
-          </div>
-        `;
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-bell"></i><p>Sin actividad</p></div>';
         return;
       }
 
@@ -1841,36 +1514,27 @@
           <div class="activity-icon ${item.type}">
             <i class="fas ${item.icon}"></i>
           </div>
-          <div class="activity-content">
+          <div>
             <div class="activity-text">${item.text}</div>
-            <div class="activity-time">
-              <i class="fas fa-clock"></i>
-              ${formatTime(item.timestamp)}
-            </div>
+            <div class="activity-time">${formatTime(item.timestamp)}</div>
           </div>
         </div>
       `).join('');
     }
 
     // ========== HELPERS ==========
-    function formatTime(timestamp) {
-      if (!timestamp) return '--';
-      const date = new Date(timestamp);
-      return date.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
+    function formatTime(ts) {
+      if (!ts) return '--';
+      return new Date(ts).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' });
     }
 
-    function getDriverName(driverId) {
-      const driver = drivers.find(d => d.id === driverId);
-      return driver?.full_name || 'Conductor';
+    function getDriverName(id) {
+      const d = drivers.find(x => x.id === id);
+      return d?.full_name || 'Conductor';
     }
 
     function addActivity(type, icon, text) {
-      activity.unshift({
-        type,
-        icon,
-        text,
-        timestamp: new Date().toISOString()
-      });
+      activity.unshift({ type, icon, text, timestamp: new Date().toISOString() });
       if (activity.length > 100) activity = activity.slice(0, 100);
       renderActivity();
     }
@@ -1888,69 +1552,16 @@
       toast.className = `toast ${type}`;
       toast.innerHTML = `
         <div class="toast-icon"><i class="fas ${icons[type]}"></i></div>
-        <div class="toast-content">
+        <div>
           <div class="toast-title">${title}</div>
           <div class="toast-message">${message}</div>
         </div>
       `;
 
       container.appendChild(toast);
-
-      setTimeout(() => {
-        toast.style.animation = 'toastSlideIn 0.4s ease reverse';
-        setTimeout(() => toast.remove(), 400);
-      }, 4000);
+      setTimeout(() => toast.remove(), 4000);
     }
 
-    // ========== MOSTRAR DETALLE DE VIAJE ==========
-    window.showRideDetail = function(rideId) {
-      const ride = rides.find(r => r.id === rideId);
-      if (!ride) return;
-
-      const modal = document.getElementById('detail-modal');
-      const body = document.getElementById('modal-body');
-
-      body.innerHTML = `
-        <div class="detail-row">
-          <span class="detail-label"><i class="fas fa-hashtag"></i>ID</span>
-          <span class="detail-value" style="font-family: monospace; font-size: 0.8rem;">${ride.id}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label"><i class="fas fa-info-circle"></i>Estado</span>
-          <span class="detail-value" style="text-transform: uppercase; letter-spacing: 1px;">${ride.status}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label"><i class="fas fa-circle" style="color: var(--green);"></i>Origen</span>
-          <span class="detail-value">${ride.origin_address || '-'}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label"><i class="fas fa-flag-checkered" style="color: var(--primary);"></i>Destino</span>
-          <span class="detail-value">${ride.destination_address || '-'}</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-label"><i class="fas fa-money-bill-wave"></i>Precio</span>
-          <span class="detail-value" style="color: var(--primary); font-size: 1.2rem;">Bs ${ride.price?.toFixed(2) || '0.00'}</span>
-        </div>
-        ${ride.driver_id ? `
-          <div class="detail-row">
-            <span class="detail-label"><i class="fas fa-motorcycle"></i>Conductor</span>
-            <span class="detail-value">${getDriverName(ride.driver_id)}</span>
-          </div>
-        ` : ''}
-        <div class="detail-row">
-          <span class="detail-label"><i class="fas fa-clock"></i>Creado</span>
-          <span class="detail-value">${formatTime(ride.created_at)}</span>
-        </div>
-      `;
-
-      modal.classList.add('active');
-
-      if (ride.origin_lat && ride.origin_lng) {
-        map.flyTo([ride.origin_lat, ride.origin_lng], 15, { duration: 1.5 });
-      }
-    };
-
-    // ========== FOCUS EN CONDUCTOR ==========
     window.focusOnDriver = function(driverId) {
       const driver = drivers.find(d => d.id === driverId);
       if (driver && driver.lat && driver.lng) {
@@ -1960,40 +1571,26 @@
       }
     };
 
-    // ========== CARGAR DATOS INICIALES ==========
+    // ========== DATOS ==========
     async function loadInitialData() {
       try {
-        const { data: driversData, error: driversError } = await supabaseClient
-          .from('drivers')
-          .select('*');
-
-        if (driversError) throw driversError;
+        const { data: driversData } = await supabaseClient.from('drivers').select('*');
         drivers = driversData || [];
 
-        const { data: ridesData, error: ridesError } = await supabaseClient
+        const { data: ridesData } = await supabaseClient
           .from('rides')
           .select('*')
           .in('status', ['pendiente', 'aceptado', 'en_curso', 'completado'])
           .order('created_at', { ascending: false })
           .limit(50);
 
-        if (ridesError) throw ridesError;
         rides = ridesData || [];
-
-        console.log('📊 [ADMIN] Datos cargados:', {
-          drivers: drivers.length,
-          rides: rides.length
-        });
-
         updateAll();
-
       } catch (error) {
-        console.error('❌ [ADMIN] Error cargando datos:', error);
-        showToast('Error', 'No se pudieron cargar los datos', 'error');
+        console.error('❌ [ADMIN] Error:', error);
       }
     }
 
-    // ========== ACTUALIZAR TODO ==========
     function updateAll() {
       updateDriverMarkers();
       updateRideMarkers();
@@ -2001,165 +1598,94 @@
       renderDriversList();
     }
 
-    // ========== SUSCRIPCIONES REALTIME ==========
+    // ========== REALTIME ==========
     function setupRealtimeSubscriptions() {
       supabaseClient
-        .channel('drivers-changes')
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'drivers'
-        }, (payload) => {
-          console.log('🏍️ [REALTIME] Driver actualizado:', payload);
-
+        .channel('admin-drivers')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, (payload) => {
           if (payload.eventType === 'UPDATE') {
-            const index = drivers.findIndex(d => d.id === payload.new.id);
-            if (index >= 0) {
-              drivers[index] = payload.new;
-            } else {
-              drivers.push(payload.new);
-            }
+            const idx = drivers.findIndex(d => d.id === payload.new.id);
+            if (idx >= 0) drivers[idx] = payload.new;
+            else drivers.push(payload.new);
 
-            if (payload.new.is_online && !payload.old.is_online) {
+            if (payload.new.is_online && payload.old && !payload.old.is_online) {
               addActivity('driver', 'fa-motorcycle', `${payload.new.full_name} se conectó`);
               showToast('Conductor en línea', payload.new.full_name, 'success');
             }
           } else if (payload.eventType === 'INSERT') {
             drivers.push(payload.new);
           }
-
           updateAll();
         })
         .subscribe();
 
       supabaseClient
-        .channel('rides-changes')
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'rides'
-        }, (payload) => {
-          console.log('🚗 [REALTIME] Ride actualizado:', payload);
-
+        .channel('admin-rides')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, (payload) => {
           if (payload.eventType === 'INSERT') {
             rides.unshift(payload.new);
-            addActivity('ride', 'fa-plus', `Nuevo viaje solicitado - Bs ${payload.new.price?.toFixed(2)}`);
-            showToast('Nuevo viaje', `De: ${payload.new.origin_address || 'Origen'}`, 'warning');
+            addActivity('ride', 'fa-plus', `Nuevo viaje - Bs ${payload.new.price?.toFixed(2)}`);
+            showToast('Nuevo viaje', payload.new.origin_address || 'Nuevo destino', 'warning');
           } else if (payload.eventType === 'UPDATE') {
-            const index = rides.findIndex(r => r.id === payload.new.id);
-            if (index >= 0) {
-              const oldStatus = rides[index].status;
-              rides[index] = payload.new;
+            const idx = rides.findIndex(r => r.id === payload.new.id);
+            if (idx >= 0) {
+              const oldStatus = rides[idx].status;
+              rides[idx] = payload.new;
 
               if (oldStatus !== payload.new.status) {
-                addActivity('ride', 'fa-exchange-alt', `Viaje cambió a: ${payload.new.status}`);
-
+                addActivity('ride', 'fa-exchange-alt', `Viaje → ${payload.new.status}`);
+                
                 if (payload.new.status === 'aceptado') {
                   showToast('Viaje aceptado', getDriverName(payload.new.driver_id), 'success');
-                } else if (payload.new.status === 'en_curso') {
-                  showToast('Viaje iniciado', 'El conductor está en camino', 'info');
                 } else if (payload.new.status === 'completado') {
                   showToast('Viaje completado', `Bs ${payload.new.price?.toFixed(2)}`, 'success');
                 }
               }
             }
           }
-
           updateAll();
         })
         .subscribe();
 
-      console.log('📡 [ADMIN] Suscripciones Realtime activas');
+      console.log('📡 [ADMIN] Realtime activo');
     }
 
-    // ========== REFRESH PERIÓDICO ==========
-    function startPeriodicRefresh() {
+    // ========== APP ==========
+    async function startAdminApp() {
+      if (appInitialized) {
+        if (map) map.invalidateSize();
+        return;
+      }
+
+      console.log('🚀 [ADMIN] Iniciando Centro de Control');
+
+      initMap();
+      await loadInitialData();
+      setupRealtimeSubscriptions();
+
+      // Refresh cada 30s
       setInterval(async () => {
         try {
-          const { data: driversData } = await supabaseClient
-            .from('drivers')
-            .select('*');
-
-          const { data: ridesData } = await supabaseClient
-            .from('rides')
-            .select('*')
+          const { data: d } = await supabaseClient.from('drivers').select('*');
+          const { data: r } = await supabaseClient.from('rides').select('*')
             .in('status', ['pendiente', 'aceptado', 'en_curso', 'completado'])
-            .order('created_at', { ascending: false })
-            .limit(50);
-
-          if (driversData) drivers = driversData;
-          if (ridesData) rides = ridesData;
-
+            .order('created_at', { ascending: false }).limit(50);
+          if (d) drivers = d;
+          if (r) rides = r;
           updateAll();
-        } catch (error) {
-          console.error('❌ [ADMIN] Error en refresh:', error);
-        }
+        } catch (e) { console.error(e); }
       }, 30000);
+
+      checkConnection();
+
+      setTimeout(() => {
+        document.getElementById('loading-overlay').classList.add('hidden');
+      }, 1000);
+
+      addActivity('info', 'fa-desktop', 'Centro de control iniciado');
+      appInitialized = true;
     }
 
-    // ========== EVENT LISTENERS ==========
-    document.querySelectorAll('.sidebar-tab').forEach(tab => {
-      tab.addEventListener('click', () => {
-        document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-
-        tab.classList.add('active');
-        document.getElementById(`panel-${tab.dataset.tab}`).classList.add('active');
-      });
-    });
-
-    document.getElementById('btn-center-map').addEventListener('click', () => {
-      map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, { duration: 1.5 });
-    });
-
-    document.getElementById('btn-fit-all').addEventListener('click', () => {
-      const allPoints = [];
-
-      drivers.forEach(d => {
-        if (d.is_online && d.lat && d.lng) allPoints.push([d.lat, d.lng]);
-      });
-
-      rides.forEach(r => {
-        if (r.origin_lat && r.origin_lng) allPoints.push([r.origin_lat, r.origin_lng]);
-        if (r.destination_lat && r.destination_lng) allPoints.push([r.destination_lat, r.destination_lng]);
-      });
-
-      if (allPoints.length > 0) {
-        map.fitBounds(allPoints, { padding: [60, 60] });
-      }
-    });
-
-    document.getElementById('btn-toggle-routes').addEventListener('click', function() {
-      showRoutes = !showRoutes;
-      this.classList.toggle('active', showRoutes);
-
-      if (!showRoutes) {
-        routeLines.forEach(line => map.removeLayer(line));
-        routeLines.clear();
-      } else {
-        updateRideMarkers();
-      }
-    });
-
-    document.getElementById('btn-dark-mode').addEventListener('click', function() {
-      showToast('Tema', 'El tema oscuro ya está activo', 'info');
-    });
-
-    document.getElementById('sidebar-toggle').addEventListener('click', () => {
-      document.getElementById('admin-sidebar').classList.toggle('open');
-    });
-
-    document.getElementById('modal-close').addEventListener('click', () => {
-      document.getElementById('detail-modal').classList.remove('active');
-    });
-
-    document.getElementById('detail-modal').addEventListener('click', (e) => {
-      if (e.target.id === 'detail-modal') {
-        document.getElementById('detail-modal').classList.remove('active');
-      }
-    });
-
-    // ========== VERIFICAR CONEXIÓN ==========
     function checkConnection() {
       const dot = document.getElementById('connection-dot');
       const text = document.getElementById('connection-text');
@@ -2173,35 +1699,68 @@
       }
     }
 
+    // ========== EVENT LISTENERS ==========
+    document.querySelectorAll('.sidebar-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.sidebar-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`panel-${tab.dataset.tab}`).classList.add('active');
+      });
+    });
+
+    document.getElementById('btn-center-map').addEventListener('click', () => {
+      map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, { duration: 1.5 });
+    });
+
+    document.getElementById('btn-fit-all').addEventListener('click', () => {
+      const points = [];
+      drivers.forEach(d => { if (d.is_online && d.lat && d.lng) points.push([d.lat, d.lng]); });
+      rides.forEach(r => {
+        if (r.origin_lat && r.origin_lng) points.push([r.origin_lat, r.origin_lng]);
+        if (r.destination_lat && r.destination_lng) points.push([r.destination_lat, r.destination_lng]);
+      });
+      if (points.length > 0) map.fitBounds(points, { padding: [60, 60] });
+    });
+
+    document.getElementById('btn-toggle-routes').addEventListener('click', function() {
+      showRoutes = !showRoutes;
+      this.classList.toggle('active', showRoutes);
+      if (!showRoutes) {
+        routeLines.forEach(l => map.removeLayer(l));
+        routeLines.clear();
+      } else {
+        updateRideMarkers();
+      }
+    });
+
+    document.getElementById('sidebar-toggle').addEventListener('click', () => {
+      document.getElementById('admin-sidebar').classList.toggle('open');
+    });
+
     window.addEventListener('online', checkConnection);
     window.addEventListener('offline', checkConnection);
 
-    // ========== INICIALIZAR ==========
-    window.addEventListener('load', async () => {
-      console.log('🚀 [ADMIN] Iniciando Centro de Control');
+    // ========== INICIO (IGUAL QUE EL PASAJERO) ==========
+    window.onload = async () => {
+      console.log('🚀 [ADMIN] Iniciando...');
 
-      initMap();
-      await loadInitialData();
-      setupRealtimeSubscriptions();
-      startPeriodicRefresh();
-      checkConnection();
-      
-      // Iniciar animación de movimiento suave
-      animateDriverMovement();
+      initAuthSystem();
 
-      setTimeout(() => {
+      const hasSession = checkAdminSession();
+
+      if (hasSession) {
+        // Sesión activa, entrar directo
+        document.getElementById('login-overlay').classList.add('hidden');
+        document.getElementById('admin-header').style.display = 'flex';
+        document.getElementById('admin-main').style.display = 'flex';
+        showAdminInfo();
+        startAdminApp();
+      } else {
+        // Sin sesión, mostrar login
         document.getElementById('loading-overlay').classList.add('hidden');
-      }, 1500);
-
-      addActivity('info', 'fa-desktop', 'Centro de control iniciado');
-    });
-
-    // Limpiar animación al salir
-    window.addEventListener('beforeunload', () => {
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
       }
-    });
+    };
   </script>
 </body>
 </html>
