@@ -1033,7 +1033,9 @@
     // ========== CONFIGURACIÓN ==========
     const supabaseUrl = 'https://uwdojchfwmaczgdthtfr.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3ZG9qY2hmd21hY3pnZHRodGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDQ4NDEsImV4cCI6MjEwMjcyMDg0MX0.jafGOwlItnzSoZ6yYlpaae16S2nlSDpPIS2316ZPJak';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    
+    // ✅ CORREGIDO: Usar supabaseClient en lugar de supabase
+    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     // Centro por defecto (Santa Cruz, Bolivia)
     const DEFAULT_CENTER = [-17.7833, -63.1821];
@@ -1442,7 +1444,7 @@
     async function loadInitialData() {
       try {
         // Cargar conductores
-        const { data: driversData, error: driversError } = await supabase
+        const { data: driversData, error: driversError } = await supabaseClient
           .from('drivers')
           .select('*');
 
@@ -1450,7 +1452,7 @@
         drivers = driversData || [];
 
         // Cargar viajes activos
-        const { data: ridesData, error: ridesError } = await supabase
+        const { data: ridesData, error: ridesError } = await supabaseClient
           .from('rides')
           .select('*')
           .in('status', ['pendiente', 'aceptado', 'en_curso'])
@@ -1484,7 +1486,7 @@
     // ========== SUSCRIPCIONES REALTIME ==========
     function setupRealtimeSubscriptions() {
       // Suscripción a cambios en drivers
-      supabase
+      supabaseClient
         .channel('drivers-changes')
         .on('postgres_changes', {
           event: '*',
@@ -1515,7 +1517,7 @@
         .subscribe();
 
       // Suscripción a cambios en rides
-      supabase
+      supabaseClient
         .channel('rides-changes')
         .on('postgres_changes', {
           event: '*',
@@ -1560,11 +1562,11 @@
       // Cada 30 segundos recargar datos por si se perdió algún evento
       setInterval(async () => {
         try {
-          const { data: driversData } = await supabase
+          const { data: driversData } = await supabaseClient
             .from('drivers')
             .select('*');
 
-          const { data: ridesData } = await supabase
+          const { data: ridesData } = await supabaseClient
             .from('rides')
             .select('*')
             .in('status', ['pendiente', 'aceptado', 'en_curso'])
