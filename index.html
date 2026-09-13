@@ -716,6 +716,7 @@
         let currentNavigationSteps = [], currentNavigationIndex = 0, currentRouteTarget = null;
         let userInteracting = false, lastInteractionTime = 0, smoothedBearing = null;
         let obLat = null, obLng = null, currentSelfieFile = null, currentChatTarget = 'central';
+                let chatSubscription = null;  // PATCH: referencia al canal de chat
 
         // ==================== VARIABLES DE NOTIFICACIÓN SONORA ====================
         let notificationAudioCtx = null;
@@ -987,6 +988,14 @@
             document.getElementById('view-onboarding').classList.remove('active');
             document.getElementById('view-login').classList.add('active');
             if (window.rideSubscription) { supabaseClient.removeChannel(window.rideSubscription); window.rideSubscription = null; }
+                        // PATCH: Limpiar canal de chat también
+            if (chatSubscription) {
+                try {
+                    supabaseClient.removeChannel(chatSubscription);
+                    chatSubscription = null;
+                    dlog('Chat: canal limpiado en logout', 'info');
+                } catch (e) { /* ignore */ }
+            }
             if (driverMarker) { driverMarker.remove(); driverMarker = null; }
             if (map) { map.remove(); map = null; mapInitialized = false; }
             dlog('Sesión cerrada', 'warning');
@@ -1713,13 +1722,29 @@
                 else if (currentRideId) await supabaseClient.from('chat_messages').insert({ ride_id: currentRideId, sender_type: 'driver', sender_id: currentDriverId, message: msg });
             } catch (e) { alert('Error enviando mensaje'); }
         }
-        function setupChatSubscription() {
-            supabaseClient.channel('central-chat').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'central_messages' }, p => {
-                const m = p.new;
-                if ((m.driver_id === currentDriverId || m.driver_id === null) && m.created_by !== currentDriverId && currentChatTarget === 'central') appendMessageToChat(m.message, 'received');
-            }).subscribe();
+             function setupChatSubscription() {
+            // PATCH: Limpiar suscripción anterior
+            if (chatSubscription) {
+                try {
+                    supabaseClient.removeChannel(chatSubscription);
+                    dlog('Chat: canal anterior eliminado', 'info');
+                } catch (e) {
+                    dlog('Chat: error eliminando canal: ' + e.message, 'warning');
+                }
+                chatSubscription = null;
+            }
+            // PATCH: Nombre único por conductor + timestamp
+            const channelName = `central-chat-${currentDriverId || 'anon'}-${Date.now()}`;
+            chatSubscription = supabaseClient
+                .channel(channelName)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'central_messages' }, p => {
+                    const m = p.new;
+                    if ((m.driver_id === currentDriverId || m.driver_id === null) && m.created_by !== currentDriverId && currentChatTarget === 'central') appendMessageToChat(m.message, 'received');
+                })
+                .subscribe((status) => {
+                    dlog('Chat suscripción: ' + status, status === 'SUBSCRIBED' ? 'success' : 'info');
+                });
         }
-
         async function loadWalletData() {
             if (!currentDriverId) return;
             const { data: wallet } = await supabaseClient.from('wallets').select('balance').eq('driver_id', currentDriverId).maybeSingle();
