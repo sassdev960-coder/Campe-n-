@@ -1513,3 +1513,401 @@
                 const response = await fetch(url);
                 const data = await response.json();
                 if (data.routes && data.routes.length > 0) {
+                    const route = data.routes[0];
+                    currentNavigationSteps = route.legs.flatMap(leg => leg.steps);
+                    currentNavigationIndex = 0;
+                    updateNavigationPanel(currentNavigationSteps[0]);
+                    const geojson = { type: 'Feature', properties: {}, geometry: route.geometry };
+                    map.addSource('route', { type: 'geojson', data: geojson, lineMetrics: true });
+                    map.addLayer({ 
+                        id: 'route-line', type: 'line', source: 'route', 
+                        layout: { 'line-join': 'round', 'line-cap': 'round' }, 
+                        paint: { 
+                            'line-width': 8,
+                            'line-gradient': ['interpolate', ['linear'], ['line-progress'], 0, '#ff7a00', 1, '#ff7a00']
+                        } 
+                    });
+                    routeLayers.push('route', 'route-line');
+                    window.currentRouteCoords = route.geometry.coordinates;
+                    drawManeuverArrow(route.legs.flatMap(leg => leg.steps));
+                    if (currentPosition && !userInteracting) {
+                        map.easeTo({ 
+                            center: [currentPosition[1], currentPosition[0]], 
+                            zoom: 17, pitch: 45, bearing: smoothedBearing || 0,
+                            duration: 1200, essential: true
+                        });
+                    }
+                    speakInstruction(currentNavigationSteps[0]?.maneuver?.instruction || 'Sigue la ruta');
+                } else throw new Error('No routes');
+            } catch (e) {
+                const geojson = { type: 'Feature', geometry: { type: 'LineString', coordinates } };
+                map.addSource('route', { type: 'geojson', data: geojson, lineMetrics: true });
+                map.addLayer({ 
+                    id: 'route-line', type: 'line', source: 'route', 
+                    paint: { 
+                        'line-width': 6,
+                        'line-gradient': ['interpolate', ['linear'], ['line-progress'], 0, '#ff7a00', 1, '#ff7a00']
+                    } 
+                });
+                routeLayers.push('route', 'route-line');
+                window.currentRouteCoords = coordinates;
+                if (currentPosition && !userInteracting) {
+                    map.easeTo({ 
+                        center: [currentPosition[1], currentPosition[0]], 
+                        zoom: 17, pitch: 45, bearing: smoothedBearing || 0,
+                        duration: 1200, essential: true
+                    });
+                }
+            }
+            dlog('Ruta dibujada con navegación activa', 'success');
+        }
+
+        function drawManeuverArrow(steps) {
+            if (!map || !steps || steps.length === 0) return;
+            if (maneuverArrowMarker) { maneuverArrowMarker.remove(); maneuverArrowMarker = null; }
+            const nextStep = steps[0];
+            if (!nextStep || !nextStep.maneuver || !nextStep.maneuver.location) return;
+            const [lng, lat] = nextStep.maneuver.location;
+            const modifier = (nextStep.maneuver.modifier || '').toLowerCase();
+            const type = (nextStep.maneuver.type || '').toLowerCase();
+            let iconClass = 'fa-arrow-up';
+            if (modifier.includes('right')) iconClass = 'fa-arrow-right';
+            else if (modifier.includes('left')) iconClass = 'fa-arrow-left';
+            else if (modifier.includes('uturn')) iconClass = 'fa-undo';
+            else if (type === 'arrive') iconClass = 'fa-flag-checkered';
+            else if (type === 'roundabout' || type === 'rotary') iconClass = 'fa-sync-alt';
+            const arrowEl = document.createElement('div');
+            arrowEl.className = 'maneuver-arrow';
+            arrowEl.innerHTML = `<i class="fas ${iconClass}"></i>`;
+            maneuverArrowMarker = new mapboxgl.Marker({ element: arrowEl, anchor: 'center' })
+                .setLngLat([lng, lat])
+                .addTo(map);
+            dlog('🎯 Flecha de maniobra dibujada: ' + iconClass, 'info');
+        }
+
+        function updateNavigationPanel(step) {
+            const iconMap = { 'turn-left': 'fa-arrow-left', 'turn-right': 'fa-arrow-right', 'straight': 'fa-arrow-up', 'arrive': 'fa-flag-checkered' };
+            const panel = document.getElementById('navigation-panel');
+            if (step) {
+                panel.classList.add('active');
+                document.getElementById('nav-icon').className = `fas ${iconMap[step.maneuver.modifier] || iconMap[step.maneuver.type] || 'fa-arrow-up'}`;
+                document.getElementById('nav-distance').textContent = step.distance < 1000 ? `${Math.round(step.distance)} m` : `${(step.distance/1000).toFixed(1)} km`;
+                document.getElementById('nav-text').textContent = step.maneuver.instruction;
+            } else panel.classList.remove('active');
+        }
+
+        function clearRoute() {
+            if (!map) return;
+            routeLayers.forEach(l => { if (map.getLayer(l)) map.removeLayer(l); if (map.getSource(l)) map.removeSource(l); });
+            routeLayers = [];
+            if (pickupMarker) { pickupMarker.remove(); pickupMarker = null; }
+            if (dropoffMarker) { dropoffMarker.remove(); dropoffMarker = null; }
+            if (maneuverArrowMarker) { maneuverArrowMarker.remove(); maneuverArrowMarker = null; }
+            currentNavigationSteps = []; currentNavigationIndex = 0;
+            window.currentRouteCoords = null;
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
+            document.getElementById('navigation-panel').classList.remove('active');
+        }
+
+        async function redirectRoute() {
+            if (!currentRideId || !currentPosition) return alert('No hay viaje activo.');
+            try {
+                const { data: ride } = await supabaseClient.from('rides').select('origin_lat, origin_lng, destination_lat, destination_lng').eq('id', currentRideId).single();
+                if (currentRideStatus === 'aceptado' && ride.origin_lat) { await drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]); currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng }; }
+                else if (currentRideStatus === 'en_curso' && ride.destination_lat) { await drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]); currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng }; }
+            } catch (e) { alert('Error al redireccionar'); }
+        }
+
+        const toggleSwitch = document.getElementById('toggleSwitch');
+        toggleSwitch.addEventListener('change', async function(e) {
+            isDriverOnline = e.target.checked;
+            dlog('═══════════════════════════════════', 'event');
+            dlog(`🔘 Toggle: isDriverOnline = ${isDriverOnline}`, isDriverOnline ? 'success' : 'warning');
+            dlog('═══════════════════════════════════', 'event');
+            updateStatusCard(isDriverOnline);
+            updateDebugStatus();
+
+            if (isDriverOnline) {
+                try {
+                    if (!notificationAudioCtx) { notificationAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+                    if (notificationAudioCtx.state === 'suspended') { notificationAudioCtx.resume(); }
+                } catch (e) {}
+
+                try {
+                    const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }));
+                    currentPosition = [pos.coords.latitude, pos.coords.longitude];
+                    dlog(`📍 GPS: ${currentPosition[0].toFixed(5)}, ${currentPosition[1].toFixed(5)}`, 'success');
+                    const isViajesActive = document.getElementById('view-viajes')?.classList.contains('active');
+                    if (isViajesActive) {
+                        if (!map) initMap([currentPosition[1], currentPosition[0]]);
+                        else map.jumpTo({ center: [currentPosition[1], currentPosition[0]], zoom: 15 });
+                        await ensureMapReady();
+                        setTimeout(() => {
+                            if (map && mapInitialized) { updateDriverMarker(currentPosition[0], currentPosition[1], 0); }
+                        }, 300);
+                    } else {
+                        dlog('Mapa no inicializado aún (vista inicio). Se iniciará al abrir Viajes.', 'info');
+                    }
+                } catch (e) { dlog('Error obteniendo GPS: ' + e.message, 'error'); }
+                startTracking();
+                try {
+                    await supabaseClient.from('driver_status').upsert({ driver_id: currentDriverId, is_online: true, latitude: currentPosition?.[0] || null, longitude: currentPosition?.[1] || null, last_updated: new Date().toISOString() }, { onConflict: 'driver_id' });
+                    dlog('Estado online guardado en BD', 'success');
+                } catch (e) { dlog('Error guardando estado: ' + e.message, 'error'); }
+                dlog('Cargando viajes activos al ponerse online...', 'info');
+                await loadActiveRide();
+                setTimeout(async () => {
+                    if (!currentRideId && !pendingRide && isDriverOnline) {
+                        dlog('Verificación adicional de viajes...', 'info');
+                        const { data } = await supabaseClient
+                            .from('rides')
+                            .select('*, passengers(full_name, phone)')
+                            .or(`driver_id.eq.${currentDriverId},and(status.eq.pendiente,driver_id.is.null)`)
+                            .in('status', ['pendiente', 'aceptado'])
+                            .order('created_at', { ascending: false })
+                            .limit(1);
+                        if (data && data.length > 0 && !pendingRide && !currentRideId) {
+                            dlog('Viaje encontrado en verificación adicional', 'success');
+                            showRideRequest(data[0]);
+                        }
+                    }
+                }, 2000);
+            } else { forceOffline(); }
+        });
+
+        function createDriverMarker(lat, lng, bearing = 0) {
+            const el = document.createElement('div');
+            el.className = 'driver-arrow';
+            el.innerHTML = '<i class="fas fa-location-arrow"></i>';
+            driverMarker = new mapboxgl.Marker(el).setLngLat([lng, lat]).setRotation(bearing).addTo(map);
+        }
+        function updateDriverMarker(lat, lng, bearing = 0) {
+            if (driverMarker) { driverMarker.setLngLat([lng, lat]); driverMarker.setRotation(bearing); }
+            else createDriverMarker(lat, lng, bearing);
+        }
+
+        function startTracking() {
+            if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+            let previousCoord = null; smoothedBearing = null;
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    const lat = position.coords.latitude, lng = position.coords.longitude;
+                    currentPosition = [lat, lng];
+                    let bearing = 0;
+                    if (previousCoord) {
+                        const dist = getDistanceFromLatLonInMeters(previousCoord.lat, previousCoord.lng, lat, lng);
+                        if (dist > 3) {
+                            const raw = calculateBearing(previousCoord.lat, previousCoord.lng, lat, lng);
+                            if (smoothedBearing === null) smoothedBearing = raw;
+                            else { let diff = raw - smoothedBearing; if (diff > 180) diff -= 360; if (diff < -180) diff += 360; smoothedBearing = (smoothedBearing + diff * 0.2 + 360) % 360; }
+                            bearing = smoothedBearing;
+                        } else if (smoothedBearing !== null) bearing = smoothedBearing;
+                    }
+                    previousCoord = { lat, lng };
+
+                    if (map && mapInitialized && map.getLayer('route-line') && window.currentRouteCoords && window.currentRouteCoords.length > 1) {
+                        const progress = calculateRouteProgress(lat, lng);
+                        const p = Math.max(0, Math.min(0.999, progress));
+                        if (p > 0.005) {
+                            try {
+                                map.setPaintProperty('route-line', 'line-gradient', [
+                                    'interpolate', ['linear'], ['line-progress'],
+                                    0, 'rgba(255, 122, 0, 0)',
+                                    p, 'rgba(255, 122, 0, 0)',
+                                    Math.min(p + 0.001, 0.999), '#ff7a00',
+                                    1, '#ff7a00'
+                                ]);
+                            } catch (e) {}
+                        }
+                    }
+
+                    if (map && mapInitialized) {
+                        updateDriverMarker(lat, lng, bearing);
+                        if (!userInteracting) {
+                            const speedKmh = (position.coords.speed || 0) * 3.6;
+                            let zoom, pitch;
+                            if (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') {
+                                pitch = Math.min(60, 35 + speedKmh * 0.3);
+                                zoom = Math.max(15, 18 - speedKmh * 0.04);
+                            } else { pitch = 0; zoom = 15; }
+                            const opts = { center: [lng, lat], zoom, pitch, duration: 500, essential: true };
+                            if ((currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') && smoothedBearing !== null) opts.bearing = smoothedBearing;
+                            map.easeTo(opts);
+                        }
+                        if (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') document.getElementById('navigation-panel').classList.add('active');
+                        else document.getElementById('navigation-panel').classList.remove('active');
+                    }
+                    const now = Date.now();
+                    if (now - lastUpdateTime > UPDATE_INTERVAL) { lastUpdateTime = now; updateDriverStatus(true, lat, lng); }
+                },
+                (error) => { dlog('Error GPS watch: ' + error.message, 'error'); },
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+            );
+        }
+
+        async function updateDriverStatus(isOnline, lat = null, lng = null) {
+            try { await supabaseClient.from('driver_status').upsert({ driver_id: currentDriverId, is_online: isOnline, latitude: lat, longitude: lng, last_updated: new Date().toISOString() }, { onConflict: 'driver_id' }); }
+            catch (e) { dlog('Error updateDriverStatus: ' + e.message, 'error'); }
+        }
+
+        document.getElementById('searchInput').addEventListener('input', debounce(async (e) => {
+            const query = e.target.value.trim();
+            if (query.length < 3) { document.getElementById('suggestions').style.display = 'none'; return; }
+            const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&language=es&limit=5`;
+            const response = await fetch(url);
+            const data = await response.json();
+            const container = document.getElementById('suggestions');
+            container.innerHTML = '';
+            if (data.features && data.features.length > 0) {
+                data.features.forEach(f => {
+                    const item = document.createElement('div');
+                    item.className = 'suggestion-item';
+                    item.innerHTML = `<i class="fas fa-map-marker-alt" style="color:var(--primary-orange)"></i> <span>${f.place_name}</span>`;
+                    item.addEventListener('click', () => { map.flyTo({ center: f.center, zoom: 16 }); document.getElementById('searchInput').value = f.place_name; container.style.display = 'none'; });
+                    container.appendChild(item);
+                });
+                container.style.display = 'block';
+            } else container.style.display = 'none';
+        }, 300));
+        function debounce(fn, delay) { let t; return function(...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), delay); }; }
+
+        async function loadHistorial() {
+            if (!currentDriverId) return;
+            const { data: activeRides } = await supabaseClient.from('rides').select('id, origin_address, destination_address, price, status, created_at').eq('driver_id', currentDriverId).in('status', ['pendiente','aceptado','llegado_origen','en_curso']).order('created_at', { ascending: false });
+            const ac = document.getElementById('activeRidesList');
+            ac.innerHTML = '';
+            if (!activeRides || activeRides.length === 0) ac.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h4>No tienes viajes activos</h4></div>';
+            else activeRides.forEach(r => {
+                let sc = 'activo'; if (r.status === 'llegado_origen') sc = 'llegado_origen'; else if (r.status === 'pendiente') sc = 'pendiente';
+                const d = new Date(r.created_at), ts = d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), ds = d.toLocaleDateString([], {day:'2-digit',month:'short'});
+                ac.innerHTML += `<div class="ride-card-history"><div class="history-card-top"><div class="history-route"><div class="route-point origin"><i class="fas fa-circle"></i><span>${r.origin_address||'Origen'}</span></div><div class="route-connector"></div><div class="route-point dest"><i class="fas fa-circle"></i><span>${r.destination_address||'Destino'}</span></div></div><span class="status-badge ${sc}">${r.status.replace('_',' ')}</span></div><div class="history-card-bottom"><div class="history-meta"><span><i class="fas fa-calendar"></i> ${ds}</span><span><i class="fas fa-clock"></i> ${ts}</span></div><div class="history-price">Bs ${parseFloat(r.price||0).toFixed(2)}</div></div></div>`;
+            });
+            const { data: completedRides } = await supabaseClient.from('rides').select('id, origin_address, destination_address, price, status, created_at').eq('driver_id', currentDriverId).in('status', ['completado','no_completado','cancelado','rechazado']).order('created_at', { ascending: false }).limit(30);
+            const cc = document.getElementById('completedRidesList');
+            cc.innerHTML = '';
+            if (!completedRides || completedRides.length === 0) cc.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><h4>No hay viajes en el historial</h4></div>';
+            else completedRides.forEach(r => {
+                const bc = r.status === 'completado' ? 'completado' : (r.status === 'no_completado' ? 'no_completado' : '');
+                const d = new Date(r.created_at), ts = d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}), ds = d.toLocaleDateString([], {day:'2-digit',month:'short'});
+                cc.innerHTML += `<div class="ride-card-history"><div class="history-card-top"><div class="history-route"><div class="route-point origin"><i class="fas fa-circle"></i><span>${r.origin_address||'Origen'}</span></div><div class="route-connector"></div><div class="route-point dest"><i class="fas fa-circle"></i><span>${r.destination_address||'Destino'}</span></div></div><span class="status-badge ${bc}">${r.status.replace('_',' ')}</span></div><div class="history-card-bottom"><div class="history-meta"><span><i class="fas fa-calendar"></i> ${ds}</span><span><i class="fas fa-clock"></i> ${ts}</span></div><div class="history-price">Bs ${parseFloat(r.price||0).toFixed(2)}</div></div></div>`;
+            });
+        }
+
+        async function loadChatMessages() {
+            const c = document.getElementById('chatMessages');
+            c.innerHTML = '';
+            if (currentChatTarget === 'central') await loadCentralChat();
+            else await loadRideChat();
+        }
+        async function loadCentralChat() {
+            const { data } = await supabaseClient.from('central_messages').select('*').or(`driver_id.eq.${currentDriverId},driver_id.is.null`).order('created_at', { ascending: true });
+            if (!data || data.length === 0) { document.getElementById('chatMessages').innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><h4>No hay mensajes</h4></div>'; return; }
+            data.forEach(m => appendMessageToChat(m.message, m.created_by === currentDriverId ? 'sent' : 'received', new Date(m.created_at)));
+        }
+        async function loadRideChat() {
+            if (!currentRideId) { document.getElementById('chatMessages').innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><h4>Sin viaje activo</h4></div>'; return; }
+            const { data } = await supabaseClient.from('chat_messages').select('*').eq('ride_id', currentRideId).order('created_at', { ascending: true });
+            if (!data || data.length === 0) { document.getElementById('chatMessages').innerHTML = '<div class="empty-state"><i class="fas fa-comments"></i><h4>No hay mensajes</h4></div>'; return; }
+            data.forEach(m => appendMessageToChat(m.message, m.sender_id === currentDriverId ? 'sent' : 'received', new Date(m.created_at)));
+        }
+        function appendMessageToChat(text, type, date = new Date()) {
+            const c = document.getElementById('chatMessages');
+            if (c.querySelector('.empty-state')) c.innerHTML = '';
+            const el = document.createElement('div');
+            el.className = `message ${type}`;
+            el.innerHTML = `<div>${text}</div><span class="message-time">${date.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>`;
+            c.appendChild(el); c.scrollTop = c.scrollHeight;
+        }
+        async function sendCentralMessage() {
+            const input = document.getElementById('chatInput'), msg = input.value.trim();
+            if (!msg) return;
+            appendMessageToChat(msg, 'sent'); input.value = '';
+            try {
+                if (currentChatTarget === 'central') await supabaseClient.from('central_messages').insert({ driver_id: currentDriverId, message: msg, is_read: false, created_by: currentDriverId });
+                else if (currentRideId) await supabaseClient.from('chat_messages').insert({ ride_id: currentRideId, sender_type: 'driver', sender_id: currentDriverId, message: msg });
+            } catch (e) { alert('Error enviando mensaje'); }
+        }
+
+        function setupChatSubscription() {
+            if (chatSubscription) {
+                try { supabaseClient.removeChannel(chatSubscription); dlog('Chat: canal anterior eliminado', 'info'); } catch (e) { dlog('Chat: error eliminando canal: ' + e.message, 'warning'); }
+                chatSubscription = null;
+            }
+            const channelName = `central-chat-${currentDriverId || 'anon'}-${Date.now()}`;
+            chatSubscription = supabaseClient
+                .channel(channelName)
+                .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'central_messages' }, p => {
+                    const m = p.new;
+                    if ((m.driver_id === currentDriverId || m.driver_id === null) && m.created_by !== currentDriverId && currentChatTarget === 'central') appendMessageToChat(m.message, 'received');
+                })
+                .subscribe((status) => { dlog('Chat suscripción: ' + status, status === 'SUBSCRIBED' ? 'success' : 'info'); });
+        }
+
+        async function loadWalletData() {
+            if (!currentDriverId) return;
+            const { data: wallet } = await supabaseClient.from('wallets').select('balance').eq('driver_id', currentDriverId).maybeSingle();
+            if (wallet) document.getElementById('walletBalance').textContent = `Bs ${parseFloat(wallet.balance||0).toFixed(2)}`;
+            const { data: txs } = await supabaseClient.from('wallet_transactions').select('*').eq('driver_id', currentDriverId).order('created_at', { ascending: false }).limit(20);
+            const list = document.getElementById('transactionList');
+            list.innerHTML = '';
+            if (!txs || txs.length === 0) { list.innerHTML = '<div class="empty-state"><i class="fas fa-receipt"></i><h4>No hay movimientos</h4></div>'; return; }
+            txs.forEach(tx => {
+                const div = document.createElement('div');
+                div.className = 'transaction-item';
+                const pos = tx.amount >= 0, icon = pos ? 'fa-arrow-down' : 'fa-arrow-up';
+                const ds = new Date(tx.created_at).toLocaleDateString([], {day:'2-digit',month:'short'});
+                div.innerHTML = `<div class="transaction-info"><div class="transaction-icon ${pos?'positive':'negative'}"><i class="fas ${icon}"></i></div><div class="transaction-details"><div class="transaction-title">${tx.description||tx.type}</div><div class="transaction-date">${ds}</div></div></div><div class="transaction-amount ${pos?'positive':'negative'}">${pos?'+':''}Bs ${parseFloat(tx.amount).toFixed(2)}</div>`;
+                list.appendChild(div);
+            });
+        }
+
+        setInterval(async () => {
+            if (!isDriverOnline || !currentDriverId) return;
+            if (pendingRide || currentRideId) {
+                try {
+                    const activeId = currentRideId || pendingRide.id;
+                    const { data: checkRide } = await supabaseClient.from('rides').select('id, status, driver_id').eq('id', activeId).maybeSingle();
+                    if (checkRide && (checkRide.status === 'cancelado' || checkRide.status === 'no_completado')) {
+                        dlog('❌ Cancelación detectada por polling', 'warning');
+                        handleRideCancelled(checkRide, 'polling');
+                    }
+                } catch (e) { }
+                return;
+            }
+            try {
+                const { data } = await supabaseClient
+                    .from('rides').select('id, status')
+                    .or(`driver_id.eq.${currentDriverId},and(status.eq.pendiente,driver_id.is.null)`)
+                    .in('status', ['pendiente', 'aceptado'])
+                    .order('created_at', { ascending: false }).limit(1);
+                if (data && data.length > 0) {
+                    dlog('🔄 Respaldo encontró viaje sin mostrar: ' + data[0].id.substring(0,8), 'warning');
+                    const { data: fullRide } = await supabaseClient
+                        .from('rides').select('*, passengers(full_name, phone)').eq('id', data[0].id).single();
+                    if (fullRide && !pendingRide && !currentRideId && !isRejecting) showRideRequest(fullRide);
+                }
+            } catch (e) {}
+        }, 5000);
+
+        window.addEventListener('beforeunload', () => {
+            stopRideNotification();
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
+            if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+            if (currentDriverId) navigator.sendBeacon?.(`${supabaseUrl}/rest/v1/driver_status?driver_id=eq.${currentDriverId}`, new Blob([JSON.stringify({ is_online: false, last_updated: new Date().toISOString() })], { type: 'application/json' }));
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                hideLoading();
+                if (map) map.resize();
+                if (isDriverOnline && !watchId) startTracking();
+                updateGreeting();
+            }
+        });
+
+        document.getElementById('chatInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') sendCentralMessage(); });
+
+        dlog('App iniciada. Toca el engranaje para ver logs.', 'info');
+    </script>
+</body>
+</html>
