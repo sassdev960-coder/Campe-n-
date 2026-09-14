@@ -155,6 +155,9 @@
         .driver-arrow { width: 44px; height: 44px; background: linear-gradient(135deg, #4285F4, #2563eb); border: 3px solid white; border-radius: var(--border-radius-full); box-shadow: 0 4px 15px rgba(66,133,244,0.6); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; position: relative; }
         .driver-arrow::before { content: ''; position: absolute; inset: -8px; border-radius: var(--border-radius-full); background: rgba(66,133,244,0.2); animation: pulseMarker 2s infinite; }
         @keyframes pulseMarker { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0; } }
+        .maneuver-arrow { width: 56px; height: 56px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: 4px solid white; border-radius: var(--border-radius-full); box-shadow: 0 8px 24px rgba(59,130,246,0.7); display: flex; align-items: center; justify-content: center; color: white; font-size: 26px; position: relative; animation: maneuverPulse 1.5s infinite; }
+        .maneuver-arrow::before { content: ''; position: absolute; inset: -12px; border-radius: var(--border-radius-full); background: rgba(59,130,246,0.3); animation: pulseMarker 1.5s infinite; }
+        @keyframes maneuverPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
         .bottom-nav { background: rgba(20,22,28,0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 10px 8px calc(10px + env(safe-area-inset-bottom, 0px)) 8px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -4px 30px rgba(0,0,0,0.5); position: relative; z-index: 1000; gap: 4px; }
         .nav-item { color: var(--gray-text); display: flex; flex-direction: column; align-items: center; font-size: 10px; font-weight: 600; gap: 4px; transition: all 0.3s var(--ease-smooth); cursor: pointer; flex: 1; padding: 8px 4px; border-radius: var(--border-radius-md); position: relative; letter-spacing: 0.3px; }
         .nav-icon { font-size: 22px; transition: all 0.3s var(--ease-bounce); position: relative; }
@@ -631,7 +634,7 @@
             </div>
             <div class="ride-actions">
                 <button class="ride-btn accept" onclick="acceptRide()"><i class="fas fa-check"></i> Aceptar</button>
-                <button class="ride-btn reject" onclick="rejectRide()"><i class="fas fa-times"></i> Rechazar</button>
+                <div class="ride-btn reject" onclick="rejectRide()"><i class="fas fa-times"></i> Rechazar</div>
             </div>
         </div>
     </div>
@@ -727,6 +730,46 @@
             return (Math.atan2(y,x)*180/Math.PI+360)%360;
         }
 
+        // ✅ NUEVO: Calcular progreso de la ruta (para la línea que desaparece)
+        function calculateRouteProgress(driverLat, driverLng) {
+            const coords = window.currentRouteCoords;
+            if (!coords || coords.length < 2) return 0;
+            let minDist = Infinity;
+            let closestIdx = 0;
+            for (let i = 0; i < coords.length; i++) {
+                const d = getDistanceFromLatLonInMeters(driverLat, driverLng, coords[i][0], coords[i][1]);
+                if (d < minDist) {
+                    minDist = d;
+                    closestIdx = i;
+                }
+            }
+            return closestIdx / (coords.length - 1);
+        }
+
+        // ✅ NUEVO: Hablar instrucciones con Web Speech API
+        let lastSpokenInstruction = '';
+        let lastSpokenTime = 0;
+        function speakInstruction(text) {
+            if (!text || !('speechSynthesis' in window)) return;
+            const now = Date.now();
+            // No repetir la misma instrucción por 5 segundos
+            if (lastSpokenInstruction === text && (now - lastSpokenTime) < 5000) return;
+            lastSpokenInstruction = text;
+            lastSpokenTime = now;
+            try {
+                window.speechSynthesis.cancel();
+                const utt = new SpeechSynthesisUtterance(text);
+                utt.lang = 'es-ES';
+                utt.rate = 1.0;
+                utt.volume = 1.0;
+                utt.pitch = 1.0;
+                window.speechSynthesis.speak(utt);
+                dlog('🔊 Voz: ' + text, 'info');
+            } catch (e) {
+                dlog('Error voz: ' + e.message, 'warning');
+            }
+        }
+
         const supabaseUrl = 'https://uwdojchfwmaczgdthtfr.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3ZG9qY2hmd21hY3pnZHRodGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDQ4NDEsImV4cCI6MjEwMjcyMDg0MX0.jafGOwlItnzSoZ6yYlpaae16S2nlSDpPIS2316ZPJak';
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
@@ -740,8 +783,9 @@
         let userInteracting = false, lastInteractionTime = 0, smoothedBearing = null;
         let obLat = null, obLng = null, currentSelfieFile = null, currentChatTarget = 'central';
         let chatSubscription = null;
+        // ✅ NUEVO: Marker de próxima maniobra
+        let maneuverArrowMarker = null;
 
-        // Variables de notificación sonora
         let notificationAudioCtx = null;
         let notificationInterval = null;
         let notificationTimeout = null;
@@ -790,9 +834,7 @@
             isNotificationPlaying = true;
             dlog('🔔 Iniciando notificación sonora (1 minuto)', 'warning');
             playNotificationSound();
-            notificationInterval = setInterval(() => {
-                playNotificationSound();
-            }, 2000);
+            notificationInterval = setInterval(() => { playNotificationSound(); }, 2000);
             notificationTimeout = setTimeout(() => {
                 stopRideNotification();
                 dlog('🔕 Notificación detenida (timeout 1 min)', 'warning');
@@ -807,28 +849,22 @@
             dlog('🔕 Notificación sonora detenida', 'info');
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // ✅ NUEVO: Manejar cancelación de viaje (antes Y después de aceptar)
-        // ═══════════════════════════════════════════════════════════
         function handleRideCancelled(ride, source = 'realtime') {
             const cancelledId = ride.id;
             const wasPending = pendingRide && pendingRide.id === cancelledId;
             const wasActive = currentRideId === cancelledId;
-
             if (!wasPending && !wasActive) return false;
 
             dlog(`❌ Pasajero canceló el viaje (${source})`, 'warning');
             stopRideNotification();
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
 
             if (wasPending) {
-                // Caso 1: conductor aún no había aceptado
                 hideRideModal();
                 pendingRide = null;
                 showToast('El pasajero canceló el viaje', 'times-circle');
             }
-
             if (wasActive) {
-                // Caso 2: conductor ya había aceptado (en camino, llegó o en curso)
                 hideRideModal();
                 clearRoute();
                 currentRideId = null;
@@ -842,7 +878,6 @@
                 }
                 showToast('⚠️ El pasajero canceló el viaje en curso', 'exclamation-triangle');
             }
-
             updateDebugStatus();
             return true;
         }
@@ -851,20 +886,14 @@
             const rawPhone = document.getElementById('loginPhone').value.trim();
             const password = document.getElementById('loginPassword').value;
             if (!rawPhone || !password) return alert('Ingresa tu teléfono y contraseña');
-
-            const cleanedPhone = rawPhone
-                .replace(/[\s\-()]/g, '')
-                .replace(/^\+?591/, '');
-
+            const cleanedPhone = rawPhone.replace(/[\s\-()]/g, '').replace(/^\+?591/, '');
             showLoading('Iniciando sesión...');
             dlog('Intentando login con teléfono: ' + rawPhone, 'info');
-
             try {
                 let { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: `${rawPhone}@montero.app`,
                     password
                 });
-
                 if (error && cleanedPhone !== rawPhone) {
                     dlog('Reintentando con teléfono normalizado: ' + cleanedPhone, 'info');
                     const retry = await supabaseClient.auth.signInWithPassword({
@@ -874,7 +903,6 @@
                     data = retry.data;
                     error = retry.error;
                 }
-
                 if (error) throw error;
                 currentDriverId = data.user.id;
                 dlog('Login exitoso. Driver ID: ' + currentDriverId, 'success');
@@ -1036,6 +1064,7 @@
         async function logout() {
             hideLoading();
             stopRideNotification();
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
             if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
             if (currentDriverId) {
                 await supabaseClient.from('driver_status').upsert({ driver_id: currentDriverId, is_online: false, latitude: null, longitude: null, last_updated: new Date().toISOString() }, { onConflict: 'driver_id' });
@@ -1047,13 +1076,10 @@
             document.getElementById('view-login').classList.add('active');
             if (window.rideSubscription) { supabaseClient.removeChannel(window.rideSubscription); window.rideSubscription = null; }
             if (chatSubscription) {
-                try {
-                    supabaseClient.removeChannel(chatSubscription);
-                    chatSubscription = null;
-                    dlog('Chat: canal limpiado en logout', 'info');
-                } catch (e) { /* ignore */ }
+                try { supabaseClient.removeChannel(chatSubscription); chatSubscription = null; dlog('Chat: canal limpiado en logout', 'info'); } catch (e) { }
             }
             if (driverMarker) { driverMarker.remove(); driverMarker = null; }
+            if (maneuverArrowMarker) { maneuverArrowMarker.remove(); maneuverArrowMarker = null; }
             if (map) { map.remove(); map = null; mapInitialized = false; }
             dlog('Sesión cerrada', 'warning');
         }
@@ -1107,9 +1133,6 @@
             });
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // SUSCRIPCIÓN REALTIME — con detección de cancelación
-        // ═══════════════════════════════════════════════════════════
         function setupRideSubscription() {
             if (window.rideSubscription) { dlog('Ya existe suscripción de viajes', 'warning'); return; }
             dlog('Creando suscripción Realtime a rides...', 'info');
@@ -1123,7 +1146,6 @@
                     const esPoolAbierto = ride.status === 'pendiente' && ride.driver_id === null;
                     const esMiCancelacion = (pendingRide && pendingRide.id === ride.id) || currentRideId === ride.id;
 
-                    // ✅ PATCH: Detectar cancelación antes de filtrar (aplica a pool y a asignados)
                     if (esMiCancelacion && (ride.status === 'cancelado' || ride.status === 'no_completado')) {
                         handleRideCancelled(ride, 'realtime');
                         return;
@@ -1245,35 +1267,23 @@
             }
             startRideNotification();
             updateDebugStatus();
-
             registrarVistaDeCarrera(ride);
         }
 
         async function registrarVistaDeCarrera(ride) {
             if (!ride || !ride.id || !currentDriverId) return;
             try {
-                const { data: cur } = await supabaseClient
-                    .from('rides')
-                    .select('viewed_by_drivers')
-                    .eq('id', ride.id)
-                    .maybeSingle();
-
+                const { data: cur } = await supabaseClient.from('rides').select('viewed_by_drivers').eq('id', ride.id).maybeSingle();
                 const views = Array.isArray(cur?.viewed_by_drivers) ? cur.viewed_by_drivers : [];
-
                 if (views.some(v => v && v.driver_id === currentDriverId)) {
                     dlog('👁 Vista ya registrada previamente', 'info');
                     return;
                 }
-
                 let distanceKm = null;
                 if (currentPosition && ride.origin_lat && ride.origin_lng) {
-                    const meters = getDistanceFromLatLonInMeters(
-                        currentPosition[0], currentPosition[1],
-                        ride.origin_lat, ride.origin_lng
-                    );
+                    const meters = getDistanceFromLatLonInMeters(currentPosition[0], currentPosition[1], ride.origin_lat, ride.origin_lng);
                     distanceKm = +(meters / 1000).toFixed(2);
                 }
-
                 const viewEntry = {
                     driver_id: currentDriverId,
                     driver_name: currentDriverData?.full_name || 'Conductor',
@@ -1283,14 +1293,8 @@
                     eta_mins: null,
                     viewed_at: new Date().toISOString()
                 };
-
                 views.push(viewEntry);
-
-                await supabaseClient
-                    .from('rides')
-                    .update({ viewed_by_drivers: views })
-                    .eq('id', ride.id);
-
+                await supabaseClient.from('rides').update({ viewed_by_drivers: views }).eq('id', ride.id);
                 dlog(`👁 Vista registrada (${distanceKm ?? '?'} km)`, 'success');
             } catch (e) {
                 dlog('Error registrando vista: ' + (e.message || e), 'warning');
@@ -1349,21 +1353,13 @@
             if (!pendingRide || !pendingRide.id) return;
             if (isAcceptingRide) { dlog('Ya se está aceptando, ignorando doble tap', 'warning'); return; }
             isAcceptingRide = true;
-
             stopRideNotification();
             const rideId = pendingRide.id;
             dlog('Aceptando viaje: ' + rideId.substring(0,8), 'info');
-
             try {
-                const { data: rideCheck, error: checkErr } = await supabaseClient
-                    .from('rides').select('*').eq('id', rideId).single();
-                if (checkErr) {
-                    dlog('Error acceptRide: ' + checkErr.message, 'error');
-                    return alert('Error: ' + checkErr.message);
-                }
-
+                const { data: rideCheck, error: checkErr } = await supabaseClient.from('rides').select('*').eq('id', rideId).single();
+                if (checkErr) { dlog('Error acceptRide: ' + checkErr.message, 'error'); return alert('Error: ' + checkErr.message); }
                 let ride = rideCheck;
-
                 if (ride.status === 'cancelado' || ride.status === 'no_completado') {
                     dlog('Viaje ya cancelado por el pasajero', 'warning');
                     showToast('El pasajero canceló este viaje', 'times-circle');
@@ -1371,49 +1367,34 @@
                     pendingRide = null;
                     return;
                 }
-
                 if (ride.status === 'pendiente') {
-                    const { data: rpcResult, error: rpcError } = await supabaseClient
-                        .rpc('accept_ride', { p_ride_id: rideId, p_driver_id: currentDriverId });
-
+                    const { data: rpcResult, error: rpcError } = await supabaseClient.rpc('accept_ride', { p_ride_id: rideId, p_driver_id: currentDriverId });
                     if (rpcError) {
                         dlog('Error RPC accept_ride: ' + rpcError.message, 'error');
                         const { data: fallback, error: fbErr } = await supabaseClient
                             .from('rides')
                             .update({ status: 'aceptado', driver_id: currentDriverId, accepted_at: new Date().toISOString() })
-                            .eq('id', rideId)
-                            .eq('status', 'pendiente')
-                            .select()
-                            .maybeSingle();
-
+                            .eq('id', rideId).eq('status', 'pendiente').select().maybeSingle();
                         if (fbErr || !fallback) {
                             dlog('Fallback falló, otro conductor la tomó', 'warning');
                             showToast('Otro conductor la tomó primero', 'exclamation-circle');
-                            hideRideModal();
-                            pendingRide = null;
-                            return;
+                            hideRideModal(); pendingRide = null; return;
                         }
                         ride = fallback;
                     } else {
                         if (!rpcResult || !rpcResult.success) {
                             dlog('Carrera ya tomada por otro conductor', 'warning');
                             showToast('Otro conductor la tomó primero', 'exclamation-circle');
-                            hideRideModal();
-                            pendingRide = null;
-                            return;
+                            hideRideModal(); pendingRide = null; return;
                         }
                         ride = rpcResult.ride;
                     }
                     dlog('✅ Carrera aceptada atómicamente', 'success');
-                }
-                else if (ride.status === 'aceptado' && ride.driver_id === currentDriverId) {
+                } else if (ride.status === 'aceptado' && ride.driver_id === currentDriverId) {
                     dlog('Carrera ya asignada a mí por admin', 'info');
-                }
-                else {
+                } else {
                     alert('Este viaje ya no está disponible.');
-                    hideRideModal();
-                    pendingRide = null;
-                    return;
+                    hideRideModal(); pendingRide = null; return;
                 }
 
                 currentRideId = rideId;
@@ -1429,7 +1410,6 @@
                         if (map && mapInitialized) updateDriverMarker(currentPosition[0], currentPosition[1], 0);
                     } catch (e) { alert('Activa el GPS.'); return; }
                 }
-
                 switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
                 await ensureMapReady();
                 if (ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
@@ -1483,6 +1463,7 @@
             currentRideStatus = 'llegado_origen';
             updateActionButtons(); clearRoute(); currentRouteTarget = null;
             if (map && currentPosition) map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 16, pitch: 0, bearing: 0 });
+            speakInstruction('Has llegado al punto de partida');
         }
 
         async function startRideWithPassenger() {
@@ -1496,6 +1477,7 @@
                 await drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
                 currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
             }
+            speakInstruction('Iniciando viaje al destino');
         }
 
         async function finishRide(completed) {
@@ -1511,23 +1493,27 @@
             const newStatus = completed ? 'completado' : 'no_completado';
             const { error } = await supabaseClient.from('rides').update({ status: newStatus, completed_at: completed ? new Date().toISOString() : null, cancelled_at: completed ? null : new Date().toISOString() }).eq('id', currentRideId);
             if (error) return alert('Error: ' + error.message);
-
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
             if (completed) {
                 showToast('¡Viaje completado! Pago acreditado', 'check-circle');
+                speakInstruction('Viaje completado. Pago acreditado en tu billetera.');
                 setTimeout(() => { loadWalletData().catch(()=>{}); }, 900);
             } else {
                 alert('Viaje no completado');
             }
-
             resetRideState();
         }
 
+        // ═══════════════════════════════════════════════════════════
+        // DRAW ROUTE — con línea que desaparece + flecha de maniobra
+        // ═══════════════════════════════════════════════════════════
         async function drawRoute(originCoords, waypointCoords, destinationCoords) {
             if (!map) return;
             await ensureMapReady();
             if (map.getLayer('route-line')) map.removeLayer('route-line');
             if (map.getSource('route')) map.removeSource('route');
             clearRoute();
+
             if (originCoords[0] !== waypointCoords[0] || originCoords[1] !== waypointCoords[1]) {
                 const pe = document.createElement('div');
                 pe.innerHTML = '<i class="fas fa-user-circle" style="font-size:35px;color:#22c55e;text-shadow:0 0 8px #22c55e;"></i>';
@@ -1536,11 +1522,14 @@
             const de = document.createElement('div');
             de.innerHTML = '<i class="fas fa-flag-checkered" style="font-size:35px;color:#ef4444;text-shadow:0 0 8px #ef4444;"></i>';
             dropoffMarker = new mapboxgl.Marker(de).setLngLat([destinationCoords[1], destinationCoords[0]]).addTo(map);
+
             let coordinates = [];
             if (originCoords[0] === waypointCoords[0] && originCoords[1] === waypointCoords[1]) coordinates = [[originCoords[1],originCoords[0]],[destinationCoords[1],destinationCoords[0]]];
             else coordinates = [[originCoords[1],originCoords[0]],[waypointCoords[1],waypointCoords[0]],[destinationCoords[1],destinationCoords[0]]];
+
             const coordsString = coordinates.map(c => c.join(',')).join(';');
             const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordsString}?geometries=geojson&steps=true&access_token=${mapboxgl.accessToken}`;
+
             try {
                 const response = await fetch(url);
                 const data = await response.json();
@@ -1549,20 +1538,115 @@
                     currentNavigationSteps = route.legs.flatMap(leg => leg.steps);
                     currentNavigationIndex = 0;
                     updateNavigationPanel(currentNavigationSteps[0]);
+
                     const geojson = { type: 'Feature', properties: {}, geometry: route.geometry };
-                    map.addSource('route', { type: 'geojson', data: geojson });
-                    map.addLayer({ id: 'route-line', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#ff7a00', 'line-width': 8 } });
+                    map.addSource('route', { 
+                        type: 'geojson', 
+                        data: geojson,
+                        lineMetrics: true  // ✅ CRÍTICO para line-gradient
+                    });
+                    map.addLayer({ 
+                        id: 'route-line', 
+                        type: 'line', 
+                        source: 'route', 
+                        layout: { 'line-join': 'round', 'line-cap': 'round' }, 
+                        paint: { 
+                            'line-width': 8,
+                            'line-gradient': [
+                                'interpolate', ['linear'], ['line-progress'],
+                                0, '#ff7a00',
+                                1, '#ff7a00'
+                            ]
+                        }
+                    });
                     routeLayers.push('route', 'route-line');
-                    if (currentPosition && !userInteracting) map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 18, pitch: 0, bearing: 0, duration: 1000 });
+                    window.currentRouteCoords = route.geometry.coordinates;
+                    drawManeuverArrow(route.legs.flatMap(leg => leg.steps));
+
+                    if (currentPosition && !userInteracting) {
+                        const speedKmh = 0;
+                        const pitch = 45;
+                        const bearing = smoothedBearing || 0;
+                        map.easeTo({ 
+                            center: [currentPosition[1], currentPosition[0]], 
+                            zoom: 17, 
+                            pitch: pitch, 
+                            bearing: bearing,
+                            duration: 1200,
+                            essential: true
+                        });
+                    }
+                    speakInstruction(currentNavigationSteps[0]?.maneuver?.instruction || 'Sigue la ruta');
                 } else throw new Error('No routes');
             } catch (e) {
                 const geojson = { type: 'Feature', geometry: { type: 'LineString', coordinates } };
-                map.addSource('route', { type: 'geojson', data: geojson });
-                map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-color': '#ff7a00', 'line-width': 6 } });
+                map.addSource('route', { 
+                    type: 'geojson', 
+                    data: geojson,
+                    lineMetrics: true
+                });
+                map.addLayer({ 
+                    id: 'route-line', 
+                    type: 'line', 
+                    source: 'route', 
+                    paint: { 
+                        'line-width': 6,
+                        'line-gradient': [
+                            'interpolate', ['linear'], ['line-progress'],
+                            0, '#ff7a00',
+                            1, '#ff7a00'
+                        ]
+                    } 
+                });
                 routeLayers.push('route', 'route-line');
-                if (currentPosition && !userInteracting) map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 18, pitch: 0, bearing: 0, duration: 1000 });
+                window.currentRouteCoords = coordinates;
+                if (currentPosition && !userInteracting) {
+                    map.easeTo({ 
+                        center: [currentPosition[1], currentPosition[0]], 
+                        zoom: 17, 
+                        pitch: 45, 
+                        bearing: smoothedBearing || 0,
+                        duration: 1200,
+                        essential: true
+                    });
+                }
             }
-            dlog('Ruta dibujada en el mapa', 'success');
+            dlog('Ruta dibujada con navegación activa', 'success');
+        }
+
+        // ✅ NUEVO: Dibujar flecha en próxima maniobra
+        function drawManeuverArrow(steps) {
+            if (!map || !steps || steps.length === 0) return;
+            
+            // Eliminar marker anterior
+            if (maneuverArrowMarker) {
+                maneuverArrowMarker.remove();
+                maneuverArrowMarker = null;
+            }
+            
+            const nextStep = steps[0];
+            if (!nextStep || !nextStep.maneuver || !nextStep.maneuver.location) return;
+            
+            const [lng, lat] = nextStep.maneuver.location;
+            const modifier = (nextStep.maneuver.modifier || '').toLowerCase();
+            const type = (nextStep.maneuver.type || '').toLowerCase();
+            
+            let iconClass = 'fa-arrow-up';
+            if (modifier.includes('right')) iconClass = 'fa-arrow-right';
+            else if (modifier.includes('left')) iconClass = 'fa-arrow-left';
+            else if (modifier.includes('uturn')) iconClass = 'fa-undo';
+            else if (type === 'arrive') iconClass = 'fa-flag-checkered';
+            else if (type === 'roundabout' || type === 'rotary') iconClass = 'fa-sync-alt';
+            
+            const arrowEl = document.createElement('div');
+            arrowEl.className = 'maneuver-arrow';
+            arrowEl.innerHTML = `<i class="fas ${iconClass}"></i>`;
+            
+            maneuverArrowMarker = new mapboxgl.Marker({ element: arrowEl, anchor: 'center' })
+                .setLngLat([lng, lat])
+                .addTo(map);
+            
+            dlog('🎯 Flecha de maniobra dibujada: ' + iconClass, 'info');
         }
 
         function updateNavigationPanel(step) {
@@ -1582,7 +1666,10 @@
             routeLayers = [];
             if (pickupMarker) { pickupMarker.remove(); pickupMarker = null; }
             if (dropoffMarker) { dropoffMarker.remove(); dropoffMarker = null; }
+            if (maneuverArrowMarker) { maneuverArrowMarker.remove(); maneuverArrowMarker = null; }
             currentNavigationSteps = []; currentNavigationIndex = 0;
+            window.currentRouteCoords = null;
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
             document.getElementById('navigation-panel').classList.remove('active');
         }
 
@@ -1673,6 +1760,9 @@
             else createDriverMarker(lat, lng, bearing);
         }
 
+        // ═══════════════════════════════════════════════════════════
+        // START TRACKING — con línea que desaparece + cámara dinámica
+        // ═══════════════════════════════════════════════════════════
         function startTracking() {
             if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
             let previousCoord = null; smoothedBearing = null;
@@ -1691,11 +1781,38 @@
                         } else if (smoothedBearing !== null) bearing = smoothedBearing;
                     }
                     previousCoord = { lat, lng };
+
+                    // ✅ NUEVO: Actualizar la línea para que "desaparezca" detrás del conductor
+                    if (map && mapInitialized && map.getLayer('route-line') && window.currentRouteCoords && window.currentRouteCoords.length > 1) {
+                        const progress = calculateRouteProgress(lat, lng);
+                        const p = Math.max(0, Math.min(0.999, progress));
+                        if (p > 0.005) {
+                            try {
+                                map.setPaintProperty('route-line', 'line-gradient', [
+                                    'interpolate', ['linear'], ['line-progress'],
+                                    0, 'rgba(255, 122, 0, 0)',
+                                    p, 'rgba(255, 122, 0, 0)',
+                                    Math.min(p + 0.001, 0.999), '#ff7a00',
+                                    1, '#ff7a00'
+                                ]);
+                            } catch (e) { /* ignore si la capa no soporta gradient */ }
+                        }
+                    }
+
                     if (map && mapInitialized) {
                         updateDriverMarker(lat, lng, bearing);
                         if (!userInteracting) {
-                            const zoom = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') ? 18 : 15;
-                            const opts = { center: [lng, lat], zoom, pitch: 0, duration: 500, essential: true };
+                            const speedKmh = (position.coords.speed || 0) * 3.6;
+                            // ✅ Cámara dinámica: más inclinada y alejada a mayor velocidad
+                            let zoom, pitch;
+                            if (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') {
+                                pitch = Math.min(60, 35 + speedKmh * 0.3);
+                                zoom = Math.max(15, 18 - speedKmh * 0.04);
+                            } else {
+                                pitch = 0;
+                                zoom = 15;
+                            }
+                            const opts = { center: [lng, lat], zoom, pitch, duration: 500, essential: true };
                             if ((currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') && smoothedBearing !== null) opts.bearing = smoothedBearing;
                             map.easeTo(opts);
                         }
@@ -1833,11 +1950,9 @@
             });
         }
 
-        // ==================== RESPALDO: Polling cada 5 segundos ====================
         setInterval(async () => {
             if (!isDriverOnline || !currentDriverId) return;
 
-            // ✅ PATCH: Verificar si el viaje pendiente o activo fue cancelado
             if (pendingRide || currentRideId) {
                 try {
                     const activeId = currentRideId || pendingRide.id;
@@ -1851,11 +1966,10 @@
                         dlog('❌ Cancelación detectada por polling', 'warning');
                         handleRideCancelled(checkRide, 'polling');
                     }
-                } catch (e) { /* ignore */ }
+                } catch (e) { }
                 return;
             }
 
-            // Búsqueda de nuevos viajes
             try {
                 const { data } = await supabaseClient
                     .from('rides')
@@ -1880,6 +1994,7 @@
 
         window.addEventListener('beforeunload', () => {
             stopRideNotification();
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             if (currentDriverId) navigator.sendBeacon?.(`${supabaseUrl}/rest/v1/driver_status?driver_id=eq.${currentDriverId}`, new Blob([JSON.stringify({ is_online: false, last_updated: new Date().toISOString() })], { type: 'application/json' }));
         });
