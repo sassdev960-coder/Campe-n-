@@ -10,363 +10,297 @@
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <style>
-        :root {
-            --bg-black: #0a0a0b;
-            --bg-dark-gray: #131418;
-            --bg-surface: #1a1c22;
-            --bg-surface-hover: #24262d;
-            --bg-elevated: #2a2d35;
-            --bg-offline: #2a2a2a;
-            --primary-orange: #ff7a00;
-            --primary-orange-dark: #e66a00;
-            --primary-orange-glow: rgba(255, 122, 0, 0.35);
-            --primary-orange-subtle: rgba(255, 122, 0, 0.1);
-            --white: #ffffff;
-            --gray-text: #9ca3af;
-            --gray-light: #d1d5db;
-            --green-online: #22c55e;
-            --green-glow: rgba(34, 197, 94, 0.4);
-            --red: #ef4444;
-            --red-glow: rgba(239, 68, 68, 0.4);
-            --blue: #3b82f6;
-            --purple: #8b5cf6;
-            --yellow: #f59e0b;
-            --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
-            --shadow-md: 0 4px 20px rgba(0,0,0,0.4);
-            --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
-            --shadow-glow: 0 0 40px var(--primary-orange-glow);
-            --border-radius-sm: 8px;
-            --border-radius-md: 14px;
-            --border-radius-lg: 20px;
-            --border-radius-xl: 28px;
-            --border-radius-full: 999px;
-            --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
-        html, body { background-color: var(--bg-black); width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; overscroll-behavior-y: none; color: var(--white); }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 4px; }
-        .app-container { width: 100%; height: 100%; display: flex; flex-direction: column; position: relative; overflow: hidden; }
-        .content-area { flex: 1; overflow-y: auto; padding: 20px 18px 16px 18px; position: relative; overscroll-behavior: contain; }
-        .view { display: none; animation: fadeIn 0.4s var(--ease-out); }
-        .view.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        .online-glow { position: absolute; top: 0; left: 0; right: 0; height: 60vh; background: radial-gradient(ellipse at top, rgba(255,122,0,0.25) 0%, rgba(255,122,0,0.1) 30%, rgba(11,11,11,0) 70%); opacity: 0; pointer-events: none; transition: opacity 0.8s ease-in-out; z-index: 0; }
-        .online-glow.active { opacity: 1; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; position: relative; z-index: 10; }
-        .header-left { display: flex; align-items: center; gap: 14px; }
-        .menu-icon { font-size: 22px; color: var(--gray-light); cursor: pointer; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: var(--border-radius-full); transition: all 0.2s; }
-        .menu-icon:active { background: var(--bg-surface); transform: scale(0.9); }
-        .greeting-section { display: flex; flex-direction: column; gap: 2px; }
-        .greeting-text { font-size: 12px; color: var(--gray-text); font-weight: 500; letter-spacing: 0.3px; }
-        .user-name { font-size: 18px; font-weight: 700; color: var(--white); letter-spacing: -0.3px; }
-        .header-right { display: flex; align-items: center; gap: 12px; }
-        .icon-btn { width: 44px; height: 44px; border-radius: var(--border-radius-full); background: var(--bg-surface); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s var(--ease-smooth); position: relative; border: 1px solid rgba(255,255,255,0.05); }
-        .icon-btn:active { transform: scale(0.9); background: var(--bg-surface-hover); }
-        .icon-btn i { font-size: 18px; color: var(--gray-light); }
-        .icon-btn.logout i { color: var(--primary-orange); }
-        .notification-badge { position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; background: var(--red); border-radius: var(--border-radius-full); border: 2px solid var(--bg-dark-gray); box-shadow: 0 0 8px var(--red-glow); }
-        .profile-pic-container { position: relative; }
-        .profile-pic { width: 46px; height: 46px; border-radius: var(--border-radius-full); overflow: hidden; border: 2px solid transparent; transition: all 0.3s; }
-        .profile-pic.online { border-color: var(--green-online); box-shadow: 0 0 15px var(--green-glow); }
-        .profile-pic.offline { border-color: var(--bg-elevated); }
-        .profile-pic img { width: 100%; height: 100%; object-fit: cover; }
-        .status-indicator { position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; border-radius: var(--border-radius-full); border: 2px solid var(--bg-dark-gray); }
-        .status-indicator.online { background: var(--green-online); box-shadow: 0 0 8px var(--green-glow); animation: pulseGreen 2s infinite; }
-        .status-indicator.offline { background: var(--bg-elevated); }
-        @keyframes pulseGreen { 0%,100% { box-shadow: 0 0 8px var(--green-glow); } 50% { box-shadow: 0 0 16px var(--green-glow); } }
-        .status-card { border-radius: var(--border-radius-lg); padding: 24px; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: center; transition: all 0.5s var(--ease-smooth); position: relative; z-index: 1; overflow: hidden; }
-        .status-card.online { background: linear-gradient(135deg, var(--primary-orange) 0%, var(--primary-orange-dark) 100%); box-shadow: var(--shadow-glow); }
-        .status-card.offline { background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-elevated) 100%); border: 1px solid rgba(255,255,255,0.05); box-shadow: var(--shadow-md); }
-        .status-card.online::before { content: ''; position: absolute; top: 50%; left: 50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 50%); transform: translate(-50%,-50%) scale(0); animation: pulseWave 3s ease-out infinite; }
-        @keyframes pulseWave { 0% { transform: translate(-50%,-50%) scale(0); opacity: 1; } 100% { transform: translate(-50%,-50%) scale(1); opacity: 0; } }
-        .status-content { display: flex; align-items: center; gap: 16px; position: relative; z-index: 2; }
-        .status-icon-box { width: 56px; height: 56px; border-radius: var(--border-radius-md); background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .status-icon-box i { font-size: 26px; color: var(--white); }
-        .status-card.online .status-icon-box i { animation: bikeRide 1.5s ease-in-out infinite; }
-        @keyframes bikeRide { 0%,100% { transform: translateX(0) rotate(0deg); } 25% { transform: translateX(3px) rotate(-5deg); } 75% { transform: translateX(-3px) rotate(5deg); } }
-        .status-card.offline .status-icon-box { background: rgba(255,255,255,0.05); }
-        .status-card.offline .status-icon-box i { color: var(--gray-text); }
-        .status-label { font-size: 12px; color: rgba(255,255,255,0.75); font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 4px; }
-        .status-title { font-size: 22px; font-weight: 800; color: var(--white); letter-spacing: -0.5px; margin-bottom: 2px; }
-        .status-subtitle { font-size: 13px; color: rgba(255,255,255,0.7); font-weight: 500; }
-        .status-card.offline .status-label { color: var(--gray-text); }
-        .status-card.offline .status-title { color: var(--white); }
-        .status-card.offline .status-subtitle { color: var(--gray-text); }
-        .switch { position: relative; display: inline-block; width: 58px; height: 32px; z-index: 2; flex-shrink: 0; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; inset: 0; background: rgba(255,255,255,0.2); transition: .3s; border-radius: var(--border-radius-full); border: 2px solid rgba(255,255,255,0.1); }
-        .slider:before { position: absolute; content: ""; height: 24px; width: 24px; left: 2px; bottom: 2px; background: var(--white); transition: .3s var(--ease-bounce); border-radius: var(--border-radius-full); box-shadow: var(--shadow-sm); }
-        input:checked + .slider { background: var(--white); border-color: var(--white); }
-        input:checked + .slider:before { transform: translateX(26px); background: var(--primary-orange); }
-        .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 22px; position: relative; z-index: 1; }
-        .stat-item { background: linear-gradient(145deg, var(--bg-surface), var(--bg-dark-gray)); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--border-radius-md); padding: 16px 10px; text-align: center; position: relative; overflow: hidden; transition: all 0.3s var(--ease-smooth); }
-        .stat-item:active { transform: scale(0.97); border-color: var(--primary-orange-subtle); }
-        .stat-item::before { content: ''; position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; background: var(--primary-orange); opacity: 0.04; border-radius: var(--border-radius-full); transition: all 0.4s; }
-        .stat-item:hover::before { transform: scale(1.5); opacity: 0.08; }
-        .stat-icon-circle { display: inline-flex; justify-content: center; align-items: center; width: 44px; height: 44px; border-radius: var(--border-radius-md); background: linear-gradient(135deg, var(--primary-orange), var(--primary-orange-dark)); color: var(--white); font-size: 18px; margin-bottom: 10px; box-shadow: 0 4px 12px var(--primary-orange-glow); position: relative; z-index: 1; }
-        .stat-label { font-size: 10px; color: var(--gray-text); margin-bottom: 4px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; position: relative; z-index: 1; }
-        .stat-value { font-size: 22px; font-weight: 800; color: var(--white); letter-spacing: -0.5px; position: relative; z-index: 1; }
-        .online-card { border-radius: var(--border-radius-lg); margin-bottom: 22px; overflow: hidden; height: 150px; position: relative; z-index: 1; box-shadow: var(--shadow-md); background: linear-gradient(135deg, var(--primary-orange-subtle), var(--bg-surface)); border: 1px solid rgba(255,255,255,0.05); }
-        .banner-img { width: 100%; height: 100%; object-fit: cover; }
-        #view-viajes { padding: 0; display: none; flex: 1; position: relative; overflow: hidden; width: 100%; height: 100%; }
-        #view-viajes.active { display: block; }
-        #map { width: 100%; height: 100%; background: #1a1a1a; position: absolute; top: 0; left: 0; }
-        .map-topbar { position: absolute; top: 0; left: 0; right: 0; padding: 50px 18px 16px; background: linear-gradient(180deg, rgba(10,10,11,0.9) 0%, transparent 100%); z-index: 100; display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
-        .map-topbar > * { pointer-events: auto; }
-        .map-back-btn { width: 42px; height: 42px; border-radius: var(--border-radius-full); background: rgba(26,28,34,0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: var(--shadow-md); }
-        .map-back-btn i { color: var(--white); font-size: 16px; }
-        .map-status-pill { background: rgba(26,28,34,0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); border-radius: var(--border-radius-full); padding: 8px 16px; display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--white); box-shadow: var(--shadow-md); }
-        .map-status-pill .pulse-dot { width: 8px; height: 8px; border-radius: var(--border-radius-full); background: var(--green-online); box-shadow: 0 0 8px var(--green-glow); animation: pulseDot 1.5s infinite; }
-        @keyframes pulseDot { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .search-container { position: absolute; top: 105px; left: 18px; right: 18px; z-index: 100; max-width: 500px; margin: 0 auto; transition: all 0.3s var(--ease-smooth); }
-        .search-container.hidden { opacity: 0; pointer-events: none; transform: translateY(-20px); }
-        .search-box { background: rgba(26,28,34,0.92); backdrop-filter: blur(20px); border-radius: var(--border-radius-full); padding: 12px 20px; display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,0.08); }
-        .search-box i { color: var(--gray-text); font-size: 16px; }
-        .search-box input { flex: 1; background: transparent; border: none; outline: none; color: var(--white); font-size: 14px; font-weight: 500; }
-        .search-box input::placeholder { color: var(--gray-text); }
-        .suggestions { background: rgba(26,28,34,0.95); backdrop-filter: blur(20px); border-radius: var(--border-radius-lg); margin-top: 10px; max-height: 300px; overflow-y: auto; display: none; border: 1px solid rgba(255,255,255,0.08); box-shadow: var(--shadow-lg); }
-        .suggestion-item { padding: 14px 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.2s; }
-        .suggestion-item:hover { background: rgba(255,255,255,0.03); }
-        .suggestion-item:last-child { border-bottom: none; }
-        .suggestion-item i { color: var(--primary-orange); font-size: 14px; }
-        .suggestion-item span { font-size: 13px; color: var(--white); }
-        .navigation-panel { position: absolute; top: 105px; left: 50%; transform: translateX(-50%); width: calc(100% - 36px); max-width: 420px; z-index: 99; background: linear-gradient(135deg, var(--blue), #2563eb); border-radius: var(--border-radius-lg); padding: 18px; display: none; align-items: center; gap: 16px; box-shadow: 0 10px 30px rgba(59,130,246,0.4); border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(10px); }
-        .navigation-panel.active { display: flex; }
-        .nav-instruction { display: flex; align-items: center; justify-content: center; width: 68px; height: 68px; background: rgba(255,255,255,0.15); border-radius: var(--border-radius-md); flex-shrink: 0; border: 1px solid rgba(255,255,255,0.2); }
-        .nav-instruction i { font-size: 38px; color: var(--white); text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-        .nav-details { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-        .nav-distance { font-size: 28px; color: var(--white); font-weight: 800; line-height: 1; letter-spacing: -0.5px; }
-        .nav-text { font-size: 14px; color: rgba(255,255,255,0.95); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .ride-actions-float { position: absolute; bottom: 25px; left: 0; right: 0; z-index: 1000; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 0 18px; pointer-events: none; }
-        .action-btn { pointer-events: auto; padding: 14px 20px; border-radius: var(--border-radius-full); border: none; font-weight: 700; font-size: 14px; box-shadow: var(--shadow-lg); cursor: pointer; transition: all 0.2s var(--ease-bounce); display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; border: 1px solid rgba(255,255,255,0.15); }
-        .action-btn:active { transform: scale(0.94); }
-        .action-btn i { font-size: 16px; }
-        .action-btn.pickup { background: linear-gradient(135deg, var(--green-online), #16a34a); color: white; box-shadow: 0 8px 20px var(--green-glow); }
-        .action-btn.arrived { background: linear-gradient(135deg, var(--blue), #2563eb); color: white; box-shadow: 0 8px 20px rgba(59,130,246,0.4); }
-        .action-btn.finish { background: linear-gradient(135deg, var(--primary-orange), var(--primary-orange-dark)); color: white; box-shadow: 0 8px 20px var(--primary-orange-glow); }
-        .action-btn.not-completed { background: linear-gradient(135deg, #6b7280, #4b5563); color: white; }
-        .action-btn.redirect { background: linear-gradient(135deg, var(--purple), #7c3aed); color: white; box-shadow: 0 8px 20px rgba(139,92,246,0.4); }
-        .action-btn.hidden { display: none; }
-        .mapboxgl-ctrl-bottom-left, .mapboxgl-ctrl-bottom-right { display: none; }
-        .driver-arrow { width: 44px; height: 44px; background: linear-gradient(135deg, #4285F4, #2563eb); border: 3px solid white; border-radius: var(--border-radius-full); box-shadow: 0 4px 15px rgba(66,133,244,0.6); display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; position: relative; }
-        .driver-arrow::before { content: ''; position: absolute; inset: -8px; border-radius: var(--border-radius-full); background: rgba(66,133,244,0.2); animation: pulseMarker 2s infinite; }
-        @keyframes pulseMarker { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.3); opacity: 0; } }
-        .maneuver-arrow { width: 56px; height: 56px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: 4px solid white; border-radius: var(--border-radius-full); box-shadow: 0 8px 24px rgba(59,130,246,0.7); display: flex; align-items: center; justify-content: center; color: white; font-size: 26px; position: relative; animation: maneuverPulse 1.5s infinite; }
-        .maneuver-arrow::before { content: ''; position: absolute; inset: -12px; border-radius: var(--border-radius-full); background: rgba(59,130,246,0.3); animation: pulseMarker 1.5s infinite; }
-        @keyframes maneuverPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        .bottom-nav { background: rgba(20,22,28,0.92); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); padding: 10px 8px calc(10px + env(safe-area-inset-bottom, 0px)) 8px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-around; align-items: center; box-shadow: 0 -4px 30px rgba(0,0,0,0.5); position: relative; z-index: 1000; gap: 4px; }
-        .nav-item { color: var(--gray-text); display: flex; flex-direction: column; align-items: center; font-size: 10px; font-weight: 600; gap: 4px; transition: all 0.3s var(--ease-smooth); cursor: pointer; flex: 1; padding: 8px 4px; border-radius: var(--border-radius-md); position: relative; letter-spacing: 0.3px; }
-        .nav-icon { font-size: 22px; transition: all 0.3s var(--ease-bounce); position: relative; }
-        .nav-item.active { color: var(--primary-orange); }
-        .nav-item.active .nav-icon { transform: translateY(-2px) scale(1.1); }
-        .nav-item.active::after { content: ''; position: absolute; top: 2px; left: 50%; transform: translateX(-50%); width: 24px; height: 3px; background: linear-gradient(90deg, var(--primary-orange), var(--primary-orange-dark)); border-radius: var(--border-radius-full); box-shadow: 0 0 10px var(--primary-orange-glow); }
-        .nav-item:active { transform: scale(0.9); }
-        .ride-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 5000; display: flex; justify-content: center; align-items: flex-end; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
-        .ride-modal.active { opacity: 1; visibility: visible; }
-        .ride-card { background: linear-gradient(180deg, #1e2230 0%, #14171f 100%); border-top-left-radius: var(--border-radius-xl); border-top-right-radius: var(--border-radius-xl); padding: 12px 24px 28px; width: 100%; max-width: 500px; box-shadow: 0 -10px 50px rgba(0,0,0,0.8); color: var(--white); animation: slideUpSheet 0.4s var(--ease-out); max-height: 85vh; overflow-y: auto; border-top: 1px solid rgba(255,255,255,0.1); }
-        @keyframes slideUpSheet { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .ride-modal.active .ride-card { animation: slideUpSheet 0.4s var(--ease-out), shakeCard 0.6s 0.4s ease-in-out; }
-        @keyframes shakeCard { 0%,100% { transform: translateX(0); } 10%,30%,50%,70%,90% { transform: translateX(-6px); } 20%,40%,60%,80% { transform: translateX(6px); } }
-        .drag-handle { width: 40px; height: 4px; background: rgba(255,255,255,0.2); border-radius: var(--border-radius-full); margin: 0 auto 18px; }
-        .ride-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
-        .ride-title-section { display: flex; align-items: center; gap: 12px; }
-        .ride-icon-box { width: 50px; height: 50px; border-radius: var(--border-radius-md); background: linear-gradient(135deg, var(--primary-orange), var(--primary-orange-dark)); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px var(--primary-orange-glow); flex-shrink: 0; }
-        .ride-icon-box i { font-size: 22px; color: var(--white); animation: ringIcon 1s ease-in-out infinite; }
-        @keyframes ringIcon { 0%,100% { transform: rotate(0); } 20% { transform: rotate(15deg); } 40% { transform: rotate(-15deg); } 60% { transform: rotate(10deg); } 80% { transform: rotate(-10deg); } }
-        .ride-title { font-size: 18px; font-weight: 800; color: var(--white); margin-bottom: 2px; letter-spacing: -0.3px; }
-        .ride-subtitle { font-size: 12px; color: var(--gray-text); font-weight: 500; }
-        .ride-info { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
-        .ride-info-item { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--border-radius-md); padding: 14px 16px; display: flex; align-items: center; gap: 14px; }
-        .ride-info-icon { width: 42px; height: 42px; border-radius: var(--border-radius-md); background: var(--primary-orange-subtle); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .ride-info-icon i { font-size: 18px; color: var(--primary-orange); }
-        .ride-info-content { flex: 1; min-width: 0; }
-        .ride-info-label { font-size: 11px; color: var(--gray-text); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 3px; }
-        .ride-info-value { font-size: 14px; font-weight: 600; color: var(--white); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-        .ride-info-item.price { background: linear-gradient(135deg, var(--primary-orange-subtle), rgba(255,255,255,0.02)); border-color: var(--primary-orange); }
-        .ride-info-item.price .ride-info-value { font-size: 24px; font-weight: 800; color: var(--primary-orange); letter-spacing: -0.5px; }
-        .ride-actions { display: flex; flex-direction: column; gap: 10px; }
-        .ride-btn { padding: 16px; border: none; border-radius: var(--border-radius-md); font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s var(--ease-bounce); display: flex; align-items: center; justify-content: center; gap: 10px; letter-spacing: 0.3px; }
-        .ride-btn:active { transform: scale(0.97); }
-        .ride-btn.accept { background: linear-gradient(135deg, var(--primary-orange), var(--primary-orange-dark)); color: white; box-shadow: 0 6px 20px var(--primary-orange-glow); }
-        .ride-btn.reject { background: rgba(255,255,255,0.05); color: var(--gray-light); border: 1px solid rgba(255,255,255,0.08); }
-        .wallet-card-premium { background: linear-gradient(135deg, #ff7a00 0%, #ff4500 50%, #cc2900 100%); border-radius: var(--border-radius-lg); padding: 24px; margin-bottom: 22px; position: relative; overflow: hidden; box-shadow: 0 10px 30px var(--primary-orange-glow); border: 1px solid rgba(255,255,255,0.15); }
-        .wallet-card-premium::before { content: ''; position: absolute; top: -50%; right: -20%; width: 300px; height: 300px; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%); border-radius: var(--border-radius-full); }
-        .wallet-card-premium::after { content: ''; position: absolute; bottom: -30%; left: -10%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(0,0,0,0.2) 0%, transparent 70%); border-radius: var(--border-radius-full); }
-        .wallet-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; position: relative; z-index: 2; }
-        .wallet-brand { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.85); letter-spacing: 1px; text-transform: uppercase; }
-        .wallet-brand span { color: var(--white); }
-        .wallet-chip { width: 40px; height: 30px; background: linear-gradient(135deg, #ffd700, #ffaa00); border-radius: 6px; position: relative; }
-        .wallet-chip::before { content: ''; position: absolute; inset: 4px; background: linear-gradient(135deg, transparent 25%, rgba(0,0,0,0.2) 25%, rgba(0,0,0,0.2) 50%, transparent 50%); background-size: 8px 8px; border-radius: 2px; }
-        .wallet-balance-section { position: relative; z-index: 2; }
-        .wallet-label { font-size: 12px; color: rgba(255,255,255,0.7); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-        .wallet-balance { font-size: 36px; font-weight: 800; color: var(--white); letter-spacing: -1px; text-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-        .wallet-footer { margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.15); display: flex; justify-content: space-between; position: relative; z-index: 2; }
-        .wallet-info-item { display: flex; flex-direction: column; gap: 2px; }
-        .wallet-info-label { font-size: 10px; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
-        .wallet-info-value { font-size: 14px; color: var(--white); font-weight: 700; }
-        .section-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-        .section-title { font-size: 16px; font-weight: 700; color: var(--white); letter-spacing: -0.3px; display: flex; align-items: center; gap: 8px; }
-        .section-title i { color: var(--primary-orange); font-size: 14px; }
-        .transaction-list { background: var(--bg-surface); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--border-radius-lg); padding: 8px; }
-        .transaction-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 12px; border-radius: var(--border-radius-md); transition: background 0.2s; }
-        .transaction-item:not(:last-child) { border-bottom: 1px solid rgba(255,255,255,0.04); }
-        .transaction-item:active { background: rgba(255,255,255,0.03); }
-        .transaction-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
-        .transaction-icon { width: 38px; height: 38px; border-radius: var(--border-radius-md); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .transaction-icon.positive { background: rgba(34,197,94,0.15); color: var(--green-online); }
-        .transaction-icon.negative { background: rgba(239,68,68,0.15); color: var(--red); }
-        .transaction-icon i { font-size: 14px; }
-        .transaction-details { flex: 1; min-width: 0; }
-        .transaction-title { font-size: 14px; font-weight: 600; color: var(--white); margin-bottom: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .transaction-date { font-size: 11px; color: var(--gray-text); font-weight: 500; }
-        .transaction-amount { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; flex-shrink: 0; }
-        .transaction-amount.positive { color: var(--green-online); }
-        .transaction-amount.negative { color: var(--red); }
-        .history-section { margin-bottom: 24px; }
-        .history-section-title { font-size: 14px; font-weight: 700; color: var(--white); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; letter-spacing: -0.2px; }
-        .history-section-title i { font-size: 14px; }
-        .ride-card-history { background: var(--bg-surface); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--border-radius-md); padding: 16px; margin-bottom: 10px; transition: all 0.2s; cursor: pointer; }
-        .ride-card-history:active { transform: scale(0.98); border-color: var(--primary-orange-subtle); }
-        .history-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
-        .history-route { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
-        .route-point { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--white); font-weight: 500; }
-        .route-point i { font-size: 12px; width: 16px; flex-shrink: 0; }
-        .route-point.origin i { color: var(--green-online); }
-        .route-point.dest i { color: var(--red); }
-        .route-point span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .route-connector { width: 1px; height: 10px; background: var(--bg-elevated); margin-left: 7px; }
-        .status-badge { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: var(--border-radius-full); text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
-        .status-badge.completado { background: rgba(34,197,94,0.15); color: var(--green-online); border: 1px solid rgba(34,197,94,0.3); }
-        .status-badge.no_completado { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.3); }
-        .status-badge.activo { background: rgba(59,130,246,0.15); color: var(--blue); border: 1px solid rgba(59,130,246,0.3); }
-        .status-badge.llegado_origen { background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid rgba(245,158,11,0.3); }
-        .status-badge.pendiente { background: rgba(156,163,175,0.15); color: var(--gray-text); border: 1px solid rgba(156,163,175,0.3); }
-        .history-card-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05); }
-        .history-meta { display: flex; align-items: center; gap: 12px; font-size: 11px; color: var(--gray-text); font-weight: 500; }
-        .history-meta span { display: flex; align-items: center; gap: 4px; }
-        .history-meta i { font-size: 10px; }
-        .history-price { font-size: 16px; font-weight: 800; color: var(--primary-orange); letter-spacing: -0.3px; }
-        #view-chat.active { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-        .chat-container { display: flex; flex-direction: column; flex: 1; background: var(--bg-black); width: 100%; }
-        .chat-header { padding: 18px 20px; background: var(--bg-surface); text-align: center; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 15px; letter-spacing: -0.3px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .chat-header i { color: var(--primary-orange); }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 8px; }
-        .message { max-width: 78%; padding: 12px 16px; border-radius: var(--border-radius-lg); position: relative; font-size: 14px; line-height: 1.4; animation: messageIn 0.3s var(--ease-out); word-wrap: break-word; }
-        @keyframes messageIn { from { opacity: 0; transform: translateY(10px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        .message.sent { background: linear-gradient(135deg, var(--primary-orange), var(--primary-orange-dark)); color: white; align-self: flex-end; border-bottom-right-radius: 4px; box-shadow: 0 2px 8px var(--primary-orange-glow); }
-        .message.received { background: var(--bg-surface); color: var(--white); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
-        .message-time { font-size: 10px; opacity: 0.7; margin-top: 4px; display: block; }
-        .message.sent .message-time { text-align: right; }
-        .chat-input-area { display: flex; padding: 14px; background: var(--bg-surface); border-top: 1px solid rgba(255,255,255,0.05); gap: 10px; align-items: center; }
-        .chat-input { flex: 1; padding: 12px 18px; border-radius: var(--border-radius-full); border: 1px solid rgba(255,255,255,0.08); background: var(--bg-dark-gray); color: white; outline: none; font-size: 14px; font-weight: 500; transition: all 0.2s; }
-        .chat-input:focus { border-color: var(--primary-orange); background: var(--bg-black); }
-        .chat-input::placeholder { color: var(--gray-text); }
-        .chat-send-btn { width: 46px; height: 46px; background: linear-gradient(135deg, var(--primary-orange), var(--primary-orange-dark)); border: none; border-radius: var(--border-radius-full); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s var(--ease-bounce); box-shadow: 0 4px 12px var(--primary-orange-glow); }
-        .chat-send-btn:active { transform: scale(0.9); }
-        .chat-send-btn i { font-size: 16px; }
-        .profile-hero { background: linear-gradient(135deg, var(--bg-surface) 0%, var(--bg-dark-gray) 100%); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--border-radius-lg); padding: 24px 20px; margin-bottom: 20px; position: relative; overflow: hidden; text-align: center; }
-        .profile-hero::before { content: ''; position: absolute; top: -50%; left: 50%; transform: translateX(-50%); width: 400px; height: 400px; background: radial-gradient(circle, var(--primary-orange-subtle) 0%, transparent 70%); pointer-events: none; }
-        .profile-avatar-wrapper { position: relative; display: inline-block; margin-bottom: 16px; }
-        .profile-avatar { width: 96px; height: 96px; border-radius: var(--border-radius-full); overflow: hidden; border: 4px solid var(--primary-orange); box-shadow: 0 0 30px var(--primary-orange-glow); position: relative; z-index: 2; }
-        .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .profile-badge { position: absolute; bottom: 0; right: 0; width: 30px; height: 30px; background: linear-gradient(135deg, var(--primary-orange), var(--primary-orange-dark)); border-radius: var(--border-radius-full); border: 3px solid var(--bg-dark-gray); display: flex; align-items: center; justify-content: center; z-index: 3; color: var(--white); font-size: 12px; }
-        .profile-name { font-size: 22px; font-weight: 800; color: var(--white); margin-bottom: 4px; letter-spacing: -0.5px; position: relative; z-index: 2; }
-        .profile-phone { font-size: 13px; color: var(--gray-text); font-weight: 500; margin-bottom: 16px; position: relative; z-index: 2; }
-        .profile-stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.05); position: relative; z-index: 2; }
-        .profile-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
-        .profile-stat-value { font-size: 18px; font-weight: 800; color: var(--primary-orange); letter-spacing: -0.3px; }
-        .profile-stat-label { font-size: 10px; color: var(--gray-text); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-        .profile-section { background: var(--bg-surface); border: 1px solid rgba(255,255,255,0.05); border-radius: var(--border-radius-lg); padding: 20px; margin-bottom: 16px; }
-        .profile-section-title { font-size: 12px; color: var(--gray-text); font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-        .profile-section-title i { color: var(--primary-orange); }
-        .profile-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04); align-items: center; }
-        .profile-item:last-child { border-bottom: none; }
-        .profile-item-label { font-size: 13px; color: var(--gray-text); font-weight: 500; display: flex; align-items: center; gap: 10px; }
-        .profile-item-label i { width: 16px; color: var(--primary-orange); font-size: 13px; }
-        .profile-item-value { font-size: 14px; font-weight: 600; color: var(--white); text-align: right; max-width: 60%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        #view-login { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 24px; background: radial-gradient(circle at top, var(--bg-surface), var(--bg-black)); }
-        #view-login.active { display: flex; }
-        .login-box { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 14px; animation: fadeIn 0.6s var(--ease-out); }
-        .login-logo-container { text-align: center; margin-bottom: 10px; }
-        .login-logo-container img { width: 220px; height: auto; object-fit: contain; }
-        .login-box h2 { text-align: center; margin-bottom: 8px; font-size: 26px; color: var(--white); font-weight: 800; letter-spacing: -0.5px; }
-        .login-box p { text-align: center; color: var(--gray-text); font-size: 14px; margin-bottom: 8px; }
-        .input-wrapper { position: relative; width: 100%; }
-        .input-wrapper .icon-left { position: absolute; left: 20px; top: 50%; transform: translateY(-50%); color: var(--primary-orange); font-size: 18px; pointer-events: none; }
-        .input-wrapper .icon-right { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--gray-text); font-size: 18px; padding: 10px; cursor: pointer; transition: color 0.3s ease; }
-        .input-wrapper .icon-right:active { color: var(--primary-orange); }
-        .login-input { width: 100%; padding: 16px 22px; border-radius: var(--border-radius-md); border: 1.5px solid rgba(255,255,255,0.08); background: var(--bg-surface); color: var(--white); font-size: 15px; font-weight: 500; outline: none; transition: all 0.3s; margin-bottom: 10px; }
-        .input-wrapper .login-input { padding-left: 54px; margin-bottom: 0; }
-        .login-input:focus { background: var(--bg-dark-gray); border-color: var(--primary-orange); box-shadow: 0 0 0 3px var(--primary-orange-subtle); }
-        .login-input::placeholder { color: var(--gray-text); }
-        .login-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--primary-orange), var(--primary-orange-dark)); color: var(--white); border: none; border-radius: var(--border-radius-md); font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s var(--ease-bounce); margin-top: 10px; letter-spacing: 0.3px; box-shadow: 0 4px 15px var(--primary-orange-glow); }
-        .login-btn:active { transform: scale(0.97); }
-        .btn-outline { background: transparent; border: 2px solid var(--primary-orange); color: var(--primary-orange); box-shadow: none; }
-        .btn-outline:hover { background: var(--primary-orange-subtle); }
-        .btn-row { display: flex; gap: 10px; margin-top: 15px; width: 100%; }
-        .btn-row .login-btn { margin-top: 0; flex: 1; font-size: 14px; padding: 14px; }
-        #view-onboarding { display: none; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 24px; background: radial-gradient(circle at top, var(--bg-surface), var(--bg-black)); overflow-y: auto; }
-        #view-onboarding.active { display: flex; }
-        .onboarding-box { width: 100%; max-width: 360px; padding: 20px 0; }
-        .ob-step { display: none; flex-direction: column; gap: 15px; animation: slideInRight 0.4s ease forwards; }
-        .ob-step.active { display: flex; }
-        .ob-step h2 { text-align: center; color: var(--primary-orange); font-size: 26px; margin-bottom: 5px; font-weight: 800; letter-spacing: -0.5px; }
-        .ob-step p { text-align: center; color: var(--gray-text); font-size: 14px; margin-bottom: 15px; line-height: 1.5; }
-        @keyframes slideInRight { 0% { opacity: 0; transform: translateX(30px); } 100% { opacity: 1; transform: translateX(0); } }
-        .mt-15 { margin-top: 15px; }
-        .status-text { text-align: center; font-size: 13px; color: var(--gray-text); font-weight: 500; padding: 8px; }
-        .file-upload-box { background: var(--bg-surface); padding: 20px; border-radius: var(--border-radius-lg); border: 2px dashed rgba(255,255,255,0.1); text-align: center; display: flex; flex-direction: column; gap: 10px; transition: all 0.3s; }
-        .file-upload-box:active { border-color: var(--primary-orange); background: var(--bg-dark-gray); }
-        .file-upload-box i { font-size: 32px; color: var(--primary-orange); }
-        .file-upload-box label { font-size: 13px; color: var(--gray-light); font-weight: 500; }
-        .file-upload-box input[type="file"] { width: 100%; color: var(--gray-text); font-size: 13px; }
-        .photo-options { display: flex; flex-direction: column; gap: 10px; }
-        #selfiePreview { display: none; width: 120px; height: 120px; border-radius: var(--border-radius-full); margin: 10px auto; object-fit: cover; border: 4px solid var(--primary-orange); box-shadow: 0 8px 25px var(--primary-orange-glow); }
-        .loading-overlay { position: fixed; inset: 0; background: rgba(10,10,11,0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; opacity: 0; visibility: hidden; transition: opacity 0.4s ease, visibility 0.4s ease; }
-        .loading-overlay.active { opacity: 1; visibility: visible; }
-        .spinner { width: 55px; height: 55px; border: 4px solid rgba(255,122,0,0.15); border-top-color: var(--primary-orange); border-radius: var(--border-radius-full); animation: spin 0.8s ease-in-out infinite; margin-bottom: 20px; box-shadow: 0 0 30px var(--primary-orange-glow); }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .loading-text { color: var(--white); font-size: 15px; font-weight: 600; letter-spacing: 0.3px; }
-        .empty-state { padding: 40px 20px; text-align: center; }
-        .empty-state i { font-size: 48px; color: var(--bg-elevated); margin-bottom: 16px; }
-        .empty-state h4 { font-size: 16px; color: var(--white); font-weight: 700; margin-bottom: 6px; }
-        .empty-state p { font-size: 13px; color: var(--gray-text); line-height: 1.5; }
-        .toast { position: fixed; top: 30px; left: 50%; transform: translateX(-50%) translateY(-100px); background: var(--bg-surface); color: var(--white); padding: 14px 20px; border-radius: var(--border-radius-md); box-shadow: var(--shadow-lg); border-left: 3px solid var(--primary-orange); z-index: 10000; transition: transform 0.3s var(--ease-bounce); font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 10px; max-width: 90%; }
-        .toast.show { transform: translateX(-50%) translateY(0); }
-        .toast i { color: var(--primary-orange); font-size: 16px; }
-        .debug-toggle { position: fixed; bottom: 90px; right: 16px; width: 52px; height: 52px; border-radius: var(--border-radius-full); background: linear-gradient(135deg, #333, #222); border: 2px solid rgba(255,255,255,0.15); display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 9998; box-shadow: 0 4px 20px rgba(0,0,0,0.5); transition: all 0.3s var(--ease-bounce); }
-        .debug-toggle:active { transform: scale(0.9); }
-        .debug-toggle i { font-size: 22px; color: var(--gray-light); }
-        .debug-toggle .badge { position: absolute; top: -4px; right: -4px; width: 20px; height: 20px; background: var(--red); border-radius: var(--border-radius-full); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; color: white; border: 2px solid var(--bg-black); }
-        .debug-panel { position: fixed; bottom: 0; left: 0; right: 0; height: 55vh; background: rgba(10,12,16,0.98); backdrop-filter: blur(20px); border-top-left-radius: var(--border-radius-lg); border-top-right-radius: var(--border-radius-lg); border-top: 2px solid var(--primary-orange); z-index: 9999; display: flex; flex-direction: column; transform: translateY(100%); transition: transform 0.4s var(--ease-out); }
-        .debug-panel.open { transform: translateY(0); }
-        .debug-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
-        .debug-header-left { display: flex; align-items: center; gap: 10px; }
-        .debug-header-left i { color: var(--primary-orange); font-size: 16px; }
-        .debug-header-left span { font-size: 14px; font-weight: 700; color: var(--white); letter-spacing: -0.3px; }
-        .debug-header-right { display: flex; gap: 8px; }
-        .debug-btn { width: 36px; height: 36px; border-radius: var(--border-radius-sm); background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
-        .debug-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.1); }
-        .debug-btn i { font-size: 14px; color: var(--gray-light); }
-        .debug-btn.danger i { color: var(--red); }
-        .debug-logs { flex: 1; overflow-y: auto; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; }
-        .debug-log { padding: 6px 10px; border-radius: 6px; margin-bottom: 4px; word-break: break-all; border-left: 3px solid transparent; }
-        .debug-log.info { color: var(--gray-light); background: rgba(255,255,255,0.02); border-left-color: var(--blue); }
-        .debug-log.success { color: var(--green-online); background: rgba(34,197,94,0.05); border-left-color: var(--green-online); }
-        .debug-log.error { color: var(--red); background: rgba(239,68,68,0.05); border-left-color: var(--red); }
-        .debug-log.warning { color: var(--yellow); background: rgba(245,158,11,0.05); border-left-color: var(--yellow); }
-        .debug-log.event { color: var(--purple); background: rgba(139,92,246,0.05); border-left-color: var(--purple); }
-        .debug-log .time { color: var(--gray-text); opacity: 0.6; margin-right: 6px; font-size: 10px; }
-        .debug-status { padding: 10px 18px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; gap: 16px; font-size: 10px; color: var(--gray-text); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
-        .debug-status span { display: flex; align-items: center; gap: 4px; }
-        .debug-status .dot { width: 6px; height: 6px; border-radius: var(--border-radius-full); }
-        .debug-status .dot.green { background: var(--green-online); }
-        .debug-status .dot.red { background: var(--red); }
-        .debug-status .dot.orange { background: var(--primary-orange); }
+        :root{--bg-black:#0a0a0b;--bg-dark-gray:#131418;--bg-surface:#1a1c22;--bg-surface-hover:#24262d;--bg-elevated:#2a2d35;--primary-orange:#ff7a00;--primary-orange-dark:#e66a00;--primary-orange-glow:rgba(255,122,0,0.35);--primary-orange-subtle:rgba(255,122,0,0.1);--white:#ffffff;--gray-text:#9ca3af;--gray-light:#d1d5db;--green-online:#22c55e;--green-glow:rgba(34,197,94,0.4);--red:#ef4444;--red-glow:rgba(239,68,68,0.4);--blue:#3b82f6;--purple:#8b5cf6;--yellow:#f59e0b;--shadow-sm:0 2px 8px rgba(0,0,0,0.3);--shadow-md:0 4px 20px rgba(0,0,0,0.4);--shadow-lg:0 8px 32px rgba(0,0,0,0.5);--shadow-glow:0 0 40px var(--primary-orange-glow);--border-radius-sm:8px;--border-radius-md:14px;--border-radius-lg:20px;--border-radius-xl:28px;--border-radius-full:999px;--ease-bounce:cubic-bezier(0.68,-0.55,0.265,1.55);--ease-smooth:cubic-bezier(0.4,0,0.2,1);--ease-out:cubic-bezier(0.16,1,0.3,1)}
+        *{box-sizing:border-box;margin:0;padding:0;font-family:'Inter',sans-serif;user-select:none;-webkit-tap-highlight-color:transparent}
+        html,body{background-color:var(--bg-black);width:100vw;height:100vh;height:100dvh;overflow:hidden;overscroll-behavior-y:none;color:var(--white)}
+        ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bg-elevated);border-radius:4px}
+        .app-container{width:100%;height:100%;display:flex;flex-direction:column;position:relative;overflow:hidden}
+        .content-area{flex:1;overflow-y:auto;padding:20px 18px 16px 18px;position:relative;overscroll-behavior:contain}
+        .view{display:none;animation:fadeIn 0.4s var(--ease-out)}.view.active{display:block}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        .online-glow{position:absolute;top:0;left:0;right:0;height:60vh;background:radial-gradient(ellipse at top,rgba(255,122,0,0.25) 0%,rgba(255,122,0,0.1) 30%,rgba(11,11,11,0) 70%);opacity:0;pointer-events:none;transition:opacity 0.8s ease-in-out;z-index:0}
+        .online-glow.active{opacity:1}
+        .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;position:relative;z-index:10}
+        .header-left{display:flex;align-items:center;gap:14px}
+        .menu-icon{font-size:22px;color:var(--gray-light);cursor:pointer;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:var(--border-radius-full);transition:all 0.2s}
+        .menu-icon:active{background:var(--bg-surface);transform:scale(0.9)}
+        .greeting-section{display:flex;flex-direction:column;gap:2px}
+        .greeting-text{font-size:12px;color:var(--gray-text);font-weight:500;letter-spacing:0.3px}
+        .user-name{font-size:18px;font-weight:700;color:var(--white);letter-spacing:-0.3px}
+        .header-right{display:flex;align-items:center;gap:12px}
+        .icon-btn{width:44px;height:44px;border-radius:var(--border-radius-full);background:var(--bg-surface);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s var(--ease-smooth);position:relative;border:1px solid rgba(255,255,255,0.05)}
+        .icon-btn:active{transform:scale(0.9);background:var(--bg-surface-hover)}
+        .icon-btn i{font-size:18px;color:var(--gray-light)}
+        .icon-btn.logout i{color:var(--primary-orange)}
+        .notification-badge{position:absolute;top:8px;right:8px;width:8px;height:8px;background:var(--red);border-radius:var(--border-radius-full);border:2px solid var(--bg-dark-gray);box-shadow:0 0 8px var(--red-glow)}
+        .profile-pic-container{position:relative}
+        .profile-pic{width:46px;height:46px;border-radius:var(--border-radius-full);overflow:hidden;border:2px solid transparent;transition:all 0.3s}
+        .profile-pic.online{border-color:var(--green-online);box-shadow:0 0 15px var(--green-glow)}
+        .profile-pic.offline{border-color:var(--bg-elevated)}
+        .profile-pic img{width:100%;height:100%;object-fit:cover}
+        .status-indicator{position:absolute;bottom:-2px;right:-2px;width:14px;height:14px;border-radius:var(--border-radius-full);border:2px solid var(--bg-dark-gray)}
+        .status-indicator.online{background:var(--green-online);box-shadow:0 0 8px var(--green-glow);animation:pulseGreen 2s infinite}
+        .status-indicator.offline{background:var(--bg-elevated)}
+        @keyframes pulseGreen{0%,100%{box-shadow:0 0 8px var(--green-glow)}50%{box-shadow:0 0 16px var(--green-glow)}}
+        .status-card{border-radius:var(--border-radius-lg);padding:24px;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center;transition:all 0.5s var(--ease-smooth);position:relative;z-index:1;overflow:hidden}
+        .status-card.online{background:linear-gradient(135deg,var(--primary-orange) 0%,var(--primary-orange-dark) 100%);box-shadow:var(--shadow-glow)}
+        .status-card.offline{background:linear-gradient(135deg,var(--bg-surface) 0%,var(--bg-elevated) 100%);border:1px solid rgba(255,255,255,0.05);box-shadow:var(--shadow-md)}
+        .status-card.online::before{content:'';position:absolute;top:50%;left:50%;width:200%;height:200%;background:radial-gradient(circle,rgba(255,255,255,0.15) 0%,transparent 50%);transform:translate(-50%,-50%) scale(0);animation:pulseWave 3s ease-out infinite}
+        @keyframes pulseWave{0%{transform:translate(-50%,-50%) scale(0);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
+        .status-content{display:flex;align-items:center;gap:16px;position:relative;z-index:2}
+        .status-icon-box{width:56px;height:56px;border-radius:var(--border-radius-md);background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .status-icon-box i{font-size:26px;color:var(--white)}
+        .status-card.online .status-icon-box i{animation:bikeRide 1.5s ease-in-out infinite}
+        @keyframes bikeRide{0%,100%{transform:translateX(0) rotate(0deg)}25%{transform:translateX(3px) rotate(-5deg)}75%{transform:translateX(-3px) rotate(5deg)}}
+        .status-card.offline .status-icon-box{background:rgba(255,255,255,0.05)}.status-card.offline .status-icon-box i{color:var(--gray-text)}
+        .status-label{font-size:12px;color:rgba(255,255,255,0.75);font-weight:600;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:4px}
+        .status-title{font-size:22px;font-weight:800;color:var(--white);letter-spacing:-0.5px;margin-bottom:2px}
+        .status-subtitle{font-size:13px;color:rgba(255,255,255,0.7);font-weight:500}
+        .status-card.offline .status-label{color:var(--gray-text)}.status-card.offline .status-title{color:var(--white)}.status-card.offline .status-subtitle{color:var(--gray-text)}
+        .switch{position:relative;display:inline-block;width:58px;height:32px;z-index:2;flex-shrink:0}
+        .switch input{opacity:0;width:0;height:0}
+        .slider{position:absolute;cursor:pointer;inset:0;background:rgba(255,255,255,0.2);transition:.3s;border-radius:var(--border-radius-full);border:2px solid rgba(255,255,255,0.1)}
+        .slider:before{position:absolute;content:"";height:24px;width:24px;left:2px;bottom:2px;background:var(--white);transition:.3s var(--ease-bounce);border-radius:var(--border-radius-full);box-shadow:var(--shadow-sm)}
+        input:checked+.slider{background:var(--white);border-color:var(--white)}
+        input:checked+.slider:before{transform:translateX(26px);background:var(--primary-orange)}
+        .stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:22px;position:relative;z-index:1}
+        .stat-item{background:linear-gradient(145deg,var(--bg-surface),var(--bg-dark-gray));border:1px solid rgba(255,255,255,0.05);border-radius:var(--border-radius-md);padding:16px 10px;text-align:center;position:relative;overflow:hidden;transition:all 0.3s var(--ease-smooth)}
+        .stat-item:active{transform:scale(0.97);border-color:var(--primary-orange-subtle)}
+        .stat-icon-circle{display:inline-flex;justify-content:center;align-items:center;width:44px;height:44px;border-radius:var(--border-radius-md);background:linear-gradient(135deg,var(--primary-orange),var(--primary-orange-dark));color:var(--white);font-size:18px;margin-bottom:10px;box-shadow:0 4px 12px var(--primary-orange-glow);position:relative;z-index:1}
+        .stat-label{font-size:10px;color:var(--gray-text);margin-bottom:4px;text-transform:uppercase;font-weight:600;letter-spacing:0.5px}
+        .stat-value{font-size:22px;font-weight:800;color:var(--white);letter-spacing:-0.5px}
+        .online-card{border-radius:var(--border-radius-lg);margin-bottom:22px;overflow:hidden;height:150px;position:relative;z-index:1;box-shadow:var(--shadow-md);background:linear-gradient(135deg,var(--primary-orange-subtle),var(--bg-surface));border:1px solid rgba(255,255,255,0.05)}
+        .banner-img{width:100%;height:100%;object-fit:cover}
+        #view-viajes{padding:0;display:none;flex:1;position:relative;overflow:hidden;width:100%;height:100%}
+        #view-viajes.active{display:block}
+        #map{width:100%;height:100%;background:#1a1a1a;position:absolute;top:0;left:0}
+        .map-topbar{position:absolute;top:0;left:0;right:0;padding:50px 18px 16px;background:linear-gradient(180deg,rgba(10,10,11,0.9) 0%,transparent 100%);z-index:100;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none}
+        .map-topbar>*{pointer-events:auto}
+        .map-back-btn{width:42px;height:42px;border-radius:var(--border-radius-full);background:rgba(26,28,34,0.85);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--shadow-md)}
+        .map-back-btn i{color:var(--white);font-size:16px}
+        .map-status-pill{background:rgba(26,28,34,0.85);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);border-radius:var(--border-radius-full);padding:8px 16px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--white);box-shadow:var(--shadow-md)}
+        .map-status-pill .pulse-dot{width:8px;height:8px;border-radius:var(--border-radius-full);background:var(--green-online);box-shadow:0 0 8px var(--green-glow);animation:pulseDot 1.5s infinite}
+        @keyframes pulseDot{0%,100%{opacity:1}50%{opacity:0.5}}
+        .search-container{position:absolute;top:105px;left:18px;right:18px;z-index:100;max-width:500px;margin:0 auto;transition:all 0.3s var(--ease-smooth)}
+        .search-container.hidden{opacity:0;pointer-events:none;transform:translateY(-20px)}
+        .search-box{background:rgba(26,28,34,0.92);backdrop-filter:blur(20px);border-radius:var(--border-radius-full);padding:12px 20px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-lg);border:1px solid rgba(255,255,255,0.08)}
+        .search-box i{color:var(--gray-text);font-size:16px}
+        .search-box input{flex:1;background:transparent;border:none;outline:none;color:var(--white);font-size:14px;font-weight:500}
+        .search-box input::placeholder{color:var(--gray-text)}
+        .suggestions{background:rgba(26,28,34,0.95);backdrop-filter:blur(20px);border-radius:var(--border-radius-lg);margin-top:10px;max-height:300px;overflow-y:auto;display:none;border:1px solid rgba(255,255,255,0.08);box-shadow:var(--shadow-lg)}
+        .suggestion-item{padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:background 0.2s}
+        .suggestion-item:hover{background:rgba(255,255,255,0.03)}
+        .suggestion-item:last-child{border-bottom:none}
+        .suggestion-item i{color:var(--primary-orange);font-size:14px}
+        .suggestion-item span{font-size:13px;color:var(--white)}
+        .navigation-panel{position:absolute;top:105px;left:50%;transform:translateX(-50%);width:calc(100% - 36px);max-width:420px;z-index:99;background:linear-gradient(135deg,var(--blue),#2563eb);border-radius:var(--border-radius-lg);padding:18px;display:none;align-items:center;gap:16px;box-shadow:0 10px 30px rgba(59,130,246,0.4);border:1px solid rgba(255,255,255,0.15);backdrop-filter:blur(10px)}
+        .navigation-panel.active{display:flex}
+        .nav-instruction{display:flex;align-items:center;justify-content:center;width:68px;height:68px;background:rgba(255,255,255,0.15);border-radius:var(--border-radius-md);flex-shrink:0;border:1px solid rgba(255,255,255,0.2)}
+        .nav-instruction i{font-size:38px;color:var(--white);text-shadow:0 2px 8px rgba(0,0,0,0.3)}
+        .nav-details{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+        .nav-distance{font-size:28px;color:var(--white);font-weight:800;line-height:1;letter-spacing:-0.5px}
+        .nav-text{font-size:14px;color:rgba(255,255,255,0.95);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .ride-actions-float{position:absolute;bottom:25px;left:0;right:0;z-index:1000;display:flex;flex-wrap:wrap;justify-content:center;gap:10px;padding:0 18px;pointer-events:none}
+        .action-btn{pointer-events:auto;padding:14px 20px;border-radius:var(--border-radius-full);border:none;font-weight:700;font-size:14px;box-shadow:var(--shadow-lg);cursor:pointer;transition:all 0.2s var(--ease-bounce);display:inline-flex;align-items:center;gap:8px;white-space:nowrap;border:1px solid rgba(255,255,255,0.15)}
+        .action-btn:active{transform:scale(0.94)}
+        .action-btn i{font-size:16px}
+        .action-btn.pickup{background:linear-gradient(135deg,var(--green-online),#16a34a);color:white;box-shadow:0 8px 20px var(--green-glow)}
+        .action-btn.arrived{background:linear-gradient(135deg,var(--blue),#2563eb);color:white}
+        .action-btn.finish{background:linear-gradient(135deg,var(--primary-orange),var(--primary-orange-dark));color:white}
+        .action-btn.not-completed{background:linear-gradient(135deg,#6b7280,#4b5563);color:white}
+        .action-btn.redirect{background:linear-gradient(135deg,var(--purple),#7c3aed);color:white}
+        .action-btn.hidden{display:none}
+        .mapboxgl-ctrl-bottom-left,.mapboxgl-ctrl-bottom-right{display:none}
+        .driver-arrow{width:44px;height:44px;background:linear-gradient(135deg,#4285F4,#2563eb);border:3px solid white;border-radius:var(--border-radius-full);box-shadow:0 4px 15px rgba(66,133,244,0.6);display:flex;align-items:center;justify-content:center;color:white;font-size:20px;position:relative}
+        .driver-arrow::before{content:'';position:absolute;inset:-8px;border-radius:var(--border-radius-full);background:rgba(66,133,244,0.2);animation:pulseMarker 2s infinite}
+        @keyframes pulseMarker{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:0}}
+        .maneuver-arrow{width:56px;height:56px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border:4px solid white;border-radius:var(--border-radius-full);box-shadow:0 8px 24px rgba(59,130,246,0.7);display:flex;align-items:center;justify-content:center;color:white;font-size:26px;position:relative;animation:maneuverPulse 1.5s infinite}
+        .maneuver-arrow::before{content:'';position:absolute;inset:-12px;border-radius:var(--border-radius-full);background:rgba(59,130,246,0.3);animation:pulseMarker 1.5s infinite}
+        @keyframes maneuverPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+        .bottom-nav{background:rgba(20,22,28,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:10px 8px calc(10px + env(safe-area-inset-bottom,0px)) 8px;border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-around;align-items:center;box-shadow:0 -4px 30px rgba(0,0,0,0.5);position:relative;z-index:1000;gap:4px}
+        .nav-item{color:var(--gray-text);display:flex;flex-direction:column;align-items:center;font-size:10px;font-weight:600;gap:4px;transition:all 0.3s var(--ease-smooth);cursor:pointer;flex:1;padding:8px 4px;border-radius:var(--border-radius-md);position:relative;letter-spacing:0.3px}
+        .nav-icon{font-size:22px;transition:all 0.3s var(--ease-bounce);position:relative}
+        .nav-item.active{color:var(--primary-orange)}
+        .nav-item.active .nav-icon{transform:translateY(-2px) scale(1.1)}
+        .nav-item.active::after{content:'';position:absolute;top:2px;left:50%;transform:translateX(-50%);width:24px;height:3px;background:linear-gradient(90deg,var(--primary-orange),var(--primary-orange-dark));border-radius:var(--border-radius-full);box-shadow:0 0 10px var(--primary-orange-glow)}
+        .nav-item:active{transform:scale(0.9)}
+        .ride-modal{position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:5000;display:flex;justify-content:center;align-items:flex-end;opacity:0;visibility:hidden;transition:opacity 0.3s ease,visibility 0.3s ease}
+        .ride-modal.active{opacity:1;visibility:visible}
+        .ride-card{background:linear-gradient(180deg,#1e2230 0%,#14171f 100%);border-top-left-radius:var(--border-radius-xl);border-top-right-radius:var(--border-radius-xl);padding:12px 24px 28px;width:100%;max-width:500px;box-shadow:0 -10px 50px rgba(0,0,0,0.8);color:var(--white);animation:slideUpSheet 0.4s var(--ease-out);max-height:85vh;overflow-y:auto;border-top:1px solid rgba(255,255,255,0.1)}
+        @keyframes slideUpSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
+        .ride-modal.active .ride-card{animation:slideUpSheet 0.4s var(--ease-out),shakeCard 0.6s 0.4s ease-in-out}
+        @keyframes shakeCard{0%,100%{transform:translateX(0)}10%,30%,50%,70%,90%{transform:translateX(-6px)}20%,40%,60%,80%{transform:translateX(6px)}}
+        .drag-handle{width:40px;height:4px;background:rgba(255,255,255,0.2);border-radius:var(--border-radius-full);margin:0 auto 18px}
+        .ride-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+        .ride-title-section{display:flex;align-items:center;gap:12px}
+        .ride-icon-box{width:50px;height:50px;border-radius:var(--border-radius-md);background:linear-gradient(135deg,var(--primary-orange),var(--primary-orange-dark));display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px var(--primary-orange-glow);flex-shrink:0}
+        .ride-icon-box i{font-size:22px;color:var(--white);animation:ringIcon 1s ease-in-out infinite}
+        @keyframes ringIcon{0%,100%{transform:rotate(0)}20%{transform:rotate(15deg)}40%{transform:rotate(-15deg)}60%{transform:rotate(10deg)}80%{transform:rotate(-10deg)}}
+        .ride-title{font-size:18px;font-weight:800;color:var(--white);margin-bottom:2px;letter-spacing:-0.3px}
+        .ride-subtitle{font-size:12px;color:var(--gray-text);font-weight:500}
+        .ride-info{display:flex;flex-direction:column;gap:12px;margin-bottom:24px}
+        .ride-info-item{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:var(--border-radius-md);padding:14px 16px;display:flex;align-items:center;gap:14px}
+        .ride-info-icon{width:42px;height:42px;border-radius:var(--border-radius-md);background:var(--primary-orange-subtle);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .ride-info-icon i{font-size:18px;color:var(--primary-orange)}
+        .ride-info-content{flex:1;min-width:0}
+        .ride-info-label{font-size:11px;color:var(--gray-text);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:3px}
+        .ride-info-value{font-size:14px;font-weight:600;color:var(--white);line-height:1.3;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+        .ride-info-item.price{background:linear-gradient(135deg,var(--primary-orange-subtle),rgba(255,255,255,0.02));border-color:var(--primary-orange)}
+        .ride-info-item.price .ride-info-value{font-size:24px;font-weight:800;color:var(--primary-orange);letter-spacing:-0.5px}
+        .ride-actions{display:flex;flex-direction:column;gap:10px}
+        .ride-btn{padding:16px;border:none;border-radius:var(--border-radius-md);font-size:15px;font-weight:700;cursor:pointer;transition:all 0.2s var(--ease-bounce);display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:0.3px}
+        .ride-btn:active{transform:scale(0.97)}
+        .ride-btn.accept{background:linear-gradient(135deg,var(--primary-orange),var(--primary-orange-dark));color:white;box-shadow:0 6px 20px var(--primary-orange-glow)}
+        .ride-btn.reject{background:rgba(255,255,255,0.05);color:var(--gray-light);border:1px solid rgba(255,255,255,0.08)}
+        .wallet-card-premium{background:linear-gradient(135deg,#ff7a00 0%,#ff4500 50%,#cc2900 100%);border-radius:var(--border-radius-lg);padding:24px;margin-bottom:22px;position:relative;overflow:hidden;box-shadow:0 10px 30px var(--primary-orange-glow);border:1px solid rgba(255,255,255,0.15)}
+        .wallet-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;position:relative;z-index:2}
+        .wallet-brand{font-size:14px;font-weight:700;color:rgba(255,255,255,0.85);letter-spacing:1px;text-transform:uppercase}
+        .wallet-balance{font-size:36px;font-weight:800;color:var(--white);letter-spacing:-1px;text-shadow:0 2px 8px rgba(0,0,0,0.3)}
+        .wallet-label{font-size:12px;color:rgba(255,255,255,0.7);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;font-weight:600}
+        .wallet-footer{margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.15);display:flex;justify-content:space-between;position:relative;z-index:2}
+        .wallet-info-item{display:flex;flex-direction:column;gap:2px}
+        .wallet-info-label{font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+        .wallet-info-value{font-size:14px;color:var(--white);font-weight:700}
+        .section-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+        .section-title{font-size:16px;font-weight:700;color:var(--white);letter-spacing:-0.3px;display:flex;align-items:center;gap:8px}
+        .section-title i{color:var(--primary-orange);font-size:14px}
+        .transaction-list{background:var(--bg-surface);border:1px solid rgba(255,255,255,0.05);border-radius:var(--border-radius-lg);padding:8px}
+        .transaction-item{display:flex;justify-content:space-between;align-items:center;padding:14px 12px;border-radius:var(--border-radius-md);transition:background 0.2s}
+        .transaction-item:not(:last-child){border-bottom:1px solid rgba(255,255,255,0.04)}
+        .transaction-icon{width:38px;height:38px;border-radius:var(--border-radius-md);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .transaction-icon.positive{background:rgba(34,197,94,0.15);color:var(--green-online)}
+        .transaction-icon.negative{background:rgba(239,68,68,0.15);color:var(--red)}
+        .transaction-icon i{font-size:14px}
+        .transaction-details{flex:1;min-width:0}
+        .transaction-title{font-size:14px;font-weight:600;color:var(--white);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .transaction-date{font-size:11px;color:var(--gray-text);font-weight:500}
+        .transaction-amount{font-size:15px;font-weight:700;flex-shrink:0}
+        .transaction-amount.positive{color:var(--green-online)}
+        .transaction-amount.negative{color:var(--red)}
+        .history-section{margin-bottom:24px}
+        .history-section-title{font-size:14px;font-weight:700;color:var(--white);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+        .ride-card-history{background:var(--bg-surface);border:1px solid rgba(255,255,255,0.05);border-radius:var(--border-radius-md);padding:16px;margin-bottom:10px;transition:all 0.2s}
+        .history-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+        .history-route{display:flex;flex-direction:column;gap:8px;flex:1;min-width:0}
+        .route-point{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--white);font-weight:500}
+        .route-point i{font-size:12px;width:16px;flex-shrink:0}
+        .route-point.origin i{color:var(--green-online)}
+        .route-point.dest i{color:var(--red)}
+        .route-point span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .route-connector{width:1px;height:10px;background:var(--bg-elevated);margin-left:7px}
+        .status-badge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:var(--border-radius-full);text-transform:uppercase;letter-spacing:0.5px;flex-shrink:0}
+        .status-badge.completado{background:rgba(34,197,94,0.15);color:var(--green-online);border:1px solid rgba(34,197,94,0.3)}
+        .status-badge.no_completado{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3)}
+        .status-badge.activo{background:rgba(59,130,246,0.15);color:var(--blue);border:1px solid rgba(59,130,246,0.3)}
+        .status-badge.llegado_origen{background:rgba(245,158,11,0.15);color:var(--yellow);border:1px solid rgba(245,158,11,0.3)}
+        .status-badge.pendiente{background:rgba(156,163,175,0.15);color:var(--gray-text);border:1px solid rgba(156,163,175,0.3)}
+        .history-card-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05)}
+        .history-meta{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--gray-text);font-weight:500}
+        .history-price{font-size:16px;font-weight:800;color:var(--primary-orange)}
+        #view-chat.active{display:flex;flex-direction:column;flex:1;overflow:hidden}
+        .chat-container{display:flex;flex-direction:column;flex:1;background:var(--bg-black);width:100%}
+        .chat-header{padding:18px 20px;background:var(--bg-surface);text-align:center;font-weight:700;border-bottom:1px solid rgba(255,255,255,0.05);font-size:15px;display:flex;align-items:center;justify-content:center;gap:10px}
+        .chat-header i{color:var(--primary-orange)}
+        .chat-messages{flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:8px}
+        .message{max-width:78%;padding:12px 16px;border-radius:var(--border-radius-lg);font-size:14px;line-height:1.4;word-wrap:break-word}
+        .message.sent{background:linear-gradient(135deg,var(--primary-orange),var(--primary-orange-dark));color:white;align-self:flex-end;border-bottom-right-radius:4px}
+        .message.received{background:var(--bg-surface);color:var(--white);align-self:flex-start;border-bottom-left-radius:4px;border:1px solid rgba(255,255,255,0.05)}
+        .message-time{font-size:10px;opacity:0.7;margin-top:4px;display:block}
+        .chat-input-area{display:flex;padding:14px;background:var(--bg-surface);border-top:1px solid rgba(255,255,255,0.05);gap:10px;align-items:center}
+        .chat-input{flex:1;padding:12px 18px;border-radius:var(--border-radius-full);border:1px solid rgba(255,255,255,0.08);background:var(--bg-dark-gray);color:white;outline:none;font-size:14px}
+        .chat-input::placeholder{color:var(--gray-text)}
+        .chat-send-btn{width:46px;height:46px;background:linear-gradient(135deg,var(--primary-orange),var(--primary-orange-dark));border:none;border-radius:var(--border-radius-full);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center}
+        .profile-hero{background:linear-gradient(135deg,var(--bg-surface) 0%,var(--bg-dark-gray) 100%);border:1px solid rgba(255,255,255,0.05);border-radius:var(--border-radius-lg);padding:24px 20px;margin-bottom:20px;text-align:center}
+        .profile-avatar-wrapper{position:relative;display:inline-block;margin-bottom:16px}
+        .profile-avatar{width:96px;height:96px;border-radius:var(--border-radius-full);overflow:hidden;border:4px solid var(--primary-orange);box-shadow:0 0 30px var(--primary-orange-glow)}
+        .profile-avatar img{width:100%;height:100%;object-fit:cover}
+        .profile-badge{position:absolute;bottom:0;right:0;width:30px;height:30px;background:linear-gradient(135deg,var(--primary-orange),var(--primary-orange-dark));border-radius:var(--border-radius-full);border:3px solid var(--bg-dark-gray);display:flex;align-items:center;justify-content:center;color:var(--white);font-size:12px}
+        .profile-name{font-size:22px;font-weight:800;color:var(--white);margin-bottom:4px}
+        .profile-phone{font-size:13px;color:var(--gray-text);font-weight:500;margin-bottom:16px}
+        .profile-stats-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05)}
+        .profile-stat{display:flex;flex-direction:column;align-items:center;gap:2px}
+        .profile-stat-value{font-size:18px;font-weight:800;color:var(--primary-orange)}
+        .profile-stat-label{font-size:10px;color:var(--gray-text);font-weight:600;text-transform:uppercase}
+        .profile-section{background:var(--bg-surface);border:1px solid rgba(255,255,255,0.05);border-radius:var(--border-radius-lg);padding:20px;margin-bottom:16px}
+        .profile-section-title{font-size:12px;color:var(--gray-text);font-weight:700;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+        .profile-section-title i{color:var(--primary-orange)}
+        .profile-item{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center}
+        .profile-item:last-child{border-bottom:none}
+        .profile-item-label{font-size:13px;color:var(--gray-text);font-weight:500;display:flex;align-items:center;gap:10px}
+        .profile-item-label i{width:16px;color:var(--primary-orange);font-size:13px}
+        .profile-item-value{font-size:14px;font-weight:600;color:var(--white);text-align:right;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        #view-login{display:none;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:24px;background:radial-gradient(circle at top,var(--bg-surface),var(--bg-black))}
+        #view-login.active{display:flex}
+        .login-box{width:100%;max-width:360px;display:flex;flex-direction:column;gap:14px}
+        .login-logo-container{text-align:center;margin-bottom:10px}
+        .login-logo-container img{width:220px;height:auto;object-fit:contain}
+        .login-box h2{text-align:center;margin-bottom:8px;font-size:26px;color:var(--white);font-weight:800}
+        .login-box p{text-align:center;color:var(--gray-text);font-size:14px;margin-bottom:8px}
+        .input-wrapper{position:relative;width:100%}
+        .input-wrapper .icon-left{position:absolute;left:20px;top:50%;transform:translateY(-50%);color:var(--primary-orange);font-size:18px;pointer-events:none}
+        .input-wrapper .icon-right{position:absolute;right:15px;top:50%;transform:translateY(-50%);color:var(--gray-text);font-size:18px;padding:10px;cursor:pointer}
+        .login-input{width:100%;padding:16px 22px;border-radius:var(--border-radius-md);border:1.5px solid rgba(255,255,255,0.08);background:var(--bg-surface);color:var(--white);font-size:15px;outline:none;transition:all 0.3s;margin-bottom:10px}
+        .input-wrapper .login-input{padding-left:54px;margin-bottom:0}
+        .login-input:focus{background:var(--bg-dark-gray);border-color:var(--primary-orange);box-shadow:0 0 0 3px var(--primary-orange-subtle)}
+        .login-input::placeholder{color:var(--gray-text)}
+        .login-btn{width:100%;padding:16px;background:linear-gradient(135deg,var(--primary-orange),var(--primary-orange-dark));color:var(--white);border:none;border-radius:var(--border-radius-md);font-size:15px;font-weight:700;cursor:pointer;margin-top:10px;box-shadow:0 4px 15px var(--primary-orange-glow)}
+        .btn-outline{background:transparent;border:2px solid var(--primary-orange);color:var(--primary-orange);box-shadow:none}
+        .btn-row{display:flex;gap:10px;margin-top:15px;width:100%}
+        .btn-row .login-btn{margin-top:0;flex:1;font-size:14px;padding:14px}
+        #view-onboarding{display:none;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:24px;background:radial-gradient(circle at top,var(--bg-surface),var(--bg-black));overflow-y:auto}
+        #view-onboarding.active{display:flex}
+        .onboarding-box{width:100%;max-width:360px;padding:20px 0}
+        .ob-step{display:none;flex-direction:column;gap:15px}
+        .ob-step.active{display:flex}
+        .ob-step h2{text-align:center;color:var(--primary-orange);font-size:26px;font-weight:800}
+        .ob-step p{text-align:center;color:var(--gray-text);font-size:14px;margin-bottom:15px;line-height:1.5}
+        .mt-15{margin-top:15px}
+        .status-text{text-align:center;font-size:13px;color:var(--gray-text);font-weight:500;padding:8px}
+        .file-upload-box{background:var(--bg-surface);padding:20px;border-radius:var(--border-radius-lg);border:2px dashed rgba(255,255,255,0.1);text-align:center;display:flex;flex-direction:column;gap:10px}
+        .file-upload-box i{font-size:32px;color:var(--primary-orange)}
+        .file-upload-box label{font-size:13px;color:var(--gray-light);font-weight:500}
+        .file-upload-box input[type="file"]{width:100%;color:var(--gray-text);font-size:13px}
+        .photo-options{display:flex;flex-direction:column;gap:10px}
+        #selfiePreview{display:none;width:120px;height:120px;border-radius:var(--border-radius-full);margin:10px auto;object-fit:cover;border:4px solid var(--primary-orange);box-shadow:0 8px 25px var(--primary-orange-glow)}
+        .loading-overlay{position:fixed;inset:0;background:rgba(10,10,11,0.85);backdrop-filter:blur(16px);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;opacity:0;visibility:hidden;transition:opacity 0.4s ease,visibility 0.4s ease}
+        .loading-overlay.active{opacity:1;visibility:visible}
+        .spinner{width:55px;height:55px;border:4px solid rgba(255,122,0,0.15);border-top-color:var(--primary-orange);border-radius:var(--border-radius-full);animation:spin 0.8s ease-in-out infinite;margin-bottom:20px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .loading-text{color:var(--white);font-size:15px;font-weight:600}
+        .empty-state{padding:40px 20px;text-align:center}
+        .empty-state i{font-size:48px;color:var(--bg-elevated);margin-bottom:16px}
+        .empty-state h4{font-size:16px;color:var(--white);font-weight:700;margin-bottom:6px}
+        .empty-state p{font-size:13px;color:var(--gray-text);line-height:1.5}
+        .toast{position:fixed;top:30px;left:50%;transform:translateX(-50%) translateY(-100px);background:var(--bg-surface);color:var(--white);padding:14px 20px;border-radius:var(--border-radius-md);box-shadow:var(--shadow-lg);border-left:3px solid var(--primary-orange);z-index:10000;transition:transform 0.3s var(--ease-bounce);font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;max-width:90%}
+        .toast.show{transform:translateX(-50%) translateY(0)}
+        .toast i{color:var(--primary-orange);font-size:16px}
+        .debug-toggle{position:fixed;bottom:90px;right:16px;width:52px;height:52px;border-radius:var(--border-radius-full);background:linear-gradient(135deg,#333,#222);border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:9998;box-shadow:0 4px 20px rgba(0,0,0,0.5)}
+        .debug-toggle i{font-size:22px;color:var(--gray-light)}
+        .debug-toggle .badge{position:absolute;top:-4px;right:-4px;width:20px;height:20px;background:var(--red);border-radius:var(--border-radius-full);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;color:white;border:2px solid var(--bg-black)}
+        .debug-panel{position:fixed;bottom:0;left:0;right:0;height:55vh;background:rgba(10,12,16,0.98);backdrop-filter:blur(20px);border-top-left-radius:var(--border-radius-lg);border-top-right-radius:var(--border-radius-lg);border-top:2px solid var(--primary-orange);z-index:9999;display:flex;flex-direction:column;transform:translateY(100%);transition:transform 0.4s var(--ease-out)}
+        .debug-panel.open{transform:translateY(0)}
+        .debug-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0}
+        .debug-header-left{display:flex;align-items:center;gap:10px}
+        .debug-header-left i{color:var(--primary-orange);font-size:16px}
+        .debug-header-left span{font-size:14px;font-weight:700;color:var(--white)}
+        .debug-header-right{display:flex;gap:8px}
+        .debug-btn{width:36px;height:36px;border-radius:var(--border-radius-sm);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;cursor:pointer}
+        .debug-btn i{font-size:14px;color:var(--gray-light)}
+        .debug-btn.danger i{color:var(--red)}
+        .debug-logs{flex:1;overflow-y:auto;padding:12px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6}
+        .debug-log{padding:6px 10px;border-radius:6px;margin-bottom:4px;word-break:break-all;border-left:3px solid transparent}
+        .debug-log.info{color:var(--gray-light);background:rgba(255,255,255,0.02);border-left-color:var(--blue)}
+        .debug-log.success{color:var(--green-online);background:rgba(34,197,94,0.05);border-left-color:var(--green-online)}
+        .debug-log.error{color:var(--red);background:rgba(239,68,68,0.05);border-left-color:var(--red)}
+        .debug-log.warning{color:var(--yellow);background:rgba(245,158,11,0.05);border-left-color:var(--yellow)}
+        .debug-log.event{color:var(--purple);background:rgba(139,92,246,0.05);border-left-color:var(--purple)}
+        .debug-log .time{color:var(--gray-text);opacity:0.6;margin-right:6px;font-size:10px}
+        .debug-status{padding:10px 18px;border-top:1px solid rgba(255,255,255,0.08);display:flex;gap:16px;font-size:10px;color:var(--gray-text);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+        .debug-status span{display:flex;align-items:center;gap:4px}
+        .debug-status .dot{width:6px;height:6px;border-radius:var(--border-radius-full)}
+        .debug-status .dot.green{background:var(--green-online)}
+        .debug-status .dot.red{background:var(--red)}
+        .debug-status .dot.orange{background:var(--primary-orange)}
     </style>
 </head>
 <body>
@@ -379,7 +313,7 @@
             <div class="debug-header-left"><i class="fas fa-terminal"></i><span>Consola de Depuración</span></div>
             <div class="debug-header-right">
                 <div class="debug-btn" onclick="copyLogs()" title="Copiar logs"><i class="fas fa-copy"></i></div>
-                <div class="debug-btn" onclick="clearMyRejections()" title="Limpiar mis rechazos de viajes"><i class="fas fa-undo"></i></div>
+                <div class="debug-btn" onclick="clearMyRejections()" title="Limpiar rechazos"><i class="fas fa-undo"></i></div>
                 <div class="debug-btn danger" onclick="clearLogs()" title="Limpiar logs"><i class="fas fa-trash"></i></div>
                 <div class="debug-btn" onclick="toggleDebugPanel()"><i class="fas fa-chevron-down"></i></div>
             </div>
@@ -447,7 +381,7 @@
                 <div id="obGpsStatus" class="status-text">Ubicación GPS no registrada</div>
                 <div class="file-upload-box mt-15">
                     <i class="fas fa-file-invoice"></i>
-                    <label>Sube una foto de factura (Luz, Agua o Gas) que compruebe la dirección</label>
+                    <label>Sube una foto de factura que compruebe la dirección</label>
                     <input type="file" id="obBillFile" accept="image/*,application/pdf">
                 </div>
                 <div class="btn-row">
@@ -465,7 +399,7 @@
                     <button class="login-btn btn-outline" style="margin-top:5px;" onclick="document.getElementById('obSelfieGallery').click()"><i class="fas fa-images"></i> Subir desde Galería</button>
                 </div>
                 <div id="selfieStatus" class="status-text mt-15">Ninguna foto seleccionada</div>
-                <img id="selfiePreview" src="" alt="Previsualización de selfie">
+                <img id="selfiePreview" src="" alt="Previsualización">
                 <div class="btn-row">
                     <button class="login-btn btn-outline" onclick="nextObStep(4)"><i class="fas fa-arrow-left"></i> Volver</button>
                     <button class="login-btn" onclick="finishOnboarding()">Guardar Perfil <i class="fas fa-check"></i></button>
@@ -490,7 +424,7 @@
                         <i class="fas fa-comments"></i>
                         <span class="notification-badge" id="chatBadge" style="display:none;"></span>
                     </div>
-                    <div class="icon-btn logout" onclick="logout()" title="Cerrar Sesión"><i class="fas fa-sign-out-alt"></i></div>
+                    <div class="icon-btn logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i></div>
                     <div class="profile-pic-container">
                         <div class="profile-pic offline" id="headerProfilePic"><img src="a.png" alt="Avatar"></div>
                         <span class="status-indicator offline" id="headerStatusIndicator"></span>
@@ -542,7 +476,7 @@
         </div>
 
         <div id="view-historial" class="content-area view">
-            <h2 style="margin-bottom:20px;font-size:24px;font-weight:800;letter-spacing:-0.5px;">Mis Viajes</h2>
+            <h2 style="margin-bottom:20px;font-size:24px;font-weight:800;">Mis Viajes</h2>
             <div class="history-section">
                 <h3 class="history-section-title"><i class="fas fa-play-circle" style="color:var(--blue);"></i> Viajes Activos</h3>
                 <div id="activeRidesList"><div class="empty-state"><i class="fas fa-inbox"></i><h4>Cargando...</h4></div></div>
@@ -554,10 +488,11 @@
         </div>
 
         <div id="view-billetera" class="content-area view">
-            <h2 style="margin-bottom:20px;font-size:24px;font-weight:800;letter-spacing:-0.5px;">Billetera</h2>
+            <h2 style="margin-bottom:20px;font-size:24px;font-weight:800;">Billetera</h2>
             <div class="wallet-card-premium">
-                <div class="wallet-header"><div class="wallet-brand">MOTO <span>MÓVIL</span></div><div class="wallet-chip"></div></div>
-                <div class="wallet-balance-section"><div class="wallet-label">Saldo disponible</div><div class="wallet-balance" id="walletBalance">Bs 0.00</div></div>
+                <div class="wallet-header"><div class="wallet-brand">MOTO <span>MÓVIL</span></div></div>
+                <div class="wallet-label">Saldo disponible</div>
+                <div class="wallet-balance" id="walletBalance">Bs 0.00</div>
                 <div class="wallet-footer">
                     <div class="wallet-info-item"><span class="wallet-info-label">Titular</span><span class="wallet-info-value" id="walletHolder">Conductor</span></div>
                     <div class="wallet-info-item"><span class="wallet-info-label">Estado</span><span class="wallet-info-value">● Activa</span></div>
@@ -579,7 +514,7 @@
         </div>
 
         <div id="view-perfil" class="content-area view">
-            <h2 style="margin-bottom:20px;font-size:24px;font-weight:800;letter-spacing:-0.5px;">Mi Perfil</h2>
+            <h2 style="margin-bottom:20px;font-size:24px;font-weight:800;">Mi Perfil</h2>
             <div class="profile-hero">
                 <div class="profile-avatar-wrapper">
                     <div class="profile-avatar" id="pageProfilePic"><img src="a.png" alt="Avatar"></div>
@@ -678,17 +613,14 @@
 
         async function clearMyRejections() {
             if (!currentDriverId) { alert('No hay conductor logueado'); return; }
-            if (!confirm('¿Limpiar todos tus rechazos? Así volverás a ver los viajes que rechazaste antes.')) return;
+            if (!confirm('¿Limpiar todos tus rechazos?')) return;
             try {
                 const { error } = await supabaseClient.from('ride_rejections').delete().eq('driver_id', currentDriverId);
                 if (error) throw error;
                 dlog('🗑️ Rechazos limpiados correctamente', 'success');
-                showToast('Rechazos limpiados. Recargando...', 'check-circle');
+                showToast('Rechazos limpiados', 'check-circle');
                 setTimeout(() => loadActiveRide(), 800);
-            } catch (e) {
-                dlog('Error limpiando rechazos: ' + e.message, 'error');
-                alert('Error: ' + e.message);
-            }
+            } catch (e) { dlog('Error: ' + e.message, 'error'); alert('Error: ' + e.message); }
         }
 
         function copyLogs() {
@@ -746,9 +678,6 @@
                 window.speechSynthesis.cancel();
                 const utt = new SpeechSynthesisUtterance(text);
                 utt.lang = 'es-ES';
-                utt.rate = 1.0;
-                utt.volume = 1.0;
-                utt.pitch = 1.0;
                 window.speechSynthesis.speak(utt);
                 dlog('🔊 Voz: ' + text, 'info');
             } catch (e) { dlog('Error voz: ' + e.message, 'warning'); }
@@ -768,6 +697,7 @@
         let obLat = null, obLng = null, currentSelfieFile = null, currentChatTarget = 'central';
         let chatSubscription = null;
         let maneuverArrowMarker = null;
+        let initMapInProgress = false;  // ✅ LOCK anti-concurrencia
 
         let notificationAudioCtx = null;
         let notificationInterval = null;
@@ -799,19 +729,16 @@
                 gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
                 osc2.start(now + 0.2); osc2.stop(now + 0.6);
                 if (navigator.vibrate) { navigator.vibrate([200, 100, 200]); }
-            } catch (e) { dlog('Error reproduciendo sonido: ' + e.message, 'error'); }
+            } catch (e) { dlog('Error sonido: ' + e.message, 'error'); }
         }
 
         function startRideNotification() {
             if (isNotificationPlaying) return;
             isNotificationPlaying = true;
-            dlog('🔔 Iniciando notificación sonora (1 minuto)', 'warning');
+            dlog('🔔 Iniciando notificación sonora', 'warning');
             playNotificationSound();
             notificationInterval = setInterval(() => { playNotificationSound(); }, 2000);
-            notificationTimeout = setTimeout(() => {
-                stopRideNotification();
-                dlog('🔕 Notificación detenida (timeout 1 min)', 'warning');
-            }, 60000);
+            notificationTimeout = setTimeout(() => { stopRideNotification(); dlog('🔕 Notificación detenida', 'warning'); }, 60000);
         }
 
         function stopRideNotification() {
@@ -819,7 +746,7 @@
             if (notificationInterval) { clearInterval(notificationInterval); notificationInterval = null; }
             if (notificationTimeout) { clearTimeout(notificationTimeout); notificationTimeout = null; }
             if (navigator.vibrate) { navigator.vibrate(0); }
-            dlog('🔕 Notificación sonora detenida', 'info');
+            dlog('🔕 Notificación detenida', 'info');
         }
 
         function handleRideCancelled(ride, source = 'realtime') {
@@ -827,16 +754,12 @@
             const wasPending = pendingRide && pendingRide.id === cancelledId;
             const wasActive = currentRideId === cancelledId;
             if (!wasPending && !wasActive) return false;
-            dlog(`❌ Pasajero canceló el viaje (${source})`, 'warning');
+            dlog(`❌ Pasajero canceló (${source})`, 'warning');
             stopRideNotification();
             if (window.speechSynthesis) window.speechSynthesis.cancel();
-            if (wasPending) {
-                hideRideModal(); pendingRide = null;
-                showToast('El pasajero canceló el viaje', 'times-circle');
-            }
+            if (wasPending) { hideRideModal(); pendingRide = null; showToast('El pasajero canceló el viaje', 'times-circle'); }
             if (wasActive) {
-                hideRideModal();
-                clearRoute();
+                hideRideModal(); clearRoute();
                 currentRideId = null; currentRideStatus = null; currentRouteTarget = null;
                 updateActionButtons();
                 document.getElementById('navigation-panel').classList.remove('active');
@@ -854,17 +777,16 @@
             if (!rawPhone || !password) return alert('Ingresa tu teléfono y contraseña');
             const cleanedPhone = rawPhone.replace(/[\s\-()]/g, '').replace(/^\+?591/, '');
             showLoading('Iniciando sesión...');
-            dlog('Intentando login con teléfono: ' + rawPhone, 'info');
+            dlog('Intentando login: ' + rawPhone, 'info');
             try {
                 let { data, error } = await supabaseClient.auth.signInWithPassword({ email: `${rawPhone}@montero.app`, password });
                 if (error && cleanedPhone !== rawPhone) {
-                    dlog('Reintentando con teléfono normalizado: ' + cleanedPhone, 'info');
                     const retry = await supabaseClient.auth.signInWithPassword({ email: `${cleanedPhone}@montero.app`, password });
                     data = retry.data; error = retry.error;
                 }
                 if (error) throw error;
                 currentDriverId = data.user.id;
-                dlog('Login exitoso. Driver ID: ' + currentDriverId, 'success');
+                dlog('Login exitoso: ' + currentDriverId, 'success');
                 await loadDriverData();
                 await forceOffline();
                 setupRideSubscription();
@@ -884,25 +806,25 @@
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session) {
                     currentDriverId = session.user.id;
-                    dlog('Sesión existente encontrada: ' + currentDriverId, 'success');
+                    dlog('Sesión encontrada: ' + currentDriverId, 'success');
                     await loadDriverData();
                     await forceOffline();
                     setupRideSubscription();
                     setupChatSubscription();
                     routeUserBasedOnProfile();
                 } else {
-                    dlog('No hay sesión, mostrando login', 'info');
+                    dlog('No hay sesión', 'info');
                     document.getElementById('view-login').classList.add('active');
                 }
             } catch (error) {
-                dlog('Error al cargar sesión: ' + error.message, 'error');
+                dlog('Error carga: ' + error.message, 'error');
                 document.getElementById('view-login').classList.add('active');
             } finally { hideLoading(); }
         });
 
         function routeUserBasedOnProfile() {
             if (currentDriverData.profile_completed) {
-                dlog('Perfil completo, entrando a la app', 'success');
+                dlog('Perfil completo', 'success');
                 document.getElementById('view-login').classList.remove('active');
                 document.getElementById('view-onboarding').classList.remove('active');
                 document.getElementById('mainApp').style.display = 'flex';
@@ -910,7 +832,7 @@
                 loadWalletData();
                 loadActiveRide();
             } else {
-                dlog('Perfil incompleto, mostrando onboarding', 'warning');
+                dlog('Perfil incompleto', 'warning');
                 document.getElementById('obFullName').value = currentDriverData.full_name || '';
                 document.getElementById('view-login').classList.remove('active');
                 document.getElementById('mainApp').style.display = 'none';
@@ -919,10 +841,8 @@
         }
 
         async function forceOffline() {
-            dlog('Forzando estado offline', 'info');
-            try {
-                await supabaseClient.from('driver_status').upsert({ driver_id: currentDriverId, is_online: false, latitude: null, longitude: null, last_updated: new Date().toISOString() }, { onConflict: 'driver_id' });
-            } catch (e) { dlog('Error forceOffline: ' + e.message, 'error'); }
+            dlog('Forzando offline', 'info');
+            try { await supabaseClient.from('driver_status').upsert({ driver_id: currentDriverId, is_online: false, latitude: null, longitude: null, last_updated: new Date().toISOString() }, { onConflict: 'driver_id' }); } catch (e) { dlog('Error: ' + e.message, 'error'); }
             isDriverOnline = false;
             document.getElementById('toggleSwitch').checked = false;
             updateStatusCard(false);
@@ -1017,7 +937,7 @@
                 const hi = document.querySelector('#headerProfilePic img'); if (hi) hi.src = d.avatar_url;
                 const pi = document.querySelector('#pageProfilePic img'); if (pi) pi.src = d.avatar_url;
             }
-            dlog('Datos del conductor cargados: ' + name, 'success');
+            dlog('Datos cargados: ' + name, 'success');
         }
 
         async function logout() {
@@ -1034,9 +954,7 @@
             document.getElementById('view-onboarding').classList.remove('active');
             document.getElementById('view-login').classList.add('active');
             if (window.rideSubscription) { supabaseClient.removeChannel(window.rideSubscription); window.rideSubscription = null; }
-            if (chatSubscription) {
-                try { supabaseClient.removeChannel(chatSubscription); chatSubscription = null; dlog('Chat: canal limpiado en logout', 'info'); } catch (e) { }
-            }
+            if (chatSubscription) { try { supabaseClient.removeChannel(chatSubscription); chatSubscription = null; } catch (e) { } }
             if (driverMarker) { driverMarker.remove(); driverMarker = null; }
             if (maneuverArrowMarker) { maneuverArrowMarker.remove(); maneuverArrowMarker = null; }
             if (map) { map.remove(); map = null; mapInitialized = false; }
@@ -1049,25 +967,19 @@
             else { p.type = 'password'; t.classList.replace('fa-eye-slash','fa-eye'); }
         }
 
-        // ✅ FIX 1: switchTab con reflow forzado
         function switchTab(tabId, el) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             const targetView = document.getElementById('view-' + tabId);
             targetView.classList.add('active');
             if (el) el.classList.add('active');
-            
             void targetView.offsetHeight;
-            
             if (tabId === 'viajes') {
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
                         void targetView.offsetHeight;
-                        if (!map && isDriverOnline) {
-                            initMap().catch(e => dlog('Error initMap desde switchTab: ' + e.message, 'error'));
-                        } else if (map) {
-                            try { map.resize(); } catch (e) {}
-                        }
+                        if (!map && isDriverOnline) initMap().catch(e => dlog('Error initMap: ' + e.message, 'error'));
+                        else if (map) { try { map.resize(); } catch (e) {} }
                     });
                 });
             }
@@ -1076,53 +988,79 @@
             if (tabId === 'historial') loadHistorial();
         }
 
-        // ✅ FIX 2: initMap async con polling de dimensiones
+        // ✅ initMap con LOCK anti-concurrencia
         async function initMap(center = [-63.1821, -17.7833]) {
             if (mapInitialized && map) {
                 try { map.resize(); } catch (e) {}
                 return true;
             }
             
-            if (map) {
-                try { map.remove(); } catch (e) {}
-                map = null;
-            }
-            mapInitialized = false;
-            
-            const container = document.getElementById('map');
-            if (!container) {
-                dlog('⚠️ Contenedor #map no existe todavía', 'warning');
-                return false;
+            if (initMapInProgress) {
+                dlog('⏸️ initMap ya en progreso, esperando...', 'info');
+                const startWait = Date.now();
+                while (initMapInProgress && (Date.now() - startWait) < 10000) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                return mapInitialized && map;
             }
             
-            void container.offsetHeight;
-            
-            const startTime = Date.now();
-            while (Date.now() - startTime < 3000) {
-                if (container.offsetWidth > 0 && container.offsetHeight > 0) break;
-                await new Promise(r => setTimeout(r, 100));
-                void container.offsetHeight;
-            }
-            
-            if (container.offsetWidth === 0 || container.offsetHeight === 0) {
-                dlog(`⚠️ Contenedor sin dimensiones tras 3s (${container.offsetWidth}x${container.offsetHeight})`, 'warning');
-                return false;
-            }
-            
-            dlog(`🗺️ Inicializando mapa en contenedor ${container.offsetWidth}x${container.offsetHeight}...`, 'info');
+            initMapInProgress = true;
             
             try {
+                if (map) { try { map.remove(); } catch (e) {} map = null; }
+                mapInitialized = false;
+                
+                const container = document.getElementById('map');
+                if (!container) { dlog('⚠️ Contenedor #map no existe', 'warning'); return false; }
+                
+                const existingCanvas = container.querySelector('canvas');
+                if (existingCanvas) existingCanvas.remove();
+                
+                const testCanvas = document.createElement('canvas');
+                const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+                if (!gl) { dlog('❌ WebGL no disponible', 'error'); return false; }
+                
+                const parent = container.parentElement;
+                const parentHeight = (parent && parent.clientHeight > 0) ? parent.clientHeight : (window.innerHeight - 80);
+                const parentWidth = (parent && parent.clientWidth > 0) ? parent.clientWidth : window.innerWidth;
+                
+                container.style.width = parentWidth + 'px';
+                container.style.height = parentHeight + 'px';
+                void container.offsetHeight;
+                
+                const startTime = Date.now();
+                while (Date.now() - startTime < 3000) {
+                    if (container.offsetWidth > 0 && container.offsetHeight > 0) break;
+                    await new Promise(r => setTimeout(r, 100));
+                    void container.offsetHeight;
+                }
+                
+                if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+                    dlog(`⚠️ Contenedor sin dimensiones tras 3s (${container.offsetWidth}x${container.offsetHeight})`, 'warning');
+                    return false;
+                }
+                
+                dlog(`🗺️ Creando mapa en ${container.offsetWidth}x${container.offsetHeight}...`, 'info');
+                
                 map = new mapboxgl.Map({
-                    container: container,
+                    container: 'map',
                     style: 'mapbox://styles/mapbox/streets-v12',
                     center: center,
                     zoom: 14,
                     attributionControl: false
                 });
+                
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => reject(new Error('Timeout 5s esperando load')), 5000);
+                    map.once('load', () => { clearTimeout(timeout); resolve(); });
+                    map.once('error', (e) => { clearTimeout(timeout); reject(new Error('Mapbox: ' + (e.error?.message || 'desconocido'))); });
+                });
+                
                 map.addControl(new mapboxgl.NavigationControl(), 'middle-right');
                 map.on('mousedown', () => { userInteracting = true; lastInteractionTime = Date.now(); });
                 map.on('touchstart', () => { userInteracting = true; lastInteractionTime = Date.now(); });
                 map.on('moveend', () => { if (Date.now() - lastInteractionTime > 5000) userInteracting = false; });
+                
                 mapInitialized = true;
                 dlog(`✅ Mapa inicializado correctamente`, 'success');
                 return true;
@@ -1131,10 +1069,11 @@
                 mapInitialized = false;
                 dlog(`❌ Error inicializando mapa: ${e.message}`, 'error');
                 return false;
+            } finally {
+                initMapInProgress = false;
             }
         }
 
-        // ✅ FIX 3: ensureMapReady async
         async function ensureMapReady() {
             if (map && mapInitialized) {
                 if (map.loaded()) return true;
@@ -1153,8 +1092,8 @@
         }
 
         function setupRideSubscription() {
-            if (window.rideSubscription) { dlog('Ya existe suscripción de viajes', 'warning'); return; }
-            dlog('Creando suscripción Realtime a rides...', 'info');
+            if (window.rideSubscription) { dlog('Ya existe suscripción', 'warning'); return; }
+            dlog('Creando suscripción Realtime...', 'info');
             window.rideSubscription = supabaseClient
                 .channel('driver-rides')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, (payload) => {
@@ -1168,44 +1107,33 @@
                         return;
                     }
                     if (!esParaMi && !esPoolAbierto) return;
-                    if (!isDriverOnline) { dlog('Conductor offline, ignorando evento de ride', 'warning'); return; }
-                    dlog('═══════════════════════════════════', 'event');
-                    dlog(`📡 EVENTO: ${payload.eventType}`, 'event');
-                    dlog(`🚗 Ride ID: ${ride.id?.substring(0,8)}`, 'event');
-                    dlog(`📋 Status: ${ride.status} | Tipo: ${esPoolAbierto ? 'POOL' : 'ASIGNADA'}`, 'event');
-                    dlog('═══════════════════════════════════', 'event');
+                    if (!isDriverOnline) { dlog('Offline, ignoro ride', 'warning'); return; }
                     if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
                         if (ride.status === 'pendiente' || ride.status === 'aceptado') {
-                            if (currentRideId === ride.id) {
-                                currentRideStatus = ride.status;
-                                updateRideUI(ride);
-                                return;
-                            }
+                            if (currentRideId === ride.id) { currentRideStatus = ride.status; updateRideUI(ride); return; }
                             if (!currentRideId && !pendingRide && !isRejecting) {
-                                dlog('✅ MOSTRANDO MODAL DE SOLICITUD', 'success');
+                                dlog('✅ MOSTRANDO MODAL', 'success');
                                 showRideRequest(ride);
                             }
                         }
                     }
                     if (document.getElementById('view-historial')?.classList.contains('active')) loadHistorial();
                 })
-                .subscribe((status) => {
-                    dlog('Estado suscripción Realtime: ' + status, status === 'SUBSCRIBED' ? 'success' : 'error');
-                });
+                .subscribe((status) => { dlog('Realtime: ' + status, status === 'SUBSCRIBED' ? 'success' : 'error'); });
         }
 
         async function hasRejectedRide(rideId) {
             if (!currentDriverId || !rideId) return false;
             try {
                 const { data, error } = await supabaseClient.from('ride_rejections').select('id').eq('ride_id', rideId).eq('driver_id', currentDriverId).maybeSingle();
-                if (error) { dlog('Error hasRejectedRide: ' + error.message, 'error'); return false; }
+                if (error) return false;
                 return !!data;
-            } catch (e) { dlog('Excepción hasRejectedRide: ' + e.message, 'error'); return false; }
+            } catch (e) { return false; }
         }
 
         async function loadActiveRide() {
-            if (!currentDriverId || !isDriverOnline) { dlog('No se cargan rides activos: conductor offline', 'info'); return; }
-            dlog('Buscando viaje activo en BD (asignadas + pool)...', 'info');
+            if (!currentDriverId || !isDriverOnline) { dlog('No cargo rides: offline', 'info'); return; }
+            dlog('Buscando viaje activo...', 'info');
             const { data, error } = await supabaseClient
                 .from('rides')
                 .select('*, passengers(full_name, phone)')
@@ -1216,9 +1144,9 @@
             if (error) { dlog('Error loadActiveRide: ' + error.message, 'error'); return; }
             const ride = data && data.length > 0 ? data[0] : null;
             if (ride) {
-                dlog('Viaje activo encontrado: ' + ride.id.substring(0,8) + ' status: ' + ride.status, 'success');
+                dlog('Viaje encontrado: ' + ride.id.substring(0,8) + ' status: ' + ride.status, 'success');
                 if (ride.status === 'pendiente') {
-                    if (await hasRejectedRide(ride.id)) { dlog('Viaje rechazado previamente, ignorando', 'warning'); return; }
+                    if (await hasRejectedRide(ride.id)) { dlog('Rechazado previamente, ignorando', 'warning'); return; }
                 }
                 if (ride.status === 'pendiente' || ride.status === 'aceptado') {
                     if (!currentRideId && !pendingRide) showRideRequest(ride);
@@ -1229,33 +1157,30 @@
         }
 
         async function showRideRequest(ride) {
-            dlog('showRideRequest ejecutándose para ride: ' + ride.id.substring(0,8), 'info');
-            if (!isDriverOnline) { dlog('❌ Conductor no está en línea, no se muestra el modal', 'warning'); return; }
+            dlog('showRideRequest: ' + ride.id.substring(0,8), 'info');
+            if (!isDriverOnline) { dlog('❌ No en línea', 'warning'); return; }
             if (ride.status === 'pendiente') {
                 try {
                     const rejected = await hasRejectedRide(ride.id);
-                    if (rejected) { dlog('Viaje rechazado previamente', 'warning'); return; }
-                } catch (e) { dlog('Error verificando rechazo', 'error'); }
+                    if (rejected) { dlog('Rechazado previamente', 'warning'); return; }
+                } catch (e) {}
             }
             pendingRide = ride;
-            dlog('pendingRide establecido', 'success');
             const originEl = document.getElementById('rideOrigin'), destEl = document.getElementById('rideDestination'), priceEl = document.getElementById('ridePrice');
             if (originEl) originEl.textContent = ride.origin_address || 'No especificado';
             if (destEl) destEl.textContent = ride.destination_address || 'No especificado';
             if (priceEl) priceEl.textContent = `Bs ${parseFloat(ride.price || 0).toFixed(2)}`;
             const acceptBtn = document.querySelector('.ride-btn.accept'), rejectBtn = document.querySelector('.ride-btn.reject');
-            if (!acceptBtn || !rejectBtn) { dlog('❌ ERROR: Botones del modal no encontrados', 'error'); return; }
+            if (!acceptBtn || !rejectBtn) { dlog('❌ Botones no encontrados', 'error'); return; }
             if (ride.status === 'aceptado') {
                 acceptBtn.innerHTML = '<i class="fas fa-play"></i> Iniciar ruta';
-                acceptBtn.onclick = function() { acceptRide(); };
                 rejectBtn.innerHTML = '<i class="fas fa-times"></i> No puedo';
-                rejectBtn.onclick = function() { rejectRide(); };
             } else {
                 acceptBtn.innerHTML = '<i class="fas fa-check"></i> Aceptar';
-                acceptBtn.onclick = function() { acceptRide(); };
                 rejectBtn.innerHTML = '<i class="fas fa-times"></i> Rechazar';
-                rejectBtn.onclick = function() { rejectRide(); };
             }
+            acceptBtn.onclick = function() { acceptRide(); };
+            rejectBtn.onclick = function() { rejectRide(); };
             const modal = document.getElementById('rideModal');
             if (modal) { modal.classList.add('active'); dlog('✅ MODAL VISIBLE', 'success'); }
             startRideNotification();
@@ -1284,8 +1209,8 @@
                 };
                 views.push(viewEntry);
                 await supabaseClient.from('rides').update({ viewed_by_drivers: views }).eq('id', ride.id);
-                dlog(`👁 Vista registrada (${distanceKm ?? '?'} km)`, 'success');
-            } catch (e) { dlog('Error registrando vista: ' + (e.message || e), 'warning'); }
+                dlog(`👁 Vista registrada`, 'success');
+            } catch (e) { dlog('Error vista: ' + (e.message || e), 'warning'); }
         }
 
         function hideRideModal() { document.getElementById('rideModal').classList.remove('active'); }
@@ -1338,55 +1263,44 @@
 
         async function acceptRide() {
             if (!pendingRide || !pendingRide.id) return;
-            if (isAcceptingRide) { dlog('Ya se está aceptando, ignorando doble tap', 'warning'); return; }
+            if (isAcceptingRide) { dlog('Ya aceptando, ignoro', 'warning'); return; }
             isAcceptingRide = true;
             stopRideNotification();
             const rideId = pendingRide.id;
-            dlog('Aceptando viaje: ' + rideId.substring(0,8), 'info');
+            dlog('Aceptando: ' + rideId.substring(0,8), 'info');
             try {
                 const { data: rideCheck, error: checkErr } = await supabaseClient.from('rides').select('*').eq('id', rideId).single();
-                if (checkErr) { dlog('Error acceptRide: ' + checkErr.message, 'error'); return alert('Error: ' + checkErr.message); }
+                if (checkErr) { dlog('Error check: ' + checkErr.message, 'error'); return alert('Error: ' + checkErr.message); }
                 let ride = rideCheck;
                 if (ride.status === 'cancelado' || ride.status === 'no_completado') {
-                    dlog('Viaje ya cancelado por el pasajero', 'warning');
                     showToast('El pasajero canceló este viaje', 'times-circle');
                     hideRideModal(); pendingRide = null; return;
                 }
                 if (ride.status === 'pendiente') {
                     const { data: rpcResult, error: rpcError } = await supabaseClient.rpc('accept_ride', { p_ride_id: rideId, p_driver_id: currentDriverId });
                     if (rpcError) {
-                        dlog('Error RPC accept_ride: ' + rpcError.message, 'error');
+                        dlog('Error RPC: ' + rpcError.message, 'error');
                         const { data: fallback, error: fbErr } = await supabaseClient
-                            .from('rides')
-                            .update({ status: 'aceptado', driver_id: currentDriverId, accepted_at: new Date().toISOString() })
+                            .from('rides').update({ status: 'aceptado', driver_id: currentDriverId, accepted_at: new Date().toISOString() })
                             .eq('id', rideId).eq('status', 'pendiente').select().maybeSingle();
-                        if (fbErr || !fallback) {
-                            dlog('Fallback falló, otro conductor la tomó', 'warning');
-                            showToast('Otro conductor la tomó primero', 'exclamation-circle');
-                            hideRideModal(); pendingRide = null; return;
-                        }
+                        if (fbErr || !fallback) { showToast('Otro conductor la tomó', 'exclamation-circle'); hideRideModal(); pendingRide = null; return; }
                         ride = fallback;
                     } else {
-                        if (!rpcResult || !rpcResult.success) {
-                            dlog('Carrera ya tomada por otro conductor', 'warning');
-                            showToast('Otro conductor la tomó primero', 'exclamation-circle');
-                            hideRideModal(); pendingRide = null; return;
-                        }
+                        if (!rpcResult || !rpcResult.success) { showToast('Otro conductor la tomó', 'exclamation-circle'); hideRideModal(); pendingRide = null; return; }
                         ride = rpcResult.ride;
                     }
-                    dlog('✅ Carrera aceptada atómicamente', 'success');
+                    dlog('✅ Carrera aceptada', 'success');
                 } else if (ride.status === 'aceptado' && ride.driver_id === currentDriverId) {
-                    dlog('Carrera ya asignada a mí por admin', 'info');
+                    dlog('Ya asignada a mí', 'info');
                 } else {
-                    alert('Este viaje ya no está disponible.');
-                    hideRideModal(); pendingRide = null; return;
+                    alert('No disponible.'); hideRideModal(); pendingRide = null; return;
                 }
 
                 currentRideId = rideId;
                 currentRideStatus = 'aceptado';
                 pendingRide = null;
                 hideRideModal();
-                dlog('Viaje aceptado, dibujando ruta...', 'success');
+                dlog('Dibujando ruta...', 'success');
 
                 if (!currentPosition) {
                     try {
@@ -1397,43 +1311,34 @@
                 }
 
                 switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
-
-                // ✅ FIX 4: Polling activo de dimensiones
-                dlog('⏳ Esperando a que el contenedor del mapa esté listo...', 'info');
+                dlog('⏳ Esperando contenedor...', 'info');
                 let mapReady = false;
                 for (let i = 0; i < 20; i++) {
                     await new Promise(r => setTimeout(r, 200));
                     const c = document.getElementById('map');
                     if (c && c.offsetWidth > 0 && c.offsetHeight > 0) {
-                        dlog(`✅ Contenedor listo (${c.offsetWidth}x${c.offsetHeight}) tras ${(i+1)*200}ms`, 'success');
+                        dlog(`✅ Contenedor listo (${c.offsetWidth}x${c.offsetHeight})`, 'success');
                         mapReady = true;
                         break;
                     }
                 }
+                if (!mapReady) dlog('❌ Contenedor sin dimensiones', 'error');
 
-                if (!mapReady) {
-                    dlog('❌ Contenedor #map nunca tuvo dimensiones', 'error');
-                }
-
-                if (!map) {
-                    await initMap([currentPosition[1], currentPosition[0]]);
-                }
+                if (!map) await initMap([currentPosition[1], currentPosition[0]]);
                 await ensureMapReady();
                 await new Promise(r => setTimeout(r, 300));
 
                 if (!map || !mapInitialized) {
-                    dlog('❌ El mapa no se pudo inicializar, abortando dibujo de ruta', 'error');
+                    dlog('❌ Mapa no inicializado', 'error');
                 } else if (ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
-                    dlog('🗺️ Dibujando ruta: origen ' + ride.origin_lat + ',' + ride.origin_lng + ' → destino ' + ride.destination_lat + ',' + ride.destination_lng, 'info');
+                    dlog('🗺️ Dibujando ruta...', 'info');
                     try {
                         await drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
                         currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
                         dlog('✅ Ruta dibujada', 'success');
-                    } catch (e) {
-                        dlog('❌ Error dibujando ruta: ' + e.message, 'error');
-                    }
+                    } catch (e) { dlog('❌ Error ruta: ' + e.message, 'error'); }
                 } else {
-                    dlog('❌ El viaje no tiene coordenadas. Origin: ' + ride.origin_lat + ',' + ride.origin_lng + ' | Dest: ' + ride.destination_lat + ',' + ride.destination_lng, 'error');
+                    dlog('❌ Sin coordenadas', 'error');
                 }
                 updateActionButtons();
                 document.getElementById('searchContainer').classList.add('hidden');
@@ -1450,21 +1355,13 @@
             const rideId = pendingRide.id;
             pendingRide = null;
             hideRideModal();
-            dlog('Rechazando viaje: ' + rideId.substring(0,8), 'warning');
+            dlog('Rechazando: ' + rideId.substring(0,8), 'warning');
             try {
                 await supabaseClient.from('ride_rejections').insert({ ride_id: rideId, driver_id: currentDriverId });
                 const { error } = await supabaseClient.from('rides').update({ status: 'pendiente', driver_id: null }).eq('id', rideId);
-                if (error) {
-                    dlog('Error al actualizar ride: ' + error.message, 'error');
-                    showToast('No se pudo rechazar, intenta de nuevo', 'exclamation-circle');
-                } else {
-                    dlog('Viaje rechazado exitosamente', 'success');
-                    showToast('Viaje rechazado', 'check-circle');
-                }
-            } catch (e) {
-                dlog('Excepción en rejectRide: ' + e.message, 'error');
-                showToast('Error al rechazar', 'exclamation-circle');
-            } finally {
+                if (error) showToast('No se pudo rechazar', 'exclamation-circle');
+                else { dlog('Rechazado', 'success'); showToast('Viaje rechazado', 'check-circle'); }
+            } catch (e) { showToast('Error al rechazar', 'exclamation-circle'); } finally {
                 isRejecting = false;
                 updateDebugStatus();
             }
@@ -1514,12 +1411,10 @@
             if (error) return alert('Error: ' + error.message);
             if (window.speechSynthesis) window.speechSynthesis.cancel();
             if (completed) {
-                showToast('¡Viaje completado! Pago acreditado', 'check-circle');
-                speakInstruction('Viaje completado. Pago acreditado en tu billetera.');
+                showToast('¡Viaje completado!', 'check-circle');
+                speakInstruction('Viaje completado');
                 setTimeout(() => { loadWalletData().catch(()=>{}); }, 900);
-            } else {
-                alert('Viaje no completado');
-            }
+            } else { alert('Viaje no completado'); }
             resetRideState();
         }
 
@@ -1564,35 +1459,21 @@
                     window.currentRouteCoords = route.geometry.coordinates;
                     drawManeuverArrow(route.legs.flatMap(leg => leg.steps));
                     if (currentPosition && !userInteracting) {
-                        map.easeTo({ 
-                            center: [currentPosition[1], currentPosition[0]], 
-                            zoom: 17, pitch: 45, bearing: smoothedBearing || 0,
-                            duration: 1200, essential: true
-                        });
+                        map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 17, pitch: 45, bearing: smoothedBearing || 0, duration: 1200, essential: true });
                     }
                     speakInstruction(currentNavigationSteps[0]?.maneuver?.instruction || 'Sigue la ruta');
                 } else throw new Error('No routes');
             } catch (e) {
                 const geojson = { type: 'Feature', geometry: { type: 'LineString', coordinates } };
                 map.addSource('route', { type: 'geojson', data: geojson, lineMetrics: true });
-                map.addLayer({ 
-                    id: 'route-line', type: 'line', source: 'route', 
-                    paint: { 
-                        'line-width': 6,
-                        'line-gradient': ['interpolate', ['linear'], ['line-progress'], 0, '#ff7a00', 1, '#ff7a00']
-                    } 
-                });
+                map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-width': 6, 'line-gradient': ['interpolate', ['linear'], ['line-progress'], 0, '#ff7a00', 1, '#ff7a00'] } });
                 routeLayers.push('route', 'route-line');
                 window.currentRouteCoords = coordinates;
                 if (currentPosition && !userInteracting) {
-                    map.easeTo({ 
-                        center: [currentPosition[1], currentPosition[0]], 
-                        zoom: 17, pitch: 45, bearing: smoothedBearing || 0,
-                        duration: 1200, essential: true
-                    });
+                    map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 17, pitch: 45, bearing: smoothedBearing || 0, duration: 1200, essential: true });
                 }
             }
-            dlog('Ruta dibujada con navegación activa', 'success');
+            dlog('Ruta dibujada', 'success');
         }
 
         function drawManeuverArrow(steps) {
@@ -1612,10 +1493,8 @@
             const arrowEl = document.createElement('div');
             arrowEl.className = 'maneuver-arrow';
             arrowEl.innerHTML = `<i class="fas ${iconClass}"></i>`;
-            maneuverArrowMarker = new mapboxgl.Marker({ element: arrowEl, anchor: 'center' })
-                .setLngLat([lng, lat])
-                .addTo(map);
-            dlog('🎯 Flecha de maniobra dibujada: ' + iconClass, 'info');
+            maneuverArrowMarker = new mapboxgl.Marker({ element: arrowEl, anchor: 'center' }).setLngLat([lng, lat]).addTo(map);
+            dlog('🎯 Flecha dibujada: ' + iconClass, 'info');
         }
 
         function updateNavigationPanel(step) {
@@ -1654,18 +1533,14 @@
         const toggleSwitch = document.getElementById('toggleSwitch');
         toggleSwitch.addEventListener('change', async function(e) {
             isDriverOnline = e.target.checked;
-            dlog('═══════════════════════════════════', 'event');
-            dlog(`🔘 Toggle: isDriverOnline = ${isDriverOnline}`, isDriverOnline ? 'success' : 'warning');
-            dlog('═══════════════════════════════════', 'event');
+            dlog('🔘 Toggle: ' + isDriverOnline, isDriverOnline ? 'success' : 'warning');
             updateStatusCard(isDriverOnline);
             updateDebugStatus();
-
             if (isDriverOnline) {
                 try {
                     if (!notificationAudioCtx) { notificationAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-                    if (notificationAudioCtx.state === 'suspended') { notificationAudioCtx.resume(); }
+                    if (notificationAudioCtx.state === 'suspended') notificationAudioCtx.resume();
                 } catch (e) {}
-
                 try {
                     const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }));
                     currentPosition = [pos.coords.latitude, pos.coords.longitude];
@@ -1675,34 +1550,26 @@
                         if (!map) initMap([currentPosition[1], currentPosition[0]]);
                         else map.jumpTo({ center: [currentPosition[1], currentPosition[0]], zoom: 15 });
                         await ensureMapReady();
-                        setTimeout(() => {
-                            if (map && mapInitialized) { updateDriverMarker(currentPosition[0], currentPosition[1], 0); }
-                        }, 300);
+                        setTimeout(() => { if (map && mapInitialized) updateDriverMarker(currentPosition[0], currentPosition[1], 0); }, 300);
                     } else {
-                        dlog('Mapa no inicializado aún (vista inicio). Se iniciará al abrir Viajes.', 'info');
+                        dlog('Mapa no inicializado aún (vista inicio)', 'info');
                     }
-                } catch (e) { dlog('Error obteniendo GPS: ' + e.message, 'error'); }
+                } catch (e) { dlog('Error GPS: ' + e.message, 'error'); }
                 startTracking();
                 try {
                     await supabaseClient.from('driver_status').upsert({ driver_id: currentDriverId, is_online: true, latitude: currentPosition?.[0] || null, longitude: currentPosition?.[1] || null, last_updated: new Date().toISOString() }, { onConflict: 'driver_id' });
-                    dlog('Estado online guardado en BD', 'success');
+                    dlog('Estado online guardado', 'success');
                 } catch (e) { dlog('Error guardando estado: ' + e.message, 'error'); }
-                dlog('Cargando viajes activos al ponerse online...', 'info');
+                dlog('Cargando viajes...', 'info');
                 await loadActiveRide();
                 setTimeout(async () => {
                     if (!currentRideId && !pendingRide && isDriverOnline) {
-                        dlog('Verificación adicional de viajes...', 'info');
                         const { data } = await supabaseClient
-                            .from('rides')
-                            .select('*, passengers(full_name, phone)')
+                            .from('rides').select('*, passengers(full_name, phone)')
                             .or(`driver_id.eq.${currentDriverId},and(status.eq.pendiente,driver_id.is.null)`)
                             .in('status', ['pendiente', 'aceptado'])
-                            .order('created_at', { ascending: false })
-                            .limit(1);
-                        if (data && data.length > 0 && !pendingRide && !currentRideId) {
-                            dlog('Viaje encontrado en verificación adicional', 'success');
-                            showRideRequest(data[0]);
-                        }
+                            .order('created_at', { ascending: false }).limit(1);
+                        if (data && data.length > 0 && !pendingRide && !currentRideId) showRideRequest(data[0]);
                     }
                 }, 2000);
             } else { forceOffline(); }
@@ -1773,7 +1640,7 @@
                     const now = Date.now();
                     if (now - lastUpdateTime > UPDATE_INTERVAL) { lastUpdateTime = now; updateDriverStatus(true, lat, lng); }
                 },
-                (error) => { dlog('Error GPS watch: ' + error.message, 'error'); },
+                (error) => { dlog('Error GPS: ' + error.message, 'error'); },
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
             );
         }
@@ -1863,7 +1730,7 @@
 
         function setupChatSubscription() {
             if (chatSubscription) {
-                try { supabaseClient.removeChannel(chatSubscription); dlog('Chat: canal anterior eliminado', 'info'); } catch (e) { dlog('Chat: error eliminando canal: ' + e.message, 'warning'); }
+                try { supabaseClient.removeChannel(chatSubscription); } catch (e) {}
                 chatSubscription = null;
             }
             const channelName = `central-chat-${currentDriverId || 'anon'}-${Date.now()}`;
@@ -1873,7 +1740,7 @@
                     const m = p.new;
                     if ((m.driver_id === currentDriverId || m.driver_id === null) && m.created_by !== currentDriverId && currentChatTarget === 'central') appendMessageToChat(m.message, 'received');
                 })
-                .subscribe((status) => { dlog('Chat suscripción: ' + status, status === 'SUBSCRIBED' ? 'success' : 'info'); });
+                .subscribe((status) => { dlog('Chat: ' + status, status === 'SUBSCRIBED' ? 'success' : 'info'); });
         }
 
         async function loadWalletData() {
@@ -1901,22 +1768,20 @@
                     const activeId = currentRideId || pendingRide.id;
                     const { data: checkRide } = await supabaseClient.from('rides').select('id, status, driver_id').eq('id', activeId).maybeSingle();
                     if (checkRide && (checkRide.status === 'cancelado' || checkRide.status === 'no_completado')) {
-                        dlog('❌ Cancelación detectada por polling', 'warning');
+                        dlog('❌ Cancelación detectada (polling)', 'warning');
                         handleRideCancelled(checkRide, 'polling');
                     }
-                } catch (e) { }
+                } catch (e) {}
                 return;
             }
             try {
-                const { data } = await supabaseClient
-                    .from('rides').select('id, status')
+                const { data } = await supabaseClient.from('rides').select('id, status')
                     .or(`driver_id.eq.${currentDriverId},and(status.eq.pendiente,driver_id.is.null)`)
                     .in('status', ['pendiente', 'aceptado'])
                     .order('created_at', { ascending: false }).limit(1);
                 if (data && data.length > 0) {
-                    dlog('🔄 Respaldo encontró viaje sin mostrar: ' + data[0].id.substring(0,8), 'warning');
-                    const { data: fullRide } = await supabaseClient
-                        .from('rides').select('*, passengers(full_name, phone)').eq('id', data[0].id).single();
+                    dlog('🔄 Respaldo: viaje ' + data[0].id.substring(0,8), 'warning');
+                    const { data: fullRide } = await supabaseClient.from('rides').select('*, passengers(full_name, phone)').eq('id', data[0].id).single();
                     if (fullRide && !pendingRide && !currentRideId && !isRejecting) showRideRequest(fullRide);
                 }
             } catch (e) {}
