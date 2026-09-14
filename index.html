@@ -375,8 +375,9 @@
         <div class="debug-header">
             <div class="debug-header-left"><i class="fas fa-terminal"></i><span>Consola de Depuración</span></div>
             <div class="debug-header-right">
-                <div class="debug-btn" onclick="copyLogs()"><i class="fas fa-copy"></i></div>
-                <div class="debug-btn danger" onclick="clearLogs()"><i class="fas fa-trash"></i></div>
+                <div class="debug-btn" onclick="copyLogs()" title="Copiar logs"><i class="fas fa-copy"></i></div>
+                <div class="debug-btn" onclick="clearMyRejections()" title="Limpiar mis rechazos de viajes"><i class="fas fa-undo"></i></div>
+                <div class="debug-btn danger" onclick="clearLogs()" title="Limpiar logs"><i class="fas fa-trash"></i></div>
                 <div class="debug-btn" onclick="toggleDebugPanel()"><i class="fas fa-chevron-down"></i></div>
             </div>
         </div>
@@ -671,6 +672,28 @@
             if (debugPanelOpen) { logCount = 0; updateDebugBadge(); }
         }
         function clearLogs() { document.getElementById('debugLogs').innerHTML = ''; logCount = 0; updateDebugBadge(); }
+
+        async function clearMyRejections() {
+            if (!currentDriverId) {
+                alert('No hay conductor logueado');
+                return;
+            }
+            if (!confirm('¿Limpiar todos tus rechazos? Así volverás a ver los viajes que rechazaste antes.')) return;
+            try {
+                const { error } = await supabaseClient
+                    .from('ride_rejections')
+                    .delete()
+                    .eq('driver_id', currentDriverId);
+                if (error) throw error;
+                dlog('🗑️ Rechazos limpiados correctamente', 'success');
+                showToast('Rechazos limpiados. Recargando...', 'check-circle');
+                setTimeout(() => loadActiveRide(), 800);
+            } catch (e) {
+                dlog('Error limpiando rechazos: ' + e.message, 'error');
+                alert('Error: ' + e.message);
+            }
+        }
+
         function copyLogs() {
             const logs = document.getElementById('debugLogs').innerText;
             navigator.clipboard?.writeText(logs).then(() => showToast('Logs copiados', 'copy')).catch(() => showToast('No se pudo copiar', 'exclamation-circle'));
@@ -680,7 +703,7 @@
             document.getElementById('toastText').textContent = text;
             toast.querySelector('i').className = `fas fa-${icon}`;
             toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
+            setTimeout(() => toast.classList.remove('show'), 3500);
         }
         function updateGreeting() {
             const hour = new Date().getHours();
@@ -716,17 +739,16 @@
         let currentNavigationSteps = [], currentNavigationIndex = 0, currentRouteTarget = null;
         let userInteracting = false, lastInteractionTime = 0, smoothedBearing = null;
         let obLat = null, obLng = null, currentSelfieFile = null, currentChatTarget = 'central';
-                let chatSubscription = null;  // PATCH: referencia al canal de chat
+        let chatSubscription = null;
 
-        // ==================== VARIABLES DE NOTIFICACIÓN SONORA ====================
+        // Variables de notificación sonora
         let notificationAudioCtx = null;
         let notificationInterval = null;
         let notificationTimeout = null;
         let isNotificationPlaying = false;
-        let isRejecting = false; // bandera para evitar reintentos
-        let isAcceptingRide = false; // NUEVO: evita doble-tap en aceptar
+        let isRejecting = false;
+        let isAcceptingRide = false;
 
-        // ==================== SISTEMA DE NOTIFICACIÓN SONORA ====================
         function playNotificationSound() {
             try {
                 if (!notificationAudioCtx) {
@@ -785,13 +807,51 @@
             dlog('🔕 Notificación sonora detenida', 'info');
         }
 
-        // ==================== LOGIN (PATCH 1: normaliza teléfono) ====================
+        // ═══════════════════════════════════════════════════════════
+        // ✅ NUEVO: Manejar cancelación de viaje (antes Y después de aceptar)
+        // ═══════════════════════════════════════════════════════════
+        function handleRideCancelled(ride, source = 'realtime') {
+            const cancelledId = ride.id;
+            const wasPending = pendingRide && pendingRide.id === cancelledId;
+            const wasActive = currentRideId === cancelledId;
+
+            if (!wasPending && !wasActive) return false;
+
+            dlog(`❌ Pasajero canceló el viaje (${source})`, 'warning');
+            stopRideNotification();
+
+            if (wasPending) {
+                // Caso 1: conductor aún no había aceptado
+                hideRideModal();
+                pendingRide = null;
+                showToast('El pasajero canceló el viaje', 'times-circle');
+            }
+
+            if (wasActive) {
+                // Caso 2: conductor ya había aceptado (en camino, llegó o en curso)
+                hideRideModal();
+                clearRoute();
+                currentRideId = null;
+                currentRideStatus = null;
+                currentRouteTarget = null;
+                updateActionButtons();
+                document.getElementById('navigation-panel').classList.remove('active');
+                document.getElementById('searchContainer').classList.remove('hidden');
+                if (map && currentPosition) {
+                    map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 15, pitch: 0, bearing: 0, duration: 1000 });
+                }
+                showToast('⚠️ El pasajero canceló el viaje en curso', 'exclamation-triangle');
+            }
+
+            updateDebugStatus();
+            return true;
+        }
+
         async function login() {
             const rawPhone = document.getElementById('loginPhone').value.trim();
             const password = document.getElementById('loginPassword').value;
             if (!rawPhone || !password) return alert('Ingresa tu teléfono y contraseña');
 
-            // Normalizar: quitar espacios, guiones, paréntesis y prefijo +591
             const cleanedPhone = rawPhone
                 .replace(/[\s\-()]/g, '')
                 .replace(/^\+?591/, '');
@@ -800,13 +860,11 @@
             dlog('Intentando login con teléfono: ' + rawPhone, 'info');
 
             try {
-                // 1er intento: con el input tal cual (compatibilidad con registros viejos)
                 let { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: `${rawPhone}@montero.app`,
                     password
                 });
 
-                // 2do intento: con el teléfono normalizado si el primero falló
                 if (error && cleanedPhone !== rawPhone) {
                     dlog('Reintentando con teléfono normalizado: ' + cleanedPhone, 'info');
                     const retry = await supabaseClient.auth.signInWithPassword({
@@ -988,7 +1046,6 @@
             document.getElementById('view-onboarding').classList.remove('active');
             document.getElementById('view-login').classList.add('active');
             if (window.rideSubscription) { supabaseClient.removeChannel(window.rideSubscription); window.rideSubscription = null; }
-                        // PATCH: Limpiar canal de chat también
             if (chatSubscription) {
                 try {
                     supabaseClient.removeChannel(chatSubscription);
@@ -1023,36 +1080,54 @@
 
         function initMap(center = [-63.1821, -17.7833]) {
             if (mapInitialized) return;
-            mapInitialized = true;
-            map = new mapboxgl.Map({ container: 'map', style: 'mapbox://styles/mapbox/streets-v12', center, zoom: 14, attributionControl: false });
-            map.addControl(new mapboxgl.NavigationControl(), 'middle-right');
-            map.on('mousedown', () => { userInteracting = true; lastInteractionTime = Date.now(); });
-            map.on('touchstart', () => { userInteracting = true; lastInteractionTime = Date.now(); });
-            map.on('moveend', () => { if (Date.now() - lastInteractionTime > 5000) userInteracting = false; });
-            dlog('Mapa inicializado', 'info');
+            const container = document.getElementById('map');
+            if (!container) { dlog('⚠️ Contenedor #map no existe todavía', 'warning'); return; }
+            if (container.offsetWidth === 0 || container.offsetHeight === 0) { dlog('⚠️ Contenedor #map no es visible, esperando...', 'warning'); return; }
+            try {
+                mapInitialized = true;
+                map = new mapboxgl.Map({ container: 'map', style: 'mapbox://styles/mapbox/streets-v12', center, zoom: 14, attributionControl: false });
+                map.addControl(new mapboxgl.NavigationControl(), 'middle-right');
+                map.on('mousedown', () => { userInteracting = true; lastInteractionTime = Date.now(); });
+                map.on('touchstart', () => { userInteracting = true; lastInteractionTime = Date.now(); });
+                map.on('moveend', () => { if (Date.now() - lastInteractionTime > 5000) userInteracting = false; });
+                dlog('Mapa inicializado', 'info');
+            } catch (e) {
+                mapInitialized = false;
+                map = null;
+                dlog('❌ Error inicializando mapa: ' + e.message, 'error');
+            }
         }
 
         function ensureMapReady() {
             return new Promise(resolve => {
                 if (!map) initMap();
-                if (map.loaded()) resolve();
-                else map.once('load', resolve);
+                if (map && map.loaded()) resolve();
+                else if (map) map.once('load', resolve);
+                else resolve();
             });
         }
 
-        // ==================== SUBSCRIPCIÓN REALTIME (PATCH 2: pool abierto + asignadas) ====================
+        // ═══════════════════════════════════════════════════════════
+        // SUSCRIPCIÓN REALTIME — con detección de cancelación
+        // ═══════════════════════════════════════════════════════════
         function setupRideSubscription() {
             if (window.rideSubscription) { dlog('Ya existe suscripción de viajes', 'warning'); return; }
-            dlog('Creando suscripción Realtime a rides (pool abierto + asignadas)...', 'info');
+            dlog('Creando suscripción Realtime a rides...', 'info');
             window.rideSubscription = supabaseClient
                 .channel('driver-rides')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, (payload) => {
                     const ride = payload.new;
                     if (!ride) return;
 
-                    // PATCH: aceptar carreras asignadas a mí O carreras del pool abierto (pendientes sin driver)
                     const esParaMi = ride.driver_id === currentDriverId;
                     const esPoolAbierto = ride.status === 'pendiente' && ride.driver_id === null;
+                    const esMiCancelacion = (pendingRide && pendingRide.id === ride.id) || currentRideId === ride.id;
+
+                    // ✅ PATCH: Detectar cancelación antes de filtrar (aplica a pool y a asignados)
+                    if (esMiCancelacion && (ride.status === 'cancelado' || ride.status === 'no_completado')) {
+                        handleRideCancelled(ride, 'realtime');
+                        return;
+                    }
 
                     if (!esParaMi && !esPoolAbierto) return;
 
@@ -1099,7 +1174,6 @@
             } catch (e) { dlog('Excepción hasRejectedRide: ' + e.message, 'error'); return false; }
         }
 
-        // ==================== LOAD ACTIVE RIDE (PATCH 3: filtro híbrido) ====================
         async function loadActiveRide() {
             if (!currentDriverId || !isDriverOnline) {
                 dlog('No se cargan rides activos: conductor offline', 'info');
@@ -1107,7 +1181,6 @@
             }
             dlog('Buscando viaje activo en BD (asignadas + pool)...', 'info');
 
-            // PATCH: traer carreras asignadas a mí O pendientes sin asignar
             const { data, error } = await supabaseClient
                 .from('rides')
                 .select('*, passengers(full_name, phone)')
@@ -1131,7 +1204,6 @@
             } else { dlog('No hay viaje activo', 'info'); }
         }
 
-        // ==================== SHOW RIDE REQUEST (PATCH 4: registra viewed_by_drivers) ====================
         async function showRideRequest(ride) {
             dlog('showRideRequest ejecutándose para ride: ' + ride.id.substring(0,8), 'info');
             if (!isDriverOnline) {
@@ -1174,15 +1246,12 @@
             startRideNotification();
             updateDebugStatus();
 
-            // ============ PATCH 4: registrar que ESTE conductor vio la carrera ============
             registrarVistaDeCarrera(ride);
         }
 
-        // NUEVA FUNCIÓN: escribe en rides.viewed_by_drivers
         async function registrarVistaDeCarrera(ride) {
             if (!ride || !ride.id || !currentDriverId) return;
             try {
-                // 1) Leer array actual (evita sobreescribir a otros conductores)
                 const { data: cur } = await supabaseClient
                     .from('rides')
                     .select('viewed_by_drivers')
@@ -1191,13 +1260,11 @@
 
                 const views = Array.isArray(cur?.viewed_by_drivers) ? cur.viewed_by_drivers : [];
 
-                // 2) Evitar duplicado del mismo conductor
                 if (views.some(v => v && v.driver_id === currentDriverId)) {
                     dlog('👁 Vista ya registrada previamente', 'info');
                     return;
                 }
 
-                // 3) Calcular distancia y ETA si tenemos posición y origen
                 let distanceKm = null;
                 if (currentPosition && ride.origin_lat && ride.origin_lng) {
                     const meters = getDistanceFromLatLonInMeters(
@@ -1226,7 +1293,6 @@
 
                 dlog(`👁 Vista registrada (${distanceKm ?? '?'} km)`, 'success');
             } catch (e) {
-                // No bloqueante: si la columna no existe todavía, solo loguea
                 dlog('Error registrando vista: ' + (e.message || e), 'warning');
             }
         }
@@ -1279,7 +1345,6 @@
             else if (currentRideStatus === 'en_curso') { document.getElementById('finishBtn').classList.remove('hidden'); document.getElementById('notCompletedBtn').classList.remove('hidden'); document.getElementById('redirectBtn').classList.remove('hidden'); }
         }
 
-        // ==================== ACCEPT RIDE (PATCH 5: RPC atómico anti race-condition) ====================
         async function acceptRide() {
             if (!pendingRide || !pendingRide.id) return;
             if (isAcceptingRide) { dlog('Ya se está aceptando, ignorando doble tap', 'warning'); return; }
@@ -1290,7 +1355,6 @@
             dlog('Aceptando viaje: ' + rideId.substring(0,8), 'info');
 
             try {
-                // 1) Estado actual de la carrera
                 const { data: rideCheck, error: checkErr } = await supabaseClient
                     .from('rides').select('*').eq('id', rideId).single();
                 if (checkErr) {
@@ -1300,14 +1364,20 @@
 
                 let ride = rideCheck;
 
-                // 2) Si aún está 'pendiente' → usar RPC atómico (solo un conductor gana)
+                if (ride.status === 'cancelado' || ride.status === 'no_completado') {
+                    dlog('Viaje ya cancelado por el pasajero', 'warning');
+                    showToast('El pasajero canceló este viaje', 'times-circle');
+                    hideRideModal();
+                    pendingRide = null;
+                    return;
+                }
+
                 if (ride.status === 'pendiente') {
                     const { data: rpcResult, error: rpcError } = await supabaseClient
                         .rpc('accept_ride', { p_ride_id: rideId, p_driver_id: currentDriverId });
 
                     if (rpcError) {
                         dlog('Error RPC accept_ride: ' + rpcError.message, 'error');
-                        // Fallback: si el RPC no existe todavía, hacer update directo con candado
                         const { data: fallback, error: fbErr } = await supabaseClient
                             .from('rides')
                             .update({ status: 'aceptado', driver_id: currentDriverId, accepted_at: new Date().toISOString() })
@@ -1336,11 +1406,9 @@
                     }
                     dlog('✅ Carrera aceptada atómicamente', 'success');
                 }
-                // 3) Ya estaba 'aceptado' por admin para mí → proceder
                 else if (ride.status === 'aceptado' && ride.driver_id === currentDriverId) {
                     dlog('Carrera ya asignada a mí por admin', 'info');
                 }
-                // 4) No disponible
                 else {
                     alert('Este viaje ya no está disponible.');
                     hideRideModal();
@@ -1430,7 +1498,6 @@
             }
         }
 
-        // ==================== FINISH RIDE (PATCH 6: refresh wallet tras pago por trigger) ====================
         async function finishRide(completed) {
             if (!currentRideId) return;
             if (completed) {
@@ -1445,10 +1512,8 @@
             const { error } = await supabaseClient.from('rides').update({ status: newStatus, completed_at: completed ? new Date().toISOString() : null, cancelled_at: completed ? null : new Date().toISOString() }).eq('id', currentRideId);
             if (error) return alert('Error: ' + error.message);
 
-            // PATCH 6: el pago lo hace un trigger en BD. Refrescamos wallet para mostrar el saldo actualizado.
             if (completed) {
                 showToast('¡Viaje completado! Pago acreditado', 'check-circle');
-                // Esperar un instante para que el trigger termine y refrescar
                 setTimeout(() => { loadWalletData().catch(()=>{}); }, 900);
             } else {
                 alert('Viaje no completado');
@@ -1540,7 +1605,6 @@
             updateDebugStatus();
 
             if (isDriverOnline) {
-                // Desbloquear AudioContext para móviles
                 try {
                     if (!notificationAudioCtx) {
                         notificationAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1554,15 +1618,21 @@
                     const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }));
                     currentPosition = [pos.coords.latitude, pos.coords.longitude];
                     dlog(`📍 GPS: ${currentPosition[0].toFixed(5)}, ${currentPosition[1].toFixed(5)}`, 'success');
-                    if (!map) initMap([currentPosition[1], currentPosition[0]]);
-                    else map.jumpTo({ center: [currentPosition[1], currentPosition[0]], zoom: 15 });
-                    await ensureMapReady();
-                    setTimeout(() => {
-                        if (map && mapInitialized) {
-                            updateDriverMarker(currentPosition[0], currentPosition[1], 0);
-                        }
-                    }, 300);
-                } catch (e) { dlog('Error obteniendo GPS: ' + e.message, 'error'); if (!map) initMap(); }
+
+                    const isViajesActive = document.getElementById('view-viajes')?.classList.contains('active');
+                    if (isViajesActive) {
+                        if (!map) initMap([currentPosition[1], currentPosition[0]]);
+                        else map.jumpTo({ center: [currentPosition[1], currentPosition[0]], zoom: 15 });
+                        await ensureMapReady();
+                        setTimeout(() => {
+                            if (map && mapInitialized) {
+                                updateDriverMarker(currentPosition[0], currentPosition[1], 0);
+                            }
+                        }, 300);
+                    } else {
+                        dlog('Mapa no inicializado aún (vista inicio). Se iniciará al abrir Viajes.', 'info');
+                    }
+                } catch (e) { dlog('Error obteniendo GPS: ' + e.message, 'error'); }
                 startTracking();
                 try {
                     await supabaseClient.from('driver_status').upsert({ driver_id: currentDriverId, is_online: true, latitude: currentPosition?.[0] || null, longitude: currentPosition?.[1] || null, last_updated: new Date().toISOString() }, { onConflict: 'driver_id' });
@@ -1722,8 +1792,8 @@
                 else if (currentRideId) await supabaseClient.from('chat_messages').insert({ ride_id: currentRideId, sender_type: 'driver', sender_id: currentDriverId, message: msg });
             } catch (e) { alert('Error enviando mensaje'); }
         }
-             function setupChatSubscription() {
-            // PATCH: Limpiar suscripción anterior
+
+        function setupChatSubscription() {
             if (chatSubscription) {
                 try {
                     supabaseClient.removeChannel(chatSubscription);
@@ -1733,7 +1803,6 @@
                 }
                 chatSubscription = null;
             }
-            // PATCH: Nombre único por conductor + timestamp
             const channelName = `central-chat-${currentDriverId || 'anon'}-${Date.now()}`;
             chatSubscription = supabaseClient
                 .channel(channelName)
@@ -1745,6 +1814,7 @@
                     dlog('Chat suscripción: ' + status, status === 'SUBSCRIBED' ? 'success' : 'info');
                 });
         }
+
         async function loadWalletData() {
             if (!currentDriverId) return;
             const { data: wallet } = await supabaseClient.from('wallets').select('balance').eq('driver_id', currentDriverId).maybeSingle();
@@ -1763,10 +1833,29 @@
             });
         }
 
-        // ==================== RESPALDO: Polling cada 5 segundos (pool + asignadas) ====================
+        // ==================== RESPALDO: Polling cada 5 segundos ====================
         setInterval(async () => {
             if (!isDriverOnline || !currentDriverId) return;
-            if (currentRideId || pendingRide) return;
+
+            // ✅ PATCH: Verificar si el viaje pendiente o activo fue cancelado
+            if (pendingRide || currentRideId) {
+                try {
+                    const activeId = currentRideId || pendingRide.id;
+                    const { data: checkRide } = await supabaseClient
+                        .from('rides')
+                        .select('id, status, driver_id')
+                        .eq('id', activeId)
+                        .maybeSingle();
+
+                    if (checkRide && (checkRide.status === 'cancelado' || checkRide.status === 'no_completado')) {
+                        dlog('❌ Cancelación detectada por polling', 'warning');
+                        handleRideCancelled(checkRide, 'polling');
+                    }
+                } catch (e) { /* ignore */ }
+                return;
+            }
+
+            // Búsqueda de nuevos viajes
             try {
                 const { data } = await supabaseClient
                     .from('rides')
