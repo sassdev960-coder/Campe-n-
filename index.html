@@ -312,9 +312,9 @@
         <div class="debug-header">
             <div class="debug-header-left"><i class="fas fa-terminal"></i><span>Consola de Depuración</span></div>
             <div class="debug-header-right">
-                <div class="debug-btn" onclick="copyLogs()" title="Copiar logs"><i class="fas fa-copy"></i></div>
-                <div class="debug-btn" onclick="clearMyRejections()" title="Limpiar rechazos"><i class="fas fa-undo"></i></div>
-                <div class="debug-btn danger" onclick="clearLogs()" title="Limpiar logs"><i class="fas fa-trash"></i></div>
+                <div class="debug-btn" onclick="copyLogs()"><i class="fas fa-copy"></i></div>
+                <div class="debug-btn" onclick="clearMyRejections()"><i class="fas fa-undo"></i></div>
+                <div class="debug-btn danger" onclick="clearLogs()"><i class="fas fa-trash"></i></div>
                 <div class="debug-btn" onclick="toggleDebugPanel()"><i class="fas fa-chevron-down"></i></div>
             </div>
         </div>
@@ -350,14 +350,14 @@
         <div class="onboarding-box">
             <div class="ob-step active" id="obStep1">
                 <h2>¡Gracias por unirte!</h2>
-                <p>Estás a unos pasos de ser el campeón de las calles. Vamos a crear tu perfil de conductor.</p>
+                <p>Estás a unos pasos de ser el campeón de las calles. Vamos a crear tu perfil.</p>
                 <button class="login-btn mt-15" onclick="nextObStep(2)">Continuar <i class="fas fa-arrow-right"></i></button>
             </div>
             <div class="ob-step" id="obStep2">
                 <h2>Tus Datos</h2>
-                <p>Por favor, ingresa tu nombre completo y documento de identidad.</p>
+                <p>Ingresa tu nombre completo y documento de identidad.</p>
                 <input type="text" id="obFullName" class="login-input" placeholder="Nombres y Apellidos">
-                <input type="text" id="obIdentity" class="login-input" placeholder="Cédula / Carnet de Identidad">
+                <input type="text" id="obIdentity" class="login-input" placeholder="Cédula / CI">
                 <div class="btn-row">
                     <button class="login-btn btn-outline" onclick="nextObStep(1)"><i class="fas fa-arrow-left"></i> Volver</button>
                     <button class="login-btn" onclick="nextObStep(3)">Siguiente <i class="fas fa-arrow-right"></i></button>
@@ -365,7 +365,7 @@
             </div>
             <div class="ob-step" id="obStep3">
                 <h2>Tu Vehículo</h2>
-                <p>Registra los datos de la motocicleta con la que trabajarás.</p>
+                <p>Registra los datos de la motocicleta.</p>
                 <input type="text" id="obMotoModel" class="login-input" placeholder="Modelo (Ej: Suzuki GN 125)">
                 <input type="text" id="obMotoPlate" class="login-input" placeholder="Placa (Ej: 1234-ABC)">
                 <div class="btn-row">
@@ -375,13 +375,13 @@
             </div>
             <div class="ob-step" id="obStep4">
                 <h2>Domicilio</h2>
-                <p>Para tu seguridad y la de los pasajeros, necesitamos validar tu domicilio real.</p>
-                <input type="text" id="obAddress" class="login-input" placeholder="Dirección escrita (Zona, Calle)">
+                <p>Necesitamos validar tu domicilio real.</p>
+                <input type="text" id="obAddress" class="login-input" placeholder="Dirección (Zona, Calle)">
                 <button class="login-btn btn-outline" onclick="getOnboardingGPS()"><i class="fas fa-map-marker-alt"></i> Fijar GPS Actual</button>
                 <div id="obGpsStatus" class="status-text">Ubicación GPS no registrada</div>
                 <div class="file-upload-box mt-15">
                     <i class="fas fa-file-invoice"></i>
-                    <label>Sube una foto de factura que compruebe la dirección</label>
+                    <label>Sube una foto de factura (Luz, Agua o Gas)</label>
                     <input type="file" id="obBillFile" accept="image/*,application/pdf">
                 </div>
                 <div class="btn-row">
@@ -391,7 +391,7 @@
             </div>
             <div class="ob-step" id="obStep5">
                 <h2>Foto de Perfil</h2>
-                <p>Sube una foto tuya clara (selfie) para que los pasajeros te reconozcan.</p>
+                <p>Sube una selfie clara.</p>
                 <div class="photo-options mt-15">
                     <input type="file" id="obSelfieCamera" accept="image/*" capture="user" style="display:none;" onchange="handleSelfieSelect(this)">
                     <input type="file" id="obSelfieGallery" accept="image/*" style="display:none;" onchange="handleSelfieSelect(this)">
@@ -617,7 +617,7 @@
             try {
                 const { error } = await supabaseClient.from('ride_rejections').delete().eq('driver_id', currentDriverId);
                 if (error) throw error;
-                dlog('🗑️ Rechazos limpiados correctamente', 'success');
+                dlog('🗑️ Rechazos limpiados', 'success');
                 showToast('Rechazos limpiados', 'check-circle');
                 setTimeout(() => loadActiveRide(), 800);
             } catch (e) { dlog('Error: ' + e.message, 'error'); alert('Error: ' + e.message); }
@@ -697,7 +697,7 @@
         let obLat = null, obLng = null, currentSelfieFile = null, currentChatTarget = 'central';
         let chatSubscription = null;
         let maneuverArrowMarker = null;
-        let initMapInProgress = false;  // ✅ LOCK anti-concurrencia
+        let initMapInProgress = false;
 
         let notificationAudioCtx = null;
         let notificationInterval = null;
@@ -735,7 +735,7 @@
         function startRideNotification() {
             if (isNotificationPlaying) return;
             isNotificationPlaying = true;
-            dlog('🔔 Iniciando notificación sonora', 'warning');
+            dlog('🔔 Notificación sonora iniciada', 'warning');
             playNotificationSound();
             notificationInterval = setInterval(() => { playNotificationSound(); }, 2000);
             notificationTimeout = setTimeout(() => { stopRideNotification(); dlog('🔕 Notificación detenida', 'warning'); }, 60000);
@@ -777,7 +777,7 @@
             if (!rawPhone || !password) return alert('Ingresa tu teléfono y contraseña');
             const cleanedPhone = rawPhone.replace(/[\s\-()]/g, '').replace(/^\+?591/, '');
             showLoading('Iniciando sesión...');
-            dlog('Intentando login: ' + rawPhone, 'info');
+            dlog('Login: ' + rawPhone, 'info');
             try {
                 let { data, error } = await supabaseClient.auth.signInWithPassword({ email: `${rawPhone}@montero.app`, password });
                 if (error && cleanedPhone !== rawPhone) {
@@ -786,7 +786,7 @@
                 }
                 if (error) throw error;
                 currentDriverId = data.user.id;
-                dlog('Login exitoso: ' + currentDriverId, 'success');
+                dlog('Login OK: ' + currentDriverId, 'success');
                 await loadDriverData();
                 await forceOffline();
                 setupRideSubscription();
@@ -806,14 +806,14 @@
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session) {
                     currentDriverId = session.user.id;
-                    dlog('Sesión encontrada: ' + currentDriverId, 'success');
+                    dlog('Sesión: ' + currentDriverId, 'success');
                     await loadDriverData();
                     await forceOffline();
                     setupRideSubscription();
                     setupChatSubscription();
                     routeUserBasedOnProfile();
                 } else {
-                    dlog('No hay sesión', 'info');
+                    dlog('Sin sesión', 'info');
                     document.getElementById('view-login').classList.add('active');
                 }
             } catch (error) {
@@ -899,7 +899,7 @@
             const mm = document.getElementById('obMotoModel').value.trim(), mp = document.getElementById('obMotoPlate').value.trim();
             const ad = document.getElementById('obAddress').value.trim(), bf = document.getElementById('obBillFile').files[0];
             if(!fn||!id||!mm||!mp||!ad) return alert("Completa todos los campos.");
-            if(!obLat||!obLng) return alert("Usa el botón de Fijar GPS.");
+            if(!obLat||!obLng) return alert("Usa Fijar GPS.");
             if(!bf) return alert("Adjunta la factura.");
             if(!currentSelfieFile) return alert("Sube una selfie.");
             showLoading("Guardando perfil...");
@@ -937,7 +937,7 @@
                 const hi = document.querySelector('#headerProfilePic img'); if (hi) hi.src = d.avatar_url;
                 const pi = document.querySelector('#pageProfilePic img'); if (pi) pi.src = d.avatar_url;
             }
-            dlog('Datos cargados: ' + name, 'success');
+            dlog('Datos: ' + name, 'success');
         }
 
         async function logout() {
@@ -988,7 +988,7 @@
             if (tabId === 'historial') loadHistorial();
         }
 
-        // ✅ initMap con LOCK anti-concurrencia
+        // ✅ initMap con timeout de 20s y tolerancia a fallos
         async function initMap(center = [-63.1821, -17.7833]) {
             if (mapInitialized && map) {
                 try { map.resize(); } catch (e) {}
@@ -996,9 +996,9 @@
             }
             
             if (initMapInProgress) {
-                dlog('⏸️ initMap ya en progreso, esperando...', 'info');
+                dlog('⏸️ initMap en progreso, esperando...', 'info');
                 const startWait = Date.now();
-                while (initMapInProgress && (Date.now() - startWait) < 10000) {
+                while (initMapInProgress && (Date.now() - startWait) < 15000) {
                     await new Promise(r => setTimeout(r, 100));
                 }
                 return mapInitialized && map;
@@ -1050,10 +1050,35 @@
                     attributionControl: false
                 });
                 
+                // ✅ Timeout aumentado a 20s + tolerancia a errores
                 await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => reject(new Error('Timeout 5s esperando load')), 5000);
-                    map.once('load', () => { clearTimeout(timeout); resolve(); });
-                    map.once('error', (e) => { clearTimeout(timeout); reject(new Error('Mapbox: ' + (e.error?.message || 'desconocido'))); });
+                    let resolved = false;
+                    const timeout = setTimeout(() => {
+                        if (!resolved) {
+                            resolved = true;
+                            dlog('⚠️ Timeout de estilo (20s). Continuando de todos modos...', 'warning');
+                            resolve();
+                        }
+                    }, 20000);
+                    map.once('load', () => {
+                        if (!resolved) {
+                            resolved = true;
+                            clearTimeout(timeout);
+                            dlog('✅ Estilo cargado', 'success');
+                            resolve();
+                        }
+                    });
+                    map.once('error', (e) => {
+                        const errMsg = e.error?.message || 'desconocido';
+                        dlog('⚠️ Error Mapbox: ' + errMsg, 'warning');
+                        if (errMsg.includes('401') || errMsg.includes('403') || errMsg.includes('Unauthorized')) {
+                            if (!resolved) {
+                                resolved = true;
+                                clearTimeout(timeout);
+                                reject(new Error('Token inválido: ' + errMsg));
+                            }
+                        }
+                    });
                 });
                 
                 map.addControl(new mapboxgl.NavigationControl(), 'middle-right');
@@ -1062,7 +1087,7 @@
                 map.on('moveend', () => { if (Date.now() - lastInteractionTime > 5000) userInteracting = false; });
                 
                 mapInitialized = true;
-                dlog(`✅ Mapa inicializado correctamente`, 'success');
+                dlog(`✅ Mapa inicializado`, 'success');
                 return true;
             } catch (e) {
                 map = null;
@@ -1107,7 +1132,7 @@
                         return;
                     }
                     if (!esParaMi && !esPoolAbierto) return;
-                    if (!isDriverOnline) { dlog('Offline, ignoro ride', 'warning'); return; }
+                    if (!isDriverOnline) { dlog('Offline, ignoro', 'warning'); return; }
                     if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
                         if (ride.status === 'pendiente' || ride.status === 'aceptado') {
                             if (currentRideId === ride.id) { currentRideStatus = ride.status; updateRideUI(ride); return; }
@@ -1141,12 +1166,12 @@
                 .in('status', ['pendiente','aceptado','llegado_origen','en_curso'])
                 .order('created_at', { ascending: false })
                 .limit(1);
-            if (error) { dlog('Error loadActiveRide: ' + error.message, 'error'); return; }
+            if (error) { dlog('Error: ' + error.message, 'error'); return; }
             const ride = data && data.length > 0 ? data[0] : null;
             if (ride) {
-                dlog('Viaje encontrado: ' + ride.id.substring(0,8) + ' status: ' + ride.status, 'success');
+                dlog('Viaje: ' + ride.id.substring(0,8) + ' status: ' + ride.status, 'success');
                 if (ride.status === 'pendiente') {
-                    if (await hasRejectedRide(ride.id)) { dlog('Rechazado previamente, ignorando', 'warning'); return; }
+                    if (await hasRejectedRide(ride.id)) { dlog('Rechazado previamente', 'warning'); return; }
                 }
                 if (ride.status === 'pendiente' || ride.status === 'aceptado') {
                     if (!currentRideId && !pendingRide) showRideRequest(ride);
@@ -1263,17 +1288,17 @@
 
         async function acceptRide() {
             if (!pendingRide || !pendingRide.id) return;
-            if (isAcceptingRide) { dlog('Ya aceptando, ignoro', 'warning'); return; }
+            if (isAcceptingRide) { dlog('Ya aceptando', 'warning'); return; }
             isAcceptingRide = true;
             stopRideNotification();
             const rideId = pendingRide.id;
             dlog('Aceptando: ' + rideId.substring(0,8), 'info');
             try {
                 const { data: rideCheck, error: checkErr } = await supabaseClient.from('rides').select('*').eq('id', rideId).single();
-                if (checkErr) { dlog('Error check: ' + checkErr.message, 'error'); return alert('Error: ' + checkErr.message); }
+                if (checkErr) { dlog('Error: ' + checkErr.message, 'error'); return alert('Error: ' + checkErr.message); }
                 let ride = rideCheck;
                 if (ride.status === 'cancelado' || ride.status === 'no_completado') {
-                    showToast('El pasajero canceló este viaje', 'times-circle');
+                    showToast('El pasajero canceló', 'times-circle');
                     hideRideModal(); pendingRide = null; return;
                 }
                 if (ride.status === 'pendiente') {
@@ -1289,9 +1314,9 @@
                         if (!rpcResult || !rpcResult.success) { showToast('Otro conductor la tomó', 'exclamation-circle'); hideRideModal(); pendingRide = null; return; }
                         ride = rpcResult.ride;
                     }
-                    dlog('✅ Carrera aceptada', 'success');
+                    dlog('✅ Aceptada', 'success');
                 } else if (ride.status === 'aceptado' && ride.driver_id === currentDriverId) {
-                    dlog('Ya asignada a mí', 'info');
+                    dlog('Ya asignada', 'info');
                 } else {
                     alert('No disponible.'); hideRideModal(); pendingRide = null; return;
                 }
@@ -1494,7 +1519,7 @@
             arrowEl.className = 'maneuver-arrow';
             arrowEl.innerHTML = `<i class="fas ${iconClass}"></i>`;
             maneuverArrowMarker = new mapboxgl.Marker({ element: arrowEl, anchor: 'center' }).setLngLat([lng, lat]).addTo(map);
-            dlog('🎯 Flecha dibujada: ' + iconClass, 'info');
+            dlog('🎯 Flecha: ' + iconClass, 'info');
         }
 
         function updateNavigationPanel(step) {
@@ -1552,14 +1577,14 @@
                         await ensureMapReady();
                         setTimeout(() => { if (map && mapInitialized) updateDriverMarker(currentPosition[0], currentPosition[1], 0); }, 300);
                     } else {
-                        dlog('Mapa no inicializado aún (vista inicio)', 'info');
+                        dlog('Mapa no inicializado aún', 'info');
                     }
                 } catch (e) { dlog('Error GPS: ' + e.message, 'error'); }
                 startTracking();
                 try {
                     await supabaseClient.from('driver_status').upsert({ driver_id: currentDriverId, is_online: true, latitude: currentPosition?.[0] || null, longitude: currentPosition?.[1] || null, last_updated: new Date().toISOString() }, { onConflict: 'driver_id' });
                     dlog('Estado online guardado', 'success');
-                } catch (e) { dlog('Error guardando estado: ' + e.message, 'error'); }
+                } catch (e) { dlog('Error guardando: ' + e.message, 'error'); }
                 dlog('Cargando viajes...', 'info');
                 await loadActiveRide();
                 setTimeout(async () => {
@@ -1640,8 +1665,8 @@
                     const now = Date.now();
                     if (now - lastUpdateTime > UPDATE_INTERVAL) { lastUpdateTime = now; updateDriverStatus(true, lat, lng); }
                 },
-                (error) => { dlog('Error GPS: ' + error.message, 'error'); },
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+                (error) => { dlog('Error GPS: ' + error.message, 'warning'); },
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
             );
         }
 
@@ -1768,7 +1793,7 @@
                     const activeId = currentRideId || pendingRide.id;
                     const { data: checkRide } = await supabaseClient.from('rides').select('id, status, driver_id').eq('id', activeId).maybeSingle();
                     if (checkRide && (checkRide.status === 'cancelado' || checkRide.status === 'no_completado')) {
-                        dlog('❌ Cancelación detectada (polling)', 'warning');
+                        dlog('❌ Cancelación (polling)', 'warning');
                         handleRideCancelled(checkRide, 'polling');
                     }
                 } catch (e) {}
@@ -1780,7 +1805,7 @@
                     .in('status', ['pendiente', 'aceptado'])
                     .order('created_at', { ascending: false }).limit(1);
                 if (data && data.length > 0) {
-                    dlog('🔄 Respaldo: viaje ' + data[0].id.substring(0,8), 'warning');
+                    dlog('🔄 Respaldo: ' + data[0].id.substring(0,8), 'warning');
                     const { data: fullRide } = await supabaseClient.from('rides').select('*, passengers(full_name, phone)').eq('id', data[0].id).single();
                     if (fullRide && !pendingRide && !currentRideId && !isRejecting) showRideRequest(fullRide);
                 }
