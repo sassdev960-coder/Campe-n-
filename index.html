@@ -677,16 +677,10 @@
         function clearLogs() { document.getElementById('debugLogs').innerHTML = ''; logCount = 0; updateDebugBadge(); }
 
         async function clearMyRejections() {
-            if (!currentDriverId) {
-                alert('No hay conductor logueado');
-                return;
-            }
+            if (!currentDriverId) { alert('No hay conductor logueado'); return; }
             if (!confirm('¿Limpiar todos tus rechazos? Así volverás a ver los viajes que rechazaste antes.')) return;
             try {
-                const { error } = await supabaseClient
-                    .from('ride_rejections')
-                    .delete()
-                    .eq('driver_id', currentDriverId);
+                const { error } = await supabaseClient.from('ride_rejections').delete().eq('driver_id', currentDriverId);
                 if (error) throw error;
                 dlog('🗑️ Rechazos limpiados correctamente', 'success');
                 showToast('Rechazos limpiados. Recargando...', 'check-circle');
@@ -1055,22 +1049,24 @@
             else { p.type = 'password'; t.classList.replace('fa-eye-slash','fa-eye'); }
         }
 
-        // ✅ FIX: switchTab con requestAnimationFrame doble
+        // ✅ FIX 1: switchTab con reflow forzado
         function switchTab(tabId, el) {
             document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('view-' + tabId).classList.add('active');
+            const targetView = document.getElementById('view-' + tabId);
+            targetView.classList.add('active');
             if (el) el.classList.add('active');
+            
+            void targetView.offsetHeight;
             
             if (tabId === 'viajes') {
                 requestAnimationFrame(() => {
                     requestAnimationFrame(() => {
-                        if (!map && isDriverOnline) initMap();
-                        if (map) {
+                        void targetView.offsetHeight;
+                        if (!map && isDriverOnline) {
+                            initMap().catch(e => dlog('Error initMap desde switchTab: ' + e.message, 'error'));
+                        } else if (map) {
                             try { map.resize(); } catch (e) {}
-                            if (currentPosition) {
-                                try { map.jumpTo({ center: [currentPosition[1], currentPosition[0]], zoom: 16 }); } catch (e) {}
-                            }
                         }
                     });
                 });
@@ -1080,61 +1076,79 @@
             if (tabId === 'historial') loadHistorial();
         }
 
-        // ✅ FIX: initMap robusto con forzado de dimensiones
-        function initMap(center = [-63.1821, -17.7833]) {
+        // ✅ FIX 2: initMap async con polling de dimensiones
+        async function initMap(center = [-63.1821, -17.7833]) {
             if (mapInitialized && map) {
                 try { map.resize(); } catch (e) {}
-                return;
+                return true;
             }
+            
+            if (map) {
+                try { map.remove(); } catch (e) {}
+                map = null;
+            }
+            mapInitialized = false;
             
             const container = document.getElementById('map');
-            if (!container) { dlog('⚠️ Contenedor #map no existe todavía', 'warning'); return; }
-            
-            const parent = container.parentElement;
-            const parentHeight = (parent && parent.clientHeight > 0) 
-                ? parent.clientHeight 
-                : (window.innerHeight - 80);
-            
-            container.style.width = '100%';
-            container.style.height = parentHeight + 'px';
-            container.style.position = 'absolute';
-            container.style.top = '0';
-            container.style.left = '0';
-            container.innerHTML = '';
-            
-            if (container.offsetWidth === 0 || container.offsetHeight === 0) {
-                dlog('⚠️ Contenedor sin dimensiones (' + container.offsetWidth + 'x' + container.offsetHeight + '). Reintentando en 400ms...', 'warning');
-                mapInitialized = false;
-                setTimeout(() => initMap(center), 400);
-                return;
+            if (!container) {
+                dlog('⚠️ Contenedor #map no existe todavía', 'warning');
+                return false;
             }
             
+            void container.offsetHeight;
+            
+            const startTime = Date.now();
+            while (Date.now() - startTime < 3000) {
+                if (container.offsetWidth > 0 && container.offsetHeight > 0) break;
+                await new Promise(r => setTimeout(r, 100));
+                void container.offsetHeight;
+            }
+            
+            if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+                dlog(`⚠️ Contenedor sin dimensiones tras 3s (${container.offsetWidth}x${container.offsetHeight})`, 'warning');
+                return false;
+            }
+            
+            dlog(`🗺️ Inicializando mapa en contenedor ${container.offsetWidth}x${container.offsetHeight}...`, 'info');
+            
             try {
-                mapInitialized = true;
                 map = new mapboxgl.Map({
                     container: container,
                     style: 'mapbox://styles/mapbox/streets-v12',
-                    center, zoom: 14, attributionControl: false
+                    center: center,
+                    zoom: 14,
+                    attributionControl: false
                 });
                 map.addControl(new mapboxgl.NavigationControl(), 'middle-right');
                 map.on('mousedown', () => { userInteracting = true; lastInteractionTime = Date.now(); });
                 map.on('touchstart', () => { userInteracting = true; lastInteractionTime = Date.now(); });
                 map.on('moveend', () => { if (Date.now() - lastInteractionTime > 5000) userInteracting = false; });
-                dlog('✅ Mapa inicializado (' + container.offsetWidth + 'x' + container.offsetHeight + ')', 'success');
+                mapInitialized = true;
+                dlog(`✅ Mapa inicializado correctamente`, 'success');
+                return true;
             } catch (e) {
-                mapInitialized = false;
                 map = null;
-                try { container.innerHTML = ''; } catch (err) {}
-                dlog('❌ Error inicializando mapa: ' + e.message, 'error');
+                mapInitialized = false;
+                dlog(`❌ Error inicializando mapa: ${e.message}`, 'error');
+                return false;
             }
         }
 
-        function ensureMapReady() {
+        // ✅ FIX 3: ensureMapReady async
+        async function ensureMapReady() {
+            if (map && mapInitialized) {
+                if (map.loaded()) return true;
+                return new Promise(resolve => {
+                    map.once('load', () => resolve(true));
+                    setTimeout(() => resolve(true), 5000);
+                });
+            }
+            const ok = await initMap();
+            if (!ok) return false;
+            if (map.loaded()) return true;
             return new Promise(resolve => {
-                if (!map) initMap();
-                if (map && map.loaded()) resolve();
-                else if (map) map.once('load', resolve);
-                else resolve();
+                map.once('load', () => resolve(true));
+                setTimeout(() => resolve(true), 5000);
             });
         }
 
@@ -1384,13 +1398,32 @@
 
                 switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
 
-                // ✅ FIX: Esperar más tiempo al mapa
-                await new Promise(r => setTimeout(r, 800));
-                if (!map) initMap([currentPosition[1], currentPosition[0]]);
+                // ✅ FIX 4: Polling activo de dimensiones
+                dlog('⏳ Esperando a que el contenedor del mapa esté listo...', 'info');
+                let mapReady = false;
+                for (let i = 0; i < 20; i++) {
+                    await new Promise(r => setTimeout(r, 200));
+                    const c = document.getElementById('map');
+                    if (c && c.offsetWidth > 0 && c.offsetHeight > 0) {
+                        dlog(`✅ Contenedor listo (${c.offsetWidth}x${c.offsetHeight}) tras ${(i+1)*200}ms`, 'success');
+                        mapReady = true;
+                        break;
+                    }
+                }
+
+                if (!mapReady) {
+                    dlog('❌ Contenedor #map nunca tuvo dimensiones', 'error');
+                }
+
+                if (!map) {
+                    await initMap([currentPosition[1], currentPosition[0]]);
+                }
                 await ensureMapReady();
                 await new Promise(r => setTimeout(r, 300));
 
-                if (ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
+                if (!map || !mapInitialized) {
+                    dlog('❌ El mapa no se pudo inicializar, abortando dibujo de ruta', 'error');
+                } else if (ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
                     dlog('🗺️ Dibujando ruta: origen ' + ride.origin_lat + ',' + ride.origin_lng + ' → destino ' + ride.destination_lat + ',' + ride.destination_lng, 'info');
                     try {
                         await drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
