@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Moto Móvil - Conductor</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -111,7 +111,7 @@
         .action-btn.redirect{background:linear-gradient(135deg,var(--purple),#7c3aed);color:white}
         .action-btn.hidden{display:none}
         .mapboxgl-ctrl-bottom-left,.mapboxgl-ctrl-bottom-right{display:none}
-        .driver-arrow{width:44px;height:44px;background:linear-gradient(135deg,#4285F4,#2563eb);border:3px solid white;border-radius:var(--border-radius-full);box-shadow:0 4px 15px rgba(66,133,244,0.6);display:flex;align-items:center;justify-content:center;color:white;font-size:20px;position:relative;transition:transform 0.15s linear}
+        .driver-arrow{width:48px;height:48px;background:linear-gradient(135deg,#4285F4,#2563eb);border:3px solid white;border-radius:var(--border-radius-full);box-shadow:0 4px 15px rgba(66,133,244,0.6);display:flex;align-items:center;justify-content:center;color:white;font-size:22px;position:relative;transition:transform 0.15s linear}
         .driver-arrow::before{content:'';position:absolute;inset:-8px;border-radius:var(--border-radius-full);background:rgba(66,133,244,0.2);animation:pulseMarker 2s infinite}
         @keyframes pulseMarker{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:0}}
         .maneuver-arrow{width:56px;height:56px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border:4px solid white;border-radius:var(--border-radius-full);box-shadow:0 8px 24px rgba(59,130,246,0.7);display:flex;align-items:center;justify-content:center;color:white;font-size:26px;position:relative;animation:maneuverPulse 1.5s infinite}
@@ -576,6 +576,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
+        // ═══════════════════════════════════════════════════════════════
+        //  CONFIGURACIÓN DE NAVEGACIÓN (Google Maps style)
+        // ═══════════════════════════════════════════════════════════════
+        const NAV_PADDING_FRACTION = 0.33;   // Flecha a 33% desde abajo
+        const ROUTE_TAIL_METERS = 30;        // Cola de línea detrás del marcador
+
         let logCount = 0, debugPanelOpen = false;
         function dlog(msg, type = 'info') {
             console.log(msg);
@@ -656,15 +662,14 @@
             return (Math.atan2(y,x)*180/Math.PI+360)%360;
         }
 
-        // ✅ FIX: Calcular progreso en ventana pequeña (evita saltos)
+        // ✅ Progreso por DISTANCIA real (no por índice)
         function calculateRouteProgress(driverLat, driverLng) {
             const coords = window.currentRouteCoords;
             if (!coords || coords.length < 2) return 0;
             const windowSize = 30;
             const startIdx = Math.max(0, lastRouteProgressIndex - windowSize);
             const endIdx = Math.min(coords.length - 1, lastRouteProgressIndex + windowSize);
-            let minDist = Infinity;
-            let closestIdx = lastRouteProgressIndex;
+            let minDist = Infinity, closestIdx = lastRouteProgressIndex;
             for (let i = startIdx; i <= endIdx; i++) {
                 const d = getDistanceFromLatLonInMeters(driverLat, driverLng, coords[i][0], coords[i][1]);
                 if (d < minDist) { minDist = d; closestIdx = i; }
@@ -678,10 +683,16 @@
             }
             if (closestIdx < lastRouteProgressIndex) closestIdx = lastRouteProgressIndex;
             lastRouteProgressIndex = closestIdx;
-            return closestIdx / (coords.length - 1);
+
+            let distToIdx = 0, totalDist = 0;
+            for (let i = 1; i < coords.length; i++) {
+                const seg = getDistanceFromLatLonInMeters(coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1]);
+                if (i <= closestIdx) distToIdx += seg;
+                totalDist += seg;
+            }
+            return totalDist > 0 ? distToIdx / totalDist : 0;
         }
 
-        // ✅ Traductor de instrucciones al español
         function translateInstruction(text) {
             if (!text) return text;
             let t = text;
@@ -772,12 +783,12 @@
         let initMapInProgress = false;
         let lastMovingTime = Date.now();
         let isCurrentlyMoving = false;
-        let lastRouteProgressIndex = 0;  // ✅ NUEVO: índice de progreso
+        let lastRouteProgressIndex = 0;
 
-        // ✅ NUEVO: Movimiento fluido del marcador
+        // Movimiento fluido del marcador
         let animationFrameId = null;
-        let markerCurrentPos = null;    // posición actual interpolada
-        let markerTargetPos = null;     // posición objetivo (GPS real)
+        let markerCurrentPos = null;
+        let markerTargetPos = null;
         let markerCurrentBearing = 0;
         let markerTargetBearing = 0;
 
@@ -792,24 +803,27 @@
             window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
         }
 
-        // ✅ NUEVO: Loop de animación para movimiento fluido
+        // ✅ Interpolación del marcador. En navegación el icono NO rota (Google Maps style)
         function animateMarker() {
             if (!driverMarker || !markerCurrentPos || !markerTargetPos) {
                 animationFrameId = requestAnimationFrame(animateMarker);
                 return;
             }
-            // Interpolar posición (lerp con factor 0.25 = suave)
-            markerCurrentPos[0] = markerCurrentPos[0] + (markerTargetPos[0] - markerCurrentPos[0]) * 0.25;
-            markerCurrentPos[1] = markerCurrentPos[1] + (markerTargetPos[1] - markerCurrentPos[1]) * 0.25;
-            // Interpolar rumbo
-            let diff = markerTargetBearing - markerCurrentBearing;
-            if (diff > 180) diff -= 360;
-            if (diff < -180) diff += 360;
-            markerCurrentBearing = (markerCurrentBearing + diff * 0.2 + 360) % 360;
+            markerCurrentPos[0] += (markerTargetPos[0] - markerCurrentPos[0]) * 0.25;
+            markerCurrentPos[1] += (markerTargetPos[1] - markerCurrentPos[1]) * 0.25;
 
             try {
                 driverMarker.setLngLat([markerCurrentPos[1], markerCurrentPos[0]]);
-                driverMarker.setRotation(markerCurrentBearing);
+                const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
+                if (enNavegacion) {
+                    driverMarker.setRotation(0);   // ✅ Flecha siempre hacia arriba
+                } else {
+                    let diff = markerTargetBearing - markerCurrentBearing;
+                    if (diff > 180) diff -= 360;
+                    if (diff < -180) diff += 360;
+                    markerCurrentBearing = (markerCurrentBearing + diff * 0.2 + 360) % 360;
+                    driverMarker.setRotation(markerCurrentBearing);
+                }
             } catch (e) {}
 
             animationFrameId = requestAnimationFrame(animateMarker);
@@ -873,7 +887,9 @@
                 updateActionButtons();
                 document.getElementById('navigation-panel').classList.remove('active');
                 document.getElementById('searchContainer').classList.remove('hidden');
-                if (map && currentPosition) { map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 15, pitch: 0, bearing: 0, duration: 1000 }); }
+                if (map && currentPosition) {
+                    map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 15, pitch: 0, bearing: 0, padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 1000 });
+                }
                 showToast('⚠️ El pasajero canceló el viaje en curso', 'exclamation-triangle');
             }
             updateDebugStatus();
@@ -1207,20 +1223,25 @@
                 .from('rides').select('*, passengers(full_name, phone)')
                 .or(`driver_id.eq.${currentDriverId},and(status.eq.pendiente,driver_id.is.null)`)
                 .in('status', ['pendiente','aceptado','llegado_origen','en_curso'])
-                .order('created_at', { ascending: false }).limit(1);
+                .order('created_at', { ascending: false }).limit(5);
             if (error) { dlog('Error: ' + error.message, 'error'); return; }
-            const ride = data && data.length > 0 ? data[0] : null;
-            if (ride) {
-                dlog('Viaje: ' + ride.id.substring(0,8) + ' status: ' + ride.status, 'success');
-                if (ride.status === 'pendiente') {
-                    if (await hasRejectedRide(ride.id)) { dlog('Rechazado previamente', 'warning'); return; }
-                }
-                if (ride.status === 'pendiente' || ride.status === 'aceptado') {
-                    if (!currentRideId && !pendingRide) showRideRequest(ride);
-                } else {
-                    currentRideId = ride.id; currentRideStatus = ride.status; updateRideUI(ride);
-                }
-            } else { dlog('No hay viaje activo', 'info'); }
+            if (!data || data.length === 0) { dlog('No hay viaje activo', 'info'); return; }
+
+            // ✅ Filtrar rechazados y tomar el primero válido
+            let ride = null;
+            for (const r of data) {
+                if (r.status === 'pendiente' && await hasRejectedRide(r.id)) continue;
+                ride = r;
+                break;
+            }
+            if (!ride) { dlog('Todos rechazados', 'warning'); return; }
+
+            dlog('Viaje: ' + ride.id.substring(0,8) + ' status: ' + ride.status, 'success');
+            if (ride.status === 'pendiente' || ride.status === 'aceptado') {
+                if (!currentRideId && !pendingRide) showRideRequest(ride);
+            } else {
+                currentRideId = ride.id; currentRideStatus = ride.status; updateRideUI(ride);
+            }
         }
 
         async function showRideRequest(ride) {
@@ -1285,7 +1306,17 @@
             currentRideId = null; currentRideStatus = null; pendingRide = null;
             clearRoute(); updateActionButtons();
             document.getElementById('searchContainer').classList.remove('hidden');
-            if (map && currentPosition) map.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
+            // ✅ Reset limpio: sin padding, norte arriba, sin pitch
+            if (map && currentPosition) {
+                map.easeTo({
+                    center: [currentPosition[1], currentPosition[0]],
+                    zoom: 15,
+                    pitch: 0,
+                    bearing: 0,
+                    padding: { top: 0, bottom: 0, left: 0, right: 0 },
+                    duration: 1000
+                });
+            }
             currentRouteTarget = null;
             updateDebugStatus();
         }
@@ -1319,7 +1350,7 @@
 
         function updateActionButtons() {
             const ids = ['pickupBtn', 'arrivedBtn', 'finishBtn', 'notCompletedBtn', 'redirectBtn'];
-            ids.forEach(id => document.getElementById(id).classList.add('hidden'));
+            ids.forEach(id => document.getElementById(id)?.classList.add('hidden'));
             if (currentRideStatus === 'aceptado') { document.getElementById('arrivedBtn').classList.remove('hidden'); document.getElementById('redirectBtn').classList.remove('hidden'); }
             else if (currentRideStatus === 'llegado_origen') { document.getElementById('pickupBtn').classList.remove('hidden'); }
             else if (currentRideStatus === 'en_curso') { document.getElementById('finishBtn').classList.remove('hidden'); document.getElementById('notCompletedBtn').classList.remove('hidden'); document.getElementById('redirectBtn').classList.remove('hidden'); }
@@ -1420,10 +1451,10 @@
             const { data: ride } = await supabaseClient.from('rides').select('origin_lat, origin_lng').eq('id', currentRideId).single();
             if (ride && currentPosition) {
                 const dist = getDistanceFromLatLonInMeters(currentPosition[0], currentPosition[1], ride.origin_lat, ride.origin_lng);
-                if (dist > 50) { alert(`Estás a ${Math.round(dist)} m del origen.`); return; }
+                if (dist > 50) { showToast(`Estás a ${Math.round(dist)} m del origen`, 'exclamation-triangle'); return; }
             }
             const { error } = await supabaseClient.from('rides').update({ status: 'llegado_origen' }).eq('id', currentRideId);
-            if (error) return alert('Error: ' + error.message);
+            if (error) return showToast('Error: ' + error.message, 'exclamation-circle');
             currentRideStatus = 'llegado_origen';
             updateActionButtons(); clearRoute(); currentRouteTarget = null;
             if (map && currentPosition) map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 16, pitch: 0, bearing: 0 });
@@ -1433,7 +1464,7 @@
         async function startRideWithPassenger() {
             if (!currentRideId || currentRideStatus !== 'llegado_origen') return;
             const { error } = await supabaseClient.from('rides').update({ status: 'en_curso', accepted_at: new Date().toISOString() }).eq('id', currentRideId);
-            if (error) return alert('Error: ' + error.message);
+            if (error) return showToast('Error: ' + error.message, 'exclamation-circle');
             currentRideStatus = 'en_curso'; updateActionButtons();
             const { data: ride } = await supabaseClient.from('rides').select('destination_lat, destination_lng').eq('id', currentRideId).single();
             if (ride && ride.destination_lat && ride.destination_lng && currentPosition) {
@@ -1447,22 +1478,22 @@
         async function finishRide(completed) {
             if (!currentRideId) return;
             if (completed) {
-                if (!currentPosition) return alert('Activa el GPS.');
+                if (!currentPosition) return showToast('Activa el GPS', 'exclamation-triangle');
                 const { data: ride } = await supabaseClient.from('rides').select('destination_lat, destination_lng').eq('id', currentRideId).single();
                 if (ride && ride.destination_lat && ride.destination_lng) {
                     const dist = getDistanceFromLatLonInMeters(currentPosition[0], currentPosition[1], ride.destination_lat, ride.destination_lng);
-                    if (dist > 200) { alert(`Estás a ${Math.round(dist)} m del destino.`); return; }
+                    if (dist > 200) { showToast(`Estás a ${Math.round(dist)} m del destino`, 'exclamation-triangle'); return; }
                 }
             }
             const newStatus = completed ? 'completado' : 'no_completado';
             const { error } = await supabaseClient.from('rides').update({ status: newStatus, completed_at: completed ? new Date().toISOString() : null, cancelled_at: completed ? null : new Date().toISOString() }).eq('id', currentRideId);
-            if (error) return alert('Error: ' + error.message);
+            if (error) return showToast('Error: ' + error.message, 'exclamation-circle');
             if (window.speechSynthesis) window.speechSynthesis.cancel();
             if (completed) {
                 showToast('¡Viaje completado!', 'check-circle');
                 speakInstruction('Viaje completado');
                 setTimeout(() => { loadWalletData().catch(()=>{}); }, 900);
-            } else { alert('Viaje no completado'); }
+            } else { showToast('Viaje no completado', 'info'); }
             resetRideState();
         }
 
@@ -1501,14 +1532,22 @@
                     map.addLayer({ id: 'route-line', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 8, 'line-gradient': ['interpolate', ['linear'], ['line-progress'], 0, '#ff7a00', 1, '#ff7a00'] } });
                     routeLayers.push('route', 'route-line');
                     window.currentRouteCoords = route.geometry.coordinates;
+                    window.currentRouteDistance = route.distance || 1000;   // ✅ distancia real
                     lastRouteProgressIndex = 0;
                     drawManeuverArrow(route.legs.flatMap(leg => leg.steps));
                     if (currentPosition && !userInteracting) {
-                        const bearingRad = (smoothedBearing || 0) * Math.PI / 180;
-                        const offsetMeters = 100;
-                        const offsetLat = (offsetMeters * Math.cos(bearingRad)) / 111320;
-                        const offsetLng = (offsetMeters * Math.sin(bearingRad)) / (111320 * Math.cos(currentPosition[0] * Math.PI / 180));
-                        map.easeTo({ center: [currentPosition[1] + offsetLng, currentPosition[0] + offsetLat], zoom: 17, pitch: 45, bearing: smoothedBearing || 0, duration: 1200, essential: true });
+                        const screenH = map.getContainer().offsetHeight || window.innerHeight;
+                        const opts = {
+                            center: [currentPosition[1], currentPosition[0]],
+                            zoom: 17,
+                            pitch: 45,
+                            bearing: smoothedBearing || 0,
+                            padding: { top: Math.round(screenH * NAV_PADDING_FRACTION), bottom: 0, left: 0, right: 0 },
+                            duration: 1200,
+                            essential: true
+                        };
+                        if (!map.isEasing()) map.easeTo(opts);
+                        else map.jumpTo({ center: opts.center, bearing: opts.bearing, pitch: opts.pitch, padding: opts.padding });
                     }
                     speakInstruction(currentNavigationSteps[0]?.maneuver?.instruction || 'Siga la ruta');
                 } else throw new Error('No routes');
@@ -1518,9 +1557,22 @@
                 map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-width': 6, 'line-gradient': ['interpolate', ['linear'], ['line-progress'], 0, '#ff7a00', 1, '#ff7a00'] } });
                 routeLayers.push('route', 'route-line');
                 window.currentRouteCoords = coordinates;
+                // ✅ Calcular distancia con turf como fallback
+                try {
+                    window.currentRouteDistance = turf.length(turf.lineString(coordinates), { units: 'meters' });
+                } catch (err) { window.currentRouteDistance = 1000; }
                 lastRouteProgressIndex = 0;
                 if (currentPosition && !userInteracting) {
-                    map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 17, pitch: 45, bearing: smoothedBearing || 0, duration: 1200, essential: true });
+                    const screenH = map.getContainer().offsetHeight || window.innerHeight;
+                    map.easeTo({
+                        center: [currentPosition[1], currentPosition[0]],
+                        zoom: 17,
+                        pitch: 45,
+                        bearing: smoothedBearing || 0,
+                        padding: { top: Math.round(screenH * NAV_PADDING_FRACTION), bottom: 0, left: 0, right: 0 },
+                        duration: 1200,
+                        essential: true
+                    });
                 }
             }
             dlog('Ruta dibujada', 'success');
@@ -1587,18 +1639,19 @@
             if (maneuverArrowMarker) { maneuverArrowMarker.remove(); maneuverArrowMarker = null; }
             currentNavigationSteps = []; currentNavigationIndex = 0;
             window.currentRouteCoords = null;
+            window.currentRouteDistance = 0;
             lastRouteProgressIndex = 0;
             if (window.speechSynthesis) window.speechSynthesis.cancel();
             document.getElementById('navigation-panel').classList.remove('active');
         }
 
         async function redirectRoute() {
-            if (!currentRideId || !currentPosition) return alert('No hay viaje activo.');
+            if (!currentRideId || !currentPosition) return showToast('No hay viaje activo', 'exclamation-triangle');
             try {
                 const { data: ride } = await supabaseClient.from('rides').select('origin_lat, origin_lng, destination_lat, destination_lng').eq('id', currentRideId).single();
                 if (currentRideStatus === 'aceptado' && ride.origin_lat) { await drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]); currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng }; }
                 else if (currentRideStatus === 'en_curso' && ride.destination_lat) { await drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]); currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng }; }
-            } catch (e) { alert('Error al redireccionar'); }
+            } catch (e) { showToast('Error al redireccionar', 'exclamation-circle'); }
         }
 
         const toggleSwitch = document.getElementById('toggleSwitch');
@@ -1637,8 +1690,14 @@
                             .from('rides').select('*, passengers(full_name, phone)')
                             .or(`driver_id.eq.${currentDriverId},and(status.eq.pendiente,driver_id.is.null)`)
                             .in('status', ['pendiente', 'aceptado'])
-                            .order('created_at', { ascending: false }).limit(1);
-                        if (data && data.length > 0 && !pendingRide && !currentRideId) showRideRequest(data[0]);
+                            .order('created_at', { ascending: false }).limit(5);
+                        if (data && data.length > 0) {
+                            for (const r of data) {
+                                if (r.status === 'pendiente' && await hasRejectedRide(r.id)) continue;
+                                if (!pendingRide && !currentRideId) showRideRequest(r);
+                                break;
+                            }
+                        }
                     }
                 }, 2000);
             } else { forceOffline(); }
@@ -1647,8 +1706,11 @@
         function createDriverMarker(lat, lng, bearing = 0) {
             const el = document.createElement('div');
             el.className = 'driver-arrow';
-            el.innerHTML = '<i class="fas fa-location-arrow"></i>';
-            driverMarker = new mapboxgl.Marker(el).setLngLat([lng, lat]).setRotation(bearing).addTo(map);
+            el.innerHTML = '<i class="fas fa-arrow-up"></i>';   // ✅ Flecha recta hacia arriba
+            driverMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+                .setLngLat([lng, lat])
+                .setRotation(bearing)
+                .addTo(map);
             markerCurrentPos = [lat, lng];
             markerTargetPos = [lat, lng];
             markerCurrentBearing = bearing;
@@ -1664,177 +1726,164 @@
             }
         }
 
+        // ✅ startTracking con Google Maps style (flecha abajo, mapa rota)
         function startTracking() {
-    if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-    let previousCoord = null;
-    smoothedBearing = null;
+            if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+            let previousCoord = null;
+            smoothedBearing = null;
 
-    watchId = navigator.geolocation.watchPosition(
-        (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            currentPosition = [lat, lng];
-            const now = Date.now();
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+                    currentPosition = [lat, lng];
+                    const now = Date.now();
 
-            const gpsHeading = position.coords.heading;
-            const gpsSpeed = position.coords.speed || 0;     // m/s
-            const speedKmh = gpsSpeed * 3.6;
-            const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
+                    const gpsHeading = position.coords.heading;
+                    const gpsSpeed = position.coords.speed || 0;
+                    const speedKmh = gpsSpeed * 3.6;
+                    const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
 
-            // ============================================================
-            // 1) CÁLCULO DE BEARING SUAVIZADO
-            // ============================================================
-            let bearing = smoothedBearing || 0;
-            if (gpsHeading !== null && gpsHeading !== undefined && !isNaN(gpsHeading) && gpsSpeed > 1.5) {
-                const raw = gpsHeading;
-                if (smoothedBearing === null) smoothedBearing = raw;
-                else {
-                    let diff = raw - smoothedBearing;
-                    if (diff > 180) diff -= 360;
-                    if (diff < -180) diff += 360;
-                    // Suavizado 0.3 = más estable (antes 0.5 temblaba con GPS ruidoso)
-                    smoothedBearing = (smoothedBearing + diff * 0.3 + 360) % 360;
-                }
-                bearing = smoothedBearing;
-            } else if (previousCoord) {
-                const dist = getDistanceFromLatLonInMeters(previousCoord.lat, previousCoord.lng, lat, lng);
-                if (dist > 2) {
-                    const raw = calculateBearing(previousCoord.lat, previousCoord.lng, lat, lng);
-                    if (smoothedBearing === null) smoothedBearing = raw;
-                    else {
-                        let diff = raw - smoothedBearing;
-                        if (diff > 180) diff -= 360;
-                        if (diff < -180) diff += 360;
-                        smoothedBearing = (smoothedBearing + diff * 0.3 + 360) % 360;
+                    // 1) BEARING SUAVIZADO
+                    let bearing = smoothedBearing || 0;
+                    if (gpsHeading !== null && gpsHeading !== undefined && !isNaN(gpsHeading) && gpsSpeed > 1.5) {
+                        const raw = gpsHeading;
+                        if (smoothedBearing === null) smoothedBearing = raw;
+                        else {
+                            let diff = raw - smoothedBearing;
+                            if (diff > 180) diff -= 360;
+                            if (diff < -180) diff += 360;
+                            smoothedBearing = (smoothedBearing + diff * 0.3 + 360) % 360;
+                        }
+                        bearing = smoothedBearing;
+                    } else if (previousCoord) {
+                        const dist = getDistanceFromLatLonInMeters(previousCoord.lat, previousCoord.lng, lat, lng);
+                        if (dist > 2) {
+                            const raw = calculateBearing(previousCoord.lat, previousCoord.lng, lat, lng);
+                            if (smoothedBearing === null) smoothedBearing = raw;
+                            else {
+                                let diff = raw - smoothedBearing;
+                                if (diff > 180) diff -= 360;
+                                if (diff < -180) diff += 360;
+                                smoothedBearing = (smoothedBearing + diff * 0.3 + 360) % 360;
+                            }
+                            bearing = smoothedBearing;
+                        }
                     }
-                    bearing = smoothedBearing;
-                }
-            }
-            previousCoord = { lat, lng };
+                    previousCoord = { lat, lng };
 
-            // ============================================================
-            // 2) AVANCE DE MANIOBRAS (turn-by-turn)
-            // ============================================================
-            if (enNavegacion && currentNavigationSteps && currentNavigationSteps.length > 0) {
-                checkAndAdvanceManeuver(lat, lng);
-            }
-
-            // ============================================================
-            // 3) PROGRESO DE RUTA (línea que se borra detrás del vehículo)
-            // ============================================================
-            if (map && mapInitialized && map.getLayer('route-line')
-                && window.currentRouteCoords && window.currentRouteCoords.length > 1) {
-                const progress = calculateRouteProgress(lat, lng);
-                const p = Math.max(0, Math.min(0.999, progress));
-                if (p > 0.005) {
-                    try {
-                        map.setPaintProperty('route-line', 'line-gradient', [
-                            'interpolate', ['linear'], ['line-progress'],
-                            0, 'rgba(255, 122, 0, 0)',
-                            p, 'rgba(255, 122, 0, 0)',
-                            Math.min(p + 0.001, 0.999), '#ff7a00',
-                            1, '#ff7a00'
-                        ]);
-                    } catch (e) {}
-                }
-            }
-
-            // ============================================================
-            // 4) MOVIMIENTO DEL MAPA (Google Maps style)
-            //    - Centro = posición exacta del conductor
-            //    - El MAPA rota con el heading, NO el icono
-            // ============================================================
-            if (map && mapInitialized) {
-                updateDriverMarker(lat, lng, bearing);
-
-                if (!userInteracting) {
-                    let zoom, pitch;
-                    if (enNavegacion) {
-                        // Zoom adaptativo por velocidad (más rápido = más lejos para ver venir)
-                        zoom = Math.max(15, 18 - speedKmh * 0.03);
-                        pitch = Math.min(60, 45 + speedKmh * 0.25);
-                    } else {
-                        // Modo normal: vista plana desde arriba, norte arriba
-                        zoom = 15;
-                        pitch = 0;
+                    // 2) AVANCE DE MANIOBRAS
+                    if (enNavegacion && currentNavigationSteps && currentNavigationSteps.length > 0) {
+                        checkAndAdvanceManeuver(lat, lng);
                     }
 
-                    const opts = {
-                        center: [lng, lat],   // ✅ SIEMPRE centrado en el conductor
-                        zoom: zoom,
-                        pitch: pitch,
-                        duration: 800,
-                        essential: true,
-                        easing: (t) => t
-                    };
+                    // 3) PROGRESO DE RUTA con tail (evita hueco alrededor del marcador)
+                    if (map && mapInitialized && map.getLayer('route-line')
+                        && window.currentRouteCoords && window.currentRouteCoords.length > 1) {
+                        const progress = calculateRouteProgress(lat, lng);
+                        const pRaw = Math.max(0, Math.min(0.999, progress));
+                        const totalMeters = window.currentRouteDistance || 1000;
+                        const tailFraction = Math.min(0.15, ROUTE_TAIL_METERS / totalMeters);
+                        const pVisible = Math.max(0, pRaw - tailFraction);
 
-                    // ✅ El mapa rota solo en navegación y con velocidad suficiente
-                    if (enNavegacion && smoothedBearing !== null && speedKmh > 3) {
-                        opts.bearing = smoothedBearing;
-                    } else if (!enNavegacion) {
-                        opts.bearing = 0;  // idle: norte arriba
-                    } else {
-                        // Navegación pero casi parado: mantener el último bearing
-                        opts.bearing = smoothedBearing || 0;
+                        if (pRaw > 0.005) {
+                            try {
+                                map.setPaintProperty('route-line', 'line-gradient', [
+                                    'interpolate', ['linear'], ['line-progress'],
+                                    0, 'rgba(255, 122, 0, 0)',
+                                    pVisible, 'rgba(255, 122, 0, 0)',
+                                    Math.min(pVisible + 0.002, 0.999), '#ff7a00',
+                                    1, '#ff7a00'
+                                ]);
+                            } catch (e) {}
+                        }
                     }
 
-                    // ✅ Anti-stutter: si ya está animando, salta en vez de encolar
-                    if (!map.isEasing()) {
-                        map.easeTo(opts);
-                    } else {
-                        map.jumpTo({
-                            center: opts.center,
-                            bearing: opts.bearing,
-                            pitch: opts.pitch
-                        });
+                    // 4) MOVIMIENTO DEL MAPA
+                    if (map && mapInitialized) {
+                        updateDriverMarker(lat, lng, bearing);
+
+                        if (!userInteracting) {
+                            let zoom, pitch;
+                            if (enNavegacion) {
+                                zoom = Math.max(15, 18 - speedKmh * 0.03);
+                                pitch = Math.min(60, 45 + speedKmh * 0.25);
+                            } else {
+                                zoom = 15;
+                                pitch = 0;
+                            }
+
+                            const screenH = map.getContainer().offsetHeight || window.innerHeight;
+                            const paddingTop = enNavegacion ? Math.round(screenH * NAV_PADDING_FRACTION) : 0;
+
+                            const opts = {
+                                center: [lng, lat],
+                                zoom: zoom,
+                                pitch: pitch,
+                                padding: { top: paddingTop, bottom: 0, left: 0, right: 0 },
+                                duration: 800,
+                                essential: true,
+                                easing: (t) => t
+                            };
+
+                            if (enNavegacion && smoothedBearing !== null && speedKmh > 3) {
+                                opts.bearing = smoothedBearing;
+                            } else if (!enNavegacion) {
+                                opts.bearing = 0;
+                            } else {
+                                opts.bearing = smoothedBearing || 0;
+                            }
+
+                            if (!map.isEasing()) {
+                                map.easeTo(opts);
+                            } else {
+                                map.jumpTo({
+                                    center: opts.center,
+                                    bearing: opts.bearing,
+                                    pitch: opts.pitch,
+                                    padding: opts.padding
+                                });
+                            }
+                        }
+
+                        if (enNavegacion) {
+                            document.getElementById('navigation-panel').classList.add('active');
+                        } else {
+                            document.getElementById('navigation-panel').classList.remove('active');
+                        }
                     }
-                }
 
-                if (enNavegacion) {
-                    document.getElementById('navigation-panel').classList.add('active');
-                } else {
-                    document.getElementById('navigation-panel').classList.remove('active');
-                }
-            }
+                    // 5) UPDATE PERIÓDICO SUPABASE
+                    if (now - lastUpdateTime > UPDATE_INTERVAL) {
+                        lastUpdateTime = now;
+                        updateDriverStatus(true, lat, lng);
+                    }
 
-            // ============================================================
-            // 5) ACTUALIZACIÓN PERIÓDICA A SUPABASE
-            // ============================================================
-            if (now - lastUpdateTime > UPDATE_INTERVAL) {
-                lastUpdateTime = now;
-                updateDriverStatus(true, lat, lng);
-            }
-
-            // ============================================================
-            // 6) DETECCIÓN DE PARADA >5s → enderezar mapa
-            // ============================================================
-            if (speedKmh > 5) {
-                isCurrentlyMoving = true;
-                lastMovingTime = now;
-            } else if (isCurrentlyMoving && (now - lastMovingTime) > 5000) {
-                isCurrentlyMoving = false;
-                if (map && mapInitialized && enNavegacion) {
-                    dlog('🧭 Conductor parado >5s — enderezando mapa', 'info');
-                    map.easeTo({
-                        center: [lng, lat],
-                        zoom: 17,
-                        pitch: 0,
-                        bearing: 0,
-                        duration: 1000
-                    });
-                }
-            }
-        },
-        (error) => {
-            dlog('Error GPS: ' + error.message, 'warning');
-        },
-        {
-            enableHighAccuracy: true,
-            maximumAge: 0,
-            timeout: 10000
+                    // 6) PARADA >5s → enderezar mapa (manteniendo padding)
+                    if (speedKmh > 5) {
+                        isCurrentlyMoving = true;
+                        lastMovingTime = now;
+                    } else if (isCurrentlyMoving && (now - lastMovingTime) > 5000) {
+                        isCurrentlyMoving = false;
+                        if (map && mapInitialized && enNavegacion) {
+                            dlog('🧭 Conductor parado >5s — enderezando mapa', 'info');
+                            const screenH = map.getContainer().offsetHeight || window.innerHeight;
+                            map.easeTo({
+                                center: [lng, lat],
+                                zoom: 17,
+                                pitch: 0,
+                                bearing: 0,
+                                padding: { top: Math.round(screenH * NAV_PADDING_FRACTION), bottom: 0, left: 0, right: 0 },
+                                duration: 1000
+                            });
+                        }
+                    }
+                },
+                (error) => { dlog('Error GPS: ' + error.message, 'warning'); },
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+            );
         }
-    );
-}
+
         async function updateDriverStatus(isOnline, lat = null, lng = null) {
             try { await supabaseClient.from('driver_status').upsert({ driver_id: currentDriverId, is_online: isOnline, latitude: lat, longitude: lng, last_updated: new Date().toISOString() }, { onConflict: 'driver_id' }); }
             catch (e) { dlog('Error updateDriverStatus: ' + e.message, 'error'); }
@@ -1915,7 +1964,7 @@
             try {
                 if (currentChatTarget === 'central') await supabaseClient.from('central_messages').insert({ driver_id: currentDriverId, message: msg, is_read: false, created_by: currentDriverId });
                 else if (currentRideId) await supabaseClient.from('chat_messages').insert({ ride_id: currentRideId, sender_type: 'driver', sender_id: currentDriverId, message: msg });
-            } catch (e) { alert('Error enviando mensaje'); }
+            } catch (e) { showToast('Error enviando mensaje', 'exclamation-circle'); }
         }
 
         function setupChatSubscription() {
@@ -1991,7 +2040,22 @@
             if (window.speechSynthesis) window.speechSynthesis.cancel();
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
-            if (currentDriverId) navigator.sendBeacon?.(`${supabaseUrl}/rest/v1/driver_status?driver_id=eq.${currentDriverId}`, new Blob([JSON.stringify({ is_online: false, last_updated: new Date().toISOString() })], { type: 'application/json' }));
+            if (currentDriverId) {
+                // ✅ Fix: usar fetch con keepalive (sendBeacon no soporta auth headers)
+                try {
+                    fetch(`${supabaseUrl}/rest/v1/driver_status?driver_id=eq.${currentDriverId}`, {
+                        method: 'PATCH',
+                        headers: {
+                            apikey: supabaseKey,
+                            Authorization: `Bearer ${supabaseKey}`,
+                            'Content-Type': 'application/json',
+                            Prefer: 'return=minimal'
+                        },
+                        body: JSON.stringify({ is_online: false, last_updated: new Date().toISOString() }),
+                        keepalive: true
+                    });
+                } catch (e) {}
+            }
         });
 
         document.addEventListener('visibilitychange', () => {
@@ -2001,6 +2065,10 @@
                 if (isDriverOnline && !watchId) startTracking();
                 if (!animationFrameId) animationFrameId = requestAnimationFrame(animateMarker);
                 updateGreeting();
+                // ✅ Reanudar audio si el navegador lo suspendió
+                try {
+                    if (notificationAudioCtx && notificationAudioCtx.state === 'suspended') notificationAudioCtx.resume();
+                } catch (e) {}
             }
         });
 
