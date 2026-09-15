@@ -681,7 +681,6 @@
                 utt.rate = 1.0;
                 utt.volume = 1.0;
                 utt.pitch = 1.0;
-                // Buscar una voz en español disponible
                 const voices = window.speechSynthesis.getVoices();
                 const spanishVoice = voices.find(v => v.lang === 'es-ES' || v.lang === 'es-MX' || v.lang.startsWith('es'));
                 if (spanishVoice) utt.voice = spanishVoice;
@@ -705,6 +704,8 @@
         let chatSubscription = null;
         let maneuverArrowMarker = null;
         let initMapInProgress = false;
+        let lastMovingTime = Date.now();
+        let isCurrentlyMoving = false;
 
         let notificationAudioCtx = null;
         let notificationInterval = null;
@@ -713,7 +714,6 @@
         let isRejecting = false;
         let isAcceptingRide = false;
 
-        // Precargar voces del navegador
         if ('speechSynthesis' in window) {
             window.speechSynthesis.onvoiceschanged = () => {
                 window.speechSynthesis.getVoices();
@@ -1437,7 +1437,6 @@
             if (originCoords[0] === waypointCoords[0] && originCoords[1] === waypointCoords[1]) coordinates = [[originCoords[1],originCoords[0]],[destinationCoords[1],destinationCoords[0]]];
             else coordinates = [[originCoords[1],originCoords[0]],[waypointCoords[1],waypointCoords[0]],[destinationCoords[1],destinationCoords[0]]];
             const coordsString = coordinates.map(c => c.join(',')).join(';');
-            // ✅ IMPORTANTE: language=es → instrucciones en español, voice_units=metric → metros/km
             const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordsString}?geometries=geojson&steps=true&language=es&voice_units=metric&access_token=${mapboxgl.accessToken}`;
             try {
                 const response = await fetch(url);
@@ -1461,7 +1460,16 @@
                     window.currentRouteCoords = route.geometry.coordinates;
                     drawManeuverArrow(route.legs.flatMap(leg => leg.steps));
                     if (currentPosition && !userInteracting) {
-                        map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 17, pitch: 45, bearing: smoothedBearing || 0, duration: 1200, essential: true });
+                        // ✅ Marcador a 1/3 inferior de la pantalla (como Google Maps)
+                        const bearingRad = (smoothedBearing || 0) * Math.PI / 180;
+                        const offsetMeters = 100;
+                        const offsetLat = (offsetMeters * Math.cos(bearingRad)) / 111320;
+                        const offsetLng = (offsetMeters * Math.sin(bearingRad)) / (111320 * Math.cos(currentPosition[0] * Math.PI / 180));
+                        map.easeTo({ 
+                            center: [currentPosition[1] + offsetLng, currentPosition[0] + offsetLat], 
+                            zoom: 17, pitch: 45, bearing: smoothedBearing || 0, 
+                            duration: 1200, essential: true 
+                        });
                     }
                     speakInstruction(currentNavigationSteps[0]?.maneuver?.instruction || 'Siga la ruta');
                 } else throw new Error('No routes');
@@ -1497,6 +1505,26 @@
             arrowEl.innerHTML = `<i class="fas ${iconClass}"></i>`;
             maneuverArrowMarker = new mapboxgl.Marker({ element: arrowEl, anchor: 'center' }).setLngLat([lng, lat]).addTo(map);
             dlog('🎯 Flecha: ' + iconClass, 'info');
+        }
+
+        // ✅ NUEVO: Avanzar a la próxima maniobra automáticamente
+        function checkAndAdvanceManeuver(driverLat, driverLng) {
+            if (!currentNavigationSteps || currentNavigationSteps.length === 0) return;
+            const currentStep = currentNavigationSteps[currentNavigationIndex];
+            if (!currentStep || !currentStep.maneuver || !currentStep.maneuver.location) return;
+            const [stepLng, stepLat] = currentStep.maneuver.location;
+            const distanceToManeuver = getDistanceFromLatLonInMeters(driverLat, driverLng, stepLat, stepLng);
+            if (distanceToManeuver < 25 && currentNavigationIndex < currentNavigationSteps.length - 1) {
+                currentNavigationIndex++;
+                const nextStep = currentNavigationSteps[currentNavigationIndex];
+                dlog(`➡️ Maniobra superada. Siguiente: ${currentNavigationIndex + 1}/${currentNavigationSteps.length}`, 'success');
+                updateNavigationPanel(nextStep);
+                const remainingSteps = currentNavigationSteps.slice(currentNavigationIndex);
+                drawManeuverArrow(remainingSteps);
+                if (nextStep && nextStep.maneuver && nextStep.maneuver.instruction) {
+                    speakInstruction(nextStep.maneuver.instruction);
+                }
+            }
         }
 
         function updateNavigationPanel(step) {
@@ -1606,6 +1634,13 @@
                         } else if (smoothedBearing !== null) bearing = smoothedBearing;
                     }
                     previousCoord = { lat, lng };
+
+                    // ✅ Verificar si pasamos una maniobra
+                    if ((currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') && currentNavigationSteps && currentNavigationSteps.length > 0) {
+                        checkAndAdvanceManeuver(lat, lng);
+                    }
+
+                    // ✅ Actualizar línea que se consume detrás
                     if (map && mapInitialized && map.getLayer('route-line') && window.currentRouteCoords && window.currentRouteCoords.length > 1) {
                         const progress = calculateRouteProgress(lat, lng);
                         const p = Math.max(0, Math.min(0.999, progress));
@@ -1621,6 +1656,7 @@
                             } catch (e) {}
                         }
                     }
+
                     if (map && mapInitialized) {
                         updateDriverMarker(lat, lng, bearing);
                         if (!userInteracting) {
@@ -1630,7 +1666,20 @@
                                 pitch = Math.min(60, 35 + speedKmh * 0.3);
                                 zoom = Math.max(15, 18 - speedKmh * 0.04);
                             } else { pitch = 0; zoom = 15; }
-                            const opts = { center: [lng, lat], zoom, pitch, duration: 500, essential: true };
+                            
+                            // ✅ Marcador a 1/3 inferior (offset hacia adelante)
+                            let centerLng = lng;
+                            let centerLat = lat;
+                            if ((currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') && smoothedBearing !== null) {
+                                const bearingRad = smoothedBearing * Math.PI / 180;
+                                const offsetMeters = 100;
+                                const offsetLat = (offsetMeters * Math.cos(bearingRad)) / 111320;
+                                const offsetLng = (offsetMeters * Math.sin(bearingRad)) / (111320 * Math.cos(lat * Math.PI / 180));
+                                centerLat = lat + offsetLat;
+                                centerLng = lng + offsetLng;
+                            }
+                            
+                            const opts = { center: [centerLng, centerLat], zoom, pitch, duration: 500, essential: true };
                             if ((currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') && smoothedBearing !== null) opts.bearing = smoothedBearing;
                             map.easeTo(opts);
                         }
@@ -1639,6 +1688,19 @@
                     }
                     const now = Date.now();
                     if (now - lastUpdateTime > UPDATE_INTERVAL) { lastUpdateTime = now; updateDriverStatus(true, lat, lng); }
+
+                    // ✅ Detectar si está parado >5 segundos → enderezar mapa
+                    const speedNow = (position.coords.speed || 0) * 3.6;
+                    if (speedNow > 5) {
+                        isCurrentlyMoving = true;
+                        lastMovingTime = now;
+                    } else if (isCurrentlyMoving && (now - lastMovingTime) > 5000) {
+                        isCurrentlyMoving = false;
+                        if (map && mapInitialized && (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso')) {
+                            dlog('🧭 Conductor parado >5s — enderezando mapa', 'info');
+                            map.easeTo({ center: [lng, lat], zoom: 17, pitch: 0, bearing: 0, duration: 1000 });
+                        }
+                    }
                 },
                 (error) => { dlog('Error GPS: ' + error.message, 'warning'); },
                 { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
