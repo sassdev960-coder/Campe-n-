@@ -1013,43 +1013,57 @@
                 const container = document.getElementById('map');
                 if (!container) { dlog('⚠️ Contenedor #map no existe', 'warning'); return false; }
                 
-                const existingCanvas = container.querySelector('canvas');
-                if (existingCanvas) existingCanvas.remove();
-                
-                const testCanvas = document.createElement('canvas');
-                const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
-                if (!gl) { dlog('❌ WebGL no disponible', 'error'); return false; }
-                
-                const parent = container.parentElement;
-                const parentHeight = (parent && parent.clientHeight > 0) ? parent.clientHeight : (window.innerHeight - 80);
-                const parentWidth = (parent && parent.clientWidth > 0) ? parent.clientWidth : window.innerWidth;
-                
-                container.style.width = parentWidth + 'px';
-                container.style.height = parentHeight + 'px';
-                void container.offsetHeight;
+              // ✅ FIX: Reemplazar el contenedor completo con uno nuevo (100% limpio)
+const oldContainer = document.getElementById('map');
+if (oldContainer && oldContainer.parentNode) {
+    const newContainer = document.createElement('div');
+    newContainer.id = 'map';
+    newContainer.style.width = '100%';
+    newContainer.style.height = '100%';
+    newContainer.style.position = 'absolute';
+    newContainer.style.top = '0';
+    newContainer.style.left = '0';
+    newContainer.style.background = '#1a1a1a';
+    oldContainer.parentNode.replaceChild(newContainer, oldContainer);
+    dlog('🧹 Contenedor #map reemplazado por uno nuevo', 'info');
+}
+
+// Verificar WebGL
+const testCanvas = document.createElement('canvas');
+const gl = testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+if (!gl) { dlog('❌ WebGL no disponible', 'error'); return false; }
+
+// Forzar dimensiones del nuevo contenedor
+const container2 = document.getElementById('map');
+const parent = container2.parentElement;
+const parentHeight = (parent && parent.clientHeight > 0) ? parent.clientHeight : (window.innerHeight - 80);
+const parentWidth = (parent && parent.clientWidth > 0) ? parent.clientWidth : window.innerWidth;
+
+container2.style.width = parentWidth + 'px';
+container2.style.height = parentHeight + 'px';
+void container2.offsetHeight;
                 
                 const startTime = Date.now();
-                while (Date.now() - startTime < 3000) {
-                    if (container.offsetWidth > 0 && container.offsetHeight > 0) break;
-                    await new Promise(r => setTimeout(r, 100));
-                    void container.offsetHeight;
-                }
-                
-                if (container.offsetWidth === 0 || container.offsetHeight === 0) {
-                    dlog(`⚠️ Contenedor sin dimensiones tras 3s (${container.offsetWidth}x${container.offsetHeight})`, 'warning');
-                    return false;
-                }
-                
-                dlog(`🗺️ Creando mapa en ${container.offsetWidth}x${container.offsetHeight}...`, 'info');
-                
-                map = new mapboxgl.Map({
-                    container: 'map',
-                    style: 'mapbox://styles/mapbox/streets-v12',
-                    center: center,
-                    zoom: 14,
-                    attributionControl: false
-                });
-                
+while (Date.now() - startTime < 3000) {
+    if (container2.offsetWidth > 0 && container2.offsetHeight > 0) break;
+    await new Promise(r => setTimeout(r, 100));
+    void container2.offsetHeight;
+}
+
+if (container2.offsetWidth === 0 || container2.offsetHeight === 0) {
+    dlog(`⚠️ Contenedor sin dimensiones tras 3s (${container2.offsetWidth}x${container2.offsetHeight})`, 'warning');
+    return false;
+}
+
+dlog(`🗺️ Creando mapa en ${container2.offsetWidth}x${container2.offsetHeight}...`, 'info');
+
+map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/streets-v12',
+    center: center,
+    zoom: 14,
+    attributionControl: false
+});
                 // ✅ Timeout aumentado a 20s + tolerancia a errores
                 await new Promise((resolve, reject) => {
                     let resolved = false;
