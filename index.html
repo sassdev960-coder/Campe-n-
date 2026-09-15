@@ -666,17 +666,69 @@
             }
             return closestIdx / (coords.length - 1);
         }
+
+        // ✅ PATCH 2: Traductor de instrucciones al español
+        function translateInstruction(text) {
+            if (!text) return text;
+            let t = text;
+            const dict = [
+                [/\bDrive northeast\b/gi, 'Conduce al noreste'],
+                [/\bDrive northwest\b/gi, 'Conduce al noroeste'],
+                [/\bDrive southeast\b/gi, 'Conduce al sureste'],
+                [/\bDrive southwest\b/gi, 'Conduce al suroeste'],
+                [/\bDrive north\b/gi, 'Conduce al norte'],
+                [/\bDrive south\b/gi, 'Conduce al sur'],
+                [/\bDrive east\b/gi, 'Conduce al este'],
+                [/\bDrive west\b/gi, 'Conduce al oeste'],
+                [/\bHead northeast\b/gi, 'Dirígete al noreste'],
+                [/\bHead northwest\b/gi, 'Dirígete al noroeste'],
+                [/\bHead southeast\b/gi, 'Dirígete al sureste'],
+                [/\bHead southwest\b/gi, 'Dirígete al suroeste'],
+                [/\bHead north\b/gi, 'Dirígete al norte'],
+                [/\bHead south\b/gi, 'Dirígete al sur'],
+                [/\bHead east\b/gi, 'Dirígete al este'],
+                [/\bHead west\b/gi, 'Dirígete al oeste'],
+                [/\bTurn sharp right\b/gi, 'Gira bruscamente a la derecha'],
+                [/\bTurn sharp left\b/gi, 'Gira bruscamente a la izquierda'],
+                [/\bTurn slight right\b/gi, 'Gira levemente a la derecha'],
+                [/\bTurn slight left\b/gi, 'Gira levemente a la izquierda'],
+                [/\bTurn right\b/gi, 'Gira a la derecha'],
+                [/\bTurn left\b/gi, 'Gira a la izquierda'],
+                [/\bMake a U-turn\b/gi, 'Haz un retorno en U'],
+                [/\bTake the roundabout\b/gi, 'Entra a la rotonda'],
+                [/\bEnter the roundabout\b/gi, 'Entra a la rotonda'],
+                [/\bExit the roundabout\b/gi, 'Sal de la rotonda'],
+                [/\bTake the ramp\b/gi, 'Toma la rampa'],
+                [/\bMerge\b/gi, 'Incorpórate'],
+                [/\bContinue straight\b/gi, 'Continúa recto'],
+                [/\bContinue\b/gi, 'Continúa'],
+                [/\bKeep right\b/gi, 'Mantente a la derecha'],
+                [/\bKeep left\b/gi, 'Mantente a la izquierda'],
+                [/\bYou have arrived at your destination\b/gi, 'Has llegado a tu destino'],
+                [/\bArrive at\b/gi, 'Llega a'],
+                [/\bArrive\b/gi, 'Llegada'],
+                [/\bYour destination is\b/gi, 'Tu destino está'],
+                [/\bmeters?\b/gi, 'metros'],
+                [/\bkilometers?\b/gi, 'kilómetros'],
+                [/\bmiles?\b/gi, 'millas'],
+                [/\bfeet\b/gi, 'pies']
+            ];
+            dict.forEach(([pattern, replacement]) => { t = t.replace(pattern, replacement); });
+            return t;
+        }
+
         let lastSpokenInstruction = '';
         let lastSpokenTime = 0;
         function speakInstruction(text) {
             if (!text || !('speechSynthesis' in window)) return;
+            const spanishText = translateInstruction(text);
             const now = Date.now();
-            if (lastSpokenInstruction === text && (now - lastSpokenTime) < 5000) return;
-            lastSpokenInstruction = text;
+            if (lastSpokenInstruction === spanishText && (now - lastSpokenTime) < 5000) return;
+            lastSpokenInstruction = spanishText;
             lastSpokenTime = now;
             try {
                 window.speechSynthesis.cancel();
-                const utt = new SpeechSynthesisUtterance(text);
+                const utt = new SpeechSynthesisUtterance(spanishText);
                 utt.lang = 'es-ES';
                 utt.rate = 1.0;
                 utt.volume = 1.0;
@@ -685,7 +737,7 @@
                 const spanishVoice = voices.find(v => v.lang === 'es-ES' || v.lang === 'es-MX' || v.lang.startsWith('es'));
                 if (spanishVoice) utt.voice = spanishVoice;
                 window.speechSynthesis.speak(utt);
-                dlog('🔊 Voz: ' + text, 'info');
+                dlog('🔊 Voz: ' + spanishText, 'info');
             } catch (e) { dlog('Error voz: ' + e.message, 'warning'); }
         }
 
@@ -1055,11 +1107,11 @@
                     });
                     setTimeout(() => { dlog('⚠️ Timeout 15s, continuando', 'warning'); finish(); }, 15000);
                 });
+                // ✅ PATCH 4: Control de navegación silencioso
                 try {
                     map.addControl(new mapboxgl.NavigationControl(), 'middle-right');
-                    dlog('🧭 Control de navegación añadido', 'info');
                 } catch (e) {
-                    dlog('⚠️ No se pudo añadir control: ' + e.message, 'warning');
+                    // Ignorar silenciosamente — no afecta funcionalidad
                 }
                 try { map.on('mousedown', () => { userInteracting = true; lastInteractionTime = Date.now(); }); } catch (e) {}
                 try { map.on('touchstart', () => { userInteracting = true; lastInteractionTime = Date.now(); }); } catch (e) {}
@@ -1422,8 +1474,12 @@
         async function drawRoute(originCoords, waypointCoords, destinationCoords) {
             if (!map) return;
             await ensureMapReady();
-            if (map.getLayer('route-line')) map.removeLayer('route-line');
-            if (map.getSource('route')) map.removeSource('route');
+            // ✅ PATCH 3: Eliminar primero layer, luego source
+            try {
+                if (map.getLayer('route-line')) map.removeLayer('route-line');
+                if (map.getSource('route')) map.removeSource('route');
+            } catch (e) {}
+            routeLayers = [];
             clearRoute();
             if (originCoords[0] !== waypointCoords[0] || originCoords[1] !== waypointCoords[1]) {
                 const pe = document.createElement('div');
@@ -1460,16 +1516,11 @@
                     window.currentRouteCoords = route.geometry.coordinates;
                     drawManeuverArrow(route.legs.flatMap(leg => leg.steps));
                     if (currentPosition && !userInteracting) {
-                        // ✅ Marcador a 1/3 inferior de la pantalla (como Google Maps)
                         const bearingRad = (smoothedBearing || 0) * Math.PI / 180;
                         const offsetMeters = 100;
                         const offsetLat = (offsetMeters * Math.cos(bearingRad)) / 111320;
                         const offsetLng = (offsetMeters * Math.sin(bearingRad)) / (111320 * Math.cos(currentPosition[0] * Math.PI / 180));
-                        map.easeTo({ 
-                            center: [currentPosition[1] + offsetLng, currentPosition[0] + offsetLat], 
-                            zoom: 17, pitch: 45, bearing: smoothedBearing || 0, 
-                            duration: 1200, essential: true 
-                        });
+                        map.easeTo({ center: [currentPosition[1] + offsetLng, currentPosition[0] + offsetLat], zoom: 17, pitch: 45, bearing: smoothedBearing || 0, duration: 1200, essential: true });
                     }
                     speakInstruction(currentNavigationSteps[0]?.maneuver?.instruction || 'Siga la ruta');
                 } else throw new Error('No routes');
@@ -1507,7 +1558,6 @@
             dlog('🎯 Flecha: ' + iconClass, 'info');
         }
 
-        // ✅ NUEVO: Avanzar a la próxima maniobra automáticamente
         function checkAndAdvanceManeuver(driverLat, driverLng) {
             if (!currentNavigationSteps || currentNavigationSteps.length === 0) return;
             const currentStep = currentNavigationSteps[currentNavigationIndex];
@@ -1534,13 +1584,17 @@
                 panel.classList.add('active');
                 document.getElementById('nav-icon').className = `fas ${iconMap[step.maneuver.modifier] || iconMap[step.maneuver.type] || 'fa-arrow-up'}`;
                 document.getElementById('nav-distance').textContent = step.distance < 1000 ? `${Math.round(step.distance)} m` : `${(step.distance/1000).toFixed(1)} km`;
-                document.getElementById('nav-text').textContent = step.maneuver.instruction;
+                document.getElementById('nav-text').textContent = translateInstruction(step.maneuver.instruction);
             } else panel.classList.remove('active');
         }
 
         function clearRoute() {
             if (!map) return;
-            routeLayers.forEach(l => { if (map.getLayer(l)) map.removeLayer(l); if (map.getSource(l)) map.removeSource(l); });
+            // ✅ PATCH 3: Orden correcto — primero layer, luego source
+            try {
+                if (map.getLayer('route-line')) map.removeLayer('route-line');
+                if (map.getSource('route')) map.removeSource('route');
+            } catch (e) {}
             routeLayers = [];
             if (pickupMarker) { pickupMarker.remove(); pickupMarker = null; }
             if (dropoffMarker) { dropoffMarker.remove(); dropoffMarker = null; }
@@ -1635,12 +1689,10 @@
                     }
                     previousCoord = { lat, lng };
 
-                    // ✅ Verificar si pasamos una maniobra
                     if ((currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') && currentNavigationSteps && currentNavigationSteps.length > 0) {
                         checkAndAdvanceManeuver(lat, lng);
                     }
 
-                    // ✅ Actualizar línea que se consume detrás
                     if (map && mapInitialized && map.getLayer('route-line') && window.currentRouteCoords && window.currentRouteCoords.length > 1) {
                         const progress = calculateRouteProgress(lat, lng);
                         const p = Math.max(0, Math.min(0.999, progress));
@@ -1666,8 +1718,6 @@
                                 pitch = Math.min(60, 35 + speedKmh * 0.3);
                                 zoom = Math.max(15, 18 - speedKmh * 0.04);
                             } else { pitch = 0; zoom = 15; }
-                            
-                            // ✅ Marcador a 1/3 inferior (offset hacia adelante)
                             let centerLng = lng;
                             let centerLat = lat;
                             if ((currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') && smoothedBearing !== null) {
@@ -1678,7 +1728,6 @@
                                 centerLat = lat + offsetLat;
                                 centerLng = lng + offsetLng;
                             }
-                            
                             const opts = { center: [centerLng, centerLat], zoom, pitch, duration: 500, essential: true };
                             if ((currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') && smoothedBearing !== null) opts.bearing = smoothedBearing;
                             map.easeTo(opts);
@@ -1689,7 +1738,6 @@
                     const now = Date.now();
                     if (now - lastUpdateTime > UPDATE_INTERVAL) { lastUpdateTime = now; updateDriverStatus(true, lat, lng); }
 
-                    // ✅ Detectar si está parado >5 segundos → enderezar mapa
                     const speedNow = (position.coords.speed || 0) * 3.6;
                     if (speedNow > 5) {
                         isCurrentlyMoving = true;
@@ -1823,6 +1871,7 @@
             });
         }
 
+        // ✅ PATCH 1: Polling con filtro de rechazados
         setInterval(async () => {
             if (!isDriverOnline || !currentDriverId) return;
             if (pendingRide || currentRideId) {
@@ -1837,14 +1886,32 @@
                 return;
             }
             try {
-                const { data } = await supabaseClient.from('rides').select('id, status')
+                // Traer IDs rechazados
+                let rejectedIds = [];
+                try {
+                    const { data: rejections } = await supabaseClient.from('ride_rejections').select('ride_id').eq('driver_id', currentDriverId);
+                    if (rejections) rejectedIds = rejections.map(r => r.ride_id);
+                } catch (e) {}
+
+                const { data } = await supabaseClient
+                    .from('rides')
+                    .select('id, status')
                     .or(`driver_id.eq.${currentDriverId},and(status.eq.pendiente,driver_id.is.null)`)
                     .in('status', ['pendiente', 'aceptado'])
-                    .order('created_at', { ascending: false }).limit(1);
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+
                 if (data && data.length > 0) {
-                    dlog('🔄 Respaldo: ' + data[0].id.substring(0,8), 'warning');
-                    const { data: fullRide } = await supabaseClient.from('rides').select('*, passengers(full_name, phone)').eq('id', data[0].id).single();
-                    if (fullRide && !pendingRide && !currentRideId && !isRejecting) showRideRequest(fullRide);
+                    // Filtrar rechazados
+                    const candidate = data.find(r => !rejectedIds.includes(r.id));
+                    if (candidate) {
+                        dlog('🔄 Respaldo: ' + candidate.id.substring(0,8), 'warning');
+                        const { data: fullRide } = await supabaseClient.from('rides').select('*, passengers(full_name, phone)').eq('id', candidate.id).single();
+                        if (fullRide && !pendingRide && !currentRideId && !isRejecting) {
+                            showRideRequest(fullRide);
+                        }
+                    }
+                    // Si todos están rechazados, silencio total
                 }
             } catch (e) {}
         }, 5000);
