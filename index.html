@@ -678,6 +678,13 @@
                 window.speechSynthesis.cancel();
                 const utt = new SpeechSynthesisUtterance(text);
                 utt.lang = 'es-ES';
+                utt.rate = 1.0;
+                utt.volume = 1.0;
+                utt.pitch = 1.0;
+                // Buscar una voz en español disponible
+                const voices = window.speechSynthesis.getVoices();
+                const spanishVoice = voices.find(v => v.lang === 'es-ES' || v.lang === 'es-MX' || v.lang.startsWith('es'));
+                if (spanishVoice) utt.voice = spanishVoice;
                 window.speechSynthesis.speak(utt);
                 dlog('🔊 Voz: ' + text, 'info');
             } catch (e) { dlog('Error voz: ' + e.message, 'warning'); }
@@ -705,6 +712,13 @@
         let isNotificationPlaying = false;
         let isRejecting = false;
         let isAcceptingRide = false;
+
+        // Precargar voces del navegador
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.onvoiceschanged = () => {
+                window.speechSynthesis.getVoices();
+            };
+        }
 
         function playNotificationSound() {
             try {
@@ -988,119 +1002,79 @@
             if (tabId === 'historial') loadHistorial();
         }
 
-        // ✅ initMap con timeout de 20s y tolerancia a fallos
-       async function initMap(center = [-63.1821, -17.7833]) {
-    // Si ya existe un mapa funcional, solo resize
-    if (map && mapInitialized) {
-        try { map.resize(); } catch (e) {}
-        return true;
-    }
-    
-    // Lock anti-concurrencia
-    if (initMapInProgress) {
-        dlog('⏸️ initMap en progreso, esperando...', 'info');
-        const startWait = Date.now();
-        while (initMapInProgress && (Date.now() - startWait) < 15000) {
-            await new Promise(r => setTimeout(r, 100));
+        async function initMap(center = [-63.1821, -17.7833]) {
+            if (map && mapInitialized) {
+                try { map.resize(); } catch (e) {}
+                return true;
+            }
+            if (initMapInProgress) {
+                dlog('⏸️ initMap en progreso, esperando...', 'info');
+                const startWait = Date.now();
+                while (initMapInProgress && (Date.now() - startWait) < 15000) {
+                    await new Promise(r => setTimeout(r, 100));
+                }
+                return mapInitialized && map;
+            }
+            initMapInProgress = true;
+            try {
+                if (map) { try { map.remove(); } catch (e) {} map = null; }
+                mapInitialized = false;
+                const container = document.getElementById('map');
+                if (!container) { dlog('⚠️ Contenedor #map no existe', 'warning'); return false; }
+                while (container.firstChild) { container.removeChild(container.firstChild); }
+                container.style.width = '100%';
+                container.style.height = '100%';
+                void container.offsetHeight;
+                const startTime = Date.now();
+                while (Date.now() - startTime < 3000) {
+                    if (container.offsetWidth > 0 && container.offsetHeight > 0) break;
+                    await new Promise(r => setTimeout(r, 100));
+                    void container.offsetHeight;
+                }
+                if (container.offsetWidth === 0 || container.offsetHeight === 0) {
+                    dlog(`⚠️ Sin dimensiones tras 3s`, 'warning');
+                    return false;
+                }
+                dlog(`🗺️ Creando mapa en ${container.offsetWidth}x${container.offsetHeight}...`, 'info');
+                map = new mapboxgl.Map({
+                    container: container,
+                    style: 'mapbox://styles/mapbox/streets-v12',
+                    center: center,
+                    zoom: 14,
+                    attributionControl: false
+                });
+                mapInitialized = true;
+                await new Promise((resolve) => {
+                    let done = false;
+                    const finish = () => { if (!done) { done = true; resolve(); } };
+                    map.once('idle', () => { dlog('✅ Mapa idle', 'success'); finish(); });
+                    map.once('load', () => { dlog('✅ Mapa load', 'success'); });
+                    map.once('error', (e) => {
+                        const errMsg = e.error?.message || 'desconocido';
+                        dlog('⚠️ Error Mapbox: ' + errMsg, 'warning');
+                    });
+                    setTimeout(() => { dlog('⚠️ Timeout 15s, continuando', 'warning'); finish(); }, 15000);
+                });
+                try {
+                    map.addControl(new mapboxgl.NavigationControl(), 'middle-right');
+                    dlog('🧭 Control de navegación añadido', 'info');
+                } catch (e) {
+                    dlog('⚠️ No se pudo añadir control: ' + e.message, 'warning');
+                }
+                try { map.on('mousedown', () => { userInteracting = true; lastInteractionTime = Date.now(); }); } catch (e) {}
+                try { map.on('touchstart', () => { userInteracting = true; lastInteractionTime = Date.now(); }); } catch (e) {}
+                try { map.on('moveend', () => { if (Date.now() - lastInteractionTime > 5000) userInteracting = false; }); } catch (e) {}
+                dlog(`✅ Mapa inicializado correctamente`, 'success');
+                return true;
+            } catch (e) {
+                dlog(`❌ Error initMap: ${e.message}`, 'error');
+                if (!map) { mapInitialized = false; }
+                return false;
+            } finally {
+                initMapInProgress = false;
+            }
         }
-        return mapInitialized && map;
-    }
-    
-    initMapInProgress = true;
-    
-    try {
-        // Destruir mapa previo si existe
-        if (map) {
-            try { map.remove(); } catch (e) {}
-            map = null;
-        }
-        mapInitialized = false;
-        
-        const container = document.getElementById('map');
-        if (!container) { dlog('⚠️ Contenedor #map no existe', 'warning'); return false; }
-        
-        // Limpiar SOLO children (no reemplazar contenedor entero)
-        while (container.firstChild) {
-            container.removeChild(container.firstChild);
-        }
-        
-        // Forzar dimensiones
-        container.style.width = '100%';
-        container.style.height = '100%';
-        void container.offsetHeight;
-        
-        // Polling de dimensiones
-        const startTime = Date.now();
-        while (Date.now() - startTime < 3000) {
-            if (container.offsetWidth > 0 && container.offsetHeight > 0) break;
-            await new Promise(r => setTimeout(r, 100));
-            void container.offsetHeight;
-        }
-        
-        if (container.offsetWidth === 0 || container.offsetHeight === 0) {
-            dlog(`⚠️ Sin dimensiones tras 3s`, 'warning');
-            return false;
-        }
-        
-        dlog(`🗺️ Creando mapa en ${container.offsetWidth}x${container.offsetHeight}...`, 'info');
-        
-        // Crear el mapa
-        map = new mapboxgl.Map({
-            container: container,
-            style: 'mapbox://styles/mapbox/streets-v12',
-            center: center,
-            zoom: 14,
-            attributionControl: false
-        });
-        
-        // ✅ IMPORTANTE: Marcar como inicializado INMEDIATAMENTE
-        // para que otros intentos no vuelvan a crear otro mapa
-        mapInitialized = true;
-        
-        // ✅ Esperar a 'idle' (más confiable que 'load' para estilos cacheados)
-        await new Promise((resolve) => {
-            let done = false;
-            const finish = () => { if (!done) { done = true; resolve(); } };
-            
-            map.once('idle', () => { dlog('✅ Mapa idle', 'success'); finish(); });
-            map.once('load', () => { dlog('✅ Mapa load', 'success'); });
-            map.once('error', (e) => {
-                const errMsg = e.error?.message || 'desconocido';
-                dlog('⚠️ Error Mapbox: ' + errMsg, 'warning');
-            });
-            
-            setTimeout(() => { dlog('⚠️ Timeout 15s, continuando', 'warning'); finish(); }, 15000);
-        });
-        
-        // ✅ PROTEGER addControl con su propio try/catch
-        try {
-            map.addControl(new mapboxgl.NavigationControl(), 'middle-right');
-            dlog('🧭 Control de navegación añadido', 'info');
-        } catch (e) {
-            dlog('⚠️ No se pudo añadir control de navegación: ' + e.message, 'warning');
-        }
-        
-        // Handlers de interacción (cada uno protegido)
-        try { map.on('mousedown', () => { userInteracting = true; lastInteractionTime = Date.now(); }); } catch (e) {}
-        try { map.on('touchstart', () => { userInteracting = true; lastInteractionTime = Date.now(); }); } catch (e) {}
-        try { map.on('moveend', () => { if (Date.now() - lastInteractionTime > 5000) userInteracting = false; }); } catch (e) {}
-        
-        dlog(`✅ Mapa inicializado correctamente`, 'success');
-        return true;
-    } catch (e) {
-        // ✅ NO poner map = null aquí — el mapa puede estar funcional
-        // Solo loguear el error
-        dlog(`❌ Error initMap: ${e.message}`, 'error');
-        
-        // Si el mapa NO se creó, marcar como no inicializado
-        if (!map) {
-            mapInitialized = false;
-        }
-        return false;
-    } finally {
-        initMapInProgress = false;
-    }
-}
+
         async function ensureMapReady() {
             if (map && mapInitialized) {
                 if (map.loaded()) return true;
@@ -1463,7 +1437,8 @@
             if (originCoords[0] === waypointCoords[0] && originCoords[1] === waypointCoords[1]) coordinates = [[originCoords[1],originCoords[0]],[destinationCoords[1],destinationCoords[0]]];
             else coordinates = [[originCoords[1],originCoords[0]],[waypointCoords[1],waypointCoords[0]],[destinationCoords[1],destinationCoords[0]]];
             const coordsString = coordinates.map(c => c.join(',')).join(';');
-            const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordsString}?geometries=geojson&steps=true&access_token=${mapboxgl.accessToken}`;
+            // ✅ IMPORTANTE: language=es → instrucciones en español, voice_units=metric → metros/km
+            const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordsString}?geometries=geojson&steps=true&language=es&voice_units=metric&access_token=${mapboxgl.accessToken}`;
             try {
                 const response = await fetch(url);
                 const data = await response.json();
@@ -1488,7 +1463,7 @@
                     if (currentPosition && !userInteracting) {
                         map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 17, pitch: 45, bearing: smoothedBearing || 0, duration: 1200, essential: true });
                     }
-                    speakInstruction(currentNavigationSteps[0]?.maneuver?.instruction || 'Sigue la ruta');
+                    speakInstruction(currentNavigationSteps[0]?.maneuver?.instruction || 'Siga la ruta');
                 } else throw new Error('No routes');
             } catch (e) {
                 const geojson = { type: 'Feature', geometry: { type: 'LineString', coordinates } };
@@ -1631,7 +1606,6 @@
                         } else if (smoothedBearing !== null) bearing = smoothedBearing;
                     }
                     previousCoord = { lat, lng };
-
                     if (map && mapInitialized && map.getLayer('route-line') && window.currentRouteCoords && window.currentRouteCoords.length > 1) {
                         const progress = calculateRouteProgress(lat, lng);
                         const p = Math.max(0, Math.min(0.999, progress));
@@ -1647,7 +1621,6 @@
                             } catch (e) {}
                         }
                     }
-
                     if (map && mapInitialized) {
                         updateDriverMarker(lat, lng, bearing);
                         if (!userInteracting) {
