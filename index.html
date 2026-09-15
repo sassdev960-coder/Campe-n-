@@ -1665,111 +1665,176 @@
         }
 
         function startTracking() {
-            if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
-            let previousCoord = null; smoothedBearing = null;
-            watchId = navigator.geolocation.watchPosition(
-                (position) => {
-                    const lat = position.coords.latitude, lng = position.coords.longitude;
-                    currentPosition = [lat, lng];
-                    let bearing = smoothedBearing || 0;
-                    
-                    // ✅ FIX: Usar heading del GPS directamente si está disponible
-                    const gpsHeading = position.coords.heading;
-                    const gpsSpeed = position.coords.speed || 0;
-                    
-                    if (gpsHeading !== null && gpsHeading !== undefined && !isNaN(gpsHeading) && gpsSpeed > 1.5) {
-                        const raw = gpsHeading;
-                        if (smoothedBearing === null) smoothedBearing = raw;
-                        else { 
-                            let diff = raw - smoothedBearing; 
-                            if (diff > 180) diff -= 360; 
-                            if (diff < -180) diff += 360; 
-                            smoothedBearing = (smoothedBearing + diff * 0.5 + 360) % 360; 
-                        }
-                        bearing = smoothedBearing;
-                    } else if (previousCoord) {
-                        const dist = getDistanceFromLatLonInMeters(previousCoord.lat, previousCoord.lng, lat, lng);
-                        if (dist > 2) {
-                            const raw = calculateBearing(previousCoord.lat, previousCoord.lng, lat, lng);
-                            if (smoothedBearing === null) smoothedBearing = raw;
-                            else { 
-                                let diff = raw - smoothedBearing; 
-                                if (diff > 180) diff -= 360; 
-                                if (diff < -180) diff += 360; 
-                                smoothedBearing = (smoothedBearing + diff * 0.5 + 360) % 360; 
-                            }
-                            bearing = smoothedBearing;
-                        }
-                    }
-                    previousCoord = { lat, lng };
+    if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+    let previousCoord = null;
+    smoothedBearing = null;
 
-                    if ((currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') && currentNavigationSteps && currentNavigationSteps.length > 0) {
-                        checkAndAdvanceManeuver(lat, lng);
+    watchId = navigator.geolocation.watchPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            currentPosition = [lat, lng];
+            const now = Date.now();
+
+            const gpsHeading = position.coords.heading;
+            const gpsSpeed = position.coords.speed || 0;     // m/s
+            const speedKmh = gpsSpeed * 3.6;
+            const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
+
+            // ============================================================
+            // 1) CÁLCULO DE BEARING SUAVIZADO
+            // ============================================================
+            let bearing = smoothedBearing || 0;
+            if (gpsHeading !== null && gpsHeading !== undefined && !isNaN(gpsHeading) && gpsSpeed > 1.5) {
+                const raw = gpsHeading;
+                if (smoothedBearing === null) smoothedBearing = raw;
+                else {
+                    let diff = raw - smoothedBearing;
+                    if (diff > 180) diff -= 360;
+                    if (diff < -180) diff += 360;
+                    // Suavizado 0.3 = más estable (antes 0.5 temblaba con GPS ruidoso)
+                    smoothedBearing = (smoothedBearing + diff * 0.3 + 360) % 360;
+                }
+                bearing = smoothedBearing;
+            } else if (previousCoord) {
+                const dist = getDistanceFromLatLonInMeters(previousCoord.lat, previousCoord.lng, lat, lng);
+                if (dist > 2) {
+                    const raw = calculateBearing(previousCoord.lat, previousCoord.lng, lat, lng);
+                    if (smoothedBearing === null) smoothedBearing = raw;
+                    else {
+                        let diff = raw - smoothedBearing;
+                        if (diff > 180) diff -= 360;
+                        if (diff < -180) diff += 360;
+                        smoothedBearing = (smoothedBearing + diff * 0.3 + 360) % 360;
+                    }
+                    bearing = smoothedBearing;
+                }
+            }
+            previousCoord = { lat, lng };
+
+            // ============================================================
+            // 2) AVANCE DE MANIOBRAS (turn-by-turn)
+            // ============================================================
+            if (enNavegacion && currentNavigationSteps && currentNavigationSteps.length > 0) {
+                checkAndAdvanceManeuver(lat, lng);
+            }
+
+            // ============================================================
+            // 3) PROGRESO DE RUTA (línea que se borra detrás del vehículo)
+            // ============================================================
+            if (map && mapInitialized && map.getLayer('route-line')
+                && window.currentRouteCoords && window.currentRouteCoords.length > 1) {
+                const progress = calculateRouteProgress(lat, lng);
+                const p = Math.max(0, Math.min(0.999, progress));
+                if (p > 0.005) {
+                    try {
+                        map.setPaintProperty('route-line', 'line-gradient', [
+                            'interpolate', ['linear'], ['line-progress'],
+                            0, 'rgba(255, 122, 0, 0)',
+                            p, 'rgba(255, 122, 0, 0)',
+                            Math.min(p + 0.001, 0.999), '#ff7a00',
+                            1, '#ff7a00'
+                        ]);
+                    } catch (e) {}
+                }
+            }
+
+            // ============================================================
+            // 4) MOVIMIENTO DEL MAPA (Google Maps style)
+            //    - Centro = posición exacta del conductor
+            //    - El MAPA rota con el heading, NO el icono
+            // ============================================================
+            if (map && mapInitialized) {
+                updateDriverMarker(lat, lng, bearing);
+
+                if (!userInteracting) {
+                    let zoom, pitch;
+                    if (enNavegacion) {
+                        // Zoom adaptativo por velocidad (más rápido = más lejos para ver venir)
+                        zoom = Math.max(15, 18 - speedKmh * 0.03);
+                        pitch = Math.min(60, 45 + speedKmh * 0.25);
+                    } else {
+                        // Modo normal: vista plana desde arriba, norte arriba
+                        zoom = 15;
+                        pitch = 0;
                     }
 
-                    if (map && mapInitialized && map.getLayer('route-line') && window.currentRouteCoords && window.currentRouteCoords.length > 1) {
-                        const progress = calculateRouteProgress(lat, lng);
-                        const p = Math.max(0, Math.min(0.999, progress));
-                        if (p > 0.005) {
-                            try {
-                                map.setPaintProperty('route-line', 'line-gradient', [
-                                    'interpolate', ['linear'], ['line-progress'],
-                                    0, 'rgba(255, 122, 0, 0)',
-                                    p, 'rgba(255, 122, 0, 0)',
-                                    Math.min(p + 0.001, 0.999), '#ff7a00',
-                                    1, '#ff7a00'
-                                ]);
-                            } catch (e) {}
-                        }
+                    const opts = {
+                        center: [lng, lat],   // ✅ SIEMPRE centrado en el conductor
+                        zoom: zoom,
+                        pitch: pitch,
+                        duration: 800,
+                        essential: true,
+                        easing: (t) => t
+                    };
+
+                    // ✅ El mapa rota solo en navegación y con velocidad suficiente
+                    if (enNavegacion && smoothedBearing !== null && speedKmh > 3) {
+                        opts.bearing = smoothedBearing;
+                    } else if (!enNavegacion) {
+                        opts.bearing = 0;  // idle: norte arriba
+                    } else {
+                        // Navegación pero casi parado: mantener el último bearing
+                        opts.bearing = smoothedBearing || 0;
                     }
 
-                    if (map && mapInitialized) {
-                        updateDriverMarker(lat, lng, bearing);
-                        if (!userInteracting) {
-                            const speedKmh = (position.coords.speed || 0) * 3.6;
-                            let zoom, pitch;
-                            if (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') {
-                                pitch = Math.min(60, 35 + speedKmh * 0.3);
-                                zoom = Math.max(15, 18 - speedKmh * 0.04);
-                            } else { pitch = 0; zoom = 15; }
-                            
-                            // ✅ FIX: Offset proporcional al zoom (marcador siempre 1/3 abajo)
-                            let centerLng = lng;
-                            let centerLat = lat;
-                            if ((currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') && smoothedBearing !== null) {
-                                const bearingRad = smoothedBearing * Math.PI / 180;
-                                const offsetMeters = zoom >= 17 ? 80 : (zoom >= 16 ? 130 : 200);
-                                const offsetLat = (offsetMeters * Math.cos(bearingRad)) / 111320;
-                                const offsetLng = (offsetMeters * Math.sin(bearingRad)) / (111320 * Math.cos(lat * Math.PI / 180));
-                                centerLat = lat + offsetLat;
-                                centerLng = lng + offsetLng;
-                            }
-                            
-                            const opts = { center: [centerLng, centerLat], zoom, pitch, duration: 800, essential: true, easing: (t) => t };
-                            if ((currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') && smoothedBearing !== null) opts.bearing = smoothedBearing;
-                            map.easeTo(opts);
-                        }
-                        if (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso') document.getElementById('navigation-panel').classList.add('active');
-                        else document.getElementById('navigation-panel').classList.remove('active');
+                    // ✅ Anti-stutter: si ya está animando, salta en vez de encolar
+                    if (!map.isEasing()) {
+                        map.easeTo(opts);
+                    } else {
+                        map.jumpTo({
+                            center: opts.center,
+                            bearing: opts.bearing,
+                            pitch: opts.pitch
+                        });
                     }
-                    const now = Date.now();
-                    if (now - lastUpdateTime > UPDATE_INTERVAL) { lastUpdateTime = now; updateDriverStatus(true, lat, lng); }
+                }
 
-                    const speedNow = (position.coords.speed || 0) * 3.6;
-                    if (speedNow > 5) { isCurrentlyMoving = true; lastMovingTime = now; }
-                    else if (isCurrentlyMoving && (now - lastMovingTime) > 5000) {
-                        isCurrentlyMoving = false;
-                        if (map && mapInitialized && (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso')) {
-                            dlog('🧭 Conductor parado >5s — enderezando mapa', 'info');
-                            map.easeTo({ center: [lng, lat], zoom: 17, pitch: 0, bearing: 0, duration: 1000 });
-                        }
-                    }
-                },
-                (error) => { dlog('Error GPS: ' + error.message, 'warning'); },
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
-            );
+                if (enNavegacion) {
+                    document.getElementById('navigation-panel').classList.add('active');
+                } else {
+                    document.getElementById('navigation-panel').classList.remove('active');
+                }
+            }
+
+            // ============================================================
+            // 5) ACTUALIZACIÓN PERIÓDICA A SUPABASE
+            // ============================================================
+            if (now - lastUpdateTime > UPDATE_INTERVAL) {
+                lastUpdateTime = now;
+                updateDriverStatus(true, lat, lng);
+            }
+
+            // ============================================================
+            // 6) DETECCIÓN DE PARADA >5s → enderezar mapa
+            // ============================================================
+            if (speedKmh > 5) {
+                isCurrentlyMoving = true;
+                lastMovingTime = now;
+            } else if (isCurrentlyMoving && (now - lastMovingTime) > 5000) {
+                isCurrentlyMoving = false;
+                if (map && mapInitialized && enNavegacion) {
+                    dlog('🧭 Conductor parado >5s — enderezando mapa', 'info');
+                    map.easeTo({
+                        center: [lng, lat],
+                        zoom: 17,
+                        pitch: 0,
+                        bearing: 0,
+                        duration: 1000
+                    });
+                }
+            }
+        },
+        (error) => {
+            dlog('Error GPS: ' + error.message, 'warning');
+        },
+        {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 10000
         }
-
+    );
+}
         async function updateDriverStatus(isOnline, lat = null, lng = null) {
             try { await supabaseClient.from('driver_status').upsert({ driver_id: currentDriverId, is_online: isOnline, latitude: lat, longitude: lng, last_updated: new Date().toISOString() }, { onConflict: 'driver_id' }); }
             catch (e) { dlog('Error updateDriverStatus: ' + e.message, 'error'); }
