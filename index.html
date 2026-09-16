@@ -1305,8 +1305,8 @@
         async function loadActiveRide() {
             if (!currentDriverId || !isDriverOnline) { dlog('No cargo rides: offline', 'info'); return; }
             dlog('Buscando viaje activo...', 'info');
-            const { data, error } = await supabaseClient
-                .from('rides').select('*, passengers(full_name, phone)')
+          const { data, error } = await supabaseClient
+    .from('rides').select('*')
                 .or(`driver_id.eq.${currentDriverId},and(status.eq.pendiente,driver_id.is.null)`)
                 .in('status', ['pendiente','aceptado','llegado_origen','en_curso'])
                 .order('created_at', { ascending: false }).limit(5);
@@ -1771,7 +1771,7 @@
                 setTimeout(async () => {
                     if (!currentRideId && !pendingRide && isDriverOnline) {
                         const { data } = await supabaseClient
-                            .from('rides').select('*, passengers(full_name, phone)')
+                            .from('rides').select('*')
                             .or(`driver_id.eq.${currentDriverId},and(status.eq.pendiente,driver_id.is.null)`)
                             .in('status', ['pendiente', 'aceptado'])
                             .order('created_at', { ascending: false }).limit(5);
@@ -2142,7 +2142,7 @@
                     const candidate = data.find(r => !rejectedIds.includes(r.id));
                     if (candidate) {
                         dlog('🔄 Respaldo: ' + candidate.id.substring(0,8), 'warning');
-                        const { data: fullRide } = await supabaseClient.from('rides').select('*, passengers(full_name, phone)').eq('id', candidate.id).single();
+                       const { data: fullRide } = await supabaseClient.from('rides').select('*').eq('id', candidate.id).single();
                         if (fullRide && !pendingRide && !currentRideId && !isRejecting) { showRideRequest(fullRide); }
                     }
                 }
