@@ -295,7 +295,7 @@
         .debug-log.warning{color:var(--yellow);background:rgba(245,158,11,0.05);border-left-color:var(--yellow)}
         .debug-log.event{color:var(--purple);background:rgba(139,92,246,0.05);border-left-color:var(--purple)}
         .debug-log .time{color:var(--gray-text);opacity:0.6;margin-right:6px;font-size:10px}
-        .debug-status{padding:10px 18px;border-top:1px solid rgba(255,255,255,0.08);display:flex;gap:16px;font-size:10px;color:var(--gray-text);font-family:'JetBrains Mono',monospace;flex-shrink:0}
+        .debug-status{padding:10px 18px;border-top:1px solid rgba(255,255,255,0.08);display:flex;gap:16px;font-size:10px;color:var(--gray-text);font-family:'JetBrains Mono',monospace;flex-shrink:0;flex-wrap:wrap}
         .debug-status span{display:flex;align-items:center;gap:4px}
         .debug-status .dot{width:6px;height:6px;border-radius:var(--border-radius-full)}
         .debug-status .dot.green{background:var(--green-online)}
@@ -323,6 +323,7 @@
             <span><span class="dot" id="statusOnlineDot"></span> Online: <b id="statusOnlineVal">false</b></span>
             <span><span class="dot" id="statusRideDot"></span> Ride: <b id="statusRideVal">null</b></span>
             <span><span class="dot" id="statusPendingDot"></span> Pending: <b id="statusPendingVal">null</b></span>
+            <span><span class="dot" id="statusCompassDot"></span> Brújula: <b id="statusCompassVal">---</b></span>
         </div>
     </div>
     <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastText">Mensaje</span></div>
@@ -577,10 +578,12 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         // ═══════════════════════════════════════════════════════════════
-        //  CONFIGURACIÓN DE NAVEGACIÓN (Google Maps style)
+        //  CONFIGURACIÓN
         // ═══════════════════════════════════════════════════════════════
         const NAV_PADDING_FRACTION = 0.33;   // Flecha a 33% desde abajo
         const ROUTE_TAIL_METERS = 30;        // Cola de línea detrás del marcador
+        const COMPASS_SMOOTHING = 0.25;      // Suavizado de brújula
+        const SNAP_MAX_DISTANCE = 30;        // Distancia máxima para snapear a la ruta (metros)
 
         let logCount = 0, debugPanelOpen = false;
         function dlog(msg, type = 'info') {
@@ -606,9 +609,14 @@
             const onlineDot = document.getElementById('statusOnlineDot'), onlineVal = document.getElementById('statusOnlineVal');
             const rideDot = document.getElementById('statusRideDot'), rideVal = document.getElementById('statusRideVal');
             const pendingDot = document.getElementById('statusPendingDot'), pendingVal = document.getElementById('statusPendingVal');
+            const compassDot = document.getElementById('statusCompassDot'), compassVal = document.getElementById('statusCompassVal');
             if (onlineDot && onlineVal) { onlineVal.textContent = String(isDriverOnline); onlineDot.className = `dot ${isDriverOnline ? 'green' : 'red'}`; }
             if (rideDot && rideVal) { rideVal.textContent = currentRideId ? currentRideId.substring(0,8) : 'null'; rideDot.className = `dot ${currentRideId ? 'green' : 'red'}`; }
             if (pendingDot && pendingVal) { pendingVal.textContent = pendingRide ? pendingRide.id.substring(0,8) : 'null'; pendingDot.className = `dot ${pendingRide ? 'orange' : 'red'}`; }
+            if (compassDot && compassVal) {
+                compassVal.textContent = compassAvailable ? `${Math.round(compassHeading)}°` : 'no disp.';
+                compassDot.className = `dot ${compassAvailable ? 'green' : 'red'}`;
+            }
         }
         function toggleDebugPanel() {
             debugPanelOpen = !debugPanelOpen;
@@ -662,7 +670,92 @@
             return (Math.atan2(y,x)*180/Math.PI+360)%360;
         }
 
-        // ✅ Progreso por DISTANCIA real (no por índice)
+        // ═══════════════════════════════════════════════════════════════
+        //  BRÚJULA + SNAP A RUTA
+        // ═══════════════════════════════════════════════════════════════
+        let compassHeading = null;
+        let compassRaw = null;
+        let compassAvailable = false;
+        let compassListenerAttached = false;
+
+        async function initCompass() {
+            if (typeof DeviceOrientationEvent === 'undefined') {
+                dlog('❌ Brújula no soportada', 'warning');
+                return false;
+            }
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const perm = await DeviceOrientationEvent.requestPermission();
+                    if (perm !== 'granted') {
+                        dlog('❌ Permiso de brújula denegado', 'warning');
+                        showToast('Permiso de brújula denegado', 'exclamation-triangle');
+                        return false;
+                    }
+                    dlog('✅ Permiso brújula concedido', 'success');
+                } catch (e) {
+                    dlog('Error permiso brújula: ' + e.message, 'error');
+                    return false;
+                }
+            }
+            if (!compassListenerAttached) {
+                window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+                window.addEventListener('deviceorientation', handleOrientation, true);
+                compassListenerAttached = true;
+                dlog('🧭 Listener de brújula activado', 'info');
+            }
+            return true;
+        }
+
+        function handleOrientation(event) {
+            let heading = null;
+            if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null && !isNaN(event.webkitCompassHeading)) {
+                heading = event.webkitCompassHeading;
+            } else if (event.alpha !== null && event.alpha !== undefined && !isNaN(event.alpha)) {
+                heading = (360 - event.alpha) % 360;
+            }
+            if (heading === null) return;
+            compassRaw = heading;
+            if (compassHeading === null) {
+                compassHeading = heading;
+            } else {
+                let diff = heading - compassHeading;
+                if (diff > 180) diff -= 360;
+                if (diff < -180) diff += 360;
+                compassHeading = (compassHeading + diff * COMPASS_SMOOTHING + 360) % 360;
+            }
+            compassAvailable = true;
+        }
+
+        // Proyecta P sobre segmento A→B en lat/lng (proyección planar simple)
+        function projectPointOnSegment(pLat, pLng, aLat, aLng, bLat, bLng) {
+            const dx = bLng - aLng;
+            const dy = bLat - aLat;
+            const len2 = dx*dx + dy*dy;
+            if (len2 === 0) return [aLat, aLng];
+            let t = ((pLng - aLng) * dx + (pLat - aLat) * dy) / len2;
+            t = Math.max(0, Math.min(1, t));
+            return [aLat + t * dy, aLng + t * dx];
+        }
+
+        function snapToRoute(lat, lng) {
+            const coords = window.currentRouteCoords;
+            if (!coords || coords.length < 2) return null;
+            const windowSize = 60;
+            const startIdx = Math.max(0, lastRouteProgressIndex - 5);
+            const endIdx = Math.min(coords.length - 2, lastRouteProgressIndex + windowSize);
+            let minDist = Infinity, snapped = null;
+            for (let i = startIdx; i <= endIdx; i++) {
+                const a = coords[i];
+                const b = coords[i + 1];
+                const proj = projectPointOnSegment(lat, lng, a[1], a[0], b[1], b[0]);
+                const d = getDistanceFromLatLonInMeters(lat, lng, proj[0], proj[1]);
+                if (d < minDist) { minDist = d; snapped = proj; }
+            }
+            if (minDist > SNAP_MAX_DISTANCE) return null;
+            return snapped;
+        }
+
+        // ✅ Progreso por DISTANCIA real
         function calculateRouteProgress(driverLat, driverLng) {
             const coords = window.currentRouteCoords;
             if (!coords || coords.length < 2) return 0;
@@ -683,7 +776,6 @@
             }
             if (closestIdx < lastRouteProgressIndex) closestIdx = lastRouteProgressIndex;
             lastRouteProgressIndex = closestIdx;
-
             let distToIdx = 0, totalDist = 0;
             for (let i = 1; i < coords.length; i++) {
                 const seg = getDistanceFromLatLonInMeters(coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1]);
@@ -755,9 +847,7 @@
                 window.speechSynthesis.cancel();
                 const utt = new SpeechSynthesisUtterance(spanishText);
                 utt.lang = 'es-ES';
-                utt.rate = 1.0;
-                utt.volume = 1.0;
-                utt.pitch = 1.0;
+                utt.rate = 1.0; utt.volume = 1.0; utt.pitch = 1.0;
                 const voices = window.speechSynthesis.getVoices();
                 const spanishVoice = voices.find(v => v.lang === 'es-ES' || v.lang === 'es-MX' || v.lang.startsWith('es'));
                 if (spanishVoice) utt.voice = spanishVoice;
@@ -785,7 +875,6 @@
         let isCurrentlyMoving = false;
         let lastRouteProgressIndex = 0;
 
-        // Movimiento fluido del marcador
         let animationFrameId = null;
         let markerCurrentPos = null;
         let markerTargetPos = null;
@@ -803,7 +892,6 @@
             window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
         }
 
-        // ✅ Interpolación del marcador. En navegación el icono NO rota (Google Maps style)
         function animateMarker() {
             if (!driverMarker || !markerCurrentPos || !markerTargetPos) {
                 animationFrameId = requestAnimationFrame(animateMarker);
@@ -811,12 +899,11 @@
             }
             markerCurrentPos[0] += (markerTargetPos[0] - markerCurrentPos[0]) * 0.25;
             markerCurrentPos[1] += (markerTargetPos[1] - markerCurrentPos[1]) * 0.25;
-
             try {
                 driverMarker.setLngLat([markerCurrentPos[1], markerCurrentPos[0]]);
                 const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
                 if (enNavegacion) {
-                    driverMarker.setRotation(0);   // ✅ Flecha siempre hacia arriba
+                    driverMarker.setRotation(0);
                 } else {
                     let diff = markerTargetBearing - markerCurrentBearing;
                     if (diff > 180) diff -= 360;
@@ -825,7 +912,6 @@
                     driverMarker.setRotation(markerCurrentBearing);
                 }
             } catch (e) {}
-
             animationFrameId = requestAnimationFrame(animateMarker);
         }
 
@@ -1226,8 +1312,6 @@
                 .order('created_at', { ascending: false }).limit(5);
             if (error) { dlog('Error: ' + error.message, 'error'); return; }
             if (!data || data.length === 0) { dlog('No hay viaje activo', 'info'); return; }
-
-            // ✅ Filtrar rechazados y tomar el primero válido
             let ride = null;
             for (const r of data) {
                 if (r.status === 'pendiente' && await hasRejectedRide(r.id)) continue;
@@ -1235,7 +1319,6 @@
                 break;
             }
             if (!ride) { dlog('Todos rechazados', 'warning'); return; }
-
             dlog('Viaje: ' + ride.id.substring(0,8) + ' status: ' + ride.status, 'success');
             if (ride.status === 'pendiente' || ride.status === 'aceptado') {
                 if (!currentRideId && !pendingRide) showRideRequest(ride);
@@ -1306,7 +1389,6 @@
             currentRideId = null; currentRideStatus = null; pendingRide = null;
             clearRoute(); updateActionButtons();
             document.getElementById('searchContainer').classList.remove('hidden');
-            // ✅ Reset limpio: sin padding, norte arriba, sin pitch
             if (map && currentPosition) {
                 map.easeTo({
                     center: [currentPosition[1], currentPosition[0]],
@@ -1532,7 +1614,7 @@
                     map.addLayer({ id: 'route-line', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 8, 'line-gradient': ['interpolate', ['linear'], ['line-progress'], 0, '#ff7a00', 1, '#ff7a00'] } });
                     routeLayers.push('route', 'route-line');
                     window.currentRouteCoords = route.geometry.coordinates;
-                    window.currentRouteDistance = route.distance || 1000;   // ✅ distancia real
+                    window.currentRouteDistance = route.distance || 1000;
                     lastRouteProgressIndex = 0;
                     drawManeuverArrow(route.legs.flatMap(leg => leg.steps));
                     if (currentPosition && !userInteracting) {
@@ -1557,7 +1639,6 @@
                 map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-width': 6, 'line-gradient': ['interpolate', ['linear'], ['line-progress'], 0, '#ff7a00', 1, '#ff7a00'] } });
                 routeLayers.push('route', 'route-line');
                 window.currentRouteCoords = coordinates;
-                // ✅ Calcular distancia con turf como fallback
                 try {
                     window.currentRouteDistance = turf.length(turf.lineString(coordinates), { units: 'meters' });
                 } catch (err) { window.currentRouteDistance = 1000; }
@@ -1661,6 +1742,9 @@
             updateStatusCard(isDriverOnline);
             updateDebugStatus();
             if (isDriverOnline) {
+                // ✅ Pedir permiso de brújula (requiere gesto de usuario en iOS)
+                try { await initCompass(); } catch (err) { dlog('Compass init error: ' + err.message, 'warning'); }
+
                 try {
                     if (!notificationAudioCtx) { notificationAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
                     if (notificationAudioCtx.state === 'suspended') notificationAudioCtx.resume();
@@ -1706,7 +1790,7 @@
         function createDriverMarker(lat, lng, bearing = 0) {
             const el = document.createElement('div');
             el.className = 'driver-arrow';
-            el.innerHTML = '<i class="fas fa-arrow-up"></i>';   // ✅ Flecha recta hacia arriba
+            el.innerHTML = '<i class="fas fa-arrow-up"></i>';
             driverMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
                 .setLngLat([lng, lat])
                 .setRotation(bearing)
@@ -1726,7 +1810,9 @@
             }
         }
 
-        // ✅ startTracking con Google Maps style (flecha abajo, mapa rota)
+        // ═══════════════════════════════════════════════════════════════
+        //  startTracking con BRÚJULA + SNAP A RUTA
+        // ═══════════════════════════════════════════════════════════════
         function startTracking() {
             if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
             let previousCoord = null;
@@ -1734,9 +1820,8 @@
 
             watchId = navigator.geolocation.watchPosition(
                 (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    currentPosition = [lat, lng];
+                    const gpsLat = position.coords.latitude;
+                    const gpsLng = position.coords.longitude;
                     const now = Date.now();
 
                     const gpsHeading = position.coords.heading;
@@ -1744,22 +1829,46 @@
                     const speedKmh = gpsSpeed * 3.6;
                     const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
 
-                    // 1) BEARING SUAVIZADO
+                    // ─── 1) SNAP A LA RUTA ───
+                    let renderLat = gpsLat;
+                    let renderLng = gpsLng;
+                    if (enNavegacion) {
+                        const snapped = snapToRoute(gpsLat, gpsLng);
+                        if (snapped) {
+                            renderLat = snapped[0];
+                            renderLng = snapped[1];
+                        }
+                    }
+                    currentPosition = [gpsLat, gpsLng];   // siempre GPS real
+
+                    // ─── 2) BEARING (brújula > GPS > desplazamiento) ───
                     let bearing = smoothedBearing || 0;
-                    if (gpsHeading !== null && gpsHeading !== undefined && !isNaN(gpsHeading) && gpsSpeed > 1.5) {
-                        const raw = gpsHeading;
-                        if (smoothedBearing === null) smoothedBearing = raw;
+
+                    if (compassAvailable && compassHeading !== null) {
+                        // ✅ Brújula: máxima prioridad cuando el teléfono está en el trípode
+                        if (smoothedBearing === null) smoothedBearing = compassHeading;
                         else {
-                            let diff = raw - smoothedBearing;
+                            let diff = compassHeading - smoothedBearing;
+                            if (diff > 180) diff -= 360;
+                            if (diff < -180) diff += 360;
+                            smoothedBearing = (smoothedBearing + diff * 0.3 + 360) % 360;
+                        }
+                        bearing = smoothedBearing;
+                    } else if (gpsHeading !== null && gpsHeading !== undefined && !isNaN(gpsHeading) && gpsSpeed > 1.5) {
+                        // Fallback GPS heading
+                        if (smoothedBearing === null) smoothedBearing = gpsHeading;
+                        else {
+                            let diff = gpsHeading - smoothedBearing;
                             if (diff > 180) diff -= 360;
                             if (diff < -180) diff += 360;
                             smoothedBearing = (smoothedBearing + diff * 0.3 + 360) % 360;
                         }
                         bearing = smoothedBearing;
                     } else if (previousCoord) {
-                        const dist = getDistanceFromLatLonInMeters(previousCoord.lat, previousCoord.lng, lat, lng);
+                        // Fallback: calcular por desplazamiento
+                        const dist = getDistanceFromLatLonInMeters(previousCoord.lat, previousCoord.lng, gpsLat, gpsLng);
                         if (dist > 2) {
-                            const raw = calculateBearing(previousCoord.lat, previousCoord.lng, lat, lng);
+                            const raw = calculateBearing(previousCoord.lat, previousCoord.lng, gpsLat, gpsLng);
                             if (smoothedBearing === null) smoothedBearing = raw;
                             else {
                                 let diff = raw - smoothedBearing;
@@ -1770,17 +1879,17 @@
                             bearing = smoothedBearing;
                         }
                     }
-                    previousCoord = { lat, lng };
+                    previousCoord = { lat: gpsLat, lng: gpsLng };
 
-                    // 2) AVANCE DE MANIOBRAS
+                    // ─── 3) AVANCE DE MANIOBRAS (usa posición snapeada) ───
                     if (enNavegacion && currentNavigationSteps && currentNavigationSteps.length > 0) {
-                        checkAndAdvanceManeuver(lat, lng);
+                        checkAndAdvanceManeuver(renderLat, renderLng);
                     }
 
-                    // 3) PROGRESO DE RUTA con tail (evita hueco alrededor del marcador)
+                    // ─── 4) PROGRESO DE RUTA ───
                     if (map && mapInitialized && map.getLayer('route-line')
                         && window.currentRouteCoords && window.currentRouteCoords.length > 1) {
-                        const progress = calculateRouteProgress(lat, lng);
+                        const progress = calculateRouteProgress(renderLat, renderLng);
                         const pRaw = Math.max(0, Math.min(0.999, progress));
                         const totalMeters = window.currentRouteDistance || 1000;
                         const tailFraction = Math.min(0.15, ROUTE_TAIL_METERS / totalMeters);
@@ -1799,9 +1908,9 @@
                         }
                     }
 
-                    // 4) MOVIMIENTO DEL MAPA
+                    // ─── 5) MOVIMIENTO DEL MAPA (usa posición snapeada) ───
                     if (map && mapInitialized) {
-                        updateDriverMarker(lat, lng, bearing);
+                        updateDriverMarker(renderLat, renderLng, bearing);
 
                         if (!userInteracting) {
                             let zoom, pitch;
@@ -1817,7 +1926,7 @@
                             const paddingTop = enNavegacion ? Math.round(screenH * NAV_PADDING_FRACTION) : 0;
 
                             const opts = {
-                                center: [lng, lat],
+                                center: [renderLng, renderLat],
                                 zoom: zoom,
                                 pitch: pitch,
                                 padding: { top: paddingTop, bottom: 0, left: 0, right: 0 },
@@ -1826,8 +1935,13 @@
                                 easing: (t) => t
                             };
 
-                            if (enNavegacion && smoothedBearing !== null && speedKmh > 3) {
-                                opts.bearing = smoothedBearing;
+                            // El mapa rota con el heading (brújula o GPS)
+                            if (enNavegacion && smoothedBearing !== null) {
+                                if (compassAvailable || speedKmh > 3) {
+                                    opts.bearing = smoothedBearing;
+                                } else {
+                                    opts.bearing = smoothedBearing || 0;
+                                }
                             } else if (!enNavegacion) {
                                 opts.bearing = 0;
                             } else {
@@ -1853,13 +1967,13 @@
                         }
                     }
 
-                    // 5) UPDATE PERIÓDICO SUPABASE
+                    // ─── 6) UPDATE PERIÓDICO A SUPABASE (GPS real, no snapeado) ───
                     if (now - lastUpdateTime > UPDATE_INTERVAL) {
                         lastUpdateTime = now;
-                        updateDriverStatus(true, lat, lng);
+                        updateDriverStatus(true, gpsLat, gpsLng);
                     }
 
-                    // 6) PARADA >5s → enderezar mapa (manteniendo padding)
+                    // ─── 7) PARADA >5s → enderezar mapa ───
                     if (speedKmh > 5) {
                         isCurrentlyMoving = true;
                         lastMovingTime = now;
@@ -1869,7 +1983,7 @@
                             dlog('🧭 Conductor parado >5s — enderezando mapa', 'info');
                             const screenH = map.getContainer().offsetHeight || window.innerHeight;
                             map.easeTo({
-                                center: [lng, lat],
+                                center: [renderLng, renderLat],
                                 zoom: 17,
                                 pitch: 0,
                                 bearing: 0,
@@ -2041,7 +2155,6 @@
             if (watchId !== null) navigator.geolocation.clearWatch(watchId);
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
             if (currentDriverId) {
-                // ✅ Fix: usar fetch con keepalive (sendBeacon no soporta auth headers)
                 try {
                     fetch(`${supabaseUrl}/rest/v1/driver_status?driver_id=eq.${currentDriverId}`, {
                         method: 'PATCH',
@@ -2065,7 +2178,6 @@
                 if (isDriverOnline && !watchId) startTracking();
                 if (!animationFrameId) animationFrameId = requestAnimationFrame(animateMarker);
                 updateGreeting();
-                // ✅ Reanudar audio si el navegador lo suspendió
                 try {
                     if (notificationAudioCtx && notificationAudioCtx.state === 'suspended') notificationAudioCtx.resume();
                 } catch (e) {}
