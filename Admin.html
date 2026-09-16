@@ -182,18 +182,6 @@
     .stat-chip.rides i { color: var(--primary); }
     .stat-chip.pending i { color: var(--yellow); }
     .stat-chip.applications i { color: var(--purple); }
-    /* NUEVO: chip de viajes sin ver */
-    .stat-chip.unviewed i { color: var(--red); }
-    .stat-chip.unviewed {
-      background: rgba(239, 68, 68, 0.08);
-      border-color: rgba(239, 68, 68, 0.25);
-      animation: unviewedPulse 2s infinite;
-    }
-    .stat-chip.unviewed.hidden { display: none; }
-    @keyframes unviewedPulse {
-      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-      50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
-    }
     .stat-value { font-size: 1rem; font-weight: 800; min-width: 18px; text-align: center; }
     .stat-label { color: var(--text-muted); font-weight: 500; font-size: 0.7rem; }
 
@@ -384,72 +372,12 @@
 
     .ride-card.urgent { border-color: var(--red); box-shadow: 0 0 0 1px var(--red), var(--shadow-md); }
     .ride-card.rejected { border-color: var(--red); border-style: dashed; }
-    /* NUEVO: card sin vistas */
-    .ride-card.unviewed {
-      border-color: var(--red);
-      box-shadow: 0 0 0 1px var(--red), var(--shadow-md);
-      background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), var(--bg-card));
-    }
 
     .rejected-badge {
       display: inline-flex; align-items: center; gap: 5px;
       font-size: 0.65rem; font-weight: 700; padding: 3px 8px;
       border-radius: 8px; background: rgba(239, 68, 68, 0.15);
       color: var(--red); margin-top: 8px; text-transform: uppercase; letter-spacing: 0.5px;
-    }
-
-    /* ========== NUEVO: VISORES DEL VIAJE ========== */
-    .ride-viewers {
-      display: flex; align-items: center; gap: 8px;
-      margin-top: 10px; padding: 8px 10px;
-      background: rgba(59, 130, 246, 0.08);
-      border: 1px solid rgba(59, 130, 246, 0.15);
-      border-radius: 10px;
-      font-size: 0.7rem; flex-wrap: wrap;
-    }
-    .ride-viewers > i {
-      color: var(--blue); font-size: 0.8rem;
-    }
-    .ride-viewers-count {
-      font-weight: 700; color: var(--blue);
-    }
-    .ride-viewers-list {
-      display: flex; gap: 4px; flex-wrap: wrap; margin-left: auto;
-    }
-    .viewer-chip {
-      background: rgba(59, 130, 246, 0.15);
-      color: var(--blue);
-      padding: 2px 8px;
-      border-radius: 8px;
-      font-size: 0.62rem;
-      font-weight: 600;
-      white-space: nowrap;
-    }
-    .ride-viewers-empty {
-      display: flex; align-items: center; gap: 8px;
-      margin-top: 10px; padding: 8px 10px;
-      background: rgba(239, 68, 68, 0.08);
-      border: 1px solid rgba(239, 68, 68, 0.2);
-      border-radius: 10px;
-      font-size: 0.72rem;
-      color: var(--red);
-      font-weight: 700;
-      animation: unviewedPulse 2s infinite;
-    }
-    .ride-viewers-empty i { font-size: 0.85rem; }
-
-    /* NUEVO: Badge de origen de asignación en modal */
-    .assignment-origin {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 10px; border-radius: 10px;
-      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .assignment-origin.pool_auto {
-      background: rgba(59, 130, 246, 0.15); color: var(--blue);
-    }
-    .assignment-origin.admin_manual {
-      background: rgba(139, 92, 246, 0.15); color: var(--purple);
     }
 
     /* ========== ALERTA DE RECHAZO ========== */
@@ -959,14 +887,6 @@
         <span class="stat-value" id="stat-pending">0</span>
         <span class="stat-label">Pendientes</span>
       </div>
-
-      <!-- NUEVO: Chip de viajes sin ver -->
-      <div class="stat-chip unviewed hidden" id="stat-unviewed-chip" title="Viajes pendientes que ningún conductor ha visto aún">
-        <i class="fas fa-eye-slash"></i>
-        <span class="stat-value" id="stat-unviewed">0</span>
-        <span class="stat-label">Sin ver</span>
-      </div>
-
       <div class="stat-chip applications">
         <i class="fas fa-user-plus"></i>
         <span class="stat-value" id="stat-applications">0</span>
@@ -1370,8 +1290,6 @@
     const PENDING_WARNING_SECONDS = 120;
     const PENDING_URGENT_SECONDS = 300;
     const DRIVER_RESPONSE_TIMEOUT = 90;
-    // NUEVO: Tiempo desde que un viaje se crea sin que nadie lo vea
-    const UNVIEWED_ALERT_SECONDS = 30;
 
     function formatElapsedTime(timestamp) {
       if (!timestamp) return '0s';
@@ -1439,36 +1357,6 @@
         warned: false
       });
       console.log('⏱️ [TRACK] Monitoreando asignación:', rideId.substring(0, 8));
-    }
-
-    // ========== NUEVO: HELPERS DE VISORES ==========
-    function getRideViewers(ride) {
-      if (!ride || !ride.viewed_by_drivers) return [];
-      if (Array.isArray(ride.viewed_by_drivers)) return ride.viewed_by_drivers;
-      return [];
-    }
-
-    function getViewersCount(ride) {
-      return getRideViewers(ride).length;
-    }
-
-    function isRideUnviewed(ride) {
-      if (!ride || ride.status !== 'pendiente') return false;
-      const count = getViewersCount(ride);
-      if (count > 0) return false;
-      const elapsed = (Date.now() - new Date(ride.created_at).getTime()) / 1000;
-      return elapsed >= UNVIEWED_ALERT_SECONDS;
-    }
-
-    function countUnviewedRides() {
-      return rides.filter(r => isRideUnviewed(r)).length;
-    }
-
-    function formatViewerChip(viewer) {
-      if (!viewer) return '';
-      const name = (viewer.driver_name || 'Conductor').split(' ')[0];
-      const dist = viewer.distance_km ? ` · ${viewer.distance_km}km` : '';
-      return `<span class="viewer-chip" title="${viewer.driver_name || ''}${viewer.vehicle_model ? ' · ' + viewer.vehicle_model : ''}${viewer.viewed_at ? ' · ' + formatTime(viewer.viewed_at) : ''}">${name}${dist}</span>`;
     }
 
     // ========== MOVIMIENTO FLUIDO ==========
@@ -1722,19 +1610,6 @@
       document.getElementById('nav-badge-rides').textContent = activeRides + pendingRides;
       document.getElementById('nav-badge-applications').textContent = pendingApplications;
       document.getElementById('dash-badge-rides').textContent = activeRides + pendingRides;
-
-      // NUEVO: Chip de "viajes sin ver"
-      const unviewed = countUnviewedRides();
-      const chip = document.getElementById('stat-unviewed-chip');
-      const val = document.getElementById('stat-unviewed');
-      if (chip && val) {
-        if (unviewed > 0) {
-          chip.classList.remove('hidden');
-          val.textContent = unviewed;
-        } else {
-          chip.classList.add('hidden');
-        }
-      }
     }
 
     // ========== MAPA ==========
@@ -1984,43 +1859,7 @@
         const isPending = ride.status === 'pendiente';
         const wasRejected = recentRejections.some(r => r.rideId === ride.id && ride.status === 'pendiente');
         const timerClass = isPending ? getPendingTimerClass(ride.created_at) : '';
-        const unviewed = isRideUnviewed(ride);
-        const viewers = getRideViewers(ride);
-        const viewersCount = viewers.length;
-
-        // Clases CSS de la card
-        let cardClass = '';
-        if (isPending) {
-          if (unviewed) cardClass = 'unviewed';
-          else if (timerClass === 'urgent') cardClass = 'urgent';
-          else if (wasRejected) cardClass = 'rejected';
-        }
-
-        // Chips de visores (máx 3 visibles + contador si hay más)
-        let viewersHtml = '';
-        if (isPending) {
-          if (viewersCount > 0) {
-            const visibleViewers = viewers.slice(0, 3);
-            const extraCount = viewersCount > 3 ? viewersCount - 3 : 0;
-            viewersHtml = `
-              <div class="ride-viewers">
-                <i class="fas fa-eye"></i>
-                <span class="ride-viewers-count">${viewersCount} ${viewersCount === 1 ? 'vio' : 'vieron'}</span>
-                <div class="ride-viewers-list">
-                  ${visibleViewers.map(v => formatViewerChip(v)).join('')}
-                  ${extraCount > 0 ? `<span class="viewer-chip">+${extraCount}</span>` : ''}
-                </div>
-              </div>
-            `;
-          } else if (unviewed) {
-            viewersHtml = `
-              <div class="ride-viewers-empty">
-                <i class="fas fa-eye-slash"></i>
-                <span>Nadie lo ha visto aún · revisa conductores online</span>
-              </div>
-            `;
-          }
-        }
+        const cardClass = isPending ? (timerClass === 'urgent' ? 'urgent' : (wasRejected ? 'rejected' : '')) : '';
 
         return `
           <div class="ride-card status-${ride.status} ${cardClass}" onclick="showRideDetail('${ride.id}')">
@@ -2041,7 +1880,6 @@
                 <span>${ride.destination_address || 'Destino'}</span>
               </div>
             </div>
-            ${viewersHtml}
             <div class="ride-card-footer">
               <span class="ride-card-price">${formatMoney(ride.price)}</span>
               <span class="ride-card-time">${formatTime(ride.created_at)}</span>
@@ -2191,17 +2029,9 @@
           <tbody>
             ${filtered.map(ride => {
               const driver = getDriverById(ride.driver_id);
-              const viewersCount = getViewersCount(ride);
-              const isPending = ride.status === 'pendiente';
-              const unviewed = isRideUnviewed(ride);
-
               return `
                 <tr>
-                  <td style="font-family: monospace; font-size: 0.75rem;">
-                    #${ride.id.substring(0, 8)}
-                    ${isPending && unviewed ? '<br><span class="badge red" style="font-size: 0.55rem; margin-top: 4px;">👁 sin ver</span>' : ''}
-                    ${isPending && viewersCount > 0 ? `<br><span class="badge blue" style="font-size: 0.55rem; margin-top: 4px;">👁 ${viewersCount}</span>` : ''}
-                  </td>
+                  <td style="font-family: monospace; font-size: 0.75rem;">#${ride.id.substring(0, 8)}</td>
                   <td>${getPassengerName(ride.passenger_id)}</td>
                   <td>
                     <div style="font-size: 0.75rem; max-width: 200px;">
@@ -2249,43 +2079,6 @@
         en_curso: 'En curso', completado: 'Completado', cancelado: 'Cancelado', rechazado: 'Rechazado'
       };
 
-      // NUEVO: origen de asignación
-      const assignmentType = ride.assignment_type || 'pool_auto';
-      const assignmentLabel = assignmentType === 'admin_manual' ? 'Asignación manual (admin)' : 'Pool abierto (conductor)';
-      const assignmentIcon = assignmentType === 'admin_manual' ? 'fa-user-shield' : 'fa-users';
-
-      // NUEVO: lista completa de visores
-      const viewers = getRideViewers(ride);
-      const viewersHtml = viewers.length > 0 ? `
-        <div style="margin-top: 20px; padding: 16px; background: var(--bg-hover); border-radius: var(--radius-md);">
-          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-weight: 700; font-size: 0.85rem;">
-            <i class="fas fa-eye" style="color: var(--blue);"></i>
-            Conductores que vieron esta solicitud (${viewers.length})
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 8px;">
-            ${viewers.map(v => `
-              <div style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; background: var(--bg-card-solid); border-radius: 8px; font-size: 0.8rem;">
-                ${v.driver_photo ? `<img src="${v.driver_photo}" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" onerror="this.style.display='none'">` : `<div class="avatar blue" style="width: 32px; height: 32px; font-size: 0.75rem;">${(v.driver_name || 'C').charAt(0).toUpperCase()}</div>`}
-                <div style="flex: 1;">
-                  <div style="font-weight: 600;">${v.driver_name || 'Conductor'}</div>
-                  <div style="font-size: 0.7rem; color: var(--text-muted);">
-                    ${v.vehicle_model ? v.vehicle_model + ' · ' : ''}
-                    ${v.distance_km ? '📍 ' + v.distance_km + ' km · ' : ''}
-                    👁 ${formatTime(v.viewed_at)}
-                  </div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      ` : (ride.status === 'pendiente' ? `
-        <div style="margin-top: 20px; padding: 16px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: var(--radius-md); text-align: center;">
-          <i class="fas fa-eye-slash" style="color: var(--red); font-size: 1.5rem; margin-bottom: 8px; display: block;"></i>
-          <div style="font-weight: 700; color: var(--red); font-size: 0.85rem;">Ningún conductor ha visto esta solicitud</div>
-          <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Verifica que haya conductores en línea</div>
-        </div>
-      ` : '');
-
       openModal('Detalle del Viaje', 'fa-route', `
         <div class="info-grid">
           <div class="info-item">
@@ -2295,14 +2088,6 @@
           <div class="info-item">
             <span class="info-label">Estado</span>
             <span class="info-value">${statusLabels[ride.status] || ride.status}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">Origen de asignación</span>
-            <span class="info-value">
-              <span class="assignment-origin ${assignmentType}">
-                <i class="fas ${assignmentIcon}"></i> ${assignmentLabel}
-              </span>
-            </span>
           </div>
           <div class="info-item">
             <span class="info-label">Pasajero</span>
@@ -2341,9 +2126,6 @@
             <span class="info-value">${formatDate(ride.created_at)}</span>
           </div>
         </div>
-
-        ${viewersHtml}
-
         <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
           ${ride.status === 'pendiente' ? `
             <button class="btn btn-success" onclick="closeModal(); openAssignDriverModal('${ride.id}')">
@@ -2499,4 +2281,1134 @@
       openModal('Perfil del Conductor', 'fa-motorcycle', `
         <div class="driver-profile-header">
           ${driver.avatar_url
-            ? `<img src="${driver.avatar_url}" class="avatar-img large" alt="${driver.full_name}" onerror="this.outerHTML='<div class=\\'driver-profile-
+            ? `<img src="${driver.avatar_url}" class="avatar-img large" alt="${driver.full_name}" onerror="this.outerHTML='<div class=\\'driver-profile-avatar\\'>${(driver.full_name || 'C').charAt(0).toUpperCase()}</div>'">`
+            : `<div class="driver-profile-avatar">${(driver.full_name || 'C').charAt(0).toUpperCase()}</div>`
+          }
+          <div class="driver-profile-info">
+            <div class="driver-profile-name">${driver.full_name || 'Conductor'}</div>
+            <div class="driver-profile-meta">
+              <span><i class="fas fa-phone"></i> ${driver.phone || '-'}</span>
+              <span><i class="fas fa-motorcycle"></i> ${driver.vehicle_plate || 'Sin placa'}</span>
+              <span class="badge ${loc && loc.is_online ? 'green' : 'gray'}">
+                ${loc && loc.is_online ? 'En línea' : 'Desconectado'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Cédula de Identidad</span>
+            <span class="info-value">${driver.identity_card || 'No registrado'}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Vehículo</span>
+            <span class="info-value">${driver.vehicle_model || 'Moto'} · ${driver.vehicle_plate || 'Sin placa'}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Dirección</span>
+            <span class="info-value">${driver.home_address || 'No registrada'}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Billetera</span>
+            <span class="info-value" style="color: var(--primary);">${formatMoney(wallet?.balance)}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Viajes completados</span>
+            <span class="info-value">${completedRides}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Registrado</span>
+            <span class="info-value">${formatDate(driver.created_at)}</span>
+          </div>
+          ${loc && loc.battery ? `
+          <div class="info-item">
+            <span class="info-label">Batería</span>
+            <span class="info-value">🔋 ${loc.battery}%</span>
+          </div>
+          ` : ''}
+          ${driver.notes ? `
+          <div class="info-item">
+            <span class="info-label">Notas</span>
+            <span class="info-value">${driver.notes}</span>
+          </div>
+          ` : ''}
+        </div>
+
+        <div style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap;">
+          ${loc && loc.lat && loc.lng ? `
+            <button class="btn btn-primary" onclick="focusOnDriver('${driver.id}'); closeModal();">
+              <i class="fas fa-crosshairs"></i> Ver en mapa
+            </button>
+          ` : ''}
+          ${driver.phone ? `
+            <button class="btn btn-success" onclick="window.location.href='tel:${driver.phone}'">
+              <i class="fas fa-phone"></i> Llamar
+            </button>
+          ` : ''}
+        </div>
+      `);
+    };
+
+    // ========== PASAJEROS ==========
+    function renderPassengersTable() {
+      const container = document.getElementById('passengers-table-container');
+      const searchTerm = document.getElementById('passengers-search').value.toLowerCase();
+
+      const filtered = passengers.filter(p => {
+        return !searchTerm ||
+          (p.full_name || '').toLowerCase().includes(searchTerm) ||
+          (p.phone || '').includes(searchTerm) ||
+          (p.ci || '').includes(searchTerm);
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-users"></i><p>No hay pasajeros</p></div>';
+        return;
+      }
+
+      container.innerHTML = `
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Pasajero</th>
+              <th>Teléfono</th>
+              <th>CI</th>
+              <th>Viajes</th>
+              <th>Registro</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filtered.map(p => {
+              const userRides = rides.filter(r => r.passenger_id === p.id).length;
+              return `
+                <tr>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                      <div class="avatar blue">${(p.full_name || 'P').charAt(0).toUpperCase()}</div>
+                      <span style="font-weight: 600;">${p.full_name || 'Pasajero'}</span>
+                    </div>
+                  </td>
+                  <td>${p.phone || '-'}</td>
+                  <td>${p.ci || '-'}</td>
+                  <td>
+                    <span class="badge orange">${userRides} viajes</span>
+                  </td>
+                  <td style="font-size: 0.75rem; color: var(--text-muted);">${formatDate(p.created_at)}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    // ========== SOLICITUDES ==========
+    function renderApplications() {
+      const container = document.getElementById('applications-container');
+      const pendingApps = applications.filter(a => a.status === 'pendiente');
+      const reviewedApps = applications.filter(a => a.status !== 'pendiente');
+
+      if (applications.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-user-plus"></i><p>No hay solicitudes</p></div>';
+        return;
+      }
+
+      let html = '';
+
+      if (pendingApps.length > 0) {
+        html += `
+          <div class="view-title" style="font-size: 1rem; margin-bottom: 16px;">
+            <i class="fas fa-clock" style="color: var(--yellow);"></i> Pendientes de revisión
+          </div>
+          ${pendingApps.map(app => `
+            <div class="card" style="margin-bottom: 16px; border-left: 4px solid var(--yellow);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+                <div>
+                  <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 8px;">
+                    <i class="fas fa-user" style="color: var(--yellow);"></i> ${app.full_name}
+                  </div>
+                  <div style="display: flex; gap: 16px; color: var(--text-muted); font-size: 0.85rem; flex-wrap: wrap;">
+                    <span><i class="fas fa-phone"></i> ${app.phone}</span>
+                    <span><i class="fas fa-calendar"></i> ${formatDate(app.created_at)}</span>
+                  </div>
+                  ${app.notes ? `<div style="margin-top: 8px; font-size: 0.85rem; color: var(--text-secondary);">📝 ${app.notes}</div>` : ''}
+                </div>
+                <div style="display: flex; gap: 12px;">
+                  <button class="btn btn-success" onclick="approveApplication('${app.id}')">
+                    <i class="fas fa-check"></i> Aprobar
+                  </button>
+                  <button class="btn btn-danger" onclick="rejectApplication('${app.id}')">
+                    <i class="fas fa-times"></i> Rechazar
+                  </button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        `;
+      }
+
+      if (reviewedApps.length > 0) {
+        html += `
+          <div class="view-title" style="font-size: 1rem; margin: 24px 0 16px;">
+            <i class="fas fa-history"></i> Historial
+          </div>
+          ${reviewedApps.map(app => `
+            <div class="card" style="margin-bottom: 12px; opacity: 0.7;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <span style="font-weight: 600;">${app.full_name}</span>
+                  <span style="color: var(--text-muted); font-size: 0.85rem;"> · ${app.phone}</span>
+                </div>
+                <span class="badge ${app.status === 'aprobado' ? 'green' : 'red'}">${app.status}</span>
+              </div>
+            </div>
+          `).join('')}
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    window.approveApplication = async function(appId) {
+      if (!confirm('¿Aprobar esta solicitud de conductor?')) return;
+
+      try {
+        const app = applications.find(a => a.id === appId);
+        const { error } = await supabaseClient
+          .from('driver_applications')
+          .update({ status: 'aprobado', reviewed_at: new Date().toISOString() })
+          .eq('id', appId);
+
+        if (error) throw error;
+
+        addActivity('driver', 'fa-user-check', `Solicitud de ${app.full_name} aprobada`);
+        showToast('Solicitud aprobada', `${app.full_name} ha sido aprobado`, 'success');
+        await loadAllData();
+
+      } catch (error) {
+        console.error('❌ Error aprobando:', error);
+        showToast('Error', error.message, 'error');
+      }
+    };
+
+    window.rejectApplication = async function(appId) {
+      if (!confirm('¿Rechazar esta solicitud?')) return;
+
+      try {
+        const app = applications.find(a => a.id === appId);
+        const { error } = await supabaseClient
+          .from('driver_applications')
+          .update({ status: 'rechazado', reviewed_at: new Date().toISOString() })
+          .eq('id', appId);
+
+        if (error) throw error;
+
+        addActivity('driver', 'fa-user-times', `Solicitud de ${app.full_name} rechazada`);
+        showToast('Solicitud rechazada', `${app.full_name} fue rechazado`, 'warning');
+        await loadAllData();
+
+      } catch (error) {
+        console.error('❌ Error rechazando:', error);
+        showToast('Error', error.message, 'error');
+      }
+    };
+
+    // ========== BILLETERAS ==========
+    function renderWallets() {
+      const container = document.getElementById('wallets-container');
+
+      const totalBalance = wallets.reduce((s, w) => s + (w.balance || 0), 0);
+      const recharges = walletTransactions.filter(t => t.type === 'recarga').reduce((s, t) => s + (t.amount || 0), 0);
+      const withdrawals = walletTransactions.filter(t => t.type === 'retiro').reduce((s, t) => s + (t.amount || 0), 0);
+
+      document.getElementById('wallets-stat-total').textContent = formatMoney(totalBalance);
+      document.getElementById('wallets-stat-recharges').textContent = formatMoney(recharges);
+      document.getElementById('wallets-stat-withdrawals').textContent = formatMoney(withdrawals);
+
+      let html = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 32px;">
+      `;
+
+      drivers.forEach(driver => {
+        const wallet = wallets.find(w => w.driver_id === driver.id);
+        html += `
+          <div class="wallet-card">
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
+              ${getDriverAvatar(driver)}
+              <span style="font-weight: 600;">${driver.full_name || 'Conductor'}</span>
+            </div>
+            <div class="wallet-balance">${formatMoney(wallet?.balance)}</div>
+            <div style="display: flex; gap: 12px; margin-top: 16px; position: relative; z-index: 1;">
+              <button class="btn btn-ghost" style="background: rgba(255,255,255,0.2); color: white;" onclick="openTransactionModal('${driver.id}', 'recarga')">
+                <i class="fas fa-arrow-down"></i> Recargar
+              </button>
+              <button class="btn btn-ghost" style="background: rgba(255,255,255,0.2); color: white;" onclick="openTransactionModal('${driver.id}', 'retiro')">
+                <i class="fas fa-arrow-up"></i> Retiro
+              </button>
+            </div>
+          </div>
+        `;
+      });
+
+      html += `</div>`;
+
+      if (walletTransactions.length > 0) {
+        html += `
+          <div class="view-title" style="font-size: 1rem; margin-bottom: 16px;">
+            <i class="fas fa-exchange-alt"></i> Transacciones recientes
+          </div>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Conductor</th>
+                <th>Tipo</th>
+                <th>Monto</th>
+                <th>Descripción</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${walletTransactions.slice(0, 20).map(tx => {
+                const isPositive = ['recarga'].includes(tx.type);
+                const typeLabels = { recarga: 'Recarga', pago: 'Pago', ajuste: 'Ajuste', retiro: 'Retiro' };
+                const typeClasses = { recarga: 'green', pago: 'blue', ajuste: 'purple', retiro: 'red' };
+
+                return `
+                  <tr>
+                    <td>${getDriverName(tx.driver_id)}</td>
+                    <td><span class="badge ${typeClasses[tx.type] || 'gray'}">${typeLabels[tx.type] || tx.type}</span></td>
+                    <td class="tx-amount ${isPositive ? 'positive' : 'negative'}">
+                      ${isPositive ? '+' : '-'}${formatMoney(tx.amount)}
+                    </td>
+                    <td style="color: var(--text-muted); font-size: 0.8rem;">${tx.description || '-'}</td>
+                    <td style="font-size: 0.75rem; color: var(--text-muted);">${formatDate(tx.created_at)}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    window.openTransactionModal = function(driverId, type) {
+      const driver = getDriverById(driverId);
+      const typeLabel = type === 'recarga' ? 'Recarga' : 'Retiro';
+
+      openModal(`${typeLabel} - ${driver.full_name}`, 'fa-wallet', `
+        <div class="form-group">
+          <label class="form-label">Monto (Bs)</label>
+          <input type="number" class="form-input" id="tx-amount" placeholder="0.00" step="0.01" min="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Descripción</label>
+          <input type="text" class="form-input" id="tx-description" placeholder="Motivo de la ${typeLabel.toLowerCase()}">
+        </div>
+        <button class="btn btn-primary" style="width: 100%;" onclick="processTransaction('${driverId}', '${type}')">
+          <i class="fas fa-check"></i> Confirmar ${typeLabel}
+        </button>
+      `);
+    };
+
+    window.processTransaction = async function(driverId, type) {
+      const amount = parseFloat(document.getElementById('tx-amount').value);
+      const description = document.getElementById('tx-description').value.trim();
+
+      if (!amount || amount <= 0) {
+        showToast('Error', 'Ingresa un monto válido', 'error');
+        return;
+      }
+
+      try {
+        const wallet = wallets.find(w => w.driver_id === driverId);
+        const currentBalance = wallet?.balance || 0;
+        const newBalance = type === 'recarga' ? currentBalance + amount : currentBalance - amount;
+
+        const { error: txError } = await supabaseClient
+          .from('wallet_transactions')
+          .insert({
+            driver_id: driverId,
+            amount: amount,
+            type: type,
+            description: description || (type === 'recarga' ? 'Recarga de saldo' : 'Retiro de saldo')
+          });
+
+        if (txError) throw txError;
+
+        if (wallet) {
+          const { error: walletError } = await supabaseClient
+            .from('wallets')
+            .update({ balance: newBalance, updated_at: new Date().toISOString() })
+            .eq('driver_id', driverId);
+
+          if (walletError) throw walletError;
+        } else {
+          const { error: createError } = await supabaseClient
+            .from('wallets')
+            .insert({ driver_id: driverId, balance: newBalance });
+
+          if (createError) throw createError;
+        }
+
+        closeModal();
+        const driver = getDriverById(driverId);
+        addActivity('ride', 'fa-wallet', `${type === 'recarga' ? 'Recarga' : 'Retiro'} de ${formatMoney(amount)} para ${driver.full_name}`);
+        showToast('Transacción exitosa', `${type === 'recarga' ? 'Recarga' : 'Retiro'} de ${formatMoney(amount)}`, 'success');
+        await loadAllData();
+
+      } catch (error) {
+        console.error('❌ Error en transacción:', error);
+        showToast('Error', error.message, 'error');
+      }
+    };
+
+    // ========== MENSAJES ==========
+    function renderMessages() {
+      const select = document.getElementById('message-driver-select');
+      select.innerHTML = '<option value="">Todos los conductores</option>';
+      drivers.forEach(d => {
+        select.innerHTML += `<option value="${d.id}">${d.full_name}</option>`;
+      });
+
+      const container = document.getElementById('messages-container');
+
+      if (centralMessages.length === 0) {
+        container.innerHTML = '<div class="empty-state"><i class="fas fa-paper-plane"></i><p>No hay mensajes enviados</p></div>';
+        return;
+      }
+
+      container.innerHTML = centralMessages.map(msg => `
+        <div class="card" style="margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px;">
+            <div style="flex: 1;">
+              <div style="font-size: 0.9rem; margin-bottom: 8px;">${msg.message}</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">
+                <i class="fas fa-user"></i> ${msg.driver_id ? getDriverName(msg.driver_id) : 'Todos los conductores'}
+                · ${formatDate(msg.created_at)}
+                ${msg.is_read ? ' · <span style="color: var(--green);">✓ Leído</span>' : ''}
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('send-message-btn').addEventListener('click', async function() {
+      const driverId = document.getElementById('message-driver-select').value;
+      const message = document.getElementById('message-text').value.trim();
+
+      if (!message) {
+        showToast('Error', 'Escribe un mensaje', 'error');
+        return;
+      }
+
+      this.disabled = true;
+      this.innerHTML = '<div class="btn-spinner"></div> Enviando...';
+
+      try {
+        const { error } = await supabaseClient
+          .from('central_messages')
+          .insert({ driver_id: driverId || null, message: message, is_read: false, created_by: currentAdmin?.id || null });
+
+        if (error) throw error;
+
+        document.getElementById('message-text').value = '';
+        addActivity('info', 'fa-paper-plane', 'Mensaje enviado desde la central');
+        showToast('Mensaje enviado', driverId ? 'Enviado al conductor' : 'Enviado a todos', 'success');
+        await loadAllData();
+
+      } catch (error) {
+        console.error('❌ Error enviando mensaje:', error);
+        showToast('Error', error.message, 'error');
+      } finally {
+        this.disabled = false;
+        this.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar mensaje';
+      }
+    });
+
+    // ========== ASIGNAR CONDUCTOR ==========
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return R * c;
+    }
+
+    function getAvailableDrivers() {
+      return drivers.filter(driver => {
+        const loc = getDriverLocation(driver.id);
+        if (!loc || !loc.is_online) return false;
+
+        const activeRide = rides.find(r =>
+          r.driver_id === driver.id &&
+          ['aceptado', 'llegado_origen', 'en_curso'].includes(r.status)
+        );
+
+        return !activeRide;
+      });
+    }
+
+    window.openAssignDriverModal = function(rideId) {
+      const ride = rides.find(r => r.id === rideId);
+      if (!ride) return;
+
+      const availableDrivers = getAvailableDrivers();
+      const originLat = ride.origin_lat || ride.pickup_lat;
+      const originLng = ride.origin_lng || ride.pickup_lng;
+
+      if (originLat && originLng) {
+        availableDrivers.sort((a, b) => {
+          const locA = getDriverLocation(a.id);
+          const locB = getDriverLocation(b.id);
+          const distA = locA ? calculateDistance(originLat, originLng, locA.lat, locA.lng) : Infinity;
+          const distB = locB ? calculateDistance(originLat, originLng, locB.lat, locB.lng) : Infinity;
+          return distA - distB;
+        });
+      }
+
+      let driversHtml;
+      if (availableDrivers.length === 0) {
+        driversHtml = `
+          <div class="empty-state">
+            <i class="fas fa-motorcycle"></i>
+            <p>No hay conductores disponibles</p>
+            <p style="font-size: 0.8rem; margin-top: 8px;">Espera a que alguno se conecte o termine su viaje actual</p>
+          </div>
+        `;
+      } else {
+        driversHtml = availableDrivers.map(driver => {
+          const loc = getDriverLocation(driver.id);
+          let distanceBadge = '';
+          if (loc && originLat && originLng) {
+            const dist = calculateDistance(originLat, originLng, loc.lat, loc.lng);
+            distanceBadge = `<span class="assign-driver-distance">📍 ${dist.toFixed(1)} km</span>`;
+          }
+
+          return `
+            <div class="assign-driver-card" onclick="assignDriverToRide('${rideId}', '${driver.id}')">
+              ${getDriverAvatar(driver)}
+              <div class="assign-driver-info">
+                <div class="assign-driver-name">${driver.full_name || 'Conductor'}</div>
+                <div class="assign-driver-meta">
+                  <span>${driver.vehicle_plate || 'Moto'}</span>
+                  ${loc && loc.battery ? `<span>🔋 ${loc.battery}%</span>` : ''}
+                  ${distanceBadge}
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm">
+                <i class="fas fa-check"></i> Asignar
+              </button>
+            </div>
+          `;
+        }).join('');
+      }
+
+      openModal('Asignar Conductor', 'fa-user-check', `
+        <div class="assign-summary">
+          <div class="assign-summary-label">Viaje pendiente · ${formatMoney(ride.price)}</div>
+          <div class="assign-summary-route">
+            📍 <strong>Origen:</strong> ${ride.origin_address || 'Sin dirección'}<br>
+            🏁 <strong>Destino:</strong> ${ride.destination_address || 'Sin dirección'}
+          </div>
+        </div>
+        <div class="view-title" style="font-size: 0.95rem; margin-bottom: 16px;">
+          <i class="fas fa-motorcycle"></i> Conductores disponibles (${availableDrivers.length})
+        </div>
+        ${driversHtml}
+      `);
+    };
+
+    window.assignDriverToRide = async function(rideId, driverId) {
+      const driver = getDriverById(driverId);
+      const ride = rides.find(r => r.id === rideId);
+      if (!driver || !ride) return;
+
+      if (!confirm(`¿Asignar a ${driver.full_name} este viaje?`)) return;
+
+      try {
+        const { error } = await supabaseClient
+          .from('rides')
+          .update({
+            driver_id: driverId,
+            status: 'aceptado',
+            accepted_at: new Date().toISOString()
+          })
+          .eq('id', rideId);
+
+        if (error) throw error;
+
+        closeModal();
+
+        trackAssignment(rideId, driverId, driver.full_name);
+
+        recentRejections = recentRejections.filter(r => r.rideId !== rideId);
+        updateRejectionCounter();
+        renderRejectionAlerts();
+
+        addActivity('ride', 'fa-user-check', `Viaje #${rideId.substring(0, 8)} asignado a ${driver.full_name}`);
+        showToast('✅ Conductor asignado', `${driver.full_name} fue notificado. Esperando respuesta...`, 'success');
+        await loadAllData();
+
+      } catch (error) {
+        console.error('❌ [ASSIGN] Error asignando conductor:', error);
+        showToast('Error', error.message, 'error');
+      }
+    };
+
+    // ========== MANEJO DE RECHAZOS ==========
+    function handleRideRejection(ride, driverName) {
+      console.log('🚨 [REJECT] Viaje rechazado:', ride.id.substring(0, 8));
+
+      recentRejections.unshift({
+        rideId: ride.id,
+        driverName: driverName,
+        timestamp: Date.now()
+      });
+      if (recentRejections.length > 20) recentRejections.pop();
+
+      assignmentTimers.delete(ride.id);
+
+      updateRejectionCounter();
+
+      showToast('🚨 Viaje rechazado', `${driverName} rechazó el viaje #${ride.id.substring(0,8)}. Reasigna pronto.`, 'error');
+      addActivity('ride', 'fa-user-times', `${driverName} rechazó el viaje #${ride.id.substring(0,8)} - necesita reasignación`);
+
+      renderRejectionAlerts();
+    }
+
+    function updateRejectionCounter() {
+      const counter = document.getElementById('rejection-counter');
+      const countEl = document.getElementById('rejection-count');
+      const recentCount = recentRejections.filter(r => Date.now() - r.timestamp < 10 * 60 * 1000).length;
+
+      if (recentCount > 0) {
+        counter.classList.remove('hidden');
+        countEl.textContent = recentCount;
+      } else {
+        counter.classList.add('hidden');
+      }
+    }
+
+    window.showRejectedRides = function() {
+      switchView('rides');
+      document.getElementById('rides-status-filter').value = 'pendiente';
+      renderRidesTable();
+    };
+
+    function renderRejectionAlerts() {
+      const container = document.getElementById('rejection-alerts-container');
+      if (!container) return;
+
+      const activeRejections = recentRejections.filter(r => {
+        const ride = rides.find(x => x.id === r.rideId);
+        return ride && ride.status === 'pendiente' && (Date.now() - r.timestamp < 5 * 60 * 1000);
+      });
+
+      if (activeRejections.length === 0) {
+        container.innerHTML = '';
+        return;
+      }
+
+      container.innerHTML = activeRejections.map(r => {
+        const ride = rides.find(x => x.id === r.rideId);
+        if (!ride) return '';
+        return `
+          <div class="rejection-alert">
+            <div class="rejection-alert-icon"><i class="fas fa-user-times"></i></div>
+            <div class="rejection-alert-content">
+              <div class="rejection-alert-title">${r.driverName} rechazó este viaje</div>
+              <div class="rejection-alert-text">📍 ${ride.origin_address || 'Origen'} → 🏁 ${ride.destination_address || 'Destino'} · ${formatMoney(ride.price)}</div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="openAssignDriverModal('${ride.id}')">
+              <i class="fas fa-redo"></i> Reasignar
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ========== SEGUIMIENTO DEL VIAJE ACTIVO ==========
+    function renderRideTracking() {
+      const container = document.getElementById('ride-tracking-container');
+      if (!container) return;
+
+      const activeRide = rides.find(r => ['aceptado', 'llegado_origen', 'en_curso'].includes(r.status));
+
+      if (!activeRide) {
+        container.innerHTML = '';
+        return;
+      }
+
+      const driver = getDriverById(activeRide.driver_id);
+      const driverLoc = activeRide.driver_id ? getDriverLocation(activeRide.driver_id) : null;
+
+      const statusOrder = ['aceptado', 'llegado_origen', 'en_curso', 'completado'];
+      const currentIdx = statusOrder.indexOf(activeRide.status);
+
+      const steps = [
+        { key: 'aceptado', label: 'Asignado', icon: 'fa-check' },
+        { key: 'llegado_origen', label: 'En origen', icon: 'fa-map-marker-alt' },
+        { key: 'en_curso', label: 'En viaje', icon: 'fa-motorcycle' },
+        { key: 'completado', label: 'Listo', icon: 'fa-flag-checkered' }
+      ];
+
+      const stepsHtml = steps.map((step, i) => {
+        let cls = '';
+        if (i < currentIdx) cls = 'completed';
+        else if (i === currentIdx) cls = 'current';
+        return `
+          <div class="tracking-step ${cls}">
+            <div class="tracking-step-dot"><i class="fas ${i < currentIdx ? 'fa-check' : step.icon}"></i></div>
+            <div class="tracking-step-label">${step.label}</div>
+          </div>
+        `;
+      }).join('');
+
+      const statusLabels = {
+        aceptado: '🛵 Yendo al origen',
+        llegado_origen: '📍 En el origen',
+        en_curso: '🏍️ En camino al destino'
+      };
+
+      container.innerHTML = `
+        <div class="tracking-panel">
+          <div class="tracking-header">
+            <div class="tracking-title">
+              <i class="fas fa-satellite-dish"></i>
+              Viaje en curso · ${statusLabels[activeRide.status] || activeRide.status}
+            </div>
+            <span class="pending-timer" data-created="${activeRide.accepted_at || activeRide.created_at}">
+              ${formatElapsedTime(activeRide.accepted_at || activeRide.created_at)}
+            </span>
+          </div>
+
+          ${driver ? `
+            <div class="tracking-driver-info">
+              ${getDriverAvatar(driver)}
+              <div style="flex: 1;">
+                <div style="font-weight: 700; font-size: 0.9rem;">${driver.full_name || 'Conductor'}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted);">
+                  ${driver.vehicle_plate || 'Moto'}
+                  ${driverLoc && driverLoc.battery ? ` · 🔋 ${driverLoc.battery}%` : ''}
+                  ${driverLoc && driverLoc.is_online ? ' · <span style="color: var(--green);">● En línea</span>' : ''}
+                </div>
+              </div>
+              <div class="tracking-actions" style="margin-top: 0;">
+                <button class="btn btn-ghost btn-icon" onclick="focusOnDriver('${driver.id}')" title="Ver en mapa">
+                  <i class="fas fa-crosshairs"></i>
+                </button>
+                <button class="btn btn-ghost btn-icon" onclick="openRideChatModal('${activeRide.id}')" title="Chat">
+                  <i class="fas fa-comment"></i>
+                </button>
+                ${driver.phone ? `
+                  <button class="btn btn-ghost btn-icon" onclick="window.location.href='tel:${driver.phone}'" title="Llamar">
+                    <i class="fas fa-phone"></i>
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="tracking-progress">
+            ${stepsHtml}
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">
+              📍 ${activeRide.origin_address || 'Origen'} → 🏁 ${activeRide.destination_address || 'Destino'}
+            </div>
+            <span style="font-weight: 800; color: var(--primary);">${formatMoney(activeRide.price)}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    // ========== CHAT RÁPIDO CON CONDUCTOR ==========
+    window.openRideChatModal = function(rideId) {
+      const ride = rides.find(r => r.id === rideId);
+      if (!ride || !ride.driver_id) {
+        showToast('Error', 'Este viaje no tiene conductor asignado', 'error');
+        return;
+      }
+
+      const driver = getDriverById(ride.driver_id);
+
+      openModal(`Chat con ${driver?.full_name || 'Conductor'}`, 'fa-comments', `
+        <div class="quick-chat-messages" id="quick-chat-messages">
+          <div style="text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 20px;">
+            <i class="fas fa-spinner fa-spin"></i> Cargando mensajes...
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <input type="text" class="form-input" id="quick-chat-input" placeholder="Escribe un mensaje al conductor..." style="flex: 1;" onkeypress="if(event.key==='Enter') sendQuickChatMessage('${ride.driver_id}')">
+          <button class="btn btn-primary" onclick="sendQuickChatMessage('${ride.driver_id}')">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      `);
+
+      loadQuickChatMessages(ride.driver_id);
+    };
+
+    async function loadQuickChatMessages(driverId) {
+      const container = document.getElementById('quick-chat-messages');
+      if (!container) return;
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('central_messages')
+          .select('*')
+          .or(`driver_id.eq.${driverId},driver_id.is.null`)
+          .order('created_at', { ascending: true })
+          .limit(50);
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          container.innerHTML = '<div style="text-align: center; color: var(--text-muted); font-size: 0.8rem; padding: 20px;">Sin mensajes aún</div>';
+          return;
+        }
+
+        container.innerHTML = data.map(msg => {
+          const isFromAdmin = msg.created_by && msg.created_by !== driverId;
+          return `
+            <div class="chat-msg ${isFromAdmin ? 'from-admin' : 'from-driver'}">
+              ${msg.message}
+              <span class="chat-msg-time">${formatTime(msg.created_at)}</span>
+            </div>
+          `;
+        }).join('');
+
+        container.scrollTop = container.scrollHeight;
+      } catch (error) {
+        console.error('❌ [CHAT] Error cargando mensajes:', error);
+        container.innerHTML = '<div style="color: var(--red); font-size: 0.8rem;">Error cargando mensajes</div>';
+      }
+    }
+
+    window.sendQuickChatMessage = async function(driverId) {
+      const input = document.getElementById('quick-chat-input');
+      const message = input.value.trim();
+      if (!message) return;
+
+      try {
+        const { error } = await supabaseClient
+          .from('central_messages')
+          .insert({
+            driver_id: driverId,
+            message: message,
+            is_read: false,
+            created_by: currentAdmin?.id || null
+          });
+
+        if (error) throw error;
+
+        input.value = '';
+        addActivity('info', 'fa-paper-plane', 'Mensaje enviado al conductor');
+        loadQuickChatMessages(driverId);
+      } catch (error) {
+        console.error('❌ [CHAT] Error enviando mensaje:', error);
+        showToast('Error', error.message, 'error');
+      }
+    };
+
+    // ========== REALTIME ==========
+    function setupRealtime() {
+      supabaseClient
+        .channel('admin-drivers')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'drivers' }, (payload) => {
+          if (payload.eventType === 'UPDATE') {
+            const idx = drivers.findIndex(d => d.id === payload.new.id);
+            if (idx >= 0) drivers[idx] = payload.new;
+            else drivers.push(payload.new);
+          } else if (payload.eventType === 'INSERT') {
+            drivers.push(payload.new);
+            addActivity('driver', 'fa-user-plus', `Nuevo conductor: ${payload.new.full_name}`);
+          }
+          renderAll();
+        })
+        .subscribe();
+
+      supabaseClient
+        .channel('admin-driver-status')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_status' }, (payload) => {
+          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+            const idx = driverStatus.findIndex(s => s.driver_id === payload.new.driver_id);
+            if (idx >= 0) driverStatus[idx] = payload.new;
+            else driverStatus.push(payload.new);
+          }
+          updateDriverMarkers();
+          renderDashDrivers();
+          updateStats();
+        })
+        .subscribe();
+
+      supabaseClient
+        .channel('admin-rides')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, (payload) => {
+          if (payload.eventType === 'INSERT') {
+            rides.unshift(payload.new);
+            addActivity('ride', 'fa-plus', `Nuevo viaje solicitado - ${formatMoney(payload.new.price)}`);
+            showToast('🔔 Nuevo viaje', payload.new.origin_address || 'Nueva solicitud pendiente', 'warning');
+          } else if (payload.eventType === 'UPDATE') {
+            const idx = rides.findIndex(r => r.id === payload.new.id);
+            if (idx >= 0) {
+              const oldRide = rides[idx];
+              const oldStatus = oldRide.status;
+              const oldDriverId = oldRide.driver_id;
+              rides[idx] = payload.new;
+              const newRide = payload.new;
+
+              if (oldStatus !== newRide.status) {
+                addActivity('ride', 'fa-exchange-alt', `Viaje #${newRide.id.substring(0,8)} cambió a: ${newRide.status.replace('_', ' ')}`);
+
+                if (oldStatus === 'aceptado' && newRide.status === 'pendiente' && (!newRide.driver_id || newRide.driver_id !== oldDriverId)) {
+                  const rejectedDriverName = getDriverName(oldDriverId);
+                  handleRideRejection(newRide, rejectedDriverName);
+                }
+                else if (newRide.status === 'aceptado') {
+                  showToast('✅ Viaje aceptado', getDriverName(newRide.driver_id), 'success');
+                } else if (newRide.status === 'llegado_origen') {
+                  showToast('📍 Conductor llegó al origen', getDriverName(newRide.driver_id), 'info');
+                } else if (newRide.status === 'en_curso') {
+                  showToast('🏍️ Viaje en curso', getDriverName(newRide.driver_id), 'info');
+                } else if (newRide.status === 'completado') {
+                  showToast('🎉 Viaje completado', formatMoney(newRide.price), 'success');
+                  assignmentTimers.delete(newRide.id);
+                } else if (newRide.status === 'no_completado') {
+                  showToast('⚠️ Viaje no completado', '', 'warning');
+                  assignmentTimers.delete(newRide.id);
+                } else if (newRide.status === 'cancelado') {
+                  showToast('❌ Viaje cancelado', '', 'warning');
+                  assignmentTimers.delete(newRide.id);
+                }
+              }
+            }
+          }
+          renderAll();
+        })
+        .subscribe();
+
+      supabaseClient
+        .channel('admin-applications')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'driver_applications' }, (payload) => {
+          applications.unshift(payload.new);
+          addActivity('driver', 'fa-user-plus', `Nueva solicitud: ${payload.new.full_name}`);
+          showToast('Nueva solicitud', `${payload.new.full_name} quiere ser conductor`, 'info');
+          renderApplications();
+          updateStats();
+        })
+        .subscribe();
+
+      console.log('📡 [REALTIME] Suscripciones activas');
+    }
+
+    // ========== NAVEGACIÓN ==========
+    function switchView(viewName) {
+      currentView = viewName;
+
+      document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.view === viewName);
+      });
+
+      document.querySelectorAll('.view-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === `view-${viewName}`);
+      });
+
+      if (viewName === 'dashboard' && map) {
+        setTimeout(() => map.invalidateSize(), 100);
+      }
+
+      document.getElementById('nav-sidebar').classList.remove('open');
+    }
+
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => switchView(item.dataset.view));
+    });
+
+    document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+      document.getElementById('nav-sidebar').classList.toggle('open');
+    });
+
+    document.querySelectorAll('.dash-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.dash-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.dash-panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`dash-panel-${tab.dataset.dash}`).classList.add('active');
+      });
+    });
+
+    // ========== FILTROS ==========
+    document.getElementById('rides-search').addEventListener('input', renderRidesTable);
+    document.getElementById('rides-status-filter').addEventListener('change', renderRidesTable);
+    document.getElementById('drivers-search').addEventListener('input', renderDriversTable);
+    document.getElementById('drivers-status-filter').addEventListener('change', renderDriversTable);
+    document.getElementById('passengers-search').addEventListener('input', renderPassengersTable);
+
+    // ========== CONTROLES DEL MAPA ==========
+    document.getElementById('btn-center-map').addEventListener('click', () => {
+      if (map) map.flyTo(DEFAULT_CENTER, DEFAULT_ZOOM, { duration: 1.5 });
+    });
+
+    document.getElementById('btn-fit-all').addEventListener('click', () => {
+      if (!map) return;
+      const points = [];
+
+      drivers.forEach(d => {
+        const loc = getDriverLocation(d.id);
+        if (loc && loc.is_online && loc.lat && loc.lng) points.push([loc.lat, loc.lng]);
+      });
+
+      rides.forEach(r => {
+        const oLat = r.origin_lat || r.pickup_lat;
+        const oLng = r.origin_lng || r.pickup_lng;
+        const dLat = r.destination_lat || r.dropoff_lat;
+        const dLng = r.destination_lng || r.dropoff_lng;
+        if (oLat && oLng) points.push([oLat, oLng]);
+        if (dLat && dLng) points.push([dLat, dLng]);
+      });
+
+      if (points.length > 0) map.fitBounds(points, { padding: [60, 60] });
+    });
+
+    document.getElementById('btn-toggle-routes').addEventListener('click', function() {
+      showRoutes = !showRoutes;
+      this.classList.toggle('active', showRoutes);
+
+      if (!showRoutes) {
+        routeLines.forEach(l => map.removeLayer(l));
+        routeLines.clear();
+      } else {
+        updateRideMarkers();
+      }
+    });
+
+    // ========== MODAL ==========
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('modal-overlay').addEventListener('click', (e) => {
+      if (e.target.id === 'modal-overlay') closeModal();
+    });
+
+    // ========== LOGIN UI ==========
+    function initLoginUI() {
+      const loginForm = document.getElementById('login-form');
+      const loginBtn = document.getElementById('login-btn');
+      const loginError = document.getElementById('login-error');
+      const loginErrorText = document.getElementById('login-error-text');
+      const togglePasswordBtn = document.getElementById('toggle-password');
+
+      togglePasswordBtn.addEventListener('click', () => {
+        const input = document.getElementById('login-password');
+        const icon = togglePasswordBtn.querySelector('i');
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+          input.type = 'password';
+          icon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+      });
+
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById('login-email').value.trim();
+        const password = document.getElementById('login-password').value;
+
+        if (!email || !password) {
+          loginErrorText.textContent = 'Completa todos los campos';
+          loginError.classList.add('show');
+          return;
+        }
+
+        loginBtn.disabled = true;
+        loginBtn.innerHTML = '<div class="btn-spinner"></div><span>Verificando...</span>';
+        loginError.classList.remove('show');
+
+        const result = await handleLogin(email, password);
+
+        if (result.success) {
+          showToast('Bienvenido', 'Sesión iniciada correctamente', 'success');
+          showApp();
+          startAdminApp();
+        } else {
+          loginErrorText.textContent = result.error;
+          loginError.classList.add('show');
+          loginBtn.disabled = false;
+          loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i><span>Iniciar sesión</span>';
+        }
+      });
+
+      document.getElementById('logout-btn').addEventListener('click', async () => {
+        if (confirm('¿Cerrar sesión?')) {
+          await handleLogout();
+        }
+      });
+    }
+
+    // ========== INICIAR APP ==========
+    async function startAdminApp() {
+      if (appInitialized) {
+        if (map) map.invalidateSize();
+        return;
+      }
+
+      console.log('🚀 [APP] Iniciando Centro de Control');
+
+      initMap();
+      await loadAllData();
+      setupRealtime();
+
+      if (!animationFrameId) {
+        animateDriverMovement();
+      }
+
+      setInterval(async () => {
+        try {
+          await loadAllData();
+        } catch (e) {
+          console.error('❌ [REFRESH] Error:', e);
+        }
+      }, 30000);
+
+      setInterval(() => {
+        updatePendingTimers();
+      }, 1000);
+
+      setInterval(() => {
+        checkAssignmentTimeouts();
+      }, 10000);
+
+      setInterval(() => {
+        recentRejections = recentRejections.filter(r => Date.now() - r.timestamp < 10 * 60 * 1000);
+        updateRejectionCounter();
+        renderRejectionAlerts();
+      }, 60000);
+
+      addActivity('info', 'fa-desktop', 'Centro de control iniciado');
+      appInitialized = true;
+    }
+
+    // ========== ARRANQUE ==========
+    window.onload = async () => {
+      console.log('🚀 [BOOT] Arrancando...');
+      initLoginUI();
+      await initAuth();
+
+      if (currentAdmin) {
+        startAdminApp();
+      } else {
+        document.getElementById('loading-overlay').classList.add('hidden');
+      }
+    };
+  </script>
+</body>
+</html>
