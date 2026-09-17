@@ -81,18 +81,6 @@
         .map-status-pill{background:rgba(26,28,34,0.85);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);border-radius:var(--border-radius-full);padding:8px 16px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--white);box-shadow:var(--shadow-md)}
         .map-status-pill .pulse-dot{width:8px;height:8px;border-radius:var(--border-radius-full);background:var(--green-online);box-shadow:0 0 8px var(--green-glow);animation:pulseDot 1.5s infinite}
         @keyframes pulseDot{0%,100%{opacity:1}50%{opacity:0.5}}
-        .search-container{position:absolute;top:105px;left:18px;right:18px;z-index:100;max-width:500px;margin:0 auto;transition:all 0.3s var(--ease-smooth)}
-        .search-container.hidden{opacity:0;pointer-events:none;transform:translateY(-20px)}
-        .search-box{background:rgba(26,28,34,0.92);backdrop-filter:blur(20px);border-radius:var(--border-radius-full);padding:12px 20px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-lg);border:1px solid rgba(255,255,255,0.08)}
-        .search-box i{color:var(--gray-text);font-size:16px}
-        .search-box input{flex:1;background:transparent;border:none;outline:none;color:var(--white);font-size:14px;font-weight:500}
-        .search-box input::placeholder{color:var(--gray-text)}
-        .suggestions{background:rgba(26,28,34,0.95);backdrop-filter:blur(20px);border-radius:var(--border-radius-lg);margin-top:10px;max-height:300px;overflow-y:auto;display:none;border:1px solid rgba(255,255,255,0.08);box-shadow:var(--shadow-lg)}
-        .suggestion-item{padding:14px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;transition:background 0.2s}
-        .suggestion-item:hover{background:rgba(255,255,255,0.03)}
-        .suggestion-item:last-child{border-bottom:none}
-        .suggestion-item i{color:var(--primary-orange);font-size:14px}
-        .suggestion-item span{font-size:13px;color:var(--white)}
         .navigation-panel{position:absolute;top:105px;left:50%;transform:translateX(-50%);width:calc(100% - 36px);max-width:420px;z-index:99;background:linear-gradient(135deg,var(--blue),#2563eb);border-radius:var(--border-radius-lg);padding:18px;display:none;align-items:center;gap:16px;box-shadow:0 10px 30px rgba(59,130,246,0.4);border:1px solid rgba(255,255,255,0.15);backdrop-filter:blur(10px)}
         .navigation-panel.active{display:flex}
         .nav-instruction{display:flex;align-items:center;justify-content:center;width:68px;height:68px;background:rgba(255,255,255,0.15);border-radius:var(--border-radius-md);flex-shrink:0;border:1px solid rgba(255,255,255,0.2)}
@@ -118,6 +106,14 @@
         .maneuver-arrow::before{content:'';position:absolute;inset:-12px;border-radius:var(--border-radius-full);background:rgba(59,130,246,0.3);animation:pulseMarker 1.5s infinite}
         @keyframes maneuverPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
         .bottom-nav{background:rgba(20,22,28,0.92);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:10px 8px calc(10px + env(safe-area-inset-bottom,0px)) 8px;border-top:1px solid rgba(255,255,255,0.06);display:flex;justify-content:space-around;align-items:center;box-shadow:0 -4px 30px rgba(0,0,0,0.5);position:relative;z-index:1000;gap:4px}
+        .bottom-nav.nav-hidden{display:none !important;}
+        #view-viajes.navigation-active{position:fixed !important;inset:0 !important;width:100vw !important;height:100vh !important;height:100dvh !important;z-index:2000 !important;display:block !important;overflow:hidden !important;padding:0 !important;margin:0 !important;}
+        #view-viajes.navigation-active #map{position:absolute !important;inset:0 !important;width:100% !important;height:100% !important;}
+        #view-viajes.navigation-active .map-topbar{z-index:2100;padding-top:calc(12px + env(safe-area-inset-top,0px));}
+        #view-viajes.navigation-active .navigation-panel{top:calc(68px + env(safe-area-inset-top,0px));left:12px;right:12px;width:auto;max-width:none;transform:none;z-index:2100;}
+        #view-viajes.navigation-active .ride-actions-float{z-index:2100;bottom:calc(18px + env(safe-area-inset-bottom,0px));}
+        #view-viajes.navigation-active .mapboxgl-ctrl-bottom-left,#view-viajes.navigation-active .mapboxgl-ctrl-bottom-right{display:none !important;}
+        .driver-arrow{will-change:transform;transform-origin:center center;}
         .nav-item{color:var(--gray-text);display:flex;flex-direction:column;align-items:center;font-size:10px;font-weight:600;gap:4px;transition:all 0.3s var(--ease-smooth);cursor:pointer;flex:1;padding:8px 4px;border-radius:var(--border-radius-md);position:relative;letter-spacing:0.3px}
         .nav-icon{font-size:22px;transition:all 0.3s var(--ease-bounce);position:relative}
         .nav-item.active{color:var(--primary-orange)}
@@ -324,6 +320,7 @@
             <span><span class="dot" id="statusRideDot"></span> Ride: <b id="statusRideVal">null</b></span>
             <span><span class="dot" id="statusPendingDot"></span> Pending: <b id="statusPendingVal">null</b></span>
             <span><span class="dot" id="statusCompassDot"></span> Brújula: <b id="statusCompassVal">---</b></span>
+            <span><span class="dot" id="statusZoomDot"></span> Zoom: <b id="statusZoomVal">0</b></span>
         </div>
     </div>
     <div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastText">Mensaje</span></div>
@@ -459,10 +456,6 @@
                 <div class="map-back-btn" onclick="switchTab('inicio', document.querySelector('.nav-item:nth-child(1)'))"><i class="fas fa-arrow-left"></i></div>
                 <div class="map-status-pill"><span class="pulse-dot"></span><span id="mapStatusText">En línea</span></div>
             </div>
-            <div class="search-container" id="searchContainer">
-                <div class="search-box"><i class="fas fa-search"></i><input type="text" id="searchInput" placeholder="Buscar dirección..." autocomplete="off"></div>
-                <div class="suggestions" id="suggestions"></div>
-            </div>
             <div id="navigation-panel" class="navigation-panel">
                 <div class="nav-instruction"><i class="fas fa-arrow-up" id="nav-icon"></i></div>
                 <div class="nav-details"><div class="nav-distance" id="nav-distance">0 m</div><div class="nav-text" id="nav-text">Sigue la ruta</div></div>
@@ -580,10 +573,19 @@
         // ═══════════════════════════════════════════════════════════════
         //  CONFIGURACIÓN
         // ═══════════════════════════════════════════════════════════════
-        const NAV_PADDING_FRACTION = 0.33;   // Flecha a 33% desde abajo
-        const ROUTE_TAIL_METERS = 30;        // Cola de línea detrás del marcador
-        const COMPASS_SMOOTHING = 0.25;      // Suavizado de brújula
-        const SNAP_MAX_DISTANCE = 30;        // Distancia máxima para snapear a la ruta (metros)
+        const NAV_ARROW_Y_FRACTION = 0.72;
+        const COMPASS_SMOOTHING = 0.10;
+        const SNAP_MAX_DISTANCE = 60;
+
+        const OFF_ROUTE_THRESHOLD_M = 45;
+        const OFF_ROUTE_DURATION_MS = 5000;
+        const REROUTE_COOLDOWN_MS = 15000;
+        const NAV_ZOOM_MIN = 16.8;
+        const NAV_ZOOM_MAX = 18.2;
+        const NAV_PITCH = 50;
+        const CAMERA_UPDATE_MS = 180;
+        let lastCameraUpdate = 0;
+        let navigationCameraLocked = false;
 
         let logCount = 0, debugPanelOpen = false;
         function dlog(msg, type = 'info') {
@@ -610,12 +612,18 @@
             const rideDot = document.getElementById('statusRideDot'), rideVal = document.getElementById('statusRideVal');
             const pendingDot = document.getElementById('statusPendingDot'), pendingVal = document.getElementById('statusPendingVal');
             const compassDot = document.getElementById('statusCompassDot'), compassVal = document.getElementById('statusCompassVal');
+            const zoomDot = document.getElementById('statusZoomDot'), zoomVal = document.getElementById('statusZoomVal');
             if (onlineDot && onlineVal) { onlineVal.textContent = String(isDriverOnline); onlineDot.className = `dot ${isDriverOnline ? 'green' : 'red'}`; }
             if (rideDot && rideVal) { rideVal.textContent = currentRideId ? currentRideId.substring(0,8) : 'null'; rideDot.className = `dot ${currentRideId ? 'green' : 'red'}`; }
             if (pendingDot && pendingVal) { pendingVal.textContent = pendingRide ? pendingRide.id.substring(0,8) : 'null'; pendingDot.className = `dot ${pendingRide ? 'orange' : 'red'}`; }
             if (compassDot && compassVal) {
                 compassVal.textContent = compassAvailable ? `${Math.round(compassHeading)}°` : 'no disp.';
                 compassDot.className = `dot ${compassAvailable ? 'green' : 'red'}`;
+            }
+            if (zoomDot && zoomVal) {
+                const z = (map && mapInitialized) ? map.getZoom().toFixed(1) : '0';
+                zoomVal.textContent = z;
+                zoomDot.className = `dot ${z >= 16 ? 'green' : 'red'}`;
             }
         }
         function toggleDebugPanel() {
@@ -634,7 +642,7 @@
                 dlog('🗑️ Rechazos limpiados', 'success');
                 showToast('Rechazos limpiados', 'check-circle');
                 setTimeout(() => loadActiveRide(), 800);
-            } catch (e) { dlog('Error: ' + e.message, 'error'); alert('Error: ' + e.message); }
+            } catch (e) { alert('Error: ' + e.message); }
         }
 
         function copyLogs() {
@@ -671,7 +679,36 @@
         }
 
         // ═══════════════════════════════════════════════════════════════
-        //  BRÚJULA + SNAP A RUTA
+        //  OCULTAR/MOSTRAR MENÚ INFERIOR EN NAVEGACIÓN
+        // ═══════════════════════════════════════════════════════════════
+        function setNavigationMode(enabled) {
+            const bottomNav = document.querySelector('.bottom-nav');
+            const viajesView = document.getElementById('view-viajes');
+            const navigationPanel = document.getElementById('navigation-panel');
+
+            navigationCameraLocked = enabled;
+
+            if (enabled) {
+                bottomNav?.classList.add('nav-hidden');
+                viajesView?.classList.add('navigation-active');
+                navigationPanel?.classList.add('active');
+
+                if (map && mapInitialized) {
+                    requestAnimationFrame(() => {
+                        try { map.resize(); } catch (e) {}
+                        navigationCameraLocked = true;
+                    });
+                }
+            } else {
+                bottomNav?.classList.remove('nav-hidden');
+                viajesView?.classList.remove('navigation-active');
+                navigationPanel?.classList.remove('active');
+                navigationCameraLocked = false;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  BRÚJULA
         // ═══════════════════════════════════════════════════════════════
         let compassHeading = null;
         let compassRaw = null;
@@ -679,23 +716,12 @@
         let compassListenerAttached = false;
 
         async function initCompass() {
-            if (typeof DeviceOrientationEvent === 'undefined') {
-                dlog('❌ Brújula no soportada', 'warning');
-                return false;
-            }
+            if (typeof DeviceOrientationEvent === 'undefined') return false;
             if (typeof DeviceOrientationEvent.requestPermission === 'function') {
                 try {
                     const perm = await DeviceOrientationEvent.requestPermission();
-                    if (perm !== 'granted') {
-                        dlog('❌ Permiso de brújula denegado', 'warning');
-                        showToast('Permiso de brújula denegado', 'exclamation-triangle');
-                        return false;
-                    }
-                    dlog('✅ Permiso brújula concedido', 'success');
-                } catch (e) {
-                    dlog('Error permiso brújula: ' + e.message, 'error');
-                    return false;
-                }
+                    if (perm !== 'granted') return false;
+                } catch (e) { return false; }
             }
             if (!compassListenerAttached) {
                 window.addEventListener('deviceorientationabsolute', handleOrientation, true);
@@ -708,13 +734,19 @@
 
         function handleOrientation(event) {
             let heading = null;
+
+            const beta = event.beta;
+            const isVertical = beta !== null && Math.abs(beta) > 45 && Math.abs(beta) < 135;
+
             if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null && !isNaN(event.webkitCompassHeading)) {
                 heading = event.webkitCompassHeading;
             } else if (event.alpha !== null && event.alpha !== undefined && !isNaN(event.alpha)) {
                 heading = (360 - event.alpha) % 360;
             }
+
             if (heading === null) return;
             compassRaw = heading;
+
             if (compassHeading === null) {
                 compassHeading = heading;
             } else {
@@ -726,11 +758,11 @@
             compassAvailable = true;
         }
 
-        // Proyecta P sobre segmento A→B en lat/lng (proyección planar simple)
+        // ═══════════════════════════════════════════════════════════════
+        //  SNAP A RUTA — SIEMPRE snapea (nunca devuelve null)
+        // ═══════════════════════════════════════════════════════════════
         function projectPointOnSegment(pLat, pLng, aLat, aLng, bLat, bLng) {
-            const dx = bLng - aLng;
-            const dy = bLat - aLat;
-            const len2 = dx*dx + dy*dy;
+            const dx = bLng - aLng, dy = bLat - aLat, len2 = dx*dx + dy*dy;
             if (len2 === 0) return [aLat, aLng];
             let t = ((pLng - aLng) * dx + (pLat - aLat) * dy) / len2;
             t = Math.max(0, Math.min(1, t));
@@ -740,22 +772,36 @@
         function snapToRoute(lat, lng) {
             const coords = window.currentRouteCoords;
             if (!coords || coords.length < 2) return null;
-            const windowSize = 60;
-            const startIdx = Math.max(0, lastRouteProgressIndex - 5);
+
+            const windowSize = 100;
+            const startIdx = Math.max(0, lastRouteProgressIndex - 20);
             const endIdx = Math.min(coords.length - 2, lastRouteProgressIndex + windowSize);
-            let minDist = Infinity, snapped = null;
+
+            let minDist = Infinity, snapped = null, snappedIdx = lastRouteProgressIndex;
+
             for (let i = startIdx; i <= endIdx; i++) {
-                const a = coords[i];
-                const b = coords[i + 1];
+                const a = coords[i], b = coords[i + 1];
                 const proj = projectPointOnSegment(lat, lng, a[1], a[0], b[1], b[0]);
                 const d = getDistanceFromLatLonInMeters(lat, lng, proj[0], proj[1]);
-                if (d < minDist) { minDist = d; snapped = proj; }
+                if (d < minDist) { minDist = d; snapped = proj; snappedIdx = i; }
             }
-            if (minDist > SNAP_MAX_DISTANCE) return null;
+
+            if (minDist > SNAP_MAX_DISTANCE) {
+                minDist = Infinity;
+                for (let i = 0; i < coords.length - 1; i++) {
+                    const a = coords[i], b = coords[i + 1];
+                    const proj = projectPointOnSegment(lat, lng, a[1], a[0], b[1], b[0]);
+                    const d = getDistanceFromLatLonInMeters(lat, lng, proj[0], proj[1]);
+                    if (d < minDist) { minDist = d; snapped = proj; snappedIdx = i; }
+                }
+            }
+
+            if (snappedIdx > lastRouteProgressIndex) {
+                lastRouteProgressIndex = snappedIdx;
+            }
             return snapped;
         }
 
-        // ✅ Progreso por DISTANCIA real
         function calculateRouteProgress(driverLat, driverLng) {
             const coords = window.currentRouteCoords;
             if (!coords || coords.length < 2) return 0;
@@ -767,7 +813,7 @@
                 const d = getDistanceFromLatLonInMeters(driverLat, driverLng, coords[i][0], coords[i][1]);
                 if (d < minDist) { minDist = d; closestIdx = i; }
             }
-            if (minDist > 50) {
+            if (minDist > 80) {
                 minDist = Infinity;
                 for (let i = 0; i < coords.length; i++) {
                     const d = getDistanceFromLatLonInMeters(driverLat, driverLng, coords[i][0], coords[i][1]);
@@ -785,6 +831,9 @@
             return totalDist > 0 ? distToIdx / totalDist : 0;
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        //  TRADUCTOR DE INSTRUCCIONES (OSRM + Mapbox)
+        // ═══════════════════════════════════════════════════════════════
         function translateInstruction(text) {
             if (!text) return text;
             let t = text;
@@ -827,8 +876,22 @@
                 [/\bYour destination is\b/gi, 'Tu destino está'],
                 [/\bmeters?\b/gi, 'metros'],
                 [/\bkilometers?\b/gi, 'kilómetros'],
-                [/\bmiles?\b/gi, 'millas'],
-                [/\bfeet\b/gi, 'pies']
+                [/\bContinue onto\b/gi, 'Continúa por'],
+                [/\bContinue on\b/gi, 'Continúa por'],
+                [/\bonto\b/gi, 'por'],
+                [/\bTake the exit toward\b/gi, 'Toma la salida hacia'],
+                [/\bTake the exit\b/gi, 'Toma la salida'],
+                [/\bExit\b/gi, 'Salida'],
+                [/\bSlight right\b/gi, 'Gira levemente a la derecha'],
+                [/\bSlight left\b/gi, 'Gira levemente a la izquierda'],
+                [/\bSharp right\b/gi, 'Gira bruscamente a la derecha'],
+                [/\bSharp left\b/gi, 'Gira bruscamente a la izquierda'],
+                [/\bRoundabout\b/gi, 'Rotonda'],
+                [/\bDepart\b/gi, 'Salir'],
+                [/\bNew name\b/gi, 'Continúa'],
+                [/\bWaypoint\b/gi, 'Punto de paso'],
+                [/\bFerry\b/gi, 'Ferry'],
+                [/\bYou have arrived\b/gi, 'Has llegado']
             ];
             dict.forEach(([pattern, replacement]) => { t = t.replace(pattern, replacement); });
             return t;
@@ -846,14 +909,12 @@
             try {
                 window.speechSynthesis.cancel();
                 const utt = new SpeechSynthesisUtterance(spanishText);
-                utt.lang = 'es-ES';
-                utt.rate = 1.0; utt.volume = 1.0; utt.pitch = 1.0;
+                utt.lang = 'es-ES'; utt.rate = 1.0; utt.volume = 1.0; utt.pitch = 1.0;
                 const voices = window.speechSynthesis.getVoices();
                 const spanishVoice = voices.find(v => v.lang === 'es-ES' || v.lang === 'es-MX' || v.lang.startsWith('es'));
                 if (spanishVoice) utt.voice = spanishVoice;
                 window.speechSynthesis.speak(utt);
-                dlog('🔊 Voz: ' + spanishText, 'info');
-            } catch (e) { dlog('Error voz: ' + e.message, 'warning'); }
+            } catch (e) {}
         }
 
         const supabaseUrl = 'https://uwdojchfwmaczgdthtfr.supabase.co';
@@ -875,6 +936,10 @@
         let isCurrentlyMoving = false;
         let lastRouteProgressIndex = 0;
 
+        let offRouteStartTime = null;
+        let lastRerouteTime = 0;
+        let isRerouting = false;
+
         let animationFrameId = null;
         let markerCurrentPos = null;
         let markerTargetPos = null;
@@ -892,18 +957,47 @@
             window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        //  ANIMACIÓN DEL MARCADOR — el mapa sigue al marcador
+        //  con offset para posicionarlo al 75% del screenH
+        // ═══════════════════════════════════════════════════════════════
         function animateMarker() {
             if (!driverMarker || !markerCurrentPos || !markerTargetPos) {
                 animationFrameId = requestAnimationFrame(animateMarker);
                 return;
             }
-            markerCurrentPos[0] += (markerTargetPos[0] - markerCurrentPos[0]) * 0.25;
-            markerCurrentPos[1] += (markerTargetPos[1] - markerCurrentPos[1]) * 0.25;
+
+            const POSITION_SMOOTHING = 0.18;
+            markerCurrentPos[0] += (markerTargetPos[0] - markerCurrentPos[0]) * POSITION_SMOOTHING;
+            markerCurrentPos[1] += (markerTargetPos[1] - markerCurrentPos[1]) * POSITION_SMOOTHING;
+
             try {
                 driverMarker.setLngLat([markerCurrentPos[1], markerCurrentPos[0]]);
-                const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
-                if (enNavegacion) {
+                const enNavegacion = currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso';
+
+                if (enNavegacion && map && mapInitialized) {
                     driverMarker.setRotation(0);
+                    const now = performance.now();
+
+                    if (!userInteracting && navigationCameraLocked && now - lastCameraUpdate >= CAMERA_UPDATE_MS) {
+                        lastCameraUpdate = now;
+                        const bearing = Number.isFinite(smoothedBearing) ? smoothedBearing : 0;
+                        const speed = Math.max(0, Number(window.currentSpeedKmh || 0));
+                        let zoom = NAV_ZOOM_MAX - Math.min(speed * 0.025, 1.2);
+                        zoom = Math.max(NAV_ZOOM_MIN, Math.min(NAV_ZOOM_MAX, zoom));
+                        const screenH = map.getContainer().offsetHeight || window.innerHeight;
+                        const offsetY = Math.round(screenH * (NAV_ARROW_Y_FRACTION - 0.5));
+
+                        map.easeTo({
+                            center: [markerCurrentPos[1], markerCurrentPos[0]],
+                            zoom,
+                            bearing,
+                            pitch: NAV_PITCH,
+                            offset: [0, offsetY],
+                            duration: CAMERA_UPDATE_MS,
+                            essential: true
+                        });
+                    }
                 } else {
                     let diff = markerTargetBearing - markerCurrentBearing;
                     if (diff > 180) diff -= 360;
@@ -911,10 +1005,95 @@
                     markerCurrentBearing = (markerCurrentBearing + diff * 0.2 + 360) % 360;
                     driverMarker.setRotation(markerCurrentBearing);
                 }
-            } catch (e) {}
+            } catch (e) { console.warn('Error animando marcador:', e); }
+
             animationFrameId = requestAnimationFrame(animateMarker);
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        //  AUTO-REROUTE
+        // ═══════════════════════════════════════════════════════════════
+        function getDistanceToRoute(driverLat, driverLng) {
+            const coords = window.currentRouteCoords;
+            if (!coords || coords.length < 2) return Infinity;
+            const windowSize = 60;
+            const startIdx = Math.max(0, lastRouteProgressIndex - windowSize);
+            const endIdx = Math.min(coords.length - 1, lastRouteProgressIndex + windowSize);
+            let minDist = Infinity;
+            for (let i = startIdx; i < endIdx; i++) {
+                const a = coords[i];
+                const b = coords[i + 1];
+                const proj = projectPointOnSegment(driverLat, driverLng, a[1], a[0], b[1], b[0]);
+                const d = getDistanceFromLatLonInMeters(driverLat, driverLng, proj[0], proj[1]);
+                if (d < minDist) minDist = d;
+            }
+            return minDist;
+        }
+
+        async function checkAutoReroute(driverLat, driverLng) {
+            const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
+            if (!enNavegacion || !currentRideId || !currentRouteTarget) { offRouteStartTime = null; return; }
+            if (isRerouting) return;
+            const now = Date.now();
+            if (now - lastRerouteTime < REROUTE_COOLDOWN_MS) return;
+
+            const dist = getDistanceToRoute(driverLat, driverLng);
+
+            if (dist > OFF_ROUTE_THRESHOLD_M) {
+                if (offRouteStartTime === null) {
+                    offRouteStartTime = now;
+                    dlog(`📍 Fuera de ruta (${Math.round(dist)}m). Monitoreando...`, 'warning');
+                } else if (now - offRouteStartTime > OFF_ROUTE_DURATION_MS) {
+                    dlog(`🔄 Auto-reroute disparado`, 'warning');
+                    await performAutoReroute(driverLat, driverLng);
+                }
+            } else {
+                if (offRouteStartTime !== null) {
+                    dlog(`✅ De vuelta en ruta`, 'success');
+                    offRouteStartTime = null;
+                }
+            }
+        }
+
+        async function performAutoReroute(driverLat, driverLng) {
+            if (isRerouting) return;
+            isRerouting = true;
+            lastRerouteTime = Date.now();
+            offRouteStartTime = null;
+
+            try {
+                showToast('🔀 Recalculando ruta...', 'route');
+                speakInstruction('Recalculando ruta');
+                const newPosition = [driverLat, driverLng];
+
+                if (currentRideStatus === 'aceptado') {
+                    const { data: ride } = await supabaseClient
+                        .from('rides').select('origin_lat, origin_lng, destination_lat, destination_lng')
+                        .eq('id', currentRideId).single();
+                    if (ride && ride.origin_lat && ride.origin_lng) {
+                        await drawRoute(newPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
+                        currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
+                    }
+                } else if (currentRideStatus === 'en_curso') {
+                    const { data: ride } = await supabaseClient
+                        .from('rides').select('destination_lat, destination_lng')
+                        .eq('id', currentRideId).single();
+                    if (ride && ride.destination_lat && ride.destination_lng) {
+                        await drawRoute(newPosition, newPosition, [ride.destination_lat, ride.destination_lng]);
+                        currentRouteTarget = { lat: ride.destination_lat, lng: ride.destination_lng };
+                    }
+                }
+                dlog('✅ Ruta recalculada', 'success');
+            } catch (e) {
+                dlog('❌ Error reroute: ' + e.message, 'error');
+            } finally {
+                isRerouting = false;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        //  NOTIFICACIONES
+        // ═══════════════════════════════════════════════════════════════
         function playNotificationSound() {
             try {
                 if (!notificationAudioCtx) { notificationAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
@@ -928,26 +1107,16 @@
                 gain1.gain.setValueAtTime(0.4, now);
                 gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
                 osc1.start(now); osc1.stop(now + 0.4);
-                const osc2 = notificationAudioCtx.createOscillator();
-                const gain2 = notificationAudioCtx.createGain();
-                osc2.connect(gain2); gain2.connect(notificationAudioCtx.destination);
-                osc2.type = 'sine';
-                osc2.frequency.setValueAtTime(1046.50, now + 0.2);
-                osc2.frequency.exponentialRampToValueAtTime(1396.91, now + 0.3);
-                gain2.gain.setValueAtTime(0.4, now + 0.2);
-                gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
-                osc2.start(now + 0.2); osc2.stop(now + 0.6);
                 if (navigator.vibrate) { navigator.vibrate([200, 100, 200]); }
-            } catch (e) { dlog('Error sonido: ' + e.message, 'error'); }
+            } catch (e) {}
         }
 
         function startRideNotification() {
             if (isNotificationPlaying) return;
             isNotificationPlaying = true;
-            dlog('🔔 Notificación sonora iniciada', 'warning');
             playNotificationSound();
             notificationInterval = setInterval(() => { playNotificationSound(); }, 2000);
-            notificationTimeout = setTimeout(() => { stopRideNotification(); dlog('🔕 Notificación detenida', 'warning'); }, 60000);
+            notificationTimeout = setTimeout(() => { stopRideNotification(); }, 60000);
         }
 
         function stopRideNotification() {
@@ -955,7 +1124,6 @@
             if (notificationInterval) { clearInterval(notificationInterval); notificationInterval = null; }
             if (notificationTimeout) { clearTimeout(notificationTimeout); notificationTimeout = null; }
             if (navigator.vibrate) { navigator.vibrate(0); }
-            dlog('🔕 Notificación detenida', 'info');
         }
 
         function handleRideCancelled(ride, source = 'realtime') {
@@ -963,7 +1131,6 @@
             const wasPending = pendingRide && pendingRide.id === cancelledId;
             const wasActive = currentRideId === cancelledId;
             if (!wasPending && !wasActive) return false;
-            dlog(`❌ Pasajero canceló (${source})`, 'warning');
             stopRideNotification();
             if (window.speechSynthesis) window.speechSynthesis.cancel();
             if (wasPending) { hideRideModal(); pendingRide = null; showToast('El pasajero canceló el viaje', 'times-circle'); }
@@ -972,11 +1139,9 @@
                 currentRideId = null; currentRideStatus = null; currentRouteTarget = null;
                 updateActionButtons();
                 document.getElementById('navigation-panel').classList.remove('active');
-                document.getElementById('searchContainer').classList.remove('hidden');
-                if (map && currentPosition) {
-                    map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 15, pitch: 0, bearing: 0, padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 1000 });
-                }
-                showToast('⚠️ El pasajero canceló el viaje en curso', 'exclamation-triangle');
+                setNavigationMode(false);
+                if (map && currentPosition) map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 15, pitch: 0, bearing: 0, padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 1000 });
+                showToast('⚠️ El pasajero canceló el viaje', 'exclamation-triangle');
             }
             updateDebugStatus();
             return true;
@@ -988,7 +1153,6 @@
             if (!rawPhone || !password) return alert('Ingresa tu teléfono y contraseña');
             const cleanedPhone = rawPhone.replace(/[\s\-()]/g, '').replace(/^\+?591/, '');
             showLoading('Iniciando sesión...');
-            dlog('Login: ' + rawPhone, 'info');
             try {
                 let { data, error } = await supabaseClient.auth.signInWithPassword({ email: `${rawPhone}@montero.app`, password });
                 if (error && cleanedPhone !== rawPhone) {
@@ -997,14 +1161,12 @@
                 }
                 if (error) throw error;
                 currentDriverId = data.user.id;
-                dlog('Login OK: ' + currentDriverId, 'success');
                 await loadDriverData();
                 await forceOffline();
                 setupRideSubscription();
                 setupChatSubscription();
                 routeUserBasedOnProfile();
             } catch (error) {
-                dlog('Error login: ' + error.message, 'error');
                 alert('Error: ' + error.message);
                 await logout();
             } finally { hideLoading(); }
@@ -1012,30 +1174,25 @@
 
         window.addEventListener('load', async () => {
             showLoading('Iniciando...');
-            dlog('App cargando...', 'info');
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session) {
                     currentDriverId = session.user.id;
-                    dlog('Sesión: ' + currentDriverId, 'success');
                     await loadDriverData();
                     await forceOffline();
                     setupRideSubscription();
                     setupChatSubscription();
                     routeUserBasedOnProfile();
                 } else {
-                    dlog('Sin sesión', 'info');
                     document.getElementById('view-login').classList.add('active');
                 }
             } catch (error) {
-                dlog('Error carga: ' + error.message, 'error');
                 document.getElementById('view-login').classList.add('active');
             } finally { hideLoading(); }
         });
 
         function routeUserBasedOnProfile() {
             if (currentDriverData.profile_completed) {
-                dlog('Perfil completo', 'success');
                 document.getElementById('view-login').classList.remove('active');
                 document.getElementById('view-onboarding').classList.remove('active');
                 document.getElementById('mainApp').style.display = 'flex';
@@ -1044,7 +1201,6 @@
                 loadActiveRide();
                 if (!animationFrameId) animationFrameId = requestAnimationFrame(animateMarker);
             } else {
-                dlog('Perfil incompleto', 'warning');
                 document.getElementById('obFullName').value = currentDriverData.full_name || '';
                 document.getElementById('view-login').classList.remove('active');
                 document.getElementById('mainApp').style.display = 'none';
@@ -1053,8 +1209,7 @@
         }
 
         async function forceOffline() {
-            dlog('Forzando offline', 'info');
-            try { await supabaseClient.from('driver_status').upsert({ driver_id: currentDriverId, is_online: false, latitude: null, longitude: null, last_updated: new Date().toISOString() }, { onConflict: 'driver_id' }); } catch (e) { dlog('Error: ' + e.message, 'error'); }
+            try { await supabaseClient.from('driver_status').upsert({ driver_id: currentDriverId, is_online: false, latitude: null, longitude: null, last_updated: new Date().toISOString() }, { onConflict: 'driver_id' }); } catch (e) {}
             isDriverOnline = false;
             document.getElementById('toggleSwitch').checked = false;
             updateStatusCard(false);
@@ -1150,7 +1305,6 @@
                 const hi = document.querySelector('#headerProfilePic img'); if (hi) hi.src = d.avatar_url;
                 const pi = document.querySelector('#pageProfilePic img'); if (pi) pi.src = d.avatar_url;
             }
-            dlog('Datos: ' + name, 'success');
         }
 
         async function logout() {
@@ -1168,12 +1322,12 @@
             document.getElementById('view-onboarding').classList.remove('active');
             document.getElementById('view-login').classList.add('active');
             if (window.rideSubscription) { supabaseClient.removeChannel(window.rideSubscription); window.rideSubscription = null; }
-            if (chatSubscription) { try { supabaseClient.removeChannel(chatSubscription); chatSubscription = null; } catch (e) { } }
+            if (chatSubscription) { try { supabaseClient.removeChannel(chatSubscription); chatSubscription = null; } catch (e) {} }
             if (driverMarker) { driverMarker.remove(); driverMarker = null; }
             if (maneuverArrowMarker) { maneuverArrowMarker.remove(); maneuverArrowMarker = null; }
             if (map) { map.remove(); map = null; mapInitialized = false; }
             markerCurrentPos = null; markerTargetPos = null;
-            dlog('Sesión cerrada', 'warning');
+            setNavigationMode(false);
         }
 
         function togglePassword() {
@@ -1206,7 +1360,6 @@
         async function initMap(center = [-63.1821, -17.7833]) {
             if (map && mapInitialized) { try { map.resize(); } catch (e) {} return true; }
             if (initMapInProgress) {
-                dlog('⏸️ initMap en progreso, esperando...', 'info');
                 const startWait = Date.now();
                 while (initMapInProgress && (Date.now() - startWait) < 15000) { await new Promise(r => setTimeout(r, 100)); }
                 return mapInitialized && map;
@@ -1216,7 +1369,7 @@
                 if (map) { try { map.remove(); } catch (e) {} map = null; }
                 mapInitialized = false;
                 const container = document.getElementById('map');
-                if (!container) { dlog('⚠️ Contenedor #map no existe', 'warning'); return false; }
+                if (!container) return false;
                 while (container.firstChild) { container.removeChild(container.firstChild); }
                 container.style.width = '100%';
                 container.style.height = '100%';
@@ -1227,26 +1380,38 @@
                     await new Promise(r => setTimeout(r, 100));
                     void container.offsetHeight;
                 }
-                if (container.offsetWidth === 0 || container.offsetHeight === 0) { dlog(`⚠️ Sin dimensiones tras 3s`, 'warning'); return false; }
-                dlog(`🗺️ Creando mapa en ${container.offsetWidth}x${container.offsetHeight}...`, 'info');
-                map = new mapboxgl.Map({ container: container, style: 'mapbox://styles/mapbox/streets-v12', center: center, zoom: 14, attributionControl: false });
+                if (container.offsetWidth === 0 || container.offsetHeight === 0) return false;
+
+                const initialCenter = (currentPosition && !isNaN(currentPosition[0]) && !isNaN(currentPosition[1]))
+                    ? [currentPosition[1], currentPosition[0]]
+                    : center;
+
+                map = new mapboxgl.Map({
+                    container: container,
+                    style: 'mapbox://styles/mapbox/streets-v12',
+                    center: initialCenter,
+                    zoom: 16,
+                    pitch: 0,
+                    bearing: 0,
+                    attributionControl: false
+                });
                 mapInitialized = true;
                 await new Promise((resolve) => {
                     let done = false;
                     const finish = () => { if (!done) { done = true; resolve(); } };
-                    map.once('idle', () => { dlog('✅ Mapa idle', 'success'); finish(); });
-                    map.once('load', () => { dlog('✅ Mapa load', 'success'); });
-                    map.once('error', (e) => { const errMsg = e.error?.message || 'desconocido'; dlog('⚠️ Error Mapbox: ' + errMsg, 'warning'); });
-                    setTimeout(() => { dlog('⚠️ Timeout 15s, continuando', 'warning'); finish(); }, 15000);
+                    map.once('idle', () => finish());
+                    map.once('load', () => {});
+                    map.once('error', () => {});
+                    setTimeout(() => finish(), 15000);
                 });
                 try { map.addControl(new mapboxgl.NavigationControl(), 'middle-right'); } catch (e) {}
                 try { map.on('mousedown', () => { userInteracting = true; lastInteractionTime = Date.now(); }); } catch (e) {}
                 try { map.on('touchstart', () => { userInteracting = true; lastInteractionTime = Date.now(); }); } catch (e) {}
                 try { map.on('moveend', () => { if (Date.now() - lastInteractionTime > 5000) userInteracting = false; }); } catch (e) {}
-                dlog(`✅ Mapa inicializado correctamente`, 'success');
+                dlog('✅ Mapa inicializado', 'success');
                 return true;
             } catch (e) {
-                dlog(`❌ Error initMap: ${e.message}`, 'error');
+                dlog('❌ Error initMap: ' + e.message, 'error');
                 if (!map) { mapInitialized = false; }
                 return false;
             } finally {
@@ -1266,8 +1431,7 @@
         }
 
         function setupRideSubscription() {
-            if (window.rideSubscription) { dlog('Ya existe suscripción', 'warning'); return; }
-            dlog('Creando suscripción Realtime...', 'info');
+            if (window.rideSubscription) return;
             window.rideSubscription = supabaseClient
                 .channel('driver-rides')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, (payload) => {
@@ -1278,12 +1442,11 @@
                     const esMiCancelacion = (pendingRide && pendingRide.id === ride.id) || currentRideId === ride.id;
                     if (esMiCancelacion && (ride.status === 'cancelado' || ride.status === 'no_completado')) { handleRideCancelled(ride, 'realtime'); return; }
                     if (!esParaMi && !esPoolAbierto) return;
-                    if (!isDriverOnline) { dlog('Offline, ignoro', 'warning'); return; }
+                    if (!isDriverOnline) return;
                     if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
                         if (ride.status === 'pendiente' || ride.status === 'aceptado') {
                             if (currentRideId === ride.id) { currentRideStatus = ride.status; updateRideUI(ride); return; }
                             if (!currentRideId && !pendingRide && !isRejecting) {
-                                dlog('✅ MOSTRANDO MODAL', 'success');
                                 showRideRequest(ride);
                             }
                         }
@@ -1303,23 +1466,20 @@
         }
 
         async function loadActiveRide() {
-            if (!currentDriverId || !isDriverOnline) { dlog('No cargo rides: offline', 'info'); return; }
-            dlog('Buscando viaje activo...', 'info');
-          const { data, error } = await supabaseClient
-    .from('rides').select('*')
+            if (!currentDriverId || !isDriverOnline) return;
+            const { data, error } = await supabaseClient
+                .from('rides').select('*')
                 .or(`driver_id.eq.${currentDriverId},and(status.eq.pendiente,driver_id.is.null)`)
                 .in('status', ['pendiente','aceptado','llegado_origen','en_curso'])
                 .order('created_at', { ascending: false }).limit(5);
-            if (error) { dlog('Error: ' + error.message, 'error'); return; }
-            if (!data || data.length === 0) { dlog('No hay viaje activo', 'info'); return; }
+            if (error || !data || data.length === 0) return;
             let ride = null;
             for (const r of data) {
                 if (r.status === 'pendiente' && await hasRejectedRide(r.id)) continue;
                 ride = r;
                 break;
             }
-            if (!ride) { dlog('Todos rechazados', 'warning'); return; }
-            dlog('Viaje: ' + ride.id.substring(0,8) + ' status: ' + ride.status, 'success');
+            if (!ride) return;
             if (ride.status === 'pendiente' || ride.status === 'aceptado') {
                 if (!currentRideId && !pendingRide) showRideRequest(ride);
             } else {
@@ -1328,18 +1488,16 @@
         }
 
         async function showRideRequest(ride) {
-            dlog('showRideRequest: ' + ride.id.substring(0,8), 'info');
-            if (!isDriverOnline) { dlog('❌ No en línea', 'warning'); return; }
+            if (!isDriverOnline) return;
             if (ride.status === 'pendiente') {
-                try { const rejected = await hasRejectedRide(ride.id); if (rejected) { dlog('Rechazado previamente', 'warning'); return; } } catch (e) {}
+                const rejected = await hasRejectedRide(ride.id);
+                if (rejected) return;
             }
             pendingRide = ride;
-            const originEl = document.getElementById('rideOrigin'), destEl = document.getElementById('rideDestination'), priceEl = document.getElementById('ridePrice');
-            if (originEl) originEl.textContent = ride.origin_address || 'No especificado';
-            if (destEl) destEl.textContent = ride.destination_address || 'No especificado';
-            if (priceEl) priceEl.textContent = `Bs ${parseFloat(ride.price || 0).toFixed(2)}`;
+            document.getElementById('rideOrigin').textContent = ride.origin_address || 'No especificado';
+            document.getElementById('rideDestination').textContent = ride.destination_address || 'No especificado';
+            document.getElementById('ridePrice').textContent = `Bs ${parseFloat(ride.price || 0).toFixed(2)}`;
             const acceptBtn = document.querySelector('.ride-btn.accept'), rejectBtn = document.querySelector('.ride-btn.reject');
-            if (!acceptBtn || !rejectBtn) { dlog('❌ Botones no encontrados', 'error'); return; }
             if (ride.status === 'aceptado') {
                 acceptBtn.innerHTML = '<i class="fas fa-play"></i> Iniciar ruta';
                 rejectBtn.innerHTML = '<i class="fas fa-times"></i> No puedo';
@@ -1347,10 +1505,7 @@
                 acceptBtn.innerHTML = '<i class="fas fa-check"></i> Aceptar';
                 rejectBtn.innerHTML = '<i class="fas fa-times"></i> Rechazar';
             }
-            acceptBtn.onclick = function() { acceptRide(); };
-            rejectBtn.onclick = function() { rejectRide(); };
-            const modal = document.getElementById('rideModal');
-            if (modal) { modal.classList.add('active'); dlog('✅ MODAL VISIBLE', 'success'); }
+            document.getElementById('rideModal').classList.add('active');
             startRideNotification();
             updateDebugStatus();
             registrarVistaDeCarrera(ride);
@@ -1377,24 +1532,26 @@
                 };
                 views.push(viewEntry);
                 await supabaseClient.from('rides').update({ viewed_by_drivers: views }).eq('id', ride.id);
-                dlog(`👁 Vista registrada`, 'success');
-            } catch (e) { dlog('Error vista: ' + (e.message || e), 'warning'); }
+            } catch (e) {}
         }
 
         function hideRideModal() { document.getElementById('rideModal').classList.remove('active'); }
 
         function resetRideState() {
+            offRouteStartTime = null;
+            lastRerouteTime = 0;
+            isRerouting = false;
+
+            setNavigationMode(false);
+
             document.getElementById('rideModal').classList.remove('active');
             document.getElementById('navigation-panel').classList.remove('active');
             currentRideId = null; currentRideStatus = null; pendingRide = null;
             clearRoute(); updateActionButtons();
-            document.getElementById('searchContainer').classList.remove('hidden');
             if (map && currentPosition) {
                 map.easeTo({
                     center: [currentPosition[1], currentPosition[0]],
-                    zoom: 15,
-                    pitch: 0,
-                    bearing: 0,
+                    zoom: 15, pitch: 0, bearing: 0,
                     padding: { top: 0, bottom: 0, left: 0, right: 0 },
                     duration: 1000
                 });
@@ -1404,8 +1561,6 @@
         }
 
         function updateRideUI(ride) {
-            if (ride && ['aceptado','llegado_origen','en_curso'].includes(ride.status)) document.getElementById('searchContainer').classList.add('hidden');
-            else document.getElementById('searchContainer').classList.remove('hidden');
             if (ride.status === 'aceptado') {
                 if (!currentRideId && !pendingRide) { showRideRequest(ride); return; }
                 hideRideModal();
@@ -1440,14 +1595,13 @@
 
         async function acceptRide() {
             if (!pendingRide || !pendingRide.id) return;
-            if (isAcceptingRide) { dlog('Ya aceptando', 'warning'); return; }
+            if (isAcceptingRide) return;
             isAcceptingRide = true;
             stopRideNotification();
             const rideId = pendingRide.id;
-            dlog('Aceptando: ' + rideId.substring(0,8), 'info');
             try {
                 const { data: rideCheck, error: checkErr } = await supabaseClient.from('rides').select('*').eq('id', rideId).single();
-                if (checkErr) { dlog('Error: ' + checkErr.message, 'error'); return alert('Error: ' + checkErr.message); }
+                if (checkErr) { return alert('Error: ' + checkErr.message); }
                 let ride = rideCheck;
                 if (ride.status === 'cancelado' || ride.status === 'no_completado') {
                     showToast('El pasajero canceló', 'times-circle');
@@ -1456,7 +1610,6 @@
                 if (ride.status === 'pendiente') {
                     const { data: rpcResult, error: rpcError } = await supabaseClient.rpc('accept_ride', { p_ride_id: rideId, p_driver_id: currentDriverId });
                     if (rpcError) {
-                        dlog('Error RPC: ' + rpcError.message, 'error');
                         const { data: fallback, error: fbErr } = await supabaseClient
                             .from('rides').update({ status: 'aceptado', driver_id: currentDriverId, accepted_at: new Date().toISOString() })
                             .eq('id', rideId).eq('status', 'pendiente').select().maybeSingle();
@@ -1466,9 +1619,8 @@
                         if (!rpcResult || !rpcResult.success) { showToast('Otro conductor la tomó', 'exclamation-circle'); hideRideModal(); pendingRide = null; return; }
                         ride = rpcResult.ride;
                     }
-                    dlog('✅ Aceptada', 'success');
                 } else if (ride.status === 'aceptado' && ride.driver_id === currentDriverId) {
-                    dlog('Ya asignada', 'info');
+                    // ya asignada
                 } else {
                     alert('No disponible.'); hideRideModal(); pendingRide = null; return;
                 }
@@ -1476,7 +1628,6 @@
                 currentRideStatus = 'aceptado';
                 pendingRide = null;
                 hideRideModal();
-                dlog('Dibujando ruta...', 'success');
                 if (!currentPosition) {
                     try {
                         const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }));
@@ -1485,30 +1636,37 @@
                     } catch (e) { alert('Activa el GPS.'); return; }
                 }
                 switchTab('viajes', document.querySelector('.nav-item:nth-child(2)'));
-                dlog('⏳ Esperando contenedor...', 'info');
-                let mapReady = false;
+                setNavigationMode(true);
+
                 for (let i = 0; i < 20; i++) {
-                    await new Promise(r => setTimeout(r, 200));
+                    await new Promise(r => setTimeout(r, 100));
                     const c = document.getElementById('map');
-                    if (c && c.offsetWidth > 0 && c.offsetHeight > 0) { dlog(`✅ Contenedor listo (${c.offsetWidth}x${c.offsetHeight})`, 'success'); mapReady = true; break; }
+                    if (c && c.offsetWidth > 0 && c.offsetHeight > 0) break;
                 }
-                if (!mapReady) dlog('❌ Contenedor sin dimensiones', 'error');
+
                 if (!map) await initMap([currentPosition[1], currentPosition[0]]);
                 await ensureMapReady();
-                await new Promise(r => setTimeout(r, 300));
-                if (!map || !mapInitialized) {
-                    dlog('❌ Mapa no inicializado', 'error');
-                } else if (ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
-                    dlog('🗺️ Dibujando ruta...', 'info');
-                    try {
-                        await drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
-                        currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
-                        dlog('✅ Ruta dibujada', 'success');
-                    } catch (e) { dlog('❌ Error ruta: ' + e.message, 'error'); }
-                } else { dlog('❌ Sin coordenadas', 'error'); }
+                try { map.resize(); } catch (e) {}
+                await new Promise(r => setTimeout(r, 150));
+
+                if (map && mapInitialized && currentPosition) {
+                    const bearing = Number.isFinite(smoothedBearing) ? smoothedBearing : 0;
+                    const screenH = map.getContainer().offsetHeight || window.innerHeight;
+                    map.jumpTo({
+                        center: [currentPosition[1], currentPosition[0]],
+                        zoom: 17.5,
+                        pitch: NAV_PITCH,
+                        bearing,
+                        offset: [0, Math.round(screenH * (NAV_ARROW_Y_FRACTION - 0.5))]
+                    });
+                }
+
+                if (map && mapInitialized && ride.origin_lat && ride.origin_lng && ride.destination_lat && ride.destination_lng) {
+                    await drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
+                    currentRouteTarget = { lat: ride.origin_lat, lng: ride.origin_lng };
+                }
                 updateActionButtons();
-                document.getElementById('searchContainer').classList.add('hidden');
-                updateDebugStatus();
+                setNavigationMode(true);
             } finally { isAcceptingRide = false; }
         }
 
@@ -1519,13 +1677,12 @@
             const rideId = pendingRide.id;
             pendingRide = null;
             hideRideModal();
-            dlog('Rechazando: ' + rideId.substring(0,8), 'warning');
             try {
                 await supabaseClient.from('ride_rejections').insert({ ride_id: rideId, driver_id: currentDriverId });
                 const { error } = await supabaseClient.from('rides').update({ status: 'pendiente', driver_id: null }).eq('id', rideId);
                 if (error) showToast('No se pudo rechazar', 'exclamation-circle');
-                else { dlog('Rechazado', 'success'); showToast('Viaje rechazado', 'check-circle'); }
-            } catch (e) { showToast('Error al rechazar', 'exclamation-circle'); } finally { isRejecting = false; updateDebugStatus(); }
+                else showToast('Viaje rechazado', 'check-circle');
+            } catch (e) { showToast('Error al rechazar', 'exclamation-circle'); } finally { isRejecting = false; }
         }
 
         async function markArrived() {
@@ -1539,7 +1696,17 @@
             if (error) return showToast('Error: ' + error.message, 'exclamation-circle');
             currentRideStatus = 'llegado_origen';
             updateActionButtons(); clearRoute(); currentRouteTarget = null;
-            if (map && currentPosition) map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 16, pitch: 0, bearing: 0 });
+            if (map && currentPosition) {
+                map.easeTo({
+                    center: [currentPosition[1], currentPosition[0]],
+                    zoom: 17,
+                    pitch: 0,
+                    bearing: 0,
+                    duration: 500,
+                    essential: true
+                });
+            }
+            setNavigationMode(true);
             speakInstruction('Has llegado al punto de partida');
         }
 
@@ -1575,19 +1742,25 @@
                 showToast('¡Viaje completado!', 'check-circle');
                 speakInstruction('Viaje completado');
                 setTimeout(() => { loadWalletData().catch(()=>{}); }, 900);
-            } else { showToast('Viaje no completado', 'info'); }
+            } else showToast('Viaje no completado', 'info');
             resetRideState();
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        //  drawRoute — OSRM (rutas gratis sin token)
+        // ═══════════════════════════════════════════════════════════════
         async function drawRoute(originCoords, waypointCoords, destinationCoords) {
             if (!map) return;
             await ensureMapReady();
             try {
                 if (map.getLayer('route-line')) map.removeLayer('route-line');
+                if (map.getLayer('route-line-bg')) map.removeLayer('route-line-bg');
                 if (map.getSource('route')) map.removeSource('route');
+                if (map.getSource('route-remaining')) map.removeSource('route-remaining');
             } catch (e) {}
             routeLayers = [];
             clearRoute();
+
             if (originCoords[0] !== waypointCoords[0] || originCoords[1] !== waypointCoords[1]) {
                 const pe = document.createElement('div');
                 pe.innerHTML = '<i class="fas fa-user-circle" style="font-size:35px;color:#22c55e;text-shadow:0 0 8px #22c55e;"></i>';
@@ -1596,75 +1769,108 @@
             const de = document.createElement('div');
             de.innerHTML = '<i class="fas fa-flag-checkered" style="font-size:35px;color:#ef4444;text-shadow:0 0 8px #ef4444;"></i>';
             dropoffMarker = new mapboxgl.Marker(de).setLngLat([destinationCoords[1], destinationCoords[0]]).addTo(map);
+
             let coordinates = [];
             if (originCoords[0] === waypointCoords[0] && originCoords[1] === waypointCoords[1]) coordinates = [[originCoords[1],originCoords[0]],[destinationCoords[1],destinationCoords[0]]];
             else coordinates = [[originCoords[1],originCoords[0]],[waypointCoords[1],waypointCoords[0]],[destinationCoords[1],destinationCoords[0]]];
+
             const coordsString = coordinates.map(c => c.join(',')).join(';');
-            const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${coordsString}?geometries=geojson&steps=true&language=es&voice_units=metric&access_token=${mapboxgl.accessToken}`;
+            const url = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson&steps=true&annotations=true`;
+
             try {
+                dlog('🛣️ Calculando ruta con OSRM...', 'info');
                 const response = await fetch(url);
                 const data = await response.json();
+
                 if (data.routes && data.routes.length > 0) {
                     const route = data.routes[0];
-                    currentNavigationSteps = route.legs.flatMap(leg => leg.steps);
+                    currentNavigationSteps = route.legs.flatMap(leg => leg.steps || []);
                     currentNavigationIndex = 0;
                     updateNavigationPanel(currentNavigationSteps[0]);
-                    const geojson = { type: 'Feature', properties: {}, geometry: route.geometry };
-                    map.addSource('route', { type: 'geojson', data: geojson, lineMetrics: true });
-                    map.addLayer({ id: 'route-line', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-width': 8, 'line-gradient': ['interpolate', ['linear'], ['line-progress'], 0, '#ff7a00', 1, '#ff7a00'] } });
-                    routeLayers.push('route', 'route-line');
+
+                    const fullGeojson = { type: 'Feature', properties: {}, geometry: route.geometry };
+                    map.addSource('route', { type: 'geojson', data: fullGeojson });
+                    map.addLayer({
+                        id: 'route-line-bg',
+                        type: 'line',
+                        source: 'route',
+                        layout: { 'line-join': 'round', 'line-cap': 'round' },
+                        paint: { 'line-color': '#1a1a1a', 'line-width': 8, 'line-opacity': 0.4 }
+                    });
+
+                    map.addSource('route-remaining', {
+                        type: 'geojson',
+                        data: {
+                            type: 'Feature',
+                            properties: {},
+                            geometry: { type: 'LineString', coordinates: route.geometry.coordinates }
+                        }
+                    });
+                    map.addLayer({
+                        id: 'route-line',
+                        type: 'line',
+                        source: 'route-remaining',
+                        layout: { 'line-join': 'round', 'line-cap': 'round' },
+                        paint: { 'line-color': '#ff7a00', 'line-width': 8 }
+                    });
+
+                    routeLayers.push('route', 'route-remaining', 'route-line', 'route-line-bg');
                     window.currentRouteCoords = route.geometry.coordinates;
                     window.currentRouteDistance = route.distance || 1000;
                     lastRouteProgressIndex = 0;
-                    drawManeuverArrow(route.legs.flatMap(leg => leg.steps));
-                    if (currentPosition && !userInteracting) {
-                        const screenH = map.getContainer().offsetHeight || window.innerHeight;
-                        const opts = {
-                            center: [currentPosition[1], currentPosition[0]],
-                            zoom: 17,
-                            pitch: 45,
-                            bearing: smoothedBearing || 0,
-                            padding: { top: Math.round(screenH * NAV_PADDING_FRACTION), bottom: 0, left: 0, right: 0 },
-                            duration: 1200,
-                            essential: true
-                        };
-                        if (!map.isEasing()) map.easeTo(opts);
-                        else map.jumpTo({ center: opts.center, bearing: opts.bearing, pitch: opts.pitch, padding: opts.padding });
-                    }
-                    speakInstruction(currentNavigationSteps[0]?.maneuver?.instruction || 'Siga la ruta');
-                } else throw new Error('No routes');
-            } catch (e) {
-                const geojson = { type: 'Feature', geometry: { type: 'LineString', coordinates } };
-                map.addSource('route', { type: 'geojson', data: geojson, lineMetrics: true });
-                map.addLayer({ id: 'route-line', type: 'line', source: 'route', paint: { 'line-width': 6, 'line-gradient': ['interpolate', ['linear'], ['line-progress'], 0, '#ff7a00', 1, '#ff7a00'] } });
-                routeLayers.push('route', 'route-line');
-                window.currentRouteCoords = coordinates;
-                try {
-                    window.currentRouteDistance = turf.length(turf.lineString(coordinates), { units: 'meters' });
-                } catch (err) { window.currentRouteDistance = 1000; }
-                lastRouteProgressIndex = 0;
-                if (currentPosition && !userInteracting) {
-                    const screenH = map.getContainer().offsetHeight || window.innerHeight;
-                    map.easeTo({
-                        center: [currentPosition[1], currentPosition[0]],
-                        zoom: 17,
-                        pitch: 45,
-                        bearing: smoothedBearing || 0,
-                        padding: { top: Math.round(screenH * NAV_PADDING_FRACTION), bottom: 0, left: 0, right: 0 },
-                        duration: 1200,
-                        essential: true
-                    });
+
+                    drawManeuverArrow(currentNavigationSteps);
+                    speakInstruction('Siga la ruta');
+                    dlog('✅ Ruta OSRM dibujada: ' + Math.round(route.distance) + 'm', 'success');
+                } else {
+                    throw new Error('OSRM no devolvió rutas');
                 }
+            } catch (e) {
+                dlog('❌ Error calculando ruta OSRM: ' + e.message, 'error');
+                showToast('No se pudo calcular la ruta. Reintentando...', 'exclamation-triangle');
+
+                setTimeout(async () => {
+                    if (!currentRideId || !currentRouteTarget) return;
+                    try {
+                        if (currentRideStatus === 'aceptado') {
+                            const { data: ride } = await supabaseClient
+                                .from('rides').select('origin_lat, origin_lng, destination_lat, destination_lng')
+                                .eq('id', currentRideId).single();
+                            if (ride && ride.origin_lat) {
+                                await drawRoute(currentPosition, [ride.origin_lat, ride.origin_lng], [ride.destination_lat, ride.destination_lng]);
+                            }
+                        } else if (currentRideStatus === 'en_curso') {
+                            const { data: ride } = await supabaseClient
+                                .from('rides').select('destination_lat, destination_lng')
+                                .eq('id', currentRideId).single();
+                            if (ride && ride.destination_lat) {
+                                await drawRoute(currentPosition, currentPosition, [ride.destination_lat, ride.destination_lng]);
+                            }
+                        }
+                    } catch (err) {
+                        dlog('❌ Reintento fallido: ' + err.message, 'error');
+                    }
+                }, 2000);
             }
-            dlog('Ruta dibujada', 'success');
         }
 
         function drawManeuverArrow(steps) {
             if (!map || !steps || steps.length === 0) return;
             if (maneuverArrowMarker) { maneuverArrowMarker.remove(); maneuverArrowMarker = null; }
             const nextStep = steps[0];
-            if (!nextStep || !nextStep.maneuver || !nextStep.maneuver.location) return;
-            const [lng, lat] = nextStep.maneuver.location;
+            if (!nextStep || !nextStep.maneuver) return;
+
+            let lng, lat;
+            if (Array.isArray(nextStep.maneuver.location)) {
+                [lng, lat] = nextStep.maneuver.location;
+            } else if (nextStep.maneuver.location) {
+                lng = nextStep.maneuver.location.lng || nextStep.maneuver.location[0];
+                lat = nextStep.maneuver.location.lat || nextStep.maneuver.location[1];
+            } else {
+                return;
+            }
+            if (!lng || !lat || isNaN(lng) || isNaN(lat)) return;
+
             const modifier = (nextStep.maneuver.modifier || '').toLowerCase();
             const type = (nextStep.maneuver.type || '').toLowerCase();
             let iconClass = 'fa-arrow-up';
@@ -1673,46 +1879,67 @@
             else if (modifier.includes('uturn')) iconClass = 'fa-undo';
             else if (type === 'arrive') iconClass = 'fa-flag-checkered';
             else if (type === 'roundabout' || type === 'rotary') iconClass = 'fa-sync-alt';
+
             const arrowEl = document.createElement('div');
             arrowEl.className = 'maneuver-arrow';
             arrowEl.innerHTML = `<i class="fas ${iconClass}"></i>`;
             maneuverArrowMarker = new mapboxgl.Marker({ element: arrowEl, anchor: 'center' }).setLngLat([lng, lat]).addTo(map);
-            dlog('🎯 Flecha: ' + iconClass, 'info');
         }
 
         function checkAndAdvanceManeuver(driverLat, driverLng) {
             if (!currentNavigationSteps || currentNavigationSteps.length === 0) return;
             const currentStep = currentNavigationSteps[currentNavigationIndex];
             if (!currentStep || !currentStep.maneuver || !currentStep.maneuver.location) return;
-            const [stepLng, stepLat] = currentStep.maneuver.location;
+
+            let stepLng, stepLat;
+            if (Array.isArray(currentStep.maneuver.location)) {
+                [stepLng, stepLat] = currentStep.maneuver.location;
+            } else {
+                stepLng = currentStep.maneuver.location.lng;
+                stepLat = currentStep.maneuver.location.lat;
+            }
+            if (isNaN(stepLng) || isNaN(stepLat)) return;
+
             const distanceToManeuver = getDistanceFromLatLonInMeters(driverLat, driverLng, stepLat, stepLng);
             if (distanceToManeuver < 25 && currentNavigationIndex < currentNavigationSteps.length - 1) {
                 currentNavigationIndex++;
                 const nextStep = currentNavigationSteps[currentNavigationIndex];
-                dlog(`➡️ Maniobra superada. Siguiente: ${currentNavigationIndex + 1}/${currentNavigationSteps.length}`, 'success');
                 updateNavigationPanel(nextStep);
                 const remainingSteps = currentNavigationSteps.slice(currentNavigationIndex);
                 drawManeuverArrow(remainingSteps);
-                if (nextStep && nextStep.maneuver && nextStep.maneuver.instruction) { speakInstruction(nextStep.maneuver.instruction); }
+                if (nextStep && nextStep.maneuver && nextStep.maneuver.instruction) speakInstruction(nextStep.maneuver.instruction);
             }
         }
 
         function updateNavigationPanel(step) {
-            const iconMap = { 'turn-left': 'fa-arrow-left', 'turn-right': 'fa-arrow-right', 'straight': 'fa-arrow-up', 'arrive': 'fa-flag-checkered' };
             const panel = document.getElementById('navigation-panel');
-            if (step) {
-                panel.classList.add('active');
-                document.getElementById('nav-icon').className = `fas ${iconMap[step.maneuver.modifier] || iconMap[step.maneuver.type] || 'fa-arrow-up'}`;
-                document.getElementById('nav-distance').textContent = step.distance < 1000 ? `${Math.round(step.distance)} m` : `${(step.distance/1000).toFixed(1)} km`;
-                document.getElementById('nav-text').textContent = translateInstruction(step.maneuver.instruction);
-            } else panel.classList.remove('active');
+            if (!step || !step.maneuver) {
+                panel.classList.remove('active');
+                return;
+            }
+            const modifier = (step.maneuver.modifier || '').toLowerCase();
+            const type = (step.maneuver.type || '').toLowerCase();
+            let iconClass = 'fa-arrow-up';
+            if (modifier.includes('right')) iconClass = 'fa-arrow-right';
+            else if (modifier.includes('left')) iconClass = 'fa-arrow-left';
+            else if (modifier.includes('uturn')) iconClass = 'fa-undo';
+            else if (type === 'arrive') iconClass = 'fa-flag-checkered';
+            else if (type === 'roundabout' || type === 'rotary') iconClass = 'fa-sync-alt';
+
+            panel.classList.add('active');
+            document.getElementById('nav-icon').className = `fas ${iconClass}`;
+            const dist = step.distance || 0;
+            document.getElementById('nav-distance').textContent = dist < 1000 ? `${Math.round(dist)} m` : `${(dist/1000).toFixed(1)} km`;
+            document.getElementById('nav-text').textContent = translateInstruction(step.maneuver.instruction || 'Sigue la ruta');
         }
 
         function clearRoute() {
             if (!map) return;
             try {
                 if (map.getLayer('route-line')) map.removeLayer('route-line');
+                if (map.getLayer('route-line-bg')) map.removeLayer('route-line-bg');
                 if (map.getSource('route')) map.removeSource('route');
+                if (map.getSource('route-remaining')) map.removeSource('route-remaining');
             } catch (e) {}
             routeLayers = [];
             if (pickupMarker) { pickupMarker.remove(); pickupMarker = null; }
@@ -1722,6 +1949,9 @@
             window.currentRouteCoords = null;
             window.currentRouteDistance = 0;
             lastRouteProgressIndex = 0;
+            offRouteStartTime = null;
+            lastRerouteTime = 0;
+            isRerouting = false;
             if (window.speechSynthesis) window.speechSynthesis.cancel();
             document.getElementById('navigation-panel').classList.remove('active');
         }
@@ -1738,13 +1968,10 @@
         const toggleSwitch = document.getElementById('toggleSwitch');
         toggleSwitch.addEventListener('change', async function(e) {
             isDriverOnline = e.target.checked;
-            dlog('🔘 Toggle: ' + isDriverOnline, isDriverOnline ? 'success' : 'warning');
             updateStatusCard(isDriverOnline);
             updateDebugStatus();
             if (isDriverOnline) {
-                // ✅ Pedir permiso de brújula (requiere gesto de usuario en iOS)
-                try { await initCompass(); } catch (err) { dlog('Compass init error: ' + err.message, 'warning'); }
-
+                try { await initCompass(); } catch (err) {}
                 try {
                     if (!notificationAudioCtx) { notificationAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
                     if (notificationAudioCtx.state === 'suspended') notificationAudioCtx.resume();
@@ -1752,21 +1979,28 @@
                 try {
                     const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }));
                     currentPosition = [pos.coords.latitude, pos.coords.longitude];
-                    dlog(`📍 GPS: ${currentPosition[0].toFixed(5)}, ${currentPosition[1].toFixed(5)}`, 'success');
                     const isViajesActive = document.getElementById('view-viajes')?.classList.contains('active');
                     if (isViajesActive) {
                         if (!map) initMap([currentPosition[1], currentPosition[0]]);
-                        else map.jumpTo({ center: [currentPosition[1], currentPosition[0]], zoom: 15 });
+                        else map.jumpTo({ center: [currentPosition[1], currentPosition[0]], zoom: 16 });
                         await ensureMapReady();
-                        setTimeout(() => { if (map && mapInitialized) updateDriverMarker(currentPosition[0], currentPosition[1], 0); }, 300);
-                    } else { dlog('Mapa no inicializado aún', 'info'); }
-                } catch (e) { dlog('Error GPS: ' + e.message, 'error'); }
+                        setTimeout(() => {
+                            if (map && mapInitialized) {
+                                updateDriverMarker(currentPosition[0], currentPosition[1], 0);
+                                map.jumpTo({
+                                    center: [currentPosition[1], currentPosition[0]],
+                                    zoom: 16,
+                                    pitch: 0,
+                                    bearing: 0
+                                });
+                            }
+                        }, 500);
+                    }
+                } catch (e) {}
                 startTracking();
                 try {
                     await supabaseClient.from('driver_status').upsert({ driver_id: currentDriverId, is_online: true, latitude: currentPosition?.[0] || null, longitude: currentPosition?.[1] || null, last_updated: new Date().toISOString() }, { onConflict: 'driver_id' });
-                    dlog('Estado online guardado', 'success');
-                } catch (e) { dlog('Error guardando: ' + e.message, 'error'); }
-                dlog('Cargando viajes...', 'info');
+                } catch (e) {}
                 await loadActiveRide();
                 setTimeout(async () => {
                     if (!currentRideId && !pendingRide && isDriverOnline) {
@@ -1805,13 +2039,11 @@
             if (driverMarker) {
                 markerTargetPos = [lat, lng];
                 markerTargetBearing = bearing;
-            } else {
-                createDriverMarker(lat, lng, bearing);
-            }
+            } else createDriverMarker(lat, lng, bearing);
         }
 
         // ═══════════════════════════════════════════════════════════════
-        //  startTracking con BRÚJULA + SNAP A RUTA
+        //  startTracking
         // ═══════════════════════════════════════════════════════════════
         function startTracking() {
             if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
@@ -1827,9 +2059,9 @@
                     const gpsHeading = position.coords.heading;
                     const gpsSpeed = position.coords.speed || 0;
                     const speedKmh = gpsSpeed * 3.6;
+                    window.currentSpeedKmh = speedKmh;
                     const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
 
-                    // ─── 1) SNAP A LA RUTA ───
                     let renderLat = gpsLat;
                     let renderLng = gpsLng;
                     if (enNavegacion) {
@@ -1839,13 +2071,10 @@
                             renderLng = snapped[1];
                         }
                     }
-                    currentPosition = [gpsLat, gpsLng];   // siempre GPS real
+                    currentPosition = [gpsLat, gpsLng];
 
-                    // ─── 2) BEARING (brújula > GPS > desplazamiento) ───
                     let bearing = smoothedBearing || 0;
-
                     if (compassAvailable && compassHeading !== null) {
-                        // ✅ Brújula: máxima prioridad cuando el teléfono está en el trípode
                         if (smoothedBearing === null) smoothedBearing = compassHeading;
                         else {
                             let diff = compassHeading - smoothedBearing;
@@ -1855,7 +2084,6 @@
                         }
                         bearing = smoothedBearing;
                     } else if (gpsHeading !== null && gpsHeading !== undefined && !isNaN(gpsHeading) && gpsSpeed > 1.5) {
-                        // Fallback GPS heading
                         if (smoothedBearing === null) smoothedBearing = gpsHeading;
                         else {
                             let diff = gpsHeading - smoothedBearing;
@@ -1865,7 +2093,6 @@
                         }
                         bearing = smoothedBearing;
                     } else if (previousCoord) {
-                        // Fallback: calcular por desplazamiento
                         const dist = getDistanceFromLatLonInMeters(previousCoord.lat, previousCoord.lng, gpsLat, gpsLng);
                         if (dist > 2) {
                             const raw = calculateBearing(previousCoord.lat, previousCoord.lng, gpsLat, gpsLng);
@@ -1881,116 +2108,48 @@
                     }
                     previousCoord = { lat: gpsLat, lng: gpsLng };
 
-                    // ─── 3) AVANCE DE MANIOBRAS (usa posición snapeada) ───
                     if (enNavegacion && currentNavigationSteps && currentNavigationSteps.length > 0) {
                         checkAndAdvanceManeuver(renderLat, renderLng);
                     }
 
-                    // ─── 4) PROGRESO DE RUTA ───
-                    if (map && mapInitialized && map.getLayer('route-line')
-                        && window.currentRouteCoords && window.currentRouteCoords.length > 1) {
-                        const progress = calculateRouteProgress(renderLat, renderLng);
-                        const pRaw = Math.max(0, Math.min(0.999, progress));
-                        const totalMeters = window.currentRouteDistance || 1000;
-                        const tailFraction = Math.min(0.15, ROUTE_TAIL_METERS / totalMeters);
-                        const pVisible = Math.max(0, pRaw - tailFraction);
-
-                        if (pRaw > 0.005) {
+                    // Actualizar coordenadas restantes (línea naranja pegada al marcador)
+                    if (enNavegacion && map && mapInitialized && map.getSource('route-remaining') && window.currentRouteCoords && window.currentRouteCoords.length > 2) {
+                        calculateRouteProgress(renderLat, renderLng);
+                        const tailOffset = 5;
+                        const idx = Math.max(0, Math.min(lastRouteProgressIndex - tailOffset, window.currentRouteCoords.length - 2));
+                        const remainingCoords = window.currentRouteCoords.slice(idx);
+                        if (remainingCoords.length >= 2) {
                             try {
-                                map.setPaintProperty('route-line', 'line-gradient', [
-                                    'interpolate', ['linear'], ['line-progress'],
-                                    0, 'rgba(255, 122, 0, 0)',
-                                    pVisible, 'rgba(255, 122, 0, 0)',
-                                    Math.min(pVisible + 0.002, 0.999), '#ff7a00',
-                                    1, '#ff7a00'
-                                ]);
+                                map.getSource('route-remaining').setData({
+                                    type: 'Feature',
+                                    properties: {},
+                                    geometry: { type: 'LineString', coordinates: remainingCoords }
+                                });
                             } catch (e) {}
                         }
                     }
 
-                    // ─── 5) MOVIMIENTO DEL MAPA (usa posición snapeada) ───
-                    if (map && mapInitialized) {
-                        updateDriverMarker(renderLat, renderLng, bearing);
-
-                        if (!userInteracting) {
-                            let zoom, pitch;
-                            if (enNavegacion) {
-                                zoom = Math.max(15, 18 - speedKmh * 0.03);
-                                pitch = Math.min(60, 45 + speedKmh * 0.25);
-                            } else {
-                                zoom = 15;
-                                pitch = 0;
-                            }
-
-                            const screenH = map.getContainer().offsetHeight || window.innerHeight;
-                            const paddingTop = enNavegacion ? Math.round(screenH * NAV_PADDING_FRACTION) : 0;
-
-                            const opts = {
-                                center: [renderLng, renderLat],
-                                zoom: zoom,
-                                pitch: pitch,
-                                padding: { top: paddingTop, bottom: 0, left: 0, right: 0 },
-                                duration: 800,
-                                essential: true,
-                                easing: (t) => t
-                            };
-
-                            // El mapa rota con el heading (brújula o GPS)
-                            if (enNavegacion && smoothedBearing !== null) {
-                                if (compassAvailable || speedKmh > 3) {
-                                    opts.bearing = smoothedBearing;
-                                } else {
-                                    opts.bearing = smoothedBearing || 0;
-                                }
-                            } else if (!enNavegacion) {
-                                opts.bearing = 0;
-                            } else {
-                                opts.bearing = smoothedBearing || 0;
-                            }
-
-                            if (!map.isEasing()) {
-                                map.easeTo(opts);
-                            } else {
-                                map.jumpTo({
-                                    center: opts.center,
-                                    bearing: opts.bearing,
-                                    pitch: opts.pitch,
-                                    padding: opts.padding
-                                });
-                            }
-                        }
-
-                        if (enNavegacion) {
-                            document.getElementById('navigation-panel').classList.add('active');
-                        } else {
-                            document.getElementById('navigation-panel').classList.remove('active');
-                        }
+                    if (enNavegacion) {
+                        checkAutoReroute(gpsLat, gpsLng);
                     }
 
-                    // ─── 6) UPDATE PERIÓDICO A SUPABASE (GPS real, no snapeado) ───
+                    if (map && mapInitialized) {
+                        updateDriverMarker(renderLat, renderLng, bearing);
+                        setNavigationMode(enNavegacion);
+                        updateDebugStatus();
+                    }
+
                     if (now - lastUpdateTime > UPDATE_INTERVAL) {
                         lastUpdateTime = now;
                         updateDriverStatus(true, gpsLat, gpsLng);
                     }
 
-                    // ─── 7) PARADA >5s → enderezar mapa ───
                     if (speedKmh > 5) {
                         isCurrentlyMoving = true;
                         lastMovingTime = now;
                     } else if (isCurrentlyMoving && (now - lastMovingTime) > 5000) {
                         isCurrentlyMoving = false;
-                        if (map && mapInitialized && enNavegacion) {
-                            dlog('🧭 Conductor parado >5s — enderezando mapa', 'info');
-                            const screenH = map.getContainer().offsetHeight || window.innerHeight;
-                            map.easeTo({
-                                center: [renderLng, renderLat],
-                                zoom: 17,
-                                pitch: 0,
-                                bearing: 0,
-                                padding: { top: Math.round(screenH * NAV_PADDING_FRACTION), bottom: 0, left: 0, right: 0 },
-                                duration: 1000
-                            });
-                        }
+                        // No mover la cámara aquí: el controlador de navegación es el único dueño de la cámara.
                     }
                 },
                 (error) => { dlog('Error GPS: ' + error.message, 'warning'); },
@@ -2000,29 +2159,8 @@
 
         async function updateDriverStatus(isOnline, lat = null, lng = null) {
             try { await supabaseClient.from('driver_status').upsert({ driver_id: currentDriverId, is_online: isOnline, latitude: lat, longitude: lng, last_updated: new Date().toISOString() }, { onConflict: 'driver_id' }); }
-            catch (e) { dlog('Error updateDriverStatus: ' + e.message, 'error'); }
+            catch (e) {}
         }
-
-        document.getElementById('searchInput').addEventListener('input', debounce(async (e) => {
-            const query = e.target.value.trim();
-            if (query.length < 3) { document.getElementById('suggestions').style.display = 'none'; return; }
-            const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?access_token=${mapboxgl.accessToken}&autocomplete=true&language=es&limit=5`;
-            const response = await fetch(url);
-            const data = await response.json();
-            const container = document.getElementById('suggestions');
-            container.innerHTML = '';
-            if (data.features && data.features.length > 0) {
-                data.features.forEach(f => {
-                    const item = document.createElement('div');
-                    item.className = 'suggestion-item';
-                    item.innerHTML = `<i class="fas fa-map-marker-alt" style="color:var(--primary-orange)"></i> <span>${f.place_name}</span>`;
-                    item.addEventListener('click', () => { map.flyTo({ center: f.center, zoom: 16 }); document.getElementById('searchInput').value = f.place_name; container.style.display = 'none'; });
-                    container.appendChild(item);
-                });
-                container.style.display = 'block';
-            } else container.style.display = 'none';
-        }, 300));
-        function debounce(fn, delay) { let t; return function(...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), delay); }; }
 
         async function loadHistorial() {
             if (!currentDriverId) return;
@@ -2082,18 +2220,14 @@
         }
 
         function setupChatSubscription() {
-            if (chatSubscription) {
-                try { supabaseClient.removeChannel(chatSubscription); } catch (e) {}
-                chatSubscription = null;
-            }
-            const channelName = `central-chat-${currentDriverId || 'anon'}-${Date.now()}`;
+            if (chatSubscription) { try { supabaseClient.removeChannel(chatSubscription); } catch (e) {} chatSubscription = null; }
             chatSubscription = supabaseClient
-                .channel(channelName)
+                .channel(`central-chat-${currentDriverId || 'anon'}-${Date.now()}`)
                 .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'central_messages' }, p => {
                     const m = p.new;
                     if ((m.driver_id === currentDriverId || m.driver_id === null) && m.created_by !== currentDriverId && currentChatTarget === 'central') appendMessageToChat(m.message, 'received');
                 })
-                .subscribe((status) => { dlog('Chat: ' + status, status === 'SUBSCRIBED' ? 'success' : 'info'); });
+                .subscribe();
         }
 
         async function loadWalletData() {
@@ -2121,7 +2255,6 @@
                     const activeId = currentRideId || pendingRide.id;
                     const { data: checkRide } = await supabaseClient.from('rides').select('id, status, driver_id').eq('id', activeId).maybeSingle();
                     if (checkRide && (checkRide.status === 'cancelado' || checkRide.status === 'no_completado')) {
-                        dlog('❌ Cancelación (polling)', 'warning');
                         handleRideCancelled(checkRide, 'polling');
                     }
                 } catch (e) {}
@@ -2141,8 +2274,7 @@
                 if (data && data.length > 0) {
                     const candidate = data.find(r => !rejectedIds.includes(r.id));
                     if (candidate) {
-                        dlog('🔄 Respaldo: ' + candidate.id.substring(0,8), 'warning');
-                       const { data: fullRide } = await supabaseClient.from('rides').select('*').eq('id', candidate.id).single();
+                        const { data: fullRide } = await supabaseClient.from('rides').select('*').eq('id', candidate.id).single();
                         if (fullRide && !pendingRide && !currentRideId && !isRejecting) { showRideRequest(fullRide); }
                     }
                 }
@@ -2158,12 +2290,7 @@
                 try {
                     fetch(`${supabaseUrl}/rest/v1/driver_status?driver_id=eq.${currentDriverId}`, {
                         method: 'PATCH',
-                        headers: {
-                            apikey: supabaseKey,
-                            Authorization: `Bearer ${supabaseKey}`,
-                            'Content-Type': 'application/json',
-                            Prefer: 'return=minimal'
-                        },
+                        headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
                         body: JSON.stringify({ is_online: false, last_updated: new Date().toISOString() }),
                         keepalive: true
                     });
@@ -2178,15 +2305,13 @@
                 if (isDriverOnline && !watchId) startTracking();
                 if (!animationFrameId) animationFrameId = requestAnimationFrame(animateMarker);
                 updateGreeting();
-                try {
-                    if (notificationAudioCtx && notificationAudioCtx.state === 'suspended') notificationAudioCtx.resume();
-                } catch (e) {}
+                try { if (notificationAudioCtx && notificationAudioCtx.state === 'suspended') notificationAudioCtx.resume(); } catch (e) {}
             }
         });
 
         document.getElementById('chatInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') sendCentralMessage(); });
 
-        dlog('App iniciada. Toca el engranaje para ver logs.', 'info');
+        dlog('App iniciada. Híbrido: Mapbox (mapa) + OSRM (rutas)', 'success');
     </script>
 </body>
 </html>
