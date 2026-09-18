@@ -1,3 +1,4 @@
+<!-- ROUTE STREET-FOLLOWING V6.1 - GPS TO INDICATOR + CROSSING SAFE PROGRESS + REROUTE FIXES -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -586,6 +587,7 @@
         const CAMERA_UPDATE_MS = 180;
         let lastCameraUpdate = 0;
         let navigationCameraLocked = false;
+        let navigationResumeTimer = null;
 
         let logCount = 0, debugPanelOpen = false;
         function dlog(msg, type = 'info') {
@@ -759,7 +761,7 @@
         }
 
         // ═══════════════════════════════════════════════════════════════
-        //  SNAP A RUTA — SIEMPRE snapea (nunca devuelve null)
+        //  PROYECCIÓN SOBRE RUTA — se usa para progreso/reroute, NO para mover el marcador
         // ═══════════════════════════════════════════════════════════════
         function projectPointOnSegment(pLat, pLng, aLat, aLng, bLat, bLng) {
             const dx = bLng - aLng, dy = bLat - aLat, len2 = dx*dx + dy*dy;
@@ -805,30 +807,108 @@
         function calculateRouteProgress(driverLat, driverLng) {
             const coords = window.currentRouteCoords;
             if (!coords || coords.length < 2) return 0;
-            const windowSize = 30;
-            const startIdx = Math.max(0, lastRouteProgressIndex - windowSize);
-            const endIdx = Math.min(coords.length - 1, lastRouteProgressIndex + windowSize);
-            let minDist = Infinity, closestIdx = lastRouteProgressIndex;
-            for (let i = startIdx; i <= endIdx; i++) {
-                const d = getDistanceFromLatLonInMeters(driverLat, driverLng, coords[i][0], coords[i][1]);
-                if (d < minDist) { minDist = d; closestIdx = i; }
+
+            const BACK_WINDOW = 120;
+            const FORWARD_WINDOW = 180;
+            const startIdx = Math.max(0, lastRouteProgressIndex - BACK_WINDOW);
+            const endIdx = Math.min(coords.length - 2, lastRouteProgressIndex + FORWARD_WINDOW);
+
+            let best = null;
+
+            const getHeadingForSegment = (a, b) => {
+                const y = Math.sin((b[1] - a[1]) * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180);
+                const x = Math.cos(a[0] * Math.PI / 180) * Math.sin(b[0] * Math.PI / 180) -
+                          Math.sin(a[0] * Math.PI / 180) * Math.cos(b[0] * Math.PI / 180) *
+                          Math.cos((b[1] - a[1]) * Math.PI / 180);
+                return (Math.atan2(y, x) * 180 / Math.PI + 360) % 360;
+            };
+
+            const angleDiff = (a, b) => {
+                let d = Math.abs(a - b) % 360;
+                return d > 180 ? 360 - d : d;
+            };
+
+            let movementHeading = null;
+            if (isCurrentlyMoving && smoothedBearing !== null) {
+                movementHeading = smoothedBearing;
+            } else if (typeof compassHeading === 'number' && compassAvailable) {
+                movementHeading = compassHeading;
             }
-            if (minDist > 80) {
-                minDist = Infinity;
-                for (let i = 0; i < coords.length; i++) {
-                    const d = getDistanceFromLatLonInMeters(driverLat, driverLng, coords[i][0], coords[i][1]);
-                    if (d < minDist) { minDist = d; closestIdx = i; }
+
+            for (let i = startIdx; i <= endIdx; i++) {
+                const a = coords[i], b = coords[i + 1];
+                if (!a || !b) continue;
+
+                const proj = projectPointOnSegment(
+                    driverLat, driverLng, a[1], a[0], b[1], b[0]
+                );
+                const distance = getDistanceFromLatLonInMeters(
+                    driverLat, driverLng, proj[0], proj[1]
+                );
+
+                let score = distance;
+
+                if (movementHeading !== null) {
+                    const roadHeading = getHeadingForSegment(a, b);
+                    const diff = angleDiff(movementHeading, roadHeading);
+                    const directionalDiff = Math.min(diff, Math.abs(180 - diff));
+                    if (directionalDiff > 75) score += 35;
+                    else if (directionalDiff > 55) score += 12;
+                }
+
+                if (i < lastRouteProgressIndex) {
+                    const back = lastRouteProgressIndex - i;
+                    score += Math.min(back * 0.12, 8);
+                }
+
+                if (!best || score < best.score) {
+                    best = {
+                        score,
+                        distance,
+                        segmentIndex: i,
+                        projection: proj
+                    };
                 }
             }
-            if (closestIdx < lastRouteProgressIndex) closestIdx = lastRouteProgressIndex;
-            lastRouteProgressIndex = closestIdx;
-            let distToIdx = 0, totalDist = 0;
-            for (let i = 1; i < coords.length; i++) {
-                const seg = getDistanceFromLatLonInMeters(coords[i-1][0], coords[i-1][1], coords[i][0], coords[i][1]);
-                if (i <= closestIdx) distToIdx += seg;
-                totalDist += seg;
+
+            if (!best || best.distance > Math.max(SNAP_MAX_DISTANCE, 55)) {
+                for (let i = 0; i < coords.length - 1; i++) {
+                    const a = coords[i], b = coords[i + 1];
+                    const proj = projectPointOnSegment(
+                        driverLat, driverLng, a[1], a[0], b[1], b[0]
+                    );
+                    const distance = getDistanceFromLatLonInMeters(
+                        driverLat, driverLng, proj[0], proj[1]
+                    );
+                    if (!best || distance < best.distance) {
+                        best = {
+                            score: distance,
+                            distance,
+                            segmentIndex: i,
+                            projection: proj
+                        };
+                    }
+                }
             }
-            return totalDist > 0 ? distToIdx / totalDist : 0;
+
+            if (best) {
+                lastRouteProgressIndex = best.segmentIndex;
+                window.currentRouteSnap = {
+                    lat: best.projection[0],
+                    lng: best.projection[1],
+                    distance: best.distance,
+                    segmentIndex: best.segmentIndex
+                };
+            } else {
+                window.currentRouteSnap = {
+                    lat: null,
+                    lng: null,
+                    distance: Infinity,
+                    segmentIndex: lastRouteProgressIndex
+                };
+            }
+
+            return lastRouteProgressIndex;
         }
 
         // ═══════════════════════════════════════════════════════════════
@@ -940,6 +1020,10 @@
         let lastRerouteTime = 0;
         let isRerouting = false;
 
+        // ▼▼▼ FIX 6: evitar saltos dobles de maniobra en cruces ▼▼▼
+        let lastManeuverAdvanceTime = 0;
+        // ▲▲▲ FIX 6 ▲▲▲
+
         let animationFrameId = null;
         let markerCurrentPos = null;
         let markerTargetPos = null;
@@ -953,6 +1037,10 @@
         let isRejecting = false;
         let isAcceptingRide = false;
 
+        // ▼▼▼ FIX 4: precisión del último fix GPS ▼▼▼
+        window.currentGpsAccuracy = 0;
+        // ▲▲▲ FIX 4 ▲▲▲
+
         if ('speechSynthesis' in window) {
             window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
         }
@@ -961,6 +1049,41 @@
         //  ANIMACIÓN DEL MARCADOR — el mapa sigue al marcador
         //  con offset para posicionarlo al 75% del screenH
         // ═══════════════════════════════════════════════════════════════
+        function resumeNavigationCamera(immediate = false) {
+            if (navigationResumeTimer) {
+                clearTimeout(navigationResumeTimer);
+                navigationResumeTimer = null;
+            }
+            if (!map || !mapInitialized || !navigationCameraLocked || !markerCurrentPos) return;
+            userInteracting = false;
+            lastInteractionTime = 0;
+            try {
+                const screenH = map.getContainer().offsetHeight || window.innerHeight;
+                const offsetY = Math.round(screenH * (NAV_ARROW_Y_FRACTION - 0.5));
+                const bearing = Number.isFinite(smoothedBearing) ? smoothedBearing : 0;
+                const speed = Math.max(0, Number(window.currentSpeedKmh || 0));
+                let zoom = NAV_ZOOM_MAX - Math.min(speed * 0.025, 1.2);
+                zoom = Math.max(NAV_ZOOM_MIN, Math.min(NAV_ZOOM_MAX, zoom));
+                map.easeTo({
+                    center: [markerCurrentPos[1], markerCurrentPos[0]],
+                    zoom,
+                    bearing,
+                    pitch: NAV_PITCH,
+                    offset: [0, offsetY],
+                    duration: immediate ? 250 : 450,
+                    essential: true
+                });
+            } catch (e) {}
+        }
+
+        function scheduleNavigationResume(delay = 900) {
+            if (navigationResumeTimer) clearTimeout(navigationResumeTimer);
+            navigationResumeTimer = setTimeout(() => {
+                navigationResumeTimer = null;
+                resumeNavigationCamera(false);
+            }, delay);
+        }
+
         function animateMarker() {
             if (!driverMarker || !markerCurrentPos || !markerTargetPos) {
                 animationFrameId = requestAnimationFrame(animateMarker);
@@ -1016,7 +1139,11 @@
         function getDistanceToRoute(driverLat, driverLng) {
             const coords = window.currentRouteCoords;
             if (!coords || coords.length < 2) return Infinity;
-            const windowSize = 60;
+
+            // ▼▼▼ FIX 2: ventana adaptativa — si ya estamos monitoreando off-route,
+            // hacemos búsqueda global para no confundir cruces perpendiculares con "on-route".
+            const windowSize = offRouteStartTime !== null ? coords.length : 60;
+            // ▲▲▲ FIX 2 ▲▲▲
             const startIdx = Math.max(0, lastRouteProgressIndex - windowSize);
             const endIdx = Math.min(coords.length - 1, lastRouteProgressIndex + windowSize);
             let minDist = Infinity;
@@ -1037,11 +1164,21 @@
             const now = Date.now();
             if (now - lastRerouteTime < REROUTE_COOLDOWN_MS) return;
 
+            // ▼▼▼ FIX 4: ignorar fixes GPS con precisión pobre al inicio del monitoreo ▼▼▼
+            if (window.currentGpsAccuracy > 40 && offRouteStartTime === null) {
+                dlog(`⚠️ GPS impreciso (±${Math.round(window.currentGpsAccuracy)}m), posponiendo chequeo`, 'warning');
+                return;
+            }
+            // ▲▲▲ FIX 4 ▲▲▲
+
             const dist = getDistanceToRoute(driverLat, driverLng);
 
             if (dist > OFF_ROUTE_THRESHOLD_M) {
                 if (offRouteStartTime === null) {
                     offRouteStartTime = now;
+                    // ▼▼▼ FIX 5: resetear índice para forzar búsqueda global en el próximo cálculo ▼▼▼
+                    lastRouteProgressIndex = 0;
+                    // ▲▲▲ FIX 5 ▲▲▲
                     dlog(`📍 Fuera de ruta (${Math.round(dist)}m). Monitoreando...`, 'warning');
                 } else if (now - offRouteStartTime > OFF_ROUTE_DURATION_MS) {
                     dlog(`🔄 Auto-reroute disparado`, 'warning');
@@ -1405,9 +1542,12 @@
                     setTimeout(() => finish(), 15000);
                 });
                 try { map.addControl(new mapboxgl.NavigationControl(), 'middle-right'); } catch (e) {}
-                try { map.on('mousedown', () => { userInteracting = true; lastInteractionTime = Date.now(); }); } catch (e) {}
-                try { map.on('touchstart', () => { userInteracting = true; lastInteractionTime = Date.now(); }); } catch (e) {}
-                try { map.on('moveend', () => { if (Date.now() - lastInteractionTime > 5000) userInteracting = false; }); } catch (e) {}
+                try { map.on('mousedown', () => { userInteracting = true; lastInteractionTime = Date.now(); scheduleNavigationResume(1200); }); } catch (e) {}
+                try { map.on('touchstart', () => { userInteracting = true; lastInteractionTime = Date.now(); scheduleNavigationResume(1200); }); } catch (e) {}
+                try { map.on('dragstart', () => { userInteracting = true; lastInteractionTime = Date.now(); scheduleNavigationResume(900); }); } catch (e) {}
+                try { map.on('mouseup', () => scheduleNavigationResume(500)); } catch (e) {}
+                try { map.on('touchend', () => scheduleNavigationResume(500)); } catch (e) {}
+                try { map.on('moveend', () => { if (navigationCameraLocked) scheduleNavigationResume(700); }); } catch (e) {}
                 dlog('✅ Mapa inicializado', 'success');
                 return true;
             } catch (e) {
@@ -1749,6 +1889,25 @@
         // ═══════════════════════════════════════════════════════════════
         //  drawRoute — OSRM (rutas gratis sin token)
         // ═══════════════════════════════════════════════════════════════
+        function cleanRoadRouteGeometry(coords) {
+            if (!Array.isArray(coords) || coords.length < 2) return coords || [];
+            const cleaned = [coords[0]];
+
+            for (let i = 1; i < coords.length; i++) {
+                const prev = cleaned[cleaned.length - 1];
+                const cur = coords[i];
+                if (!cur || cur.length < 2) continue;
+
+                const d = getDistanceFromLatLonInMeters(
+                    prev[1], prev[0], cur[1], cur[0]
+                );
+
+                if (d >= 0.35) cleaned.push(cur);
+            }
+
+            return cleaned.length >= 2 ? cleaned : coords;
+        }
+
         async function drawRoute(originCoords, waypointCoords, destinationCoords) {
             if (!map) return;
             await ensureMapReady();
@@ -1775,7 +1934,15 @@
             else coordinates = [[originCoords[1],originCoords[0]],[waypointCoords[1],waypointCoords[0]],[destinationCoords[1],destinationCoords[0]]];
 
             const coordsString = coordinates.map(c => c.join(',')).join(';');
-            const url = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson&steps=true&annotations=true`;
+
+            // ▼▼▼ FIX 3: añadir bearings al origen para que OSRM respete la dirección de avance ▼▼▼
+            let url = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson&steps=true&annotations=true`;
+            if (Number.isFinite(smoothedBearing)) {
+                const heading = Math.round(((smoothedBearing % 360) + 360) % 360);
+                const bearings = coordinates.map((_, i) => i === 0 ? `${heading},90` : '180,90').join(';');
+                url += `&bearings=${bearings}`;
+            }
+            // ▲▲▲ FIX 3 ▲▲▲
 
             try {
                 dlog('🛣️ Calculando ruta con OSRM...', 'info');
@@ -1815,7 +1982,7 @@
                     });
 
                     routeLayers.push('route', 'route-remaining', 'route-line', 'route-line-bg');
-                    window.currentRouteCoords = route.geometry.coordinates;
+                    window.currentRouteCoords = cleanRoadRouteGeometry(route.geometry.coordinates);
                     window.currentRouteDistance = route.distance || 1000;
                     lastRouteProgressIndex = 0;
 
@@ -1902,6 +2069,12 @@
 
             const distanceToManeuver = getDistanceFromLatLonInMeters(driverLat, driverLng, stepLat, stepLng);
             if (distanceToManeuver < 25 && currentNavigationIndex < currentNavigationSteps.length - 1) {
+                // ▼▼▼ FIX 6: evitar avanzar dos veces seguidas en cruces ▼▼▼
+                const now = Date.now();
+                if (now - lastManeuverAdvanceTime < 2000) return;
+                lastManeuverAdvanceTime = now;
+                // ▲▲▲ FIX 6 ▲▲▲
+
                 currentNavigationIndex++;
                 const nextStep = currentNavigationSteps[currentNavigationIndex];
                 updateNavigationPanel(nextStep);
@@ -2060,17 +2233,15 @@
                     const gpsSpeed = position.coords.speed || 0;
                     const speedKmh = gpsSpeed * 3.6;
                     window.currentSpeedKmh = speedKmh;
+
+                    // ▼▼▼ FIX 4: guardar precisión del fix GPS ▼▼▼
+                    window.currentGpsAccuracy = position.coords.accuracy || 0;
+                    // ▲▲▲ FIX 4 ▲▲▲
+
                     const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
 
-                    let renderLat = gpsLat;
-                    let renderLng = gpsLng;
-                    if (enNavegacion) {
-                        const snapped = snapToRoute(gpsLat, gpsLng);
-                        if (snapped) {
-                            renderLat = snapped[0];
-                            renderLng = snapped[1];
-                        }
-                    }
+                    const renderLat = gpsLat;
+                    const renderLng = gpsLng;
                     currentPosition = [gpsLat, gpsLng];
 
                     let bearing = smoothedBearing || 0;
@@ -2112,18 +2283,58 @@
                         checkAndAdvanceManeuver(renderLat, renderLng);
                     }
 
-                    // Actualizar coordenadas restantes (línea naranja pegada al marcador)
                     if (enNavegacion && map && mapInitialized && map.getSource('route-remaining') && window.currentRouteCoords && window.currentRouteCoords.length > 2) {
-                        calculateRouteProgress(renderLat, renderLng);
-                        const tailOffset = 5;
-                        const idx = Math.max(0, Math.min(lastRouteProgressIndex - tailOffset, window.currentRouteCoords.length - 2));
-                        const remainingCoords = window.currentRouteCoords.slice(idx);
-                        if (remainingCoords.length >= 2) {
+                        calculateRouteProgress(gpsLat, gpsLng);
+                        const coords = window.currentRouteCoords;
+                        const snap = window.currentRouteSnap;
+                        const segIdx = Math.max(0, Math.min(
+                            snap && Number.isFinite(snap.segmentIndex)
+                                ? snap.segmentIndex
+                                : lastRouteProgressIndex,
+                            coords.length - 2
+                        ));
+
+                        const remainingCoords = [];
+                        const snapDistance = snap && Number.isFinite(snap.distance)
+                            ? snap.distance
+                            : Infinity;
+
+                        if (snap && Number.isFinite(snap.lat) && Number.isFinite(snap.lng)) {
+                            const snapPoint = [snap.lng, snap.lat];
+
+                            // ▼▼▼ FIX 1: link visual incondicional mientras estés dentro del umbral off-route.
+                            // El indicador representa el GPS crudo, así que la franja naranja debe
+                            // llegar SIEMPRE al marcador si el conductor está razonablemente cerca
+                            // de la calle (dentro del mismo rango que usamos para declarar off-route).
+                            const allowGpsLink = snapDistance <= OFF_ROUTE_THRESHOLD_M;
+                            if (allowGpsLink) {
+                                remainingCoords.push([driverLng, driverLat]);
+                            }
+                            // ▲▲▲ FIX 1 ▲▲▲
+                            remainingCoords.push(snapPoint);
+                        } else {
+                            remainingCoords.push(coords[segIdx]);
+                        }
+
+                        for (let i = segIdx + 1; i < coords.length; i++) {
+                            remainingCoords.push(coords[i]);
+                        }
+
+                        const finalRemaining = [];
+                        for (const c of remainingCoords) {
+                            if (!c || c.length < 2) continue;
+                            const prev = finalRemaining[finalRemaining.length - 1];
+                            if (!prev || getDistanceFromLatLonInMeters(prev[1], prev[0], c[1], c[0]) >= 0.15) {
+                                finalRemaining.push(c);
+                            }
+                        }
+
+                        if (finalRemaining.length >= 2) {
                             try {
                                 map.getSource('route-remaining').setData({
                                     type: 'Feature',
                                     properties: {},
-                                    geometry: { type: 'LineString', coordinates: remainingCoords }
+                                    geometry: { type: 'LineString', coordinates: finalRemaining }
                                 });
                             } catch (e) {}
                         }
@@ -2149,7 +2360,6 @@
                         lastMovingTime = now;
                     } else if (isCurrentlyMoving && (now - lastMovingTime) > 5000) {
                         isCurrentlyMoving = false;
-                        // No mover la cámara aquí: el controlador de navegación es el único dueño de la cámara.
                     }
                 },
                 (error) => { dlog('Error GPS: ' + error.message, 'warning'); },
@@ -2311,7 +2521,7 @@
 
         document.getElementById('chatInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') sendCentralMessage(); });
 
-        dlog('App iniciada. Híbrido: Mapbox (mapa) + OSRM (rutas)', 'success');
+        dlog('App iniciada. Híbrido: Mapbox (mapa) + OSRM (rutas) — v6.1 con fixes de reroute y link visual', 'success');
     </script>
 </body>
 </html>
