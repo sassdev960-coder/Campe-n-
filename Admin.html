@@ -2310,23 +2310,45 @@
       }
     };
 
-    window.showDriverDetail = function(driverId) {
+    // ========== SHOW DRIVER DETAIL (ROBUSTO: BUSCA POR 3 CRITERIOS) ==========
+    window.showDriverDetail = async function(driverId) {
       const driver = getDriverById(driverId);
       if (!driver) return;
+
+      // Refrescar solicitudes desde Supabase para evitar caché viejo
+      try {
+        const { data: freshApps } = await supabaseClient
+          .from('driver_applications')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (freshApps) applications = freshApps;
+      } catch (e) {
+        console.warn('No se pudieron refrescar las solicitudes:', e);
+      }
 
       const loc = getDriverLocation(driverId);
       const wallet = wallets.find(w => w.driver_id === driverId);
       const driverRides = rides.filter(r => r.driver_id === driverId);
       const completedRides = driverRides.filter(r => r.status === 'completado').length;
 
-      // Buscar la solicitud aprobada que creó este conductor para recuperar credenciales
-      const sourceApp = applications.find(a => a.approved_driver_id === driverId);
+      // Buscar la solicitud por 3 criterios distintos
+      const cleanPhoneDigits = (driver.phone || '').replace(/[^\d]/g, '');
+      const sourceApp =
+        applications.find(a => a.approved_driver_id === driverId) ||
+        applications.find(a => {
+          const aPhone = (a.phone || '').replace(/[^\d]/g, '');
+          return aPhone && aPhone === cleanPhoneDigits;
+        }) ||
+        applications.find(a => a.auth_email === `${cleanPhoneDigits}@montero.app`);
+
+      console.log('🔍 [showDriverDetail] Driver:', driverId, 'SourceApp:', sourceApp);
+
       const tempPassword = sourceApp?.temp_password || null;
-      const authEmail = sourceApp?.auth_email || (driver.phone ? `${driver.phone}@montero.app` : null);
+      const authEmail = sourceApp?.auth_email || (cleanPhoneDigits ? `${cleanPhoneDigits}@montero.app` : null);
 
       let accessBlock = '';
       if (tempPassword) {
-        const cleanPhone = (driver.phone || '').replace(/[^\d]/g, '');
+        const cleanPhone = cleanPhoneDigits;
         const whatsappText = encodeURIComponent(
           `¡Hola ${driver.full_name}! Tus datos de acceso a Moto Móvil Conductor:\n\n` +
           `📱 Teléfono: ${cleanPhone}\n` +
@@ -2366,17 +2388,24 @@
           </div>
         `;
       } else {
+        const cleanPhone = cleanPhoneDigits;
         accessBlock = `
           <div class="access-card" style="border-left-color: var(--yellow); background: rgba(245, 158, 11, 0.08);">
             <div class="access-card-title" style="color: var(--yellow);">
-              <i class="fas fa-exclamation-triangle"></i> Sin datos de acceso guardados
+              <i class="fas fa-exclamation-triangle"></i> Sin contraseña guardada
             </div>
             <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">
-              Este conductor no tiene contraseña guardada (probablemente fue creado antes de este sistema).
-              Puedes generar una nueva contraseña temporal con el botón de abajo.
+              Este conductor fue creado sin guardar su contraseña (probablemente antes de usar el nuevo flujo de aprobación).
+              Genera una contraseña nueva y compártela con él.
             </p>
+            ${cleanPhone ? `
+              <div class="access-row" style="margin-top: 12px;">
+                <span class="access-label"><i class="fas fa-phone"></i> Teléfono (login)</span>
+                <span class="access-value">${cleanPhone}</span>
+              </div>
+            ` : ''}
             <div class="access-actions">
-              <button class="btn btn-primary" onclick="resetDriverPassword('${driver.id}', '${escapeHtml(driver.full_name || '')}', '${(driver.phone || '').replace(/[^\d]/g, '')}')">
+              <button class="btn btn-primary" onclick="resetDriverPassword('${driver.id}', '${escapeHtml(driver.full_name || '')}', '${cleanPhone}')">
                 <i class="fas fa-key"></i> Generar nueva contraseña
               </button>
             </div>
@@ -2448,7 +2477,7 @@
       `);
     };
 
-    // ========== RESET CONTRASEÑA (vía Edge Function) ==========
+    // ========== RESET CONTRASEÑA ==========
     window.resetDriverPassword = async function(driverId, driverName, cleanPhone) {
       const rand = Math.random().toString(36).slice(2, 7).toUpperCase();
       const newPassword = `MOTO-${rand}`;
@@ -2458,15 +2487,12 @@
       showToast('Procesando...', 'Generando nueva contraseña', 'info');
 
       try {
-        // Invocar la Edge Function pasando solo el phone
-        // La función detectará que ya existe y solo actualizará la contraseña
         const phone = (cleanPhone || '').replace(/[\s\-\(\)]/g, '').replace(/^\+?591/, '');
 
         const { data, error } = await supabaseClient.functions.invoke('create-driver-user', {
           body: {
             full_name: driverName,
             phone: phone
-            // no enviamos application_id para no sobreescribir ninguna solicitud
           }
         });
 
@@ -2478,11 +2504,11 @@
         addActivity('driver', 'fa-key', `Contraseña reseteada para ${driverName}`);
         showToast('✅ Contraseña reseteada', `${driverName} tiene nueva contraseña`, 'success');
 
-        // Actualizar la solicitud con la nueva contraseña (si existe)
+        // Guardar la nueva contraseña en la solicitud del conductor
         if (data.driver_id) {
           await supabaseClient
             .from('driver_applications')
-            .update({ temp_password: finalPassword })
+            .update({ temp_password: finalPassword, auth_email: `${phone}@montero.app` })
             .eq('approved_driver_id', data.driver_id);
         }
 
@@ -2818,14 +2844,13 @@
       `);
     };
 
-    // ========== APROBAR SOLICITUD (USA EDGE FUNCTION) ==========
+    // ========== APROBAR SOLICITUD (EDGE FUNCTION) ==========
     window.approveApplication = async function(appId) {
       const app = applications.find(a => a.id === appId);
       if (!app) return;
 
       if (!confirm(`¿Aprobar a ${app.full_name}?\nSe creará su cuenta con una contraseña temporal.`)) return;
 
-      // Limpiar teléfono
       const cleanPhone = (app.phone || '').replace(/[\s\-\(\)]/g, '').replace(/^\+?591/, '');
 
       if (!cleanPhone) {
@@ -2836,7 +2861,6 @@
       showToast('Procesando...', 'Creando cuenta del conductor', 'info');
 
       try {
-        // 1. Invocar la Edge Function create-driver-user
         const { data, error } = await supabaseClient.functions.invoke('create-driver-user', {
           body: {
             full_name: app.full_name,
@@ -2850,8 +2874,6 @@
 
         const { driver_id, temp_password, email } = data;
 
-        // 2. Actualizar los datos adicionales del conductor en la tabla drivers
-        //    (la Edge Function solo inserta id, phone, full_name, is_active)
         const { error: updateDriverError } = await supabaseClient
           .from('drivers')
           .update({
@@ -2871,7 +2893,6 @@
           console.warn('⚠️ No se pudieron actualizar los datos extra del conductor:', updateDriverError.message);
         }
 
-        // 3. Guardar datos de acceso en la solicitud (por si acaso la Edge Function no lo hizo)
         await supabaseClient
           .from('driver_applications')
           .update({
@@ -2884,11 +2905,9 @@
           })
           .eq('id', app.id);
 
-        // 4. Feedback
         addActivity('driver', 'fa-user-check', `Conductor ${app.full_name} aprobado`);
         showToast('✅ Solicitud aprobada', `${app.full_name} ya puede iniciar sesión`, 'success');
 
-        // 5. Modal con credenciales
         const whatsappText = encodeURIComponent(
           `¡Hola ${app.full_name}! Tu cuenta de Moto Móvil fue aprobada.\n\n` +
           `📱 Teléfono: ${cleanPhone}\n` +
@@ -3570,7 +3589,6 @@
         })
         .subscribe();
 
-      // Realtime para solicitudes de conductores
       supabaseClient
         .channel('admin-applications')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_applications' }, (payload) => {
