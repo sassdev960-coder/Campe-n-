@@ -827,6 +827,105 @@
     .wallet-balance { font-size: 2rem; font-weight: 900; margin: 8px 0; }
     .wallet-label { font-size: 0.8rem; opacity: 0.9; }
 
+    /* ========== TARIFAS EDITOR ========== */
+    .tarifa-section {
+      background: var(--bg-card); border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg); padding: 24px;
+      margin-bottom: 20px; position: relative;
+    }
+    .tarifa-section-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px; padding-bottom: 14px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .tarifa-section-icon {
+      width: 42px; height: 42px; border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+    .tarifa-section-icon.orange { background: rgba(255, 122, 0, 0.15); color: var(--primary); }
+    .tarifa-section-icon.blue   { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
+    .tarifa-section-icon.purple { background: rgba(139, 92, 246, 0.15); color: var(--purple); }
+    .tarifa-section-icon.green  { background: rgba(16, 185, 129, 0.15); color: var(--green); }
+    .tarifa-section-title { font-size: 1rem; font-weight: 800; margin-bottom: 2px; }
+    .tarifa-section-subtitle { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; }
+
+    .tarifa-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .tarifa-field {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .tarifa-label {
+      font-size: 0.75rem; font-weight: 600;
+      color: var(--text-secondary);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .tarifa-label i { color: var(--primary); font-size: 0.85rem; }
+    .tarifa-input-wrapper {
+      position: relative; display: flex; align-items: center;
+    }
+    .tarifa-input {
+      width: 100%; padding: 12px 60px 12px 14px;
+      background: var(--bg-input);
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius-md);
+      color: var(--text-main); font-size: 1rem;
+      font-weight: 700; font-family: 'Inter', sans-serif;
+      outline: none; transition: var(--transition);
+      font-variant-numeric: tabular-nums;
+    }
+    .tarifa-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(255, 122, 0, 0.1);
+    }
+    .tarifa-input.bs    { padding-right: 46px; }
+    .tarifa-input.m     { padding-right: 46px; }
+    .tarifa-input-unit {
+      position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.8rem; font-weight: 700;
+      color: var(--primary); pointer-events: none;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .tarifa-hint {
+      font-size: 0.7rem; color: var(--text-muted);
+      font-weight: 500; line-height: 1.4;
+    }
+
+    .tarifa-preview {
+      background: linear-gradient(135deg, rgba(255, 122, 0, 0.08), rgba(255, 122, 0, 0.02));
+      border: 1px solid rgba(255, 122, 0, 0.25);
+      border-radius: var(--radius-md);
+      padding: 16px; margin-top: 20px;
+    }
+    .tarifa-preview-title {
+      font-size: 0.7rem; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--primary);
+      font-weight: 700; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .tarifa-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+    }
+    .tarifa-preview-item {
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+    }
+    .tarifa-preview-distance {
+      font-size: 0.7rem; color: var(--text-muted);
+      font-weight: 600; margin-bottom: 4px;
+    }
+    .tarifa-preview-price {
+      font-size: 1.1rem; font-weight: 800;
+      color: var(--primary); font-variant-numeric: tabular-nums;
+    }
+
     /* ========== TABS DASHBOARD ========== */
     .dash-tabs { display: flex; padding: 12px; gap: 8px; border-bottom: 1px solid var(--border-light); }
     .dash-tab {
@@ -1065,6 +1164,12 @@
       <button class="nav-item" data-view="messages">
         <i class="fas fa-paper-plane"></i>
         Mensajes Central
+      </button>
+
+      <div class="nav-section-title">Configuración</div>
+      <button class="nav-item" data-view="tarifas">
+        <i class="fas fa-tags"></i>
+        Tarifas
       </button>
 
       <div class="nav-section-title">Análisis</div>
@@ -1365,6 +1470,28 @@
         </div>
       </div>
 
+      <!-- VISTA: TARIFAS -->
+      <div class="view-panel" id="view-tarifas">
+        <div class="content-view">
+          <div class="view-header">
+            <div>
+              <div class="view-title"><i class="fas fa-tags"></i> Configuración de Tarifas</div>
+              <div class="view-subtitle">Ajusta los precios en tiempo real. Los cambios se aplican a todos los nuevos viajes.</div>
+            </div>
+            <button class="btn btn-primary" id="save-tarifas-btn">
+              <i class="fas fa-save"></i> Guardar cambios
+            </button>
+          </div>
+
+          <div id="tarifas-container">
+            <div class="empty-state">
+              <i class="fas fa-spinner fa-spin"></i>
+              <p>Cargando tarifas...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- VISTA: ACTIVIDAD -->
       <div class="view-panel" id="view-activity">
         <div class="content-view">
@@ -1424,6 +1551,7 @@
     let walletTransactions = [];
     let centralMessages = [];
     let activity = [];
+    let pricingConfig = null;
 
     let appInitialized = false;
     let currentView = 'dashboard';
@@ -1679,7 +1807,7 @@
     async function loadAllData() {
       console.log('📊 [DATA] Cargando datos...');
       try {
-        const [driversRes, driverStatusRes, ridesRes, passengersRes, applicationsRes, walletsRes, transactionsRes, messagesRes] = await Promise.all([
+        const [driversRes, driverStatusRes, ridesRes, passengersRes, applicationsRes, walletsRes, transactionsRes, messagesRes, pricingRes] = await Promise.all([
           supabaseClient.from('drivers').select('*'),
           supabaseClient.from('driver_status').select('*'),
           supabaseClient.from('rides').select('*').order('created_at', { ascending: false }).limit(100),
@@ -1687,7 +1815,8 @@
           supabaseClient.from('driver_applications').select('*').order('created_at', { ascending: false }),
           supabaseClient.from('wallets').select('*'),
           supabaseClient.from('wallet_transactions').select('*').order('created_at', { ascending: false }).limit(100),
-          supabaseClient.from('central_messages').select('*').order('created_at', { ascending: false }).limit(50)
+          supabaseClient.from('central_messages').select('*').order('created_at', { ascending: false }).limit(50),
+          supabaseClient.from('pricing_config').select('*').eq('is_active', true).order('updated_at', { ascending: false }).limit(1).maybeSingle()
         ]);
 
         drivers = driversRes.data || [];
@@ -1698,6 +1827,7 @@
         wallets = walletsRes.data || [];
         walletTransactions = transactionsRes.data || [];
         centralMessages = messagesRes.data || [];
+        if (pricingRes.data) pricingConfig = pricingRes.data;
 
         renderAll();
       } catch (error) {
@@ -2310,12 +2440,10 @@
       }
     };
 
-    // ========== SHOW DRIVER DETAIL (ROBUSTO: BUSCA POR 3 CRITERIOS) ==========
     window.showDriverDetail = async function(driverId) {
       const driver = getDriverById(driverId);
       if (!driver) return;
 
-      // Refrescar solicitudes desde Supabase para evitar caché viejo
       try {
         const { data: freshApps } = await supabaseClient
           .from('driver_applications')
@@ -2331,7 +2459,6 @@
       const driverRides = rides.filter(r => r.driver_id === driverId);
       const completedRides = driverRides.filter(r => r.status === 'completado').length;
 
-      // Buscar la solicitud por 3 criterios distintos
       const cleanPhoneDigits = (driver.phone || '').replace(/[^\d]/g, '');
       const sourceApp =
         applications.find(a => a.approved_driver_id === driverId) ||
@@ -2504,7 +2631,6 @@
         addActivity('driver', 'fa-key', `Contraseña reseteada para ${driverName}`);
         showToast('✅ Contraseña reseteada', `${driverName} tiene nueva contraseña`, 'success');
 
-        // Guardar la nueva contraseña en la solicitud del conductor
         if (data.driver_id) {
           await supabaseClient
             .from('driver_applications')
@@ -3606,6 +3732,16 @@
         })
         .subscribe();
 
+      supabaseClient
+        .channel('admin-pricing')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'pricing_config' }, (payload) => {
+          if (payload.new && payload.new.is_active) {
+            pricingConfig = payload.new;
+            if (currentView === 'tarifas') renderTarifas();
+          }
+        })
+        .subscribe();
+
       console.log('📡 [REALTIME] Suscripciones activas');
     }
 
@@ -3620,6 +3756,9 @@
       });
       if (viewName === 'dashboard' && map) {
         setTimeout(() => map.invalidateSize(), 100);
+      }
+      if (viewName === 'tarifas') {
+        renderTarifas();
       }
       document.getElementById('nav-sidebar').classList.remove('open');
     }
@@ -3743,6 +3882,272 @@
       });
     }
 
+    // ========== TARIFAS ==========
+    async function loadPricingConfig() {
+      try {
+        const { data, error } = await supabaseClient
+          .from('pricing_config')
+          .select('*')
+          .eq('is_active', true)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (error) throw error;
+        pricingConfig = data;
+        return data;
+      } catch (error) {
+        console.error('❌ [TARIFAS] Error cargando:', error);
+        return null;
+      }
+    }
+
+    function renderTarifas() {
+      const container = document.getElementById('tarifas-container');
+      if (!container) return;
+
+      if (!pricingConfig) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <i class="fas fa-exclamation-triangle"></i>
+            <p>No se pudo cargar la configuración de tarifas</p>
+            <button class="btn btn-primary" onclick="loadPricingConfig().then(renderTarifas)" style="margin-top: 16px;">
+              <i class="fas fa-redo"></i> Reintentar
+            </button>
+          </div>
+        `;
+        return;
+      }
+
+      const c = pricingConfig;
+
+      container.innerHTML = `
+        <!-- TARIFA BASE -->
+        <div class="tarifa-section">
+          <div class="tarifa-section-header">
+            <div class="tarifa-section-icon orange"><i class="fas fa-motorcycle"></i></div>
+            <div style="flex: 1;">
+              <div class="tarifa-section-title">Tarifa base</div>
+              <div class="tarifa-section-subtitle">Precio para carreras cortas (hasta la distancia base)</div>
+            </div>
+          </div>
+          <div class="tarifa-grid">
+            <div class="tarifa-field">
+              <label class="tarifa-label"><i class="fas fa-ruler-horizontal"></i> Distancia base</label>
+              <div class="tarifa-input-wrapper">
+                <input type="number" class="tarifa-input m" id="tarifa-base-radius"
+                  value="${c.base_radius_meters || 1900}" min="100" step="100">
+                <span class="tarifa-input-unit">mts</span>
+              </div>
+              <div class="tarifa-hint">Hasta esta distancia se cobra la tarifa base</div>
+            </div>
+            <div class="tarifa-field">
+              <label class="tarifa-label"><i class="fas fa-money-bill-wave"></i> Precio base</label>
+              <div class="tarifa-input-wrapper">
+                <input type="number" class="tarifa-input bs" id="tarifa-base-price"
+                  value="${c.base_price || 4.00}" min="0" step="0.50">
+                <span class="tarifa-input-unit">Bs</span>
+              </div>
+              <div class="tarifa-hint">Precio mínimo de la carrera</div>
+            </div>
+            <div class="tarifa-field">
+              <label class="tarifa-label"><i class="fas fa-road"></i> Tramo extra</label>
+              <div class="tarifa-input-wrapper">
+                <input type="number" class="tarifa-input m" id="tarifa-extra-distance"
+                  value="${c.extra_distance_meters || 300}" min="50" step="50">
+                <span class="tarifa-input-unit">mts</span>
+              </div>
+              <div class="tarifa-hint">Cada cuántos metros se suma</div>
+            </div>
+            <div class="tarifa-field">
+              <label class="tarifa-label"><i class="fas fa-plus-circle"></i> Precio por tramo</label>
+              <div class="tarifa-input-wrapper">
+                <input type="number" class="tarifa-input bs" id="tarifa-extra-price"
+                  value="${c.extra_price || 1.00}" min="0" step="0.50">
+                <span class="tarifa-input-unit">Bs</span>
+              </div>
+              <div class="tarifa-hint">Monto que se suma por cada tramo</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EXCEDENTES POR EDAD -->
+        <div class="tarifa-section">
+          <div class="tarifa-section-header">
+            <div class="tarifa-section-icon purple"><i class="fas fa-child"></i></div>
+            <div style="flex: 1;">
+              <div class="tarifa-section-title">Excedentes por acompañante</div>
+              <div class="tarifa-section-subtitle">Solo se permite 1 acompañante máximo (bebé, niño o joven)</div>
+            </div>
+          </div>
+          <div class="tarifa-grid">
+            <div class="tarifa-field">
+              <label class="tarifa-label"><i class="fas fa-baby"></i> Bebé (0-4 años)</label>
+              <div class="tarifa-input-wrapper">
+                <input type="number" class="tarifa-input bs" id="tarifa-baby-extra"
+                  value="${c.baby_extra ?? 0.00}" min="0" step="0.50">
+                <span class="tarifa-input-unit">Bs</span>
+              </div>
+              <div class="tarifa-hint">Va en brazos · Generalmente gratis</div>
+            </div>
+            <div class="tarifa-field">
+              <label class="tarifa-label"><i class="fas fa-child"></i> Niño (5-10 años)</label>
+              <div class="tarifa-input-wrapper">
+                <input type="number" class="tarifa-input bs" id="tarifa-child-extra"
+                  value="${c.child_extra ?? 1.00}" min="0" step="0.50">
+                <span class="tarifa-input-unit">Bs</span>
+              </div>
+              <div class="tarifa-hint">Se suma al precio base</div>
+            </div>
+            <div class="tarifa-field">
+              <label class="tarifa-label"><i class="fas fa-user-graduate"></i> Joven (11-15 años)</label>
+              <div class="tarifa-input-wrapper">
+                <input type="number" class="tarifa-input bs" id="tarifa-teen-extra"
+                  value="${c.teen_extra ?? 3.00}" min="0" step="0.50">
+                <span class="tarifa-input-unit">Bs</span>
+              </div>
+              <div class="tarifa-hint">Se suma al precio base</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CARGA -->
+        <div class="tarifa-section">
+          <div class="tarifa-section-header">
+            <div class="tarifa-section-icon blue"><i class="fas fa-box"></i></div>
+            <div style="flex: 1;">
+              <div class="tarifa-section-title">Carga / Paquete</div>
+              <div class="tarifa-section-subtitle">Precio fijo por llevar carga (bolsas, cajas pequeñas, etc.)</div>
+            </div>
+          </div>
+          <div class="tarifa-grid">
+            <div class="tarifa-field">
+              <label class="tarifa-label"><i class="fas fa-box"></i> Precio de carga</label>
+              <div class="tarifa-input-wrapper">
+                <input type="number" class="tarifa-input bs" id="tarifa-cargo-price"
+                  value="${c.cargo_price ?? c.cargo_extra ?? 4.00}" min="0" step="0.50">
+                <span class="tarifa-input-unit">Bs</span>
+              </div>
+              <div class="tarifa-hint">Precio fijo por cualquier tipo de carga</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- PREVIEW EN VIVO -->
+        <div class="tarifa-preview">
+          <div class="tarifa-preview-title">
+            <i class="fas fa-eye"></i> Vista previa de precios
+          </div>
+          <div class="tarifa-preview-grid" id="tarifa-preview-grid"></div>
+        </div>
+      `;
+
+      const inputIds = ['tarifa-base-radius', 'tarifa-base-price', 'tarifa-extra-distance', 'tarifa-extra-price', 'tarifa-baby-extra', 'tarifa-child-extra', 'tarifa-teen-extra', 'tarifa-cargo-price'];
+      inputIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateTarifaPreview);
+      });
+
+      updateTarifaPreview();
+    }
+
+    function calcularPrecioPreview(distanciaMetros, companionType, hasCargo) {
+      const baseRadius = parseFloat(document.getElementById('tarifa-base-radius')?.value || 1900);
+      const basePrice = parseFloat(document.getElementById('tarifa-base-price')?.value || 4);
+      const extraDistance = parseFloat(document.getElementById('tarifa-extra-distance')?.value || 300);
+      const extraPrice = parseFloat(document.getElementById('tarifa-extra-price')?.value || 1);
+      const babyExtra = parseFloat(document.getElementById('tarifa-baby-extra')?.value || 0);
+      const childExtra = parseFloat(document.getElementById('tarifa-child-extra')?.value || 1);
+      const teenExtra = parseFloat(document.getElementById('tarifa-teen-extra')?.value || 3);
+      const cargoPrice = parseFloat(document.getElementById('tarifa-cargo-price')?.value || 4);
+
+      let total = basePrice;
+      if (distanciaMetros > baseRadius) {
+        const extra = distanciaMetros - baseRadius;
+        const tramos = Math.ceil(extra / extraDistance);
+        total += tramos * extraPrice;
+      }
+
+      if (companionType === 'child') total += childExtra;
+      else if (companionType === 'teen') total += teenExtra;
+      else if (companionType === 'baby') total += babyExtra;
+
+      if (hasCargo) total += cargoPrice;
+
+      return total;
+    }
+
+    function updateTarifaPreview() {
+      const grid = document.getElementById('tarifa-preview-grid');
+      if (!grid) return;
+
+      const cases = [
+        { label: '1 solo · 1.5 km',      m: 1500, c: null,    cargo: false },
+        { label: '1 solo · 2.5 km',      m: 2500, c: null,    cargo: false },
+        { label: '1 + bebé · 1.5 km',    m: 1500, c: 'baby',  cargo: false },
+        { label: '1 + niño · 1.5 km',    m: 1500, c: 'child', cargo: false },
+        { label: '1 + joven · 1.5 km',   m: 1500, c: 'teen',  cargo: false },
+        { label: '1 + carga · 1.5 km',   m: 1500, c: null,    cargo: true },
+      ];
+
+      grid.innerHTML = cases.map(item => {
+        const price = calcularPrecioPreview(item.m, item.c, item.cargo);
+        return `
+          <div class="tarifa-preview-item">
+            <div class="tarifa-preview-distance">${item.label}</div>
+            <div class="tarifa-preview-price">Bs ${price.toFixed(2)}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function savePricingConfig() {
+      const btn = document.getElementById('save-tarifas-btn');
+      if (!btn) return;
+
+      const originalHTML = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<div class="btn-spinner"></div> Guardando...';
+
+      try {
+        const updates = {
+          base_radius_meters:    parseFloat(document.getElementById('tarifa-base-radius').value),
+          base_price:            parseFloat(document.getElementById('tarifa-base-price').value),
+          extra_distance_meters: parseFloat(document.getElementById('tarifa-extra-distance').value),
+          extra_price:           parseFloat(document.getElementById('tarifa-extra-price').value),
+          baby_extra:            parseFloat(document.getElementById('tarifa-baby-extra').value),
+          child_extra:           parseFloat(document.getElementById('tarifa-child-extra').value),
+          teen_extra:            parseFloat(document.getElementById('tarifa-teen-extra').value),
+          cargo_price:           parseFloat(document.getElementById('tarifa-cargo-price').value),
+          cargo_extra:           parseFloat(document.getElementById('tarifa-cargo-price').value),
+          updated_at:            new Date().toISOString()
+        };
+
+        if (updates.base_radius_meters <= 0 || updates.base_price < 0 || updates.extra_distance_meters <= 0) {
+          throw new Error('Valores inválidos en la tarifa base');
+        }
+
+        const { error } = await supabaseClient
+          .from('pricing_config')
+          .update(updates)
+          .eq('id', pricingConfig.id);
+
+        if (error) throw error;
+
+        Object.assign(pricingConfig, updates);
+
+        addActivity('info', 'fa-tags', `Tarifas actualizadas: base Bs ${updates.base_price} por ${updates.base_radius_meters}m`);
+        showToast('✅ Tarifas guardadas', 'Los nuevos precios se aplicarán a los próximos viajes', 'success');
+
+      } catch (error) {
+        console.error('❌ [TARIFAS] Error guardando:', error);
+        showToast('Error al guardar', error.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHTML;
+      }
+    }
+
     // ========== INICIAR APP ==========
     async function startAdminApp() {
       if (appInitialized) {
@@ -3772,6 +4177,14 @@
       addActivity('info', 'fa-desktop', 'Centro de control iniciado');
       appInitialized = true;
     }
+
+    // ========== BOTÓN GUARDAR TARIFAS ==========
+    document.addEventListener('DOMContentLoaded', () => {
+      const saveBtn = document.getElementById('save-tarifas-btn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', savePricingConfig);
+      }
+    });
 
     // ========== ARRANQUE ==========
     window.onload = async () => {
