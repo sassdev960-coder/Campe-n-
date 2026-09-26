@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Acceso Anticipado - Moto Móvil El Campeón</title>
+  <title>Acceso Anticipado - Conductores | Moto Móvil El Campeón</title>
   <link rel="icon" type="image/png" href="logo.png" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -56,17 +56,37 @@
       background: linear-gradient(90deg, transparent, var(--orange), transparent);
     }
 
-    /* LOGO */
     .logo {
       display: block;
-      margin: 0 auto 18px;
-      width: 140px;
+      margin: 0 auto 16px;
+      width: 130px;
       height: auto;
       object-fit: contain;
       filter: drop-shadow(0 0 30px rgba(255,107,0,.25));
     }
 
-    /* BADGE */
+    .role-hero {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--orange-soft);
+      border: 1.5px solid var(--orange-border);
+      box-shadow: 0 0 40px rgba(255,107,0,.2);
+    }
+    .role-hero svg {
+      width: 36px;
+      height: 36px;
+      stroke: var(--orange);
+      stroke-width: 1.8;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
     .badge {
       display: inline-flex;
       align-items: center;
@@ -96,7 +116,7 @@
     }
 
     h1 {
-      font-size: 1.6rem;
+      font-size: 1.55rem;
       margin-bottom: 10px;
       font-weight: 800;
       letter-spacing: -.4px;
@@ -117,110 +137,6 @@
     }
     p.sub strong { color: #d0d0d0; }
 
-    /* ============ SELECTOR ROL ============ */
-    .role-section {
-      margin-bottom: 22px;
-      text-align: left;
-    }
-    .role-title {
-      display: block;
-      font-size: .78rem;
-      font-weight: 700;
-      margin-bottom: 10px;
-      color: #b0b0b0;
-      letter-spacing: .5px;
-      text-transform: uppercase;
-    }
-    .role-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .role-option {
-      position: relative;
-      cursor: pointer;
-      display: block;
-    }
-    .role-option input[type="radio"] {
-      position: absolute;
-      opacity: 0;
-      pointer-events: none;
-    }
-    .role-card {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 18px 10px 16px;
-      background: var(--card-2);
-      border: 1.5px solid var(--border);
-      border-radius: 14px;
-      transition: border-color .2s, background .2s, transform .15s, box-shadow .2s;
-      text-align: center;
-      user-select: none;
-    }
-    .role-card:hover {
-      border-color: #3a3a3a;
-      transform: translateY(-2px);
-    }
-    .role-card svg {
-      width: 34px;
-      height: 34px;
-      stroke: #b0b0b0;
-      stroke-width: 1.8;
-      fill: none;
-      transition: stroke .2s;
-    }
-    .role-card .role-name {
-      font-size: .95rem;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -.2px;
-    }
-    .role-card .role-desc {
-      font-size: .7rem;
-      color: var(--muted);
-      line-height: 1.3;
-    }
-
-    /* Estado seleccionado */
-    .role-option input[type="radio"]:checked + .role-card {
-      border-color: var(--orange);
-      background: var(--orange-soft);
-      box-shadow: 0 0 0 3px rgba(255,107,0,.12), 0 8px 24px rgba(255,107,0,.15);
-    }
-    .role-option input[type="radio"]:checked + .role-card svg {
-      stroke: var(--orange);
-    }
-    .role-option input[type="radio"]:checked + .role-card .role-name {
-      color: var(--orange);
-    }
-    /* Check esquina */
-    .role-card::after {
-      content: '';
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: var(--orange);
-      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
-      background-size: 12px;
-      background-position: center;
-      background-repeat: no-repeat;
-      opacity: 0;
-      transform: scale(.5);
-      transition: opacity .2s, transform .2s;
-    }
-    .role-option input[type="radio"]:checked + .role-card::after {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    /* AVISO */
     .play-notice {
       display: flex;
       align-items: flex-start;
@@ -246,7 +162,6 @@
     }
     .play-notice strong { color: var(--orange); }
 
-    /* CAMPOS */
     label.field-label {
       display: block;
       text-align: left;
@@ -258,7 +173,8 @@
       text-transform: uppercase;
     }
     input[type="text"],
-    input[type="email"] {
+    input[type="email"],
+    input[type="tel"] {
       width: 100%;
       padding: 13px 14px;
       background: var(--card-2);
@@ -273,7 +189,8 @@
     }
     input::placeholder { color: #5a5a5a; }
     input[type="text"]:focus,
-    input[type="email"]:focus {
+    input[type="email"]:focus,
+    input[type="tel"]:focus {
       border-color: var(--orange);
       box-shadow: 0 0 0 3px rgba(255,107,0,.12);
     }
@@ -293,7 +210,26 @@
     .email-hint.show { display: block; }
     .email-hint.error { color: var(--danger); }
 
-    /* CHECKBOX */
+    .phone-wrap {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .phone-prefix {
+      background: var(--card-2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 14px;
+      color: var(--muted);
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .phone-wrap input { margin-bottom: 0 !important; flex: 1; }
+
     .check-row {
       display: flex;
       align-items: flex-start;
@@ -330,7 +266,6 @@
     }
     .check-row a:hover { color: var(--orange); }
 
-    /* BOTÓN */
     button.submit {
       width: 100%;
       padding: 15px;
@@ -354,6 +289,8 @@
       stroke: #000;
       stroke-width: 2.5;
       fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
     button.submit:hover:not(:disabled) {
       transform: translateY(-2px);
@@ -378,7 +315,6 @@
       fill: none;
     }
 
-    /* MENSAJES */
     .msg {
       margin-top: 18px;
       padding: 12px;
@@ -402,7 +338,6 @@
       display: block;
     }
 
-    /* MODAL */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -416,7 +351,6 @@
       animation: fadeIn .2s ease;
     }
     .modal-overlay.open { display: flex; }
-
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideUp {
       from { opacity: 0; transform: translateY(20px); }
@@ -539,14 +473,11 @@
 
     @media (max-width: 480px) {
       .card { padding: 28px 22px 28px; }
-      .logo { width: 110px; }
-      h1 { font-size: 1.35rem; }
+      .logo { width: 100px; }
+      h1 { font-size: 1.3rem; }
       .modal-header, .modal-body, .modal-footer { padding-left: 18px; padding-right: 18px; }
       .modal-body { font-size: .88rem; }
       .play-notice { font-size: .78rem; padding: 10px 12px; }
-      .role-card { padding: 15px 8px 14px; }
-      .role-card svg { width: 28px; height: 28px; }
-      .role-card .role-name { font-size: .88rem; }
     }
   </style>
 </head>
@@ -554,55 +485,40 @@
 
   <div class="card">
 
-    <!-- LOGO -->
     <img src="logo.png" alt="Moto Móvil El Campeón" class="logo" />
+
+    <!-- Ícono héroe: Conductor (moto) -->
+    <div class="role-hero">
+      <svg viewBox="0 0 24 24">
+        <circle cx="5.5" cy="17" r="3.5"/>
+        <circle cx="18.5" cy="17" r="3.5"/>
+        <path d="M15 6h4a2 2 0 0 1 2 2v1"/>
+        <path d="M5.5 17h7l3.5-6.5h-4"/>
+        <path d="M12 11 9 8H6.5"/>
+      </svg>
+    </div>
 
     <div class="badge">
       <span class="dot"></span>
-      Acceso Anticipado · Plazas Limitadas
+      Acceso Anticipado · Conductores
     </div>
 
-    <h1>Tu lugar <span class="highlight">VIP</span> en la nueva app</h1>
+    <h1>Genera <span class="highlight">más ingresos</span> con tu moto</h1>
     <p class="sub">
-      Únete como <strong>tester prioritario</strong> y sé de los primeros en probar la app antes de su lanzamiento oficial en Google Play.
+      Únete como <strong>conductor prioritario</strong> y sé de los primeros en recibir viajes desde la nueva app antes de su lanzamiento oficial.
     </p>
 
     <form id="form">
 
-      <!-- SELECTOR DE ROL -->
-      <div class="role-section">
-        <span class="role-title">Elige tu rol en la app</span>
-        <div class="role-grid">
-          <label class="role-option">
-            <input type="radio" name="rol" value="conductor" required />
-            <div class="role-card">
-              <!-- Ícono casco de moto -->
-              <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3C6.5 3 2 7.5 2 13v3a2 2 0 0 0 2 2h3v-3a5 5 0 0 1 10 0v3h3a2 2 0 0 0 2-2v-3c0-5.5-4.5-10-10-10z"/>
-                <path d="M9 15h6"/>
-                <path d="M12 18v2"/>
-              </svg>
-              <span class="role-name">Conductor</span>
-              <span class="role-desc">Ofrezco viajes</span>
-            </div>
-          </label>
-          <label class="role-option">
-            <input type="radio" name="rol" value="pasajero" required />
-            <div class="role-card">
-              <!-- Ícono persona -->
-              <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="8" r="3.5"/>
-                <path d="M5 20v-1.5a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6V20"/>
-              </svg>
-              <span class="role-name">Pasajero</span>
-              <span class="role-desc">Busco viajes</span>
-            </div>
-          </label>
-        </div>
-      </div>
-
       <label class="field-label" for="nombre">Nombre completo</label>
       <input id="nombre" type="text" required placeholder="Tu nombre" autocomplete="name" />
+
+      <label class="field-label" for="telefono">Número de WhatsApp</label>
+      <div class="phone-wrap">
+        <div class="phone-prefix">🇧🇴 +591</div>
+        <input id="telefono" type="tel" required placeholder="71234567"
+               inputmode="numeric" autocomplete="tel" maxlength="12" />
+      </div>
 
       <label class="field-label" for="email">Correo de Google Play (Gmail)</label>
       <input id="email" type="email" required placeholder="tucorreo@gmail.com"
@@ -610,7 +526,6 @@
 
       <div class="email-hint" id="emailHint"></div>
 
-      <!-- AVISO GOOGLE PLAY -->
       <div class="play-notice">
         <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
           <path d="M12 9v4"/>
@@ -631,12 +546,12 @@
       </div>
 
       <button type="submit" class="submit" id="btn">
-        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+        <svg viewBox="0 0 24 24">
           <rect x="3" y="8" width="18" height="4" rx="1"/>
           <path d="M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8"/>
           <path d="M12 8v13"/>
         </svg>
-        Reservar mi acceso anticipado
+        Reservar mi acceso como Conductor
       </button>
 
       <div class="micro-info">
@@ -669,64 +584,56 @@
         <p>Última actualización: <strong>2026</strong></p>
 
         <h3>1. Responsable del tratamiento</h3>
-        <p>Este formulario es administrado por el equipo desarrollador de las aplicaciones de movilidad distribuidas mediante <strong>Google Play Store</strong> en su fase de acceso anticipado. Los datos ingresados se almacenan de forma segura en <strong>Supabase</strong>, un proveedor de base de datos en la nube.</p>
+        <p>Este formulario es administrado por el equipo desarrollador de las aplicaciones de movilidad distribuidas mediante <strong>Google Play Store</strong> en su fase de acceso anticipado. Los datos ingresados se almacenan de forma segura en <strong>Supabase</strong>.</p>
 
         <h3>2. Datos que recolectamos</h3>
-        <p>Al registrarte, recolectamos únicamente:</p>
+        <p>Al registrarte como <strong>conductor</strong>, recolectamos únicamente:</p>
         <ul>
-          <li><strong>Rol seleccionado</strong> — <em>conductor</em> o <em>pasajero</em>, según tu elección.</li>
-          <li><strong>Nombre completo</strong> — para identificarte dentro del proceso de acceso anticipado.</li>
+          <li><strong>Nombre completo</strong> — para identificarte dentro del proceso.</li>
+          <li><strong>Número de WhatsApp</strong> — para contactarte rápidamente.</li>
           <li><strong>Correo electrónico (Gmail)</strong> — para enviarte la invitación oficial de Google Play.</li>
         </ul>
 
         <div class="highlight warn">
-          <strong>Requisito obligatorio:</strong> el correo que registres aquí debe ser <strong>exactamente el mismo</strong> que tienes asociado a tu <strong>cuenta de Google Play</strong>. Google Play Console asocia los testers por correo, por lo que si usas uno distinto <strong>no podrás recibir ni acceder al acceso anticipado</strong>.
+          <strong>Requisito obligatorio:</strong> el correo que registres aquí debe ser <strong>exactamente el mismo</strong> que tienes asociado a tu <strong>cuenta de Google Play</strong>. Si usas uno distinto <strong>no podrás recibir ni acceder al acceso anticipado</strong>.
         </div>
 
-        <h3>3. ¿Para qué usamos tu correo electrónico?</h3>
-        <p>Tu correo será utilizado <strong>exclusivamente</strong> para los siguientes fines:</p>
+        <h3>3. ¿Para qué usamos tus datos?</h3>
+        <p>Serán utilizados <strong>exclusivamente</strong> para:</p>
         <ul>
-          <li>Agregarte a la lista de <strong>testers prioritarios</strong> de la aplicación correspondiente a tu rol (conductor o pasajero) en Google Play Console.</li>
-          <li>Enviarte el <strong>enlace de acceso</strong> al acceso anticipado de la app que elegiste probar.</li>
-          <li>Notificarte sobre <strong>actualizaciones, correcciones o cambios importantes</strong> durante el periodo de acceso.</li>
-          <li>Solicitarte <strong>feedback</strong> relacionado con la aplicación.</li>
-          <li>Informarte el <strong>fin del acceso anticipado</strong> y si la app pasa a producción.</li>
+          <li>Agregarte a la lista de <strong>conductores prioritarios</strong> en Google Play Console.</li>
+          <li>Enviarte el <strong>enlace de acceso</strong> a la app cuando esté lista.</li>
+          <li>Contactarte por <strong>WhatsApp</strong> para dudas o feedback.</li>
+          <li>Notificarte sobre <strong>actualizaciones o cambios importantes</strong>.</li>
         </ul>
 
         <div class="highlight">
-          <strong>Importante:</strong> Tu correo <strong>NO</strong> será vendido, alquilado ni compartido con terceros ajenos al equipo de desarrollo. Solo se utiliza para el proceso de acceso anticipado en Play Store.
+          <strong>Importante:</strong> Tus datos <strong>NO</strong> serán vendidos, alquilados ni compartidos con terceros ajenos al equipo de desarrollo.
         </div>
 
         <h3>4. Base legal</h3>
-        <p>El tratamiento de tus datos se realiza con tu <strong>consentimiento explícito</strong>, otorgado al marcar la casilla de aceptación al momento del registro.</p>
+        <p>El tratamiento de tus datos se realiza con tu <strong>consentimiento explícito</strong>, otorgado al marcar la casilla de aceptación.</p>
 
         <h3>5. Almacenamiento y seguridad</h3>
-        <p>Los datos se almacenan en servidores de <strong>Supabase</strong>, con cifrado en tránsito (HTTPS) y políticas de seguridad a nivel de fila (RLS). Solo el equipo autorizado puede consultar la lista de verificadores.</p>
+        <p>Los datos se almacenan en servidores de <strong>Supabase</strong>, con cifrado en tránsito (HTTPS) y políticas de seguridad a nivel de fila (RLS).</p>
 
         <h3>6. Tiempo de conservación</h3>
-        <p>Conservaremos tu correo durante el <strong>periodo activo del acceso anticipado</strong> y hasta <strong>6 meses después</strong> de finalizado, con el fin de contactarte sobre resultados y versiones finales. Luego será eliminado de forma segura.</p>
+        <p>Conservaremos tus datos durante el <strong>periodo activo del acceso anticipado</strong> y hasta <strong>6 meses después</strong> de finalizado.</p>
 
         <h3>7. Tus derechos</h3>
-        <p>En cualquier momento puedes solicitar:</p>
-        <ul>
-          <li><strong>Acceso</strong> a los datos que tenemos sobre ti.</li>
-          <li><strong>Corrección</strong> de tu nombre, correo o rol seleccionado.</li>
-          <li><strong>Eliminación</strong> de tu registro de la lista de verificadores.</li>
-          <li><strong>Retirar tu consentimiento</strong> sin ningún tipo de penalización.</li>
-        </ul>
-        <p>Para ejercerlos, solo responde al correo de invitación o contáctanos por los canales oficiales del desarrollador en Play Store.</p>
+        <p>En cualquier momento puedes solicitar <strong>acceso, corrección, eliminación</strong> de tus datos o <strong>retirar tu consentimiento</strong> sin penalización, respondiendo al correo de invitación o por WhatsApp.</p>
 
         <h3>8. Uso de cookies y terceros</h3>
-        <p>Esta página <strong>no utiliza cookies de rastreo</strong> ni publicidad. La única conexión externa es con <strong>Supabase</strong> (base de datos) para guardar tu registro de forma segura.</p>
+        <p>Esta página <strong>no utiliza cookies de rastreo</strong> ni publicidad. La única conexión externa es con <strong>Supabase</strong>.</p>
 
         <h3>9. Menores de edad</h3>
         <p>Este registro está dirigido a personas <strong>mayores de 13 años</strong>. Si eres menor, necesitas autorización de tu tutor legal.</p>
 
         <h3>10. Cambios en esta política</h3>
-        <p>Nos reservamos el derecho de actualizar estas políticas. Cualquier cambio relevante será comunicado al correo que hayas registrado.</p>
+        <p>Nos reservamos el derecho de actualizar estas políticas. Cualquier cambio relevante será comunicado al correo o WhatsApp que hayas registrado.</p>
 
         <h3>11. Aceptación</h3>
-        <p>Al marcar la casilla y enviar el formulario, confirmas que has leído, entendido y aceptado todas las condiciones descritas anteriormente, incluyendo que tu correo coincide con el de tu cuenta de Google Play y que el rol seleccionado es el que deseas probar.</p>
+        <p>Al marcar la casilla y enviar el formulario, confirmas que has leído, entendido y aceptado todas las condiciones descritas anteriormente.</p>
       </div>
 
       <div class="modal-footer">
@@ -744,11 +651,15 @@
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // 🔒 ROL FIJO: CONDUCTOR
+    const ROL_FIJO = 'conductor';
+
     const form       = document.getElementById('form');
     const btn        = document.getElementById('btn');
     const msg        = document.getElementById('msg');
     const acepto     = document.getElementById('acepto');
     const emailInput = document.getElementById('email');
+    const telInput   = document.getElementById('telefono');
     const emailHint  = document.getElementById('emailHint');
     const modal      = document.getElementById('modal');
     const openPolicy = document.getElementById('openPolicy');
@@ -758,7 +669,6 @@
 
     const BTN_HTML_ORIGINAL = btn.innerHTML;
 
-    // ---------- Modal ----------
     function openModal() {
       modal.classList.add('open');
       document.body.style.overflow = 'hidden';
@@ -776,7 +686,6 @@
       if (e.key === 'Escape' && modal.classList.contains('open')) closeModalFn();
     });
 
-    // ---------- Validación Gmail ----------
     const GMAIL_REGEX = /^[a-z0-9._%+-]+@(gmail\.com|googlemail\.com)$/i;
 
     function validarEmail() {
@@ -802,21 +711,18 @@
     emailInput.addEventListener('input', validarEmail);
     emailInput.addEventListener('blur', validarEmail);
 
-    // ---------- Mensajes ----------
+    telInput.addEventListener('input', () => {
+      telInput.value = telInput.value.replace(/\D/g, '').slice(0, 12);
+    });
+
     function show(text, type) {
       msg.textContent = text;
       msg.className = 'msg ' + type;
     }
 
-    // ---------- Envío ----------
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      const rolSeleccionado = document.querySelector('input[name="rol"]:checked');
-      if (!rolSeleccionado) {
-        show('Debes elegir un rol: Conductor o Pasajero.', 'error');
-        return;
-      }
       if (!acepto.checked) {
         show('Debes aceptar las Políticas de Privacidad.', 'error');
         return;
@@ -827,17 +733,24 @@
         return;
       }
 
+      const telefonoRaw = telInput.value.trim();
+      if (telefonoRaw.length < 7) {
+        show('Ingresa un número de WhatsApp válido (mínimo 7 dígitos).', 'error');
+        telInput.focus();
+        return;
+      }
+
       btn.disabled = true;
       btn.textContent = 'Reservando tu lugar...';
       msg.className = 'msg';
 
-      const nombre = document.getElementById('nombre').value.trim();
-      const email  = emailInput.value.trim().toLowerCase();
-      const rol    = rolSeleccionado.value;
+      const nombre   = document.getElementById('nombre').value.trim();
+      const email    = emailInput.value.trim().toLowerCase();
+      const telefono = '+591' + telefonoRaw;
 
       const { error } = await supabase
         .from('verificadores')
-        .insert([{ nombre, email, rol }]);
+        .insert([{ nombre, email, rol: ROL_FIJO, telefono }]);
 
       btn.disabled = false;
       btn.innerHTML = BTN_HTML_ORIGINAL;
@@ -846,20 +759,16 @@
         console.error(error);
         if (error.code === '23505') {
           show('Este correo ya tiene un lugar reservado.', 'error');
-        } else if (error.code === '23514') {
-          show('Rol inválido. Recarga la página e inténtalo de nuevo.', 'error');
         } else {
           show('Error al registrar: ' + error.message, 'error');
         }
         return;
       }
 
-      const rolTexto = rol === 'conductor' ? 'Conductor' : 'Pasajero';
-
       form.reset();
       emailInput.classList.remove('invalid');
       emailHint.className = 'email-hint';
-      show(`¡Bienvenido como ${rolTexto} al acceso anticipado! Revisa tu Gmail de Google Play para la invitación oficial.`, 'ok');
+      show('¡Bienvenido como Conductor al acceso anticipado! Pronto te contactaremos por WhatsApp o correo con la invitación oficial.', 'ok');
     });
   </script>
 
