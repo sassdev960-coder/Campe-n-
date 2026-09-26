@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Únete a la prueba - Play Store</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-1: #0a0a0a;
+      --bg-2: #141414;
+      --card: #181818;
+      --card-2: #202020;
+      --border: #2a2a2a;
+      --text: #f5f5f5;
+      --muted: #9a9a9a;
+      --accent: #ffffff;
+      --accent-2: #b3b3b3;
+      --danger: #ff6b6b;
+      --success: #4ade80;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at 50% 0%, #1c1c1c 0%, var(--bg-1) 60%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: var(--text);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 30px 34px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 30px 80px rgba(0,0,0,.6);
+      text-align: center;
+      position: relative;
+    }
+
+    /* Logo */
+    .logo {
+      display: block;
+      margin: 0 auto 20px;
+      width: 110px;
+      height: 110px;
+      object-fit: contain;
+      border-radius: 50%;
+      background: #0f0f0f;
+      padding: 10px;
+      border: 1px solid var(--border);
+      box-shadow: 0 0 30px rgba(255,255,255,.06);
+    }
+
+    h1 {
+      font-size: 1.55rem;
+      margin-bottom: 10px;
+      font-weight: 700;
+      letter-spacing: -.3px;
+    }
+
+    p.sub {
+      color: var(--muted);
+      font-size: .95rem;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+
+    label {
+      display: block;
+      text-align: left;
+      font-size: .82rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--accent-2);
+      letter-spacing: .3px;
+      text-transform: uppercase;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--card-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 1rem;
+      color: var(--text);
+      margin-bottom: 18px;
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+    }
+    input::placeholder { color: #5a5a5a; }
+    input:focus {
+      border-color: #555;
+      box-shadow: 0 0 0 3px rgba(255,255,255,.05);
+    }
+
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      text-align: left;
+      margin-bottom: 18px;
+      font-size: .85rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .check-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin: 2px 0 0 0;
+      accent-color: #ffffff;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .check-row a {
+      color: var(--text);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+    }
+
+    button.submit {
+      width: 100%;
+      padding: 14px;
+      background: #ffffff;
+      color: #0a0a0a;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .15s, opacity .2s, box-shadow .2s;
+      letter-spacing: .2px;
+    }
+    button.submit:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(255,255,255,.12);
+    }
+    button.submit:disabled { opacity: .5; cursor: not-allowed; }
+
+    .msg {
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: .88rem;
+      display: none;
+      border: 1px solid transparent;
+    }
+    .msg.ok {
+      background: rgba(74,222,128,.1);
+      color: var(--success);
+      border-color: rgba(74,222,128,.25);
+      display: block;
+    }
+    .msg.error {
+      background: rgba(255,107,107,.1);
+      color: var(--danger);
+      border-color: rgba(255,107,107,.25);
+      display: block;
+    }
+
+    /* ============ MODAL ============ */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.8);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+      animation: fadeIn .2s ease;
+    }
+    .modal-overlay.open { display: flex; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      max-width: 620px;
+      width: 100%;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 30px 80px rgba(0,0,0,.8);
+      animation: slideUp .25s ease;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-header h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -.2px;
+    }
+    .modal-close {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .2s, border-color .2s;
+    }
+    .modal-close:hover { background: var(--card-2); border-color: #444; }
+
+    .modal-body {
+      padding: 22px 24px;
+      overflow-y: auto;
+      color: #d0d0d0;
+      font-size: .92rem;
+      line-height: 1.65;
+      text-align: left;
+    }
+    .modal-body::-webkit-scrollbar { width: 8px; }
+    .modal-body::-webkit-scrollbar-track { background: transparent; }
+    .modal-body::-webkit-scrollbar-thumb {
+      background: #333; border-radius: 4px;
+    }
+    .modal-body h3 {
+      color: #fff;
+      font-size: .98rem;
+      margin: 20px 0 8px;
+      letter-spacing: -.1px;
+    }
+    .modal-body h3:first-child { margin-top: 0; }
+    .modal-body p { margin-bottom: 10px; }
+    .modal-body ul {
+      margin: 8px 0 14px 20px;
+      padding: 0;
+    }
+    .modal-body li { margin-bottom: 6px; }
+    .modal-body strong { color: #fff; }
+    .modal-body .highlight {
+      background: var(--card-2);
+      border-left: 3px solid #666;
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin: 12px 0 16px;
+      font-size: .88rem;
+      color: #e0e0e0;
+    }
+
+    .modal-footer {
+      padding: 16px 24px 22px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+    }
+    .modal-footer button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: .92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform .15s, background .2s;
+      border: 1px solid var(--border);
+    }
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+    }
+    .btn-secondary:hover { background: var(--card-2); }
+    .btn-primary {
+      background: #fff;
+      color: #0a0a0a;
+      border-color: #fff !important;
+    }
+    .btn-primary:hover { transform: translateY(-1px); }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .card { padding: 30px 22px 28px; }
+      .logo { width: 90px; height: 90px; }
+      h1 { font-size: 1.35rem; }
+      .modal-header, .modal-body, .modal-footer { padding-left: 18px; padding-right: 18px; }
+      .modal-body { font-size: .88rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+
+    <!-- 🖼️ LOGO -->
+    <img src="logo.png" alt="Logo" class="logo" />
+
+    <h1>🚀 Prueba cerrada</h1>
+    <p class="sub">Regístrate para recibir el enlace de acceso a la prueba en Play Store.</p>
+
+    <form id="form">
+      <label for="nombre">Nombre completo</label>
+      <input id="nombre" type="text" required placeholder="Tu nombre" autocomplete="name" />
+
+      <label for="email">Correo electrónico (Gmail)</label>
+      <input id="email" type="email" required placeholder="tucorreo@gmail.com"
+             autocomplete="email"
+             pattern=".+@(gmail\.com|googlemail\.com)"
+             title="Debe ser una cuenta de Gmail" />
+
+      <!-- ✅ Aceptación de políticas -->
+      <div class="check-row">
+        <input type="checkbox" id="acepto" required />
+        <label for="acepto" style="text-transform:none; letter-spacing:0; font-weight:400; color:var(--muted); font-size:.85rem; margin:0; display:inline;">
+          He leído y acepto las
+          <a id="openPolicy">Políticas de Privacidad</a>
+          y autorizo el uso de mi correo para los fines descritos.
+        </label>
+      </div>
+
+      <button type="submit" class="submit" id="btn">Unirme a la prueba</button>
+    </form>
+
+    <div id="msg" class="msg"></div>
+  </div>
+
+  <!-- ============ MODAL POLÍTICAS ============ -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>🔒 Políticas de Privacidad</h2>
+        <button class="modal-close" id="closeModal" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <p>Última actualización: <strong>2026</strong></p>
+
+        <h3>1. Responsable del tratamiento</h3>
+        <p>Este formulario es administrado por el equipo desarrollador de la aplicación distribuida mediante <strong>Google Play Store</strong> en su fase de prueba cerrada. Los datos ingresados se almacenan de forma segura en <strong>Supabase</strong>, un proveedor de base de datos en la nube.</p>
+
+        <h3>2. Datos que recolectamos</h3>
+        <p>Al registrarte, recolectamos únicamente:</p>
+        <ul>
+          <li><strong>Nombre completo</strong> — para identificarte dentro del proceso de prueba.</li>
+          <li><strong>Correo electrónico (Gmail)</strong> — para enviarte la invitación oficial de Google Play.</li>
+        </ul>
+
+        <h3>3. ¿Para qué usamos tu correo electrónico?</h3>
+        <p>Tu correo será utilizado <strong>exclusivamente</strong> para los siguientes fines:</p>
+        <ul>
+          <li>Agregarte a la lista de <strong>testers oficiales</strong> de la aplicación en Google Play Console.</li>
+          <li>Enviarte el <strong>enlace de acceso</strong> a la prueba cerrada.</li>
+          <li>Notificarte sobre <strong>actualizaciones, correcciones o cambios importantes</strong> durante el periodo de prueba.</li>
+          <li>Solicitarte <strong>feedback</strong> (opiniones, errores encontrados, sugerencias) relacionado con la aplicación.</li>
+          <li>Informarte el <strong>fin del periodo de prueba</strong> y si la app pasa a producción.</li>
+        </ul>
+
+        <div class="highlight">
+          🔐 <strong>Importante:</strong> Tu correo <strong>NO</strong> será vendido, alquilado ni compartido con terceros ajenos al equipo de desarrollo. Solo se utiliza para el proceso de prueba en Play Store.
+        </div>
+
+        <h3>4. Base legal</h3>
+        <p>El tratamiento de tus datos se realiza con tu <strong>consentimiento explícito</strong>, otorgado al marcar la casilla de aceptación al momento del registro.</p>
+
+        <h3>5. Almacenamiento y seguridad</h3>
+        <p>Los datos se almacenan en servidores de <strong>Supabase</strong>, con cifrado en tránsito (HTTPS) y políticas de seguridad a nivel de fila (RLS). Solo el equipo autorizado puede consultar la lista de verificadores.</p>
+
+        <h3>6. Tiempo de conservación</h3>
+        <p>Conservaremos tu correo durante el <strong>periodo activo de la prueba</strong> y hasta <strong>6 meses después</strong> de finalizada, con el fin de contactarte sobre resultados y versiones finales. Luego será eliminado de forma segura.</p>
+
+        <h3>7. Tus derechos</h3>
+        <p>En cualquier momento puedes solicitar:</p>
+        <ul>
+          <li><strong>Acceso</strong> a los datos que tenemos sobre ti.</li>
+          <li><strong>Corrección</strong> de tu nombre o correo.</li>
+          <li><strong>Eliminación</strong> de tu registro de la lista de verificadores.</li>
+          <li><strong>Retirar tu consentimiento</strong> sin ningún tipo de penalización.</li>
+        </ul>
+        <p>Para ejercerlos, solo responde al correo de invitación o contáctanos por los canales oficiales del desarrollador en Play Store.</p>
+
+        <h3>8. Uso de cookies y terceros</h3>
+        <p>Esta página <strong>no utiliza cookies de rastreo</strong> ni publicidad. La única conexión externa es con <strong>Supabase</strong> (base de datos) para guardar tu registro de forma segura.</p>
+
+        <h3>9. Menores de edad</h3>
+        <p>Este registro está dirigido a personas <strong>mayores de 13 años</strong>. Si eres menor, necesitas autorización de tu tutor legal.</p>
+
+        <h3>10. Cambios en esta política</h3>
+        <p>Nos reservamos el derecho de actualizar estas políticas. Cualquier cambio relevante será comunicado al correo que hayas registrado.</p>
+
+        <h3>11. Aceptación</h3>
+        <p>Al marcar la casilla y enviar el formulario, confirmas que has leído, entendido y aceptado todas las condiciones descritas anteriormente.</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btnCancel">Cancelar</button>
+        <button class="btn-primary" id="btnAccept">Aceptar y continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SUPABASE + LÓGICA ============ -->
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    const SUPABASE_URL = 'https://uwdojchfwmaczgdthtfr.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3ZG9qY2hmd21hY3pnZHRodGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDQ4NDEsImV4cCI6MjEwMjcyMDg0MX0.jafGOwlItnzSoZ6yYlpaae16S2nlSDpPIS2316ZPJak';
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // ---------- Referencias ----------
+    const form       = document.getElementById('form');
+    const btn        = document.getElementById('btn');
+    const msg        = document.getElementById('msg');
+    const acepto     = document.getElementById('acepto');
+    const modal      = document.getElementById('modal');
+    const openPolicy = document.getElementById('openPolicy');
+    const closeModal = document.getElementById('closeModal');
+    const btnCancel  = document.getElementById('btnCancel');
+    const btnAccept  = document.getElementById('btnAccept');
+
+    // ---------- Modal ----------
+    function openModal() {
+      modal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeModalFn() {
+      modal.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    openPolicy.addEventListener('click', (e) => {
+      e.preventDefault();
+      openModal();
+    });
+    closeModal.addEventListener('click', closeModalFn);
+    btnCancel.addEventListener('click', closeModalFn);
+    btnAccept.addEventListener('click', () => {
+      acepto.checked = true;   // marca automáticamente al aceptar
+      closeModalFn();
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModalFn();  // clic fuera del modal
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('open')) closeModalFn();
+    });
+
+    // ---------- Mensajes ----------
+    function show(text, type) {
+      msg.textContent = text;
+      msg.className = 'msg ' + type;
+    }
+
+    // ---------- Envío ----------
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!acepto.checked) {
+        show('⚠️ Debes aceptar las Políticas de Privacidad.', 'error');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+      msg.className = 'msg';
+
+      const nombre = document.getElementById('nombre').value.trim();
+      const email  = document.getElementById('email').value.trim().toLowerCase();
+
+      const { error } = await supabase
+        .from('verificadores')
+        .insert([{ nombre, email }]);
+
+      btn.disabled = false;
+      btn.textContent = 'Unirme a la prueba';
+
+      if (error) {
+        console.error(error);
+        if (error.code === '23505') {
+          show('⚠️ Este correo ya está registrado.', 'error');
+        } else {
+          show('❌ Error al registrar: ' + error.message, 'error');
+        }
+        return;
+      }
+
+      form.reset();
+      show('✅ ¡Listo! Te enviaremos el enlace de la prueba pronto.', 'ok');
+    });
+  </script>
+
+</body>
+</html>
