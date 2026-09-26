@@ -16,10 +16,12 @@
       --border: #2a2a2a;
       --text: #f5f5f5;
       --muted: #9a9a9a;
-      --accent: #ffffff;
       --accent-2: #b3b3b3;
       --danger: #ff6b6b;
       --success: #4ade80;
+      --warn: #fbbf24;
+      --warn-bg: rgba(251,191,36,.08);
+      --warn-border: rgba(251,191,36,.3);
     }
 
     body {
@@ -45,7 +47,6 @@
       position: relative;
     }
 
-    /* Logo */
     .logo {
       display: block;
       margin: 0 auto 20px;
@@ -69,9 +70,31 @@
     p.sub {
       color: var(--muted);
       font-size: .95rem;
-      margin-bottom: 24px;
+      margin-bottom: 22px;
       line-height: 1.5;
     }
+
+    /* ⚠️ Aviso Google Play */
+    .play-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--warn-bg);
+      border: 1px solid var(--warn-border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 22px;
+      text-align: left;
+      font-size: .84rem;
+      line-height: 1.5;
+      color: #fde68a;
+    }
+    .play-notice .icon {
+      font-size: 1.1rem;
+      flex-shrink: 0;
+      line-height: 1.3;
+    }
+    .play-notice strong { color: #fbbf24; }
 
     label {
       display: block;
@@ -102,6 +125,26 @@
       box-shadow: 0 0 0 3px rgba(255,255,255,.05);
     }
 
+    /* 🔴 Estado de error del email (no Gmail) */
+    input.invalid {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(255,107,107,.1);
+      margin-bottom: 6px;
+    }
+
+    .email-hint {
+      text-align: left;
+      font-size: .78rem;
+      margin-bottom: 14px;
+      min-height: 0;
+      line-height: 1.4;
+      display: none;
+    }
+    .email-hint.show {
+      display: block;
+    }
+    .email-hint.error { color: var(--danger); }
+
     .check-row {
       display: flex;
       align-items: flex-start;
@@ -118,6 +161,15 @@
       margin: 2px 0 0 0;
       accent-color: #ffffff;
       flex-shrink: 0;
+      cursor: pointer;
+    }
+    .check-row label {
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+      color: var(--muted);
+      font-size: .85rem;
+      margin: 0;
       cursor: pointer;
     }
     .check-row a {
@@ -171,7 +223,7 @@
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,.8);
+      background: rgba(0,0,0,.85);
       backdrop-filter: blur(6px);
       display: none;
       align-items: center;
@@ -266,6 +318,11 @@
       font-size: .88rem;
       color: #e0e0e0;
     }
+    .modal-body .highlight.warn {
+      background: var(--warn-bg);
+      border-left-color: var(--warn);
+      color: #fde68a;
+    }
 
     .modal-footer {
       padding: 16px 24px 22px;
@@ -295,13 +352,13 @@
     }
     .btn-primary:hover { transform: translateY(-1px); }
 
-    /* Responsive */
     @media (max-width: 480px) {
       .card { padding: 30px 22px 28px; }
       .logo { width: 90px; height: 90px; }
       h1 { font-size: 1.35rem; }
       .modal-header, .modal-body, .modal-footer { padding-left: 18px; padding-right: 18px; }
       .modal-body { font-size: .88rem; }
+      .play-notice { font-size: .8rem; padding: 10px 12px; }
     }
   </style>
 </head>
@@ -315,23 +372,32 @@
     <h1>🚀 Prueba cerrada</h1>
     <p class="sub">Regístrate para recibir el enlace de acceso a la prueba en Play Store.</p>
 
+    <!-- ⚠️ AVISO IMPORTANTE GOOGLE PLAY -->
+    <div class="play-notice">
+      <span class="icon">⚠️</span>
+      <span>
+        <strong>Importante:</strong> usa el <strong>mismo correo de Gmail</strong> que tienes registrado en tu cuenta de <strong>Google Play</strong>. Si usas otro correo, <strong>NO</strong> podrás acceder a la prueba.
+      </span>
+    </div>
+
     <form id="form">
       <label for="nombre">Nombre completo</label>
       <input id="nombre" type="text" required placeholder="Tu nombre" autocomplete="name" />
 
-      <label for="email">Correo electrónico (Gmail)</label>
+      <label for="email">Correo de Google Play (Gmail)</label>
       <input id="email" type="email" required placeholder="tucorreo@gmail.com"
              autocomplete="email"
-             pattern=".+@(gmail\.com|googlemail\.com)"
-             title="Debe ser una cuenta de Gmail" />
+             inputmode="email"
+             spellcheck="false" />
+
+      <div class="email-hint" id="emailHint"></div>
 
       <!-- ✅ Aceptación de políticas -->
       <div class="check-row">
         <input type="checkbox" id="acepto" required />
-        <label for="acepto" style="text-transform:none; letter-spacing:0; font-weight:400; color:var(--muted); font-size:.85rem; margin:0; display:inline;">
-          He leído y acepto las
-          <a id="openPolicy">Políticas de Privacidad</a>
-          y autorizo el uso de mi correo para los fines descritos.
+        <label for="acepto">
+          Confirmo que este correo es el mismo de mi cuenta de Google Play, y he leído las
+          <a id="openPolicy">Políticas de Privacidad</a>.
         </label>
       </div>
 
@@ -361,6 +427,10 @@
           <li><strong>Nombre completo</strong> — para identificarte dentro del proceso de prueba.</li>
           <li><strong>Correo electrónico (Gmail)</strong> — para enviarte la invitación oficial de Google Play.</li>
         </ul>
+
+        <div class="highlight warn">
+          ⚠️ <strong>Requisito obligatorio:</strong> el correo que registres aquí debe ser <strong>exactamente el mismo</strong> que tienes asociado a tu <strong>cuenta de Google Play</strong>. Google Play Console asocia los testers por correo, por lo que si usas uno distinto <strong>no podrás recibir ni acceder a la prueba cerrada</strong>.
+        </div>
 
         <h3>3. ¿Para qué usamos tu correo electrónico?</h3>
         <p>Tu correo será utilizado <strong>exclusivamente</strong> para los siguientes fines:</p>
@@ -405,7 +475,7 @@
         <p>Nos reservamos el derecho de actualizar estas políticas. Cualquier cambio relevante será comunicado al correo que hayas registrado.</p>
 
         <h3>11. Aceptación</h3>
-        <p>Al marcar la casilla y enviar el formulario, confirmas que has leído, entendido y aceptado todas las condiciones descritas anteriormente.</p>
+        <p>Al marcar la casilla y enviar el formulario, confirmas que has leído, entendido y aceptado todas las condiciones descritas anteriormente, incluyendo que tu correo coincide con el de tu cuenta de Google Play.</p>
       </div>
 
       <div class="modal-footer">
@@ -429,6 +499,8 @@
     const btn        = document.getElementById('btn');
     const msg        = document.getElementById('msg');
     const acepto     = document.getElementById('acepto');
+    const emailInput = document.getElementById('email');
+    const emailHint  = document.getElementById('emailHint');
     const modal      = document.getElementById('modal');
     const openPolicy = document.getElementById('openPolicy');
     const closeModal = document.getElementById('closeModal');
@@ -444,7 +516,6 @@
       modal.classList.remove('open');
       document.body.style.overflow = '';
     }
-
     openPolicy.addEventListener('click', (e) => {
       e.preventDefault();
       openModal();
@@ -452,15 +523,45 @@
     closeModal.addEventListener('click', closeModalFn);
     btnCancel.addEventListener('click', closeModalFn);
     btnAccept.addEventListener('click', () => {
-      acepto.checked = true;   // marca automáticamente al aceptar
+      acepto.checked = true;
       closeModalFn();
     });
     modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModalFn();  // clic fuera del modal
+      if (e.target === modal) closeModalFn();
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && modal.classList.contains('open')) closeModalFn();
     });
+
+    // ---------- Validación Gmail en tiempo real ----------
+    const GMAIL_REGEX = /^[a-z0-9._%+-]+@(gmail\.com|googlemail\.com)$/i;
+
+    function validarEmail(mostrarVacio = false) {
+      const valor = emailInput.value.trim().toLowerCase();
+
+      if (valor === '') {
+        emailInput.classList.remove('invalid');
+        emailHint.className = 'email-hint';
+        emailHint.textContent = '';
+        return false;
+      }
+
+      if (!GMAIL_REGEX.test(valor)) {
+        emailInput.classList.add('invalid');
+        emailHint.className = 'email-hint show error';
+        emailHint.textContent = '❌ Debe ser una cuenta de Gmail (@gmail.com) registrada en Google Play.';
+        return false;
+      }
+
+      emailInput.classList.remove('invalid');
+      emailHint.className = 'email-hint show';
+      emailHint.style.color = '#4ade80';
+      emailHint.textContent = '✅ Formato válido. Asegúrate de que sea el mismo correo de tu cuenta de Google Play.';
+      return true;
+    }
+
+    emailInput.addEventListener('input', () => validarEmail());
+    emailInput.addEventListener('blur', () => validarEmail(true));
 
     // ---------- Mensajes ----------
     function show(text, type) {
@@ -477,12 +578,18 @@
         return;
       }
 
+      if (!validarEmail()) {
+        show('⚠️ Revisa tu correo. Debe ser un Gmail válido.', 'error');
+        emailInput.focus();
+        return;
+      }
+
       btn.disabled = true;
       btn.textContent = 'Enviando...';
       msg.className = 'msg';
 
       const nombre = document.getElementById('nombre').value.trim();
-      const email  = document.getElementById('email').value.trim().toLowerCase();
+      const email  = emailInput.value.trim().toLowerCase();
 
       const { error } = await supabase
         .from('verificadores')
@@ -502,7 +609,9 @@
       }
 
       form.reset();
-      show('✅ ¡Listo! Te enviaremos el enlace de la prueba pronto.', 'ok');
+      emailInput.classList.remove('invalid');
+      emailHint.className = 'email-hint';
+      show('✅ ¡Listo! Usa la misma cuenta de Google Play para acceder a la prueba.', 'ok');
     });
   </script>
 
