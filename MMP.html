@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Acceso Anticipado - Pasajeros | Moto Móvil El Campeón</title>
+  <link rel="icon" type="image/png" href="logo.png" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --orange: #FF6B00;
+      --orange-dark: #E55A00;
+      --orange-soft: rgba(255, 107, 0, .12);
+      --orange-border: rgba(255, 107, 0, .4);
+      --bg-1: #0a0a0a;
+      --bg-2: #000000;
+      --card: #111111;
+      --card-2: #1a1a1a;
+      --border: #262626;
+      --text: #ffffff;
+      --muted: #8a8a8a;
+      --danger: #ff5555;
+      --success: #4ade80;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at 50% 0%, #1a0f05 0%, var(--bg-2) 55%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: var(--text);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 30px 34px;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 30px 80px rgba(0,0,0,.8);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--orange), transparent);
+    }
+
+    .logo {
+      display: block;
+      margin: 0 auto 16px;
+      width: 130px;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 0 30px rgba(255,107,0,.25));
+    }
+
+    /* Ícono del rol (héroe) */
+    .role-hero {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: var(--orange-soft);
+      border: 1.5px solid var(--orange-border);
+      box-shadow: 0 0 40px rgba(255,107,0,.2);
+    }
+    .role-hero svg {
+      width: 34px;
+      height: 34px;
+      stroke: var(--orange);
+      stroke-width: 1.8;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      background: var(--orange-soft);
+      border: 1px solid var(--orange-border);
+      color: var(--orange);
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      padding: 6px 13px;
+      border-radius: 100px;
+      margin-bottom: 16px;
+    }
+    .badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--orange);
+      box-shadow: 0 0 10px var(--orange);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: .4; transform: scale(.8); }
+    }
+
+    h1 {
+      font-size: 1.55rem;
+      margin-bottom: 10px;
+      font-weight: 800;
+      letter-spacing: -.4px;
+      line-height: 1.25;
+    }
+    h1 .highlight {
+      background: linear-gradient(135deg, #FF8C1A 0%, #FF6B00 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    p.sub {
+      color: var(--muted);
+      font-size: .93rem;
+      margin-bottom: 22px;
+      line-height: 1.55;
+    }
+    p.sub strong { color: #d0d0d0; }
+
+    .play-notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      background: var(--orange-soft);
+      border: 1px solid var(--orange-border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 22px;
+      text-align: left;
+      font-size: .83rem;
+      line-height: 1.5;
+      color: #ffb87a;
+    }
+    .play-notice svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      stroke: var(--orange);
+      stroke-width: 2;
+      fill: none;
+      margin-top: 1px;
+    }
+    .play-notice strong { color: var(--orange); }
+
+    label.field-label {
+      display: block;
+      text-align: left;
+      font-size: .78rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      color: #b0b0b0;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+    }
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"] {
+      width: 100%;
+      padding: 13px 14px;
+      background: var(--card-2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 1rem;
+      color: var(--text);
+      margin-bottom: 18px;
+      transition: border-color .2s, box-shadow .2s;
+      outline: none;
+      font-family: inherit;
+    }
+    input::placeholder { color: #5a5a5a; }
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="tel"]:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(255,107,0,.12);
+    }
+    input.invalid {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 3px rgba(255,85,85,.12);
+      margin-bottom: 6px;
+    }
+
+    .email-hint {
+      text-align: left;
+      font-size: .78rem;
+      margin-bottom: 14px;
+      line-height: 1.4;
+      display: none;
+    }
+    .email-hint.show { display: block; }
+    .email-hint.error { color: var(--danger); }
+
+    .phone-wrap {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .phone-prefix {
+      background: var(--card-2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: 13px 14px;
+      color: var(--muted);
+      font-size: 1rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .phone-wrap input { margin-bottom: 0 !important; flex: 1; }
+
+    .check-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      text-align: left;
+      margin-bottom: 18px;
+      font-size: .85rem;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .check-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin: 2px 0 0 0;
+      accent-color: var(--orange);
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .check-row label {
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+      color: var(--muted);
+      font-size: .84rem;
+      margin: 0;
+      cursor: pointer;
+    }
+    .check-row a {
+      color: var(--text);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .check-row a:hover { color: var(--orange); }
+
+    button.submit {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #FF8C1A 0%, #FF6B00 100%);
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform .15s, opacity .2s, box-shadow .2s;
+      letter-spacing: .3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    button.submit svg {
+      width: 18px;
+      height: 18px;
+      stroke: #000;
+      stroke-width: 2.5;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    button.submit:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(255,107,0,.35);
+    }
+    button.submit:disabled { opacity: .5; cursor: not-allowed; }
+
+    .micro-info {
+      margin-top: 14px;
+      font-size: .74rem;
+      color: #666;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .micro-info svg {
+      width: 13px;
+      height: 13px;
+      stroke: #666;
+      stroke-width: 2;
+      fill: none;
+    }
+
+    .msg {
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: .88rem;
+      display: none;
+      border: 1px solid transparent;
+      line-height: 1.5;
+      text-align: left;
+    }
+    .msg.ok {
+      background: rgba(74,222,128,.08);
+      color: var(--success);
+      border-color: rgba(74,222,128,.25);
+      display: block;
+    }
+    .msg.error {
+      background: rgba(255,85,85,.08);
+      color: var(--danger);
+      border-color: rgba(255,85,85,.25);
+      display: block;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.88);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+      animation: fadeIn .2s ease;
+    }
+    .modal-overlay.open { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      max-width: 620px;
+      width: 100%;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 30px 80px rgba(0,0,0,.9);
+      animation: slideUp .25s ease;
+      overflow: hidden;
+    }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 24px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-header h2 {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-header h2 svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--orange);
+      stroke-width: 2;
+      fill: none;
+    }
+    .modal-close {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .2s, border-color .2s;
+    }
+    .modal-close:hover { background: var(--card-2); border-color: var(--orange); }
+
+    .modal-body {
+      padding: 22px 24px;
+      overflow-y: auto;
+      color: #d0d0d0;
+      font-size: .92rem;
+      line-height: 1.65;
+      text-align: left;
+    }
+    .modal-body::-webkit-scrollbar { width: 8px; }
+    .modal-body::-webkit-scrollbar-track { background: transparent; }
+    .modal-body::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+    .modal-body h3 {
+      color: #fff;
+      font-size: .98rem;
+      margin: 20px 0 8px;
+      letter-spacing: -.1px;
+    }
+    .modal-body h3:first-child { margin-top: 0; }
+    .modal-body p { margin-bottom: 10px; }
+    .modal-body ul { margin: 8px 0 14px 20px; padding: 0; }
+    .modal-body li { margin-bottom: 6px; }
+    .modal-body strong { color: #fff; }
+    .modal-body .highlight {
+      background: var(--card-2);
+      border-left: 3px solid #555;
+      padding: 12px 14px;
+      border-radius: 8px;
+      margin: 12px 0 16px;
+      font-size: .88rem;
+      color: #e0e0e0;
+    }
+    .modal-body .highlight.warn {
+      background: var(--orange-soft);
+      border-left-color: var(--orange);
+      color: #ffb87a;
+    }
+
+    .modal-footer {
+      padding: 16px 24px 22px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+    }
+    .modal-footer button {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: .92rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .15s, background .2s;
+      border: 1px solid var(--border);
+    }
+    .btn-secondary { background: transparent; color: var(--text); }
+    .btn-secondary:hover { background: var(--card-2); }
+    .btn-primary {
+      background: linear-gradient(135deg, #FF8C1A 0%, #FF6B00 100%);
+      color: #000;
+      border-color: var(--orange) !important;
+      font-weight: 800;
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,107,0,.3); }
+
+    @media (max-width: 480px) {
+      .card { padding: 28px 22px 28px; }
+      .logo { width: 100px; }
+      h1 { font-size: 1.3rem; }
+      .modal-header, .modal-body, .modal-footer { padding-left: 18px; padding-right: 18px; }
+      .modal-body { font-size: .88rem; }
+      .play-notice { font-size: .78rem; padding: 10px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+
+    <img src="logo.png" alt="Moto Móvil El Campeón" class="logo" />
+
+    <!-- Ícono héroe: Pasajero -->
+    <div class="role-hero">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="8" r="3.5"/>
+        <path d="M5 20v-1.5a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6V20"/>
+      </svg>
+    </div>
+
+    <div class="badge">
+      <span class="dot"></span>
+      Acceso Anticipado · Pasajeros
+    </div>
+
+    <h1>Pide tu moto <span class="highlight">más rápido</span></h1>
+    <p class="sub">
+      Únete como <strong>pasajero prioritario</strong> y sé de los primeros en pedir tu moto desde la nueva app antes de su lanzamiento oficial.
+    </p>
+
+    <form id="form">
+
+      <label class="field-label" for="nombre">Nombre completo</label>
+      <input id="nombre" type="text" required placeholder="Tu nombre" autocomplete="name" />
+
+      <label class="field-label" for="telefono">Número de WhatsApp</label>
+      <div class="phone-wrap">
+        <div class="phone-prefix">🇧🇴 +591</div>
+        <input id="telefono" type="tel" required placeholder="71234567"
+               inputmode="numeric" autocomplete="tel" maxlength="12" />
+      </div>
+
+      <label class="field-label" for="email">Correo de Google Play (Gmail)</label>
+      <input id="email" type="email" required placeholder="tucorreo@gmail.com"
+             autocomplete="email" inputmode="email" spellcheck="false" />
+
+      <div class="email-hint" id="emailHint"></div>
+
+      <div class="play-notice">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 9v4"/>
+          <circle cx="12" cy="17" r=".5" fill="currentColor"/>
+          <path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.7 3.86a2 2 0 0 0-3.4 0z"/>
+        </svg>
+        <span>
+          <strong>Importante:</strong> usa el <strong>mismo correo de Gmail</strong> registrado en tu cuenta de <strong>Google Play</strong>. Si usas otro, <strong>NO</strong> podrás acceder al acceso anticipado.
+        </span>
+      </div>
+
+      <div class="check-row">
+        <input type="checkbox" id="acepto" required />
+        <label for="acepto">
+          Confirmo que este correo es el mismo de mi cuenta de Google Play, y he leído las
+          <a id="openPolicy">Políticas de Privacidad</a>.
+        </label>
+      </div>
+
+      <button type="submit" class="submit" id="btn">
+        <svg viewBox="0 0 24 24">
+          <rect x="3" y="8" width="18" height="4" rx="1"/>
+          <path d="M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8"/>
+          <path d="M12 8v13"/>
+        </svg>
+        Reservar mi acceso como Pasajero
+      </button>
+
+      <div class="micro-info">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+        <span>Sin spam · Solo para invitaciones oficiales</span>
+      </div>
+    </form>
+
+    <div id="msg" class="msg"></div>
+  </div>
+
+  <!-- MODAL POLÍTICAS -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          Políticas de Privacidad
+        </h2>
+        <button class="modal-close" id="closeModal" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <p>Última actualización: <strong>2026</strong></p>
+
+        <h3>1. Responsable del tratamiento</h3>
+        <p>Este formulario es administrado por el equipo desarrollador de las aplicaciones de movilidad distribuidas mediante <strong>Google Play Store</strong> en su fase de acceso anticipado. Los datos ingresados se almacenan de forma segura en <strong>Supabase</strong>.</p>
+
+        <h3>2. Datos que recolectamos</h3>
+        <p>Al registrarte como <strong>pasajero</strong>, recolectamos únicamente:</p>
+        <ul>
+          <li><strong>Nombre completo</strong> — para identificarte dentro del proceso.</li>
+          <li><strong>Número de WhatsApp</strong> — para contactarte rápidamente.</li>
+          <li><strong>Correo electrónico (Gmail)</strong> — para enviarte la invitación oficial de Google Play.</li>
+        </ul>
+
+        <div class="highlight warn">
+          <strong>Requisito obligatorio:</strong> el correo que registres aquí debe ser <strong>exactamente el mismo</strong> que tienes asociado a tu <strong>cuenta de Google Play</strong>. Si usas uno distinto <strong>no podrás recibir ni acceder al acceso anticipado</strong>.
+        </div>
+
+        <h3>3. ¿Para qué usamos tus datos?</h3>
+        <p>Serán utilizados <strong>exclusivamente</strong> para:</p>
+        <ul>
+          <li>Agregarte a la lista de <strong>pasajeros prioritarios</strong> en Google Play Console.</li>
+          <li>Enviarte el <strong>enlace de acceso</strong> a la app cuando esté lista.</li>
+          <li>Contactarte por <strong>WhatsApp</strong> para dudas o feedback.</li>
+          <li>Notificarte sobre <strong>actualizaciones o cambios importantes</strong>.</li>
+        </ul>
+
+        <div class="highlight">
+          <strong>Importante:</strong> Tus datos <strong>NO</strong> serán vendidos, alquilados ni compartidos con terceros ajenos al equipo de desarrollo.
+        </div>
+
+        <h3>4. Base legal</h3>
+        <p>El tratamiento de tus datos se realiza con tu <strong>consentimiento explícito</strong>, otorgado al marcar la casilla de aceptación.</p>
+
+        <h3>5. Almacenamiento y seguridad</h3>
+        <p>Los datos se almacenan en servidores de <strong>Supabase</strong>, con cifrado en tránsito (HTTPS) y políticas de seguridad a nivel de fila (RLS).</p>
+
+        <h3>6. Tiempo de conservación</h3>
+        <p>Conservaremos tus datos durante el <strong>periodo activo del acceso anticipado</strong> y hasta <strong>6 meses después</strong> de finalizado.</p>
+
+        <h3>7. Tus derechos</h3>
+        <p>En cualquier momento puedes solicitar <strong>acceso, corrección, eliminación</strong> de tus datos o <strong>retirar tu consentimiento</strong> sin penalización, respondiendo al correo de invitación o por WhatsApp.</p>
+
+        <h3>8. Uso de cookies y terceros</h3>
+        <p>Esta página <strong>no utiliza cookies de rastreo</strong> ni publicidad. La única conexión externa es con <strong>Supabase</strong>.</p>
+
+        <h3>9. Menores de edad</h3>
+        <p>Este registro está dirigido a personas <strong>mayores de 13 años</strong>. Si eres menor, necesitas autorización de tu tutor legal.</p>
+
+        <h3>10. Cambios en esta política</h3>
+        <p>Nos reservamos el derecho de actualizar estas políticas. Cualquier cambio relevante será comunicado al correo o WhatsApp que hayas registrado.</p>
+
+        <h3>11. Aceptación</h3>
+        <p>Al marcar la casilla y enviar el formulario, confirmas que has leído, entendido y aceptado todas las condiciones descritas anteriormente.</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" id="btnCancel">Cancelar</button>
+        <button class="btn-primary" id="btnAccept">Aceptar y continuar</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+    const SUPABASE_URL = 'https://uwdojchfwmaczgdthtfr.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3ZG9qY2hmd21hY3pnZHRodGZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNDQ4NDEsImV4cCI6MjEwMjcyMDg0MX0.jafGOwlItnzSoZ6yYlpaae16S2nlSDpPIS2316ZPJak';
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // 🔒 ROL FIJO: PASAJERO
+    const ROL_FIJO = 'pasajero';
+
+    const form       = document.getElementById('form');
+    const btn        = document.getElementById('btn');
+    const msg        = document.getElementById('msg');
+    const acepto     = document.getElementById('acepto');
+    const emailInput = document.getElementById('email');
+    const telInput   = document.getElementById('telefono');
+    const emailHint  = document.getElementById('emailHint');
+    const modal      = document.getElementById('modal');
+    const openPolicy = document.getElementById('openPolicy');
+    const closeModal = document.getElementById('closeModal');
+    const btnCancel  = document.getElementById('btnCancel');
+    const btnAccept  = document.getElementById('btnAccept');
+
+    const BTN_HTML_ORIGINAL = btn.innerHTML;
+
+    function openModal() {
+      modal.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function closeModalFn() {
+      modal.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    openPolicy.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
+    closeModal.addEventListener('click', closeModalFn);
+    btnCancel.addEventListener('click', closeModalFn);
+    btnAccept.addEventListener('click', () => { acepto.checked = true; closeModalFn(); });
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModalFn(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('open')) closeModalFn();
+    });
+
+    const GMAIL_REGEX = /^[a-z0-9._%+-]+@(gmail\.com|googlemail\.com)$/i;
+
+    function validarEmail() {
+      const valor = emailInput.value.trim().toLowerCase();
+      if (valor === '') {
+        emailInput.classList.remove('invalid');
+        emailHint.className = 'email-hint';
+        emailHint.textContent = '';
+        return false;
+      }
+      if (!GMAIL_REGEX.test(valor)) {
+        emailInput.classList.add('invalid');
+        emailHint.className = 'email-hint show error';
+        emailHint.textContent = 'Debe ser una cuenta de Gmail (@gmail.com) registrada en Google Play.';
+        return false;
+      }
+      emailInput.classList.remove('invalid');
+      emailHint.className = 'email-hint show';
+      emailHint.style.color = '#4ade80';
+      emailHint.textContent = 'Formato válido. Asegúrate de que sea el mismo correo de tu cuenta de Google Play.';
+      return true;
+    }
+    emailInput.addEventListener('input', validarEmail);
+    emailInput.addEventListener('blur', validarEmail);
+
+    telInput.addEventListener('input', () => {
+      telInput.value = telInput.value.replace(/\D/g, '').slice(0, 12);
+    });
+
+    function show(text, type) {
+      msg.textContent = text;
+      msg.className = 'msg ' + type;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!acepto.checked) {
+        show('Debes aceptar las Políticas de Privacidad.', 'error');
+        return;
+      }
+      if (!validarEmail()) {
+        show('Revisa tu correo. Debe ser un Gmail válido.', 'error');
+        emailInput.focus();
+        return;
+      }
+
+      const telefonoRaw = telInput.value.trim();
+      if (telefonoRaw.length < 7) {
+        show('Ingresa un número de WhatsApp válido (mínimo 7 dígitos).', 'error');
+        telInput.focus();
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Reservando tu lugar...';
+      msg.className = 'msg';
+
+      const nombre   = document.getElementById('nombre').value.trim();
+      const email    = emailInput.value.trim().toLowerCase();
+      const telefono = '+591' + telefonoRaw;
+
+      const { error } = await supabase
+        .from('verificadores')
+        .insert([{ nombre, email, rol: ROL_FIJO, telefono }]);
+
+      btn.disabled = false;
+      btn.innerHTML = BTN_HTML_ORIGINAL;
+
+      if (error) {
+        console.error(error);
+        if (error.code === '23505') {
+          show('Este correo ya tiene un lugar reservado.', 'error');
+        } else {
+          show('Error al registrar: ' + error.message, 'error');
+        }
+        return;
+      }
+
+      form.reset();
+      emailInput.classList.remove('invalid');
+      emailHint.className = 'email-hint';
+      show('¡Bienvenido como Pasajero al acceso anticipado! Pronto te contactaremos por WhatsApp o correo con la invitación oficial.', 'ok');
+    });
+  </script>
+
+</body>
+</html>
