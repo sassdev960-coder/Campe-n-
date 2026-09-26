@@ -10,7 +10,6 @@
 
     :root {
       --bg-1: #0a0a0a;
-      --bg-2: #141414;
       --card: #181818;
       --card-2: #202020;
       --border: #2a2a2a;
@@ -117,6 +116,113 @@
       line-height: 1.55;
     }
 
+    /* ============ SELECTOR ROL ============ */
+    .role-section {
+      margin-bottom: 22px;
+      text-align: left;
+    }
+
+    .role-title {
+      display: block;
+      font-size: .78rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--accent-2);
+      letter-spacing: .4px;
+      text-transform: uppercase;
+    }
+
+    .role-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .role-option {
+      position: relative;
+      cursor: pointer;
+      display: block;
+    }
+
+    .role-option input[type="radio"] {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .role-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 16px 10px;
+      background: var(--card-2);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      transition: border-color .2s, background .2s, transform .15s, box-shadow .2s;
+      text-align: center;
+      user-select: none;
+    }
+
+    .role-card:hover {
+      border-color: #3a3a3a;
+      transform: translateY(-2px);
+    }
+
+    .role-card .emoji {
+      font-size: 1.7rem;
+      line-height: 1;
+    }
+    .role-card .role-name {
+      font-size: .95rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.2px;
+    }
+    .role-card .role-desc {
+      font-size: .7rem;
+      color: var(--muted);
+      line-height: 1.3;
+    }
+
+    /* Estado seleccionado */
+    .role-option input[type="radio"]:checked + .role-card {
+      border-color: var(--gold);
+      background: var(--gold-soft);
+      box-shadow: 0 0 0 3px rgba(251,191,36,.1), 0 8px 24px rgba(251,191,36,.08);
+    }
+    .role-option input[type="radio"]:checked + .role-card .role-name {
+      color: var(--gold);
+    }
+
+    /* Check pequeñito de seleccionado */
+    .role-card::after {
+      content: '✓';
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--gold);
+      color: #0a0a0a;
+      font-size: .72rem;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(.5);
+      transition: opacity .2s, transform .2s;
+    }
+    .role-option input[type="radio"]:checked + .role-card::after {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    /* ==================================== */
+
     .play-notice {
       display: flex;
       align-items: flex-start;
@@ -138,7 +244,7 @@
     }
     .play-notice strong { color: var(--warn); }
 
-    label {
+    label.field-label {
       display: block;
       text-align: left;
       font-size: .78rem;
@@ -149,7 +255,8 @@
       text-transform: uppercase;
     }
 
-    input {
+    input[type="text"],
+    input[type="email"] {
       width: 100%;
       padding: 12px 14px;
       background: var(--card-2);
@@ -163,7 +270,8 @@
       font-family: inherit;
     }
     input::placeholder { color: #5a5a5a; }
-    input:focus {
+    input[type="text"]:focus,
+    input[type="email"]:focus {
       border-color: #555;
       box-shadow: 0 0 0 3px rgba(255,255,255,.05);
     }
@@ -400,6 +508,9 @@
       .modal-header, .modal-body, .modal-footer { padding-left: 18px; padding-right: 18px; }
       .modal-body { font-size: .88rem; }
       .play-notice { font-size: .78rem; padding: 10px 12px; }
+      .role-card { padding: 14px 8px; }
+      .role-card .emoji { font-size: 1.5rem; }
+      .role-card .role-name { font-size: .88rem; }
     }
   </style>
 </head>
@@ -407,7 +518,7 @@
 
   <div class="card">
 
-    <!-- 🖼️ LOGO SIN CÍRCULO -->
+    <!-- 🖼️ LOGO -->
     <img src="logo.png" alt="Logo" class="logo" />
 
     <div class="badge">
@@ -420,22 +531,47 @@
       Únete como <strong>tester prioritario</strong> y sé de los primeros en probar la app antes de su lanzamiento oficial en Google Play.
     </p>
 
-    <div class="play-notice">
-      <span class="icon">⚠️</span>
-      <span>
-        <strong>Importante:</strong> usa el <strong>mismo correo de Gmail</strong> registrado en tu cuenta de <strong>Google Play</strong>. Si usas otro, <strong>NO</strong> podrás acceder al acceso anticipado.
-      </span>
-    </div>
-
     <form id="form">
-      <label for="nombre">Nombre completo</label>
+
+      <!-- 🚗🧍 SELECTOR DE ROL -->
+      <div class="role-section">
+        <span class="role-title">Elige tu rol en la app</span>
+        <div class="role-grid">
+          <label class="role-option">
+            <input type="radio" name="rol" value="conductor" required />
+            <div class="role-card">
+              <span class="emoji">🚗</span>
+              <span class="role-name">Conductor</span>
+              <span class="role-desc">Ofrezco viajes</span>
+            </div>
+          </label>
+          <label class="role-option">
+            <input type="radio" name="rol" value="pasajero" required />
+            <div class="role-card">
+              <span class="emoji">🧍</span>
+              <span class="role-name">Pasajero</span>
+              <span class="role-desc">Busco viajes</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <label class="field-label" for="nombre">Nombre completo</label>
       <input id="nombre" type="text" required placeholder="Tu nombre" autocomplete="name" />
 
-      <label for="email">Correo de Google Play (Gmail)</label>
+      <label class="field-label" for="email">Correo de Google Play (Gmail)</label>
       <input id="email" type="email" required placeholder="tucorreo@gmail.com"
              autocomplete="email" inputmode="email" spellcheck="false" />
 
       <div class="email-hint" id="emailHint"></div>
+
+      <!-- ⚠️ AVISO GOOGLE PLAY -->
+      <div class="play-notice">
+        <span class="icon">⚠️</span>
+        <span>
+          <strong>Importante:</strong> usa el <strong>mismo correo de Gmail</strong> registrado en tu cuenta de <strong>Google Play</strong>. Si usas otro, <strong>NO</strong> podrás acceder al acceso anticipado.
+        </span>
+      </div>
 
       <div class="check-row">
         <input type="checkbox" id="acepto" required />
@@ -468,11 +604,12 @@
         <p>Última actualización: <strong>2026</strong></p>
 
         <h3>1. Responsable del tratamiento</h3>
-        <p>Este formulario es administrado por el equipo desarrollador de la aplicación distribuida mediante <strong>Google Play Store</strong> en su fase de acceso anticipado. Los datos ingresados se almacenan de forma segura en <strong>Supabase</strong>, un proveedor de base de datos en la nube.</p>
+        <p>Este formulario es administrado por el equipo desarrollador de las aplicaciones de movilidad distribuidas mediante <strong>Google Play Store</strong> en su fase de acceso anticipado. Los datos ingresados se almacenan de forma segura en <strong>Supabase</strong>, un proveedor de base de datos en la nube.</p>
 
         <h3>2. Datos que recolectamos</h3>
         <p>Al registrarte, recolectamos únicamente:</p>
         <ul>
+          <li><strong>Rol seleccionado</strong> — <em>conductor</em> o <em>pasajero</em>, según tu elección.</li>
           <li><strong>Nombre completo</strong> — para identificarte dentro del proceso de acceso anticipado.</li>
           <li><strong>Correo electrónico (Gmail)</strong> — para enviarte la invitación oficial de Google Play.</li>
         </ul>
@@ -484,10 +621,10 @@
         <h3>3. ¿Para qué usamos tu correo electrónico?</h3>
         <p>Tu correo será utilizado <strong>exclusivamente</strong> para los siguientes fines:</p>
         <ul>
-          <li>Agregarte a la lista de <strong>testers prioritarios</strong> de la aplicación en Google Play Console.</li>
-          <li>Enviarte el <strong>enlace de acceso</strong> al acceso anticipado.</li>
+          <li>Agregarte a la lista de <strong>testers prioritarios</strong> de la aplicación correspondiente a tu rol (conductor o pasajero) en Google Play Console.</li>
+          <li>Enviarte el <strong>enlace de acceso</strong> al acceso anticipado de la app que elegiste probar.</li>
           <li>Notificarte sobre <strong>actualizaciones, correcciones o cambios importantes</strong> durante el periodo de acceso.</li>
-          <li>Solicitarte <strong>feedback</strong> (opiniones, errores encontrados, sugerencias) relacionado con la aplicación.</li>
+          <li>Solicitarte <strong>feedback</strong> relacionado con la aplicación.</li>
           <li>Informarte el <strong>fin del acceso anticipado</strong> y si la app pasa a producción.</li>
         </ul>
 
@@ -508,7 +645,7 @@
         <p>En cualquier momento puedes solicitar:</p>
         <ul>
           <li><strong>Acceso</strong> a los datos que tenemos sobre ti.</li>
-          <li><strong>Corrección</strong> de tu nombre o correo.</li>
+          <li><strong>Corrección</strong> de tu nombre, correo o rol seleccionado.</li>
           <li><strong>Eliminación</strong> de tu registro de la lista de verificadores.</li>
           <li><strong>Retirar tu consentimiento</strong> sin ningún tipo de penalización.</li>
         </ul>
@@ -524,7 +661,7 @@
         <p>Nos reservamos el derecho de actualizar estas políticas. Cualquier cambio relevante será comunicado al correo que hayas registrado.</p>
 
         <h3>11. Aceptación</h3>
-        <p>Al marcar la casilla y enviar el formulario, confirmas que has leído, entendido y aceptado todas las condiciones descritas anteriormente, incluyendo que tu correo coincide con el de tu cuenta de Google Play.</p>
+        <p>Al marcar la casilla y enviar el formulario, confirmas que has leído, entendido y aceptado todas las condiciones descritas anteriormente, incluyendo que tu correo coincide con el de tu cuenta de Google Play y que el rol seleccionado es el que deseas probar.</p>
       </div>
 
       <div class="modal-footer">
@@ -554,6 +691,7 @@
     const btnCancel  = document.getElementById('btnCancel');
     const btnAccept  = document.getElementById('btnAccept');
 
+    // ---------- Modal ----------
     function openModal() {
       modal.classList.add('open');
       document.body.style.overflow = 'hidden';
@@ -571,6 +709,7 @@
       if (e.key === 'Escape' && modal.classList.contains('open')) closeModalFn();
     });
 
+    // ---------- Validación de Gmail ----------
     const GMAIL_REGEX = /^[a-z0-9._%+-]+@(gmail\.com|googlemail\.com)$/i;
 
     function validarEmail() {
@@ -593,22 +732,33 @@
       emailHint.textContent = '✅ Formato válido. Asegúrate de que sea el mismo correo de tu cuenta de Google Play.';
       return true;
     }
-
     emailInput.addEventListener('input', validarEmail);
     emailInput.addEventListener('blur', validarEmail);
 
+    // ---------- Mensajes ----------
     function show(text, type) {
       msg.textContent = text;
       msg.className = 'msg ' + type;
     }
 
+    // ---------- Envío ----------
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
+      // 1. Validar rol
+      const rolSeleccionado = document.querySelector('input[name="rol"]:checked');
+      if (!rolSeleccionado) {
+        show('⚠️ Debes elegir un rol: Conductor o Pasajero.', 'error');
+        return;
+      }
+
+      // 2. Validar aceptación
       if (!acepto.checked) {
         show('⚠️ Debes aceptar las Políticas de Privacidad.', 'error');
         return;
       }
+
+      // 3. Validar email
       if (!validarEmail()) {
         show('⚠️ Revisa tu correo. Debe ser un Gmail válido.', 'error');
         emailInput.focus();
@@ -621,10 +771,11 @@
 
       const nombre = document.getElementById('nombre').value.trim();
       const email  = emailInput.value.trim().toLowerCase();
+      const rol    = rolSeleccionado.value;
 
       const { error } = await supabase
         .from('verificadores')
-        .insert([{ nombre, email }]);
+        .insert([{ nombre, email, rol }]);
 
       btn.disabled = false;
       btn.textContent = '🎟️ Reservar mi acceso anticipado';
@@ -633,16 +784,21 @@
         console.error(error);
         if (error.code === '23505') {
           show('⚠️ Este correo ya tiene un lugar reservado.', 'error');
+        } else if (error.code === '23514') {
+          show('⚠️ Rol inválido. Recarga la página e inténtalo de nuevo.', 'error');
         } else {
           show('❌ Error al registrar: ' + error.message, 'error');
         }
         return;
       }
 
+      const emoji = rol === 'conductor' ? '🚗' : '🧍';
+      const rolTexto = rol === 'conductor' ? 'Conductor' : 'Pasajero';
+
       form.reset();
       emailInput.classList.remove('invalid');
       emailHint.className = 'email-hint';
-      show('🎉 ¡Bienvenido al acceso anticipado! Revisa tu Gmail registrado en Google Play para la invitación oficial.', 'ok');
+      show(`${emoji} ¡Bienvenido como ${rolTexto} al acceso anticipado! Revisa tu Gmail de Google Play para la invitación oficial.`, 'ok');
     });
   </script>
 
