@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Únete a la prueba - Play Store</title>
+  <title>Acceso Anticipado Exclusivo 🚀</title>
   <link rel="icon" type="image/png" href="logo.png" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -22,6 +22,8 @@
       --warn: #fbbf24;
       --warn-bg: rgba(251,191,36,.08);
       --warn-border: rgba(251,191,36,.3);
+      --gold: #fbbf24;
+      --gold-soft: rgba(251,191,36,.12);
     }
 
     body {
@@ -39,42 +41,82 @@
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 20px;
-      padding: 36px 30px 34px;
-      max-width: 440px;
+      padding: 32px 30px 34px;
+      max-width: 460px;
       width: 100%;
       box-shadow: 0 30px 80px rgba(0,0,0,.6);
       text-align: center;
       position: relative;
+      overflow: hidden;
     }
 
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: .6;
+    }
+
+    /* 🖼️ LOGO SIN CÍRCULO */
     .logo {
       display: block;
-      margin: 0 auto 20px;
-      width: 110px;
-      height: 110px;
+      margin: 0 auto 18px;
+      width: 130px;
+      height: auto;
       object-fit: contain;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--gold-soft);
+      border: 1px solid rgba(251,191,36,.35);
+      color: var(--gold);
+      font-size: .72rem;
+      font-weight: 700;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      padding: 6px 12px;
+      border-radius: 100px;
+      margin-bottom: 14px;
+    }
+    .badge .dot {
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
-      background: #0f0f0f;
-      padding: 10px;
-      border: 1px solid var(--border);
-      box-shadow: 0 0 30px rgba(255,255,255,.06);
+      background: var(--gold);
+      box-shadow: 0 0 8px var(--gold);
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: .4; transform: scale(.8); }
     }
 
     h1 {
-      font-size: 1.55rem;
+      font-size: 1.6rem;
       margin-bottom: 10px;
       font-weight: 700;
-      letter-spacing: -.3px;
+      letter-spacing: -.4px;
+      line-height: 1.25;
+    }
+    h1 .highlight {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     p.sub {
       color: var(--muted);
-      font-size: .95rem;
+      font-size: .93rem;
       margin-bottom: 22px;
-      line-height: 1.5;
+      line-height: 1.55;
     }
 
-    /* ⚠️ Aviso Google Play */
     .play-notice {
       display: flex;
       align-items: flex-start;
@@ -85,25 +127,25 @@
       padding: 12px 14px;
       margin-bottom: 22px;
       text-align: left;
-      font-size: .84rem;
+      font-size: .83rem;
       line-height: 1.5;
       color: #fde68a;
     }
     .play-notice .icon {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       flex-shrink: 0;
       line-height: 1.3;
     }
-    .play-notice strong { color: #fbbf24; }
+    .play-notice strong { color: var(--warn); }
 
     label {
       display: block;
       text-align: left;
-      font-size: .82rem;
+      font-size: .78rem;
       font-weight: 600;
       margin-bottom: 6px;
       color: var(--accent-2);
-      letter-spacing: .3px;
+      letter-spacing: .4px;
       text-transform: uppercase;
     }
 
@@ -118,14 +160,13 @@
       margin-bottom: 18px;
       transition: border-color .2s, box-shadow .2s;
       outline: none;
+      font-family: inherit;
     }
     input::placeholder { color: #5a5a5a; }
     input:focus {
       border-color: #555;
       box-shadow: 0 0 0 3px rgba(255,255,255,.05);
     }
-
-    /* 🔴 Estado de error del email (no Gmail) */
     input.invalid {
       border-color: var(--danger);
       box-shadow: 0 0 0 3px rgba(255,107,107,.1);
@@ -136,13 +177,10 @@
       text-align: left;
       font-size: .78rem;
       margin-bottom: 14px;
-      min-height: 0;
       line-height: 1.4;
       display: none;
     }
-    .email-hint.show {
-      display: block;
-    }
+    .email-hint.show { display: block; }
     .email-hint.error { color: var(--danger); }
 
     .check-row {
@@ -159,7 +197,7 @@
       width: 18px;
       height: 18px;
       margin: 2px 0 0 0;
-      accent-color: #ffffff;
+      accent-color: var(--gold);
       flex-shrink: 0;
       cursor: pointer;
     }
@@ -168,7 +206,7 @@
       letter-spacing: 0;
       font-weight: 400;
       color: var(--muted);
-      font-size: .85rem;
+      font-size: .84rem;
       margin: 0;
       cursor: pointer;
     }
@@ -194,9 +232,19 @@
     }
     button.submit:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(255,255,255,.12);
+      box-shadow: 0 10px 30px rgba(255,255,255,.15);
     }
     button.submit:disabled { opacity: .5; cursor: not-allowed; }
+
+    .micro-info {
+      margin-top: 14px;
+      font-size: .75rem;
+      color: #666;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
 
     .msg {
       margin-top: 18px;
@@ -205,6 +253,7 @@
       font-size: .88rem;
       display: none;
       border: 1px solid transparent;
+      line-height: 1.5;
     }
     .msg.ok {
       background: rgba(74,222,128,.1);
@@ -219,7 +268,7 @@
       display: block;
     }
 
-    /* ============ MODAL ============ */
+    /* MODAL */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -262,7 +311,7 @@
       border-bottom: 1px solid var(--border);
     }
     .modal-header h2 {
-      font-size: 1.15rem;
+      font-size: 1.12rem;
       font-weight: 700;
       letter-spacing: -.2px;
     }
@@ -292,9 +341,7 @@
     }
     .modal-body::-webkit-scrollbar { width: 8px; }
     .modal-body::-webkit-scrollbar-track { background: transparent; }
-    .modal-body::-webkit-scrollbar-thumb {
-      background: #333; border-radius: 4px;
-    }
+    .modal-body::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
     .modal-body h3 {
       color: #fff;
       font-size: .98rem;
@@ -303,10 +350,7 @@
     }
     .modal-body h3:first-child { margin-top: 0; }
     .modal-body p { margin-bottom: 10px; }
-    .modal-body ul {
-      margin: 8px 0 14px 20px;
-      padding: 0;
-    }
+    .modal-body ul { margin: 8px 0 14px 20px; padding: 0; }
     .modal-body li { margin-bottom: 6px; }
     .modal-body strong { color: #fff; }
     .modal-body .highlight {
@@ -340,10 +384,7 @@
       transition: transform .15s, background .2s;
       border: 1px solid var(--border);
     }
-    .btn-secondary {
-      background: transparent;
-      color: var(--text);
-    }
+    .btn-secondary { background: transparent; color: var(--text); }
     .btn-secondary:hover { background: var(--card-2); }
     .btn-primary {
       background: #fff;
@@ -353,12 +394,12 @@
     .btn-primary:hover { transform: translateY(-1px); }
 
     @media (max-width: 480px) {
-      .card { padding: 30px 22px 28px; }
-      .logo { width: 90px; height: 90px; }
+      .card { padding: 28px 22px 28px; }
+      .logo { width: 100px; }
       h1 { font-size: 1.35rem; }
       .modal-header, .modal-body, .modal-footer { padding-left: 18px; padding-right: 18px; }
       .modal-body { font-size: .88rem; }
-      .play-notice { font-size: .8rem; padding: 10px 12px; }
+      .play-notice { font-size: .78rem; padding: 10px 12px; }
     }
   </style>
 </head>
@@ -366,17 +407,23 @@
 
   <div class="card">
 
-    <!-- 🖼️ LOGO -->
+    <!-- 🖼️ LOGO SIN CÍRCULO -->
     <img src="logo.png" alt="Logo" class="logo" />
 
-    <h1>🚀 Prueba cerrada</h1>
-    <p class="sub">Regístrate para recibir el enlace de acceso a la prueba en Play Store.</p>
+    <div class="badge">
+      <span class="dot"></span>
+      Acceso Anticipado · Plazas Limitadas
+    </div>
 
-    <!-- ⚠️ AVISO IMPORTANTE GOOGLE PLAY -->
+    <h1>Tu lugar <span class="highlight">VIP</span> en la nueva app</h1>
+    <p class="sub">
+      Únete como <strong>tester prioritario</strong> y sé de los primeros en probar la app antes de su lanzamiento oficial en Google Play.
+    </p>
+
     <div class="play-notice">
       <span class="icon">⚠️</span>
       <span>
-        <strong>Importante:</strong> usa el <strong>mismo correo de Gmail</strong> que tienes registrado en tu cuenta de <strong>Google Play</strong>. Si usas otro correo, <strong>NO</strong> podrás acceder a la prueba.
+        <strong>Importante:</strong> usa el <strong>mismo correo de Gmail</strong> registrado en tu cuenta de <strong>Google Play</strong>. Si usas otro, <strong>NO</strong> podrás acceder al acceso anticipado.
       </span>
     </div>
 
@@ -386,13 +433,10 @@
 
       <label for="email">Correo de Google Play (Gmail)</label>
       <input id="email" type="email" required placeholder="tucorreo@gmail.com"
-             autocomplete="email"
-             inputmode="email"
-             spellcheck="false" />
+             autocomplete="email" inputmode="email" spellcheck="false" />
 
       <div class="email-hint" id="emailHint"></div>
 
-      <!-- ✅ Aceptación de políticas -->
       <div class="check-row">
         <input type="checkbox" id="acepto" required />
         <label for="acepto">
@@ -401,13 +445,18 @@
         </label>
       </div>
 
-      <button type="submit" class="submit" id="btn">Unirme a la prueba</button>
+      <button type="submit" class="submit" id="btn">🎟️ Reservar mi acceso anticipado</button>
+
+      <div class="micro-info">
+        <span>🔒</span>
+        <span>Sin spam · Solo para invitaciones oficiales</span>
+      </div>
     </form>
 
     <div id="msg" class="msg"></div>
   </div>
 
-  <!-- ============ MODAL POLÍTICAS ============ -->
+  <!-- MODAL POLÍTICAS -->
   <div class="modal-overlay" id="modal">
     <div class="modal">
       <div class="modal-header">
@@ -419,31 +468,31 @@
         <p>Última actualización: <strong>2026</strong></p>
 
         <h3>1. Responsable del tratamiento</h3>
-        <p>Este formulario es administrado por el equipo desarrollador de la aplicación distribuida mediante <strong>Google Play Store</strong> en su fase de prueba cerrada. Los datos ingresados se almacenan de forma segura en <strong>Supabase</strong>, un proveedor de base de datos en la nube.</p>
+        <p>Este formulario es administrado por el equipo desarrollador de la aplicación distribuida mediante <strong>Google Play Store</strong> en su fase de acceso anticipado. Los datos ingresados se almacenan de forma segura en <strong>Supabase</strong>, un proveedor de base de datos en la nube.</p>
 
         <h3>2. Datos que recolectamos</h3>
         <p>Al registrarte, recolectamos únicamente:</p>
         <ul>
-          <li><strong>Nombre completo</strong> — para identificarte dentro del proceso de prueba.</li>
+          <li><strong>Nombre completo</strong> — para identificarte dentro del proceso de acceso anticipado.</li>
           <li><strong>Correo electrónico (Gmail)</strong> — para enviarte la invitación oficial de Google Play.</li>
         </ul>
 
         <div class="highlight warn">
-          ⚠️ <strong>Requisito obligatorio:</strong> el correo que registres aquí debe ser <strong>exactamente el mismo</strong> que tienes asociado a tu <strong>cuenta de Google Play</strong>. Google Play Console asocia los testers por correo, por lo que si usas uno distinto <strong>no podrás recibir ni acceder a la prueba cerrada</strong>.
+          ⚠️ <strong>Requisito obligatorio:</strong> el correo que registres aquí debe ser <strong>exactamente el mismo</strong> que tienes asociado a tu <strong>cuenta de Google Play</strong>. Google Play Console asocia los testers por correo, por lo que si usas uno distinto <strong>no podrás recibir ni acceder al acceso anticipado</strong>.
         </div>
 
         <h3>3. ¿Para qué usamos tu correo electrónico?</h3>
         <p>Tu correo será utilizado <strong>exclusivamente</strong> para los siguientes fines:</p>
         <ul>
-          <li>Agregarte a la lista de <strong>testers oficiales</strong> de la aplicación en Google Play Console.</li>
-          <li>Enviarte el <strong>enlace de acceso</strong> a la prueba cerrada.</li>
-          <li>Notificarte sobre <strong>actualizaciones, correcciones o cambios importantes</strong> durante el periodo de prueba.</li>
+          <li>Agregarte a la lista de <strong>testers prioritarios</strong> de la aplicación en Google Play Console.</li>
+          <li>Enviarte el <strong>enlace de acceso</strong> al acceso anticipado.</li>
+          <li>Notificarte sobre <strong>actualizaciones, correcciones o cambios importantes</strong> durante el periodo de acceso.</li>
           <li>Solicitarte <strong>feedback</strong> (opiniones, errores encontrados, sugerencias) relacionado con la aplicación.</li>
-          <li>Informarte el <strong>fin del periodo de prueba</strong> y si la app pasa a producción.</li>
+          <li>Informarte el <strong>fin del acceso anticipado</strong> y si la app pasa a producción.</li>
         </ul>
 
         <div class="highlight">
-          🔐 <strong>Importante:</strong> Tu correo <strong>NO</strong> será vendido, alquilado ni compartido con terceros ajenos al equipo de desarrollo. Solo se utiliza para el proceso de prueba en Play Store.
+          🔐 <strong>Importante:</strong> Tu correo <strong>NO</strong> será vendido, alquilado ni compartido con terceros ajenos al equipo de desarrollo. Solo se utiliza para el proceso de acceso anticipado en Play Store.
         </div>
 
         <h3>4. Base legal</h3>
@@ -453,7 +502,7 @@
         <p>Los datos se almacenan en servidores de <strong>Supabase</strong>, con cifrado en tránsito (HTTPS) y políticas de seguridad a nivel de fila (RLS). Solo el equipo autorizado puede consultar la lista de verificadores.</p>
 
         <h3>6. Tiempo de conservación</h3>
-        <p>Conservaremos tu correo durante el <strong>periodo activo de la prueba</strong> y hasta <strong>6 meses después</strong> de finalizada, con el fin de contactarte sobre resultados y versiones finales. Luego será eliminado de forma segura.</p>
+        <p>Conservaremos tu correo durante el <strong>periodo activo del acceso anticipado</strong> y hasta <strong>6 meses después</strong> de finalizado, con el fin de contactarte sobre resultados y versiones finales. Luego será eliminado de forma segura.</p>
 
         <h3>7. Tus derechos</h3>
         <p>En cualquier momento puedes solicitar:</p>
@@ -485,7 +534,6 @@
     </div>
   </div>
 
-  <!-- ============ SUPABASE + LÓGICA ============ -->
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
@@ -494,7 +542,6 @@
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ---------- Referencias ----------
     const form       = document.getElementById('form');
     const btn        = document.getElementById('btn');
     const msg        = document.getElementById('msg');
@@ -507,7 +554,6 @@
     const btnCancel  = document.getElementById('btnCancel');
     const btnAccept  = document.getElementById('btnAccept');
 
-    // ---------- Modal ----------
     function openModal() {
       modal.classList.add('open');
       document.body.style.overflow = 'hidden';
@@ -516,43 +562,31 @@
       modal.classList.remove('open');
       document.body.style.overflow = '';
     }
-    openPolicy.addEventListener('click', (e) => {
-      e.preventDefault();
-      openModal();
-    });
+    openPolicy.addEventListener('click', (e) => { e.preventDefault(); openModal(); });
     closeModal.addEventListener('click', closeModalFn);
     btnCancel.addEventListener('click', closeModalFn);
-    btnAccept.addEventListener('click', () => {
-      acepto.checked = true;
-      closeModalFn();
-    });
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) closeModalFn();
-    });
+    btnAccept.addEventListener('click', () => { acepto.checked = true; closeModalFn(); });
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModalFn(); });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && modal.classList.contains('open')) closeModalFn();
     });
 
-    // ---------- Validación Gmail en tiempo real ----------
     const GMAIL_REGEX = /^[a-z0-9._%+-]+@(gmail\.com|googlemail\.com)$/i;
 
-    function validarEmail(mostrarVacio = false) {
+    function validarEmail() {
       const valor = emailInput.value.trim().toLowerCase();
-
       if (valor === '') {
         emailInput.classList.remove('invalid');
         emailHint.className = 'email-hint';
         emailHint.textContent = '';
         return false;
       }
-
       if (!GMAIL_REGEX.test(valor)) {
         emailInput.classList.add('invalid');
         emailHint.className = 'email-hint show error';
         emailHint.textContent = '❌ Debe ser una cuenta de Gmail (@gmail.com) registrada en Google Play.';
         return false;
       }
-
       emailInput.classList.remove('invalid');
       emailHint.className = 'email-hint show';
       emailHint.style.color = '#4ade80';
@@ -560,16 +594,14 @@
       return true;
     }
 
-    emailInput.addEventListener('input', () => validarEmail());
-    emailInput.addEventListener('blur', () => validarEmail(true));
+    emailInput.addEventListener('input', validarEmail);
+    emailInput.addEventListener('blur', validarEmail);
 
-    // ---------- Mensajes ----------
     function show(text, type) {
       msg.textContent = text;
       msg.className = 'msg ' + type;
     }
 
-    // ---------- Envío ----------
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
@@ -577,7 +609,6 @@
         show('⚠️ Debes aceptar las Políticas de Privacidad.', 'error');
         return;
       }
-
       if (!validarEmail()) {
         show('⚠️ Revisa tu correo. Debe ser un Gmail válido.', 'error');
         emailInput.focus();
@@ -585,7 +616,7 @@
       }
 
       btn.disabled = true;
-      btn.textContent = 'Enviando...';
+      btn.textContent = 'Reservando tu lugar...';
       msg.className = 'msg';
 
       const nombre = document.getElementById('nombre').value.trim();
@@ -596,12 +627,12 @@
         .insert([{ nombre, email }]);
 
       btn.disabled = false;
-      btn.textContent = 'Unirme a la prueba';
+      btn.textContent = '🎟️ Reservar mi acceso anticipado';
 
       if (error) {
         console.error(error);
         if (error.code === '23505') {
-          show('⚠️ Este correo ya está registrado.', 'error');
+          show('⚠️ Este correo ya tiene un lugar reservado.', 'error');
         } else {
           show('❌ Error al registrar: ' + error.message, 'error');
         }
@@ -611,7 +642,7 @@
       form.reset();
       emailInput.classList.remove('invalid');
       emailHint.className = 'email-hint';
-      show('✅ ¡Listo! Usa la misma cuenta de Google Play para acceder a la prueba.', 'ok');
+      show('🎉 ¡Bienvenido al acceso anticipado! Revisa tu Gmail registrado en Google Play para la invitación oficial.', 'ok');
     });
   </script>
 
