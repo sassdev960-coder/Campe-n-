@@ -3,31 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Acceso Anticipado Exclusivo 🚀</title>
+  <title>Acceso Anticipado - Moto Móvil El Campeón</title>
   <link rel="icon" type="image/png" href="logo.png" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
+      --orange: #FF6B00;
+      --orange-dark: #E55A00;
+      --orange-soft: rgba(255, 107, 0, .12);
+      --orange-border: rgba(255, 107, 0, .4);
       --bg-1: #0a0a0a;
-      --card: #181818;
-      --card-2: #202020;
-      --border: #2a2a2a;
-      --text: #f5f5f5;
-      --muted: #9a9a9a;
-      --accent-2: #b3b3b3;
-      --danger: #ff6b6b;
+      --bg-2: #000000;
+      --card: #111111;
+      --card-2: #1a1a1a;
+      --border: #262626;
+      --text: #ffffff;
+      --muted: #8a8a8a;
+      --danger: #ff5555;
       --success: #4ade80;
-      --warn: #fbbf24;
-      --warn-bg: rgba(251,191,36,.08);
-      --warn-border: rgba(251,191,36,.3);
-      --gold: #fbbf24;
-      --gold-soft: rgba(251,191,36,.12);
     }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: radial-gradient(circle at 50% 0%, #1c1c1c 0%, var(--bg-1) 60%);
+      background: radial-gradient(circle at 50% 0%, #1a0f05 0%, var(--bg-2) 55%);
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -43,7 +42,7 @@
       padding: 32px 30px 34px;
       max-width: 460px;
       width: 100%;
-      box-shadow: 0 30px 80px rgba(0,0,0,.6);
+      box-shadow: 0 30px 80px rgba(0,0,0,.8);
       text-align: center;
       position: relative;
       overflow: hidden;
@@ -53,41 +52,42 @@
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, var(--gold), transparent);
-      opacity: .6;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--orange), transparent);
     }
 
-    /* 🖼️ LOGO SIN CÍRCULO */
+    /* LOGO */
     .logo {
       display: block;
       margin: 0 auto 18px;
-      width: 130px;
+      width: 140px;
       height: auto;
       object-fit: contain;
+      filter: drop-shadow(0 0 30px rgba(255,107,0,.25));
     }
 
+    /* BADGE */
     .badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      background: var(--gold-soft);
-      border: 1px solid rgba(251,191,36,.35);
-      color: var(--gold);
-      font-size: .72rem;
+      gap: 7px;
+      background: var(--orange-soft);
+      border: 1px solid var(--orange-border);
+      color: var(--orange);
+      font-size: .7rem;
       font-weight: 700;
       letter-spacing: 1.2px;
       text-transform: uppercase;
-      padding: 6px 12px;
+      padding: 6px 13px;
       border-radius: 100px;
-      margin-bottom: 14px;
+      margin-bottom: 16px;
     }
     .badge .dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: var(--gold);
-      box-shadow: 0 0 8px var(--gold);
+      background: var(--orange);
+      box-shadow: 0 0 10px var(--orange);
       animation: pulse 1.8s ease-in-out infinite;
     }
     @keyframes pulse {
@@ -98,12 +98,12 @@
     h1 {
       font-size: 1.6rem;
       margin-bottom: 10px;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: -.4px;
       line-height: 1.25;
     }
     h1 .highlight {
-      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      background: linear-gradient(135deg, #FF8C1A 0%, #FF6B00 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
@@ -115,48 +115,45 @@
       margin-bottom: 22px;
       line-height: 1.55;
     }
+    p.sub strong { color: #d0d0d0; }
 
     /* ============ SELECTOR ROL ============ */
     .role-section {
       margin-bottom: 22px;
       text-align: left;
     }
-
     .role-title {
       display: block;
       font-size: .78rem;
-      font-weight: 600;
+      font-weight: 700;
       margin-bottom: 10px;
-      color: var(--accent-2);
-      letter-spacing: .4px;
+      color: #b0b0b0;
+      letter-spacing: .5px;
       text-transform: uppercase;
     }
-
     .role-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 10px;
     }
-
     .role-option {
       position: relative;
       cursor: pointer;
       display: block;
     }
-
     .role-option input[type="radio"] {
       position: absolute;
       opacity: 0;
       pointer-events: none;
     }
-
     .role-card {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 6px;
-      padding: 16px 10px;
+      gap: 8px;
+      padding: 18px 10px 16px;
       background: var(--card-2);
       border: 1.5px solid var(--border);
       border-radius: 14px;
@@ -164,15 +161,17 @@
       text-align: center;
       user-select: none;
     }
-
     .role-card:hover {
       border-color: #3a3a3a;
       transform: translateY(-2px);
     }
-
-    .role-card .emoji {
-      font-size: 1.7rem;
-      line-height: 1;
+    .role-card svg {
+      width: 34px;
+      height: 34px;
+      stroke: #b0b0b0;
+      stroke-width: 1.8;
+      fill: none;
+      transition: stroke .2s;
     }
     .role-card .role-name {
       font-size: .95rem;
@@ -188,30 +187,30 @@
 
     /* Estado seleccionado */
     .role-option input[type="radio"]:checked + .role-card {
-      border-color: var(--gold);
-      background: var(--gold-soft);
-      box-shadow: 0 0 0 3px rgba(251,191,36,.1), 0 8px 24px rgba(251,191,36,.08);
+      border-color: var(--orange);
+      background: var(--orange-soft);
+      box-shadow: 0 0 0 3px rgba(255,107,0,.12), 0 8px 24px rgba(255,107,0,.15);
+    }
+    .role-option input[type="radio"]:checked + .role-card svg {
+      stroke: var(--orange);
     }
     .role-option input[type="radio"]:checked + .role-card .role-name {
-      color: var(--gold);
+      color: var(--orange);
     }
-
-    /* Check pequeñito de seleccionado */
+    /* Check esquina */
     .role-card::after {
-      content: '✓';
+      content: '';
       position: absolute;
-      top: 8px;
+      top: 10px;
       right: 10px;
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
       border-radius: 50%;
-      background: var(--gold);
-      color: #0a0a0a;
-      font-size: .72rem;
-      font-weight: 900;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: var(--orange);
+      background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
+      background-size: 12px;
+      background-position: center;
+      background-repeat: no-repeat;
       opacity: 0;
       transform: scale(.5);
       transition: opacity .2s, transform .2s;
@@ -221,46 +220,49 @@
       transform: scale(1);
     }
 
-    /* ==================================== */
-
+    /* AVISO */
     .play-notice {
       display: flex;
       align-items: flex-start;
       gap: 10px;
-      background: var(--warn-bg);
-      border: 1px solid var(--warn-border);
+      background: var(--orange-soft);
+      border: 1px solid var(--orange-border);
       border-radius: 12px;
       padding: 12px 14px;
       margin-bottom: 22px;
       text-align: left;
       font-size: .83rem;
       line-height: 1.5;
-      color: #fde68a;
+      color: #ffb87a;
     }
-    .play-notice .icon {
-      font-size: 1.05rem;
+    .play-notice svg {
+      width: 18px;
+      height: 18px;
       flex-shrink: 0;
-      line-height: 1.3;
+      stroke: var(--orange);
+      stroke-width: 2;
+      fill: none;
+      margin-top: 1px;
     }
-    .play-notice strong { color: var(--warn); }
+    .play-notice strong { color: var(--orange); }
 
+    /* CAMPOS */
     label.field-label {
       display: block;
       text-align: left;
       font-size: .78rem;
-      font-weight: 600;
+      font-weight: 700;
       margin-bottom: 6px;
-      color: var(--accent-2);
-      letter-spacing: .4px;
+      color: #b0b0b0;
+      letter-spacing: .5px;
       text-transform: uppercase;
     }
-
     input[type="text"],
     input[type="email"] {
       width: 100%;
-      padding: 12px 14px;
+      padding: 13px 14px;
       background: var(--card-2);
-      border: 1px solid var(--border);
+      border: 1.5px solid var(--border);
       border-radius: 10px;
       font-size: 1rem;
       color: var(--text);
@@ -272,12 +274,12 @@
     input::placeholder { color: #5a5a5a; }
     input[type="text"]:focus,
     input[type="email"]:focus {
-      border-color: #555;
-      box-shadow: 0 0 0 3px rgba(255,255,255,.05);
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(255,107,0,.12);
     }
     input.invalid {
       border-color: var(--danger);
-      box-shadow: 0 0 0 3px rgba(255,107,107,.1);
+      box-shadow: 0 0 0 3px rgba(255,85,85,.12);
       margin-bottom: 6px;
     }
 
@@ -291,6 +293,7 @@
     .email-hint.show { display: block; }
     .email-hint.error { color: var(--danger); }
 
+    /* CHECKBOX */
     .check-row {
       display: flex;
       align-items: flex-start;
@@ -305,7 +308,7 @@
       width: 18px;
       height: 18px;
       margin: 2px 0 0 0;
-      accent-color: var(--gold);
+      accent-color: var(--orange);
       flex-shrink: 0;
       cursor: pointer;
     }
@@ -323,37 +326,59 @@
       text-decoration: underline;
       text-underline-offset: 3px;
       cursor: pointer;
+      font-weight: 500;
     }
+    .check-row a:hover { color: var(--orange); }
 
+    /* BOTÓN */
     button.submit {
       width: 100%;
-      padding: 14px;
-      background: #ffffff;
-      color: #0a0a0a;
+      padding: 15px;
+      background: linear-gradient(135deg, #FF8C1A 0%, #FF6B00 100%);
+      color: #000;
       border: none;
       border-radius: 10px;
       font-size: 1rem;
-      font-weight: 700;
+      font-weight: 800;
       cursor: pointer;
       transition: transform .15s, opacity .2s, box-shadow .2s;
-      letter-spacing: .2px;
+      letter-spacing: .3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    button.submit svg {
+      width: 18px;
+      height: 18px;
+      stroke: #000;
+      stroke-width: 2.5;
+      fill: none;
     }
     button.submit:hover:not(:disabled) {
       transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(255,255,255,.15);
+      box-shadow: 0 12px 32px rgba(255,107,0,.35);
     }
     button.submit:disabled { opacity: .5; cursor: not-allowed; }
 
     .micro-info {
       margin-top: 14px;
-      font-size: .75rem;
+      font-size: .74rem;
       color: #666;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
     }
+    .micro-info svg {
+      width: 13px;
+      height: 13px;
+      stroke: #666;
+      stroke-width: 2;
+      fill: none;
+    }
 
+    /* MENSAJES */
     .msg {
       margin-top: 18px;
       padding: 12px;
@@ -362,17 +387,18 @@
       display: none;
       border: 1px solid transparent;
       line-height: 1.5;
+      text-align: left;
     }
     .msg.ok {
-      background: rgba(74,222,128,.1);
+      background: rgba(74,222,128,.08);
       color: var(--success);
       border-color: rgba(74,222,128,.25);
       display: block;
     }
     .msg.error {
-      background: rgba(255,107,107,.1);
+      background: rgba(255,85,85,.08);
       color: var(--danger);
-      border-color: rgba(255,107,107,.25);
+      border-color: rgba(255,85,85,.25);
       display: block;
     }
 
@@ -380,8 +406,8 @@
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,.85);
-      backdrop-filter: blur(6px);
+      background: rgba(0,0,0,.88);
+      backdrop-filter: blur(8px);
       display: none;
       align-items: center;
       justify-content: center;
@@ -406,11 +432,10 @@
       max-height: 88vh;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 30px 80px rgba(0,0,0,.8);
+      box-shadow: 0 30px 80px rgba(0,0,0,.9);
       animation: slideUp .25s ease;
       overflow: hidden;
     }
-
     .modal-header {
       display: flex;
       align-items: center;
@@ -419,9 +444,19 @@
       border-bottom: 1px solid var(--border);
     }
     .modal-header h2 {
-      font-size: 1.12rem;
-      font-weight: 700;
+      font-size: 1.1rem;
+      font-weight: 800;
       letter-spacing: -.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-header h2 svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--orange);
+      stroke-width: 2;
+      fill: none;
     }
     .modal-close {
       background: transparent;
@@ -431,13 +466,13 @@
       height: 34px;
       border-radius: 8px;
       cursor: pointer;
-      font-size: 1.1rem;
+      font-size: 1rem;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: background .2s, border-color .2s;
     }
-    .modal-close:hover { background: var(--card-2); border-color: #444; }
+    .modal-close:hover { background: var(--card-2); border-color: var(--orange); }
 
     .modal-body {
       padding: 22px 24px;
@@ -463,7 +498,7 @@
     .modal-body strong { color: #fff; }
     .modal-body .highlight {
       background: var(--card-2);
-      border-left: 3px solid #666;
+      border-left: 3px solid #555;
       padding: 12px 14px;
       border-radius: 8px;
       margin: 12px 0 16px;
@@ -471,9 +506,9 @@
       color: #e0e0e0;
     }
     .modal-body .highlight.warn {
-      background: var(--warn-bg);
-      border-left-color: var(--warn);
-      color: #fde68a;
+      background: var(--orange-soft);
+      border-left-color: var(--orange);
+      color: #ffb87a;
     }
 
     .modal-footer {
@@ -487,7 +522,7 @@
       padding: 12px;
       border-radius: 10px;
       font-size: .92rem;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
       transition: transform .15s, background .2s;
       border: 1px solid var(--border);
@@ -495,21 +530,22 @@
     .btn-secondary { background: transparent; color: var(--text); }
     .btn-secondary:hover { background: var(--card-2); }
     .btn-primary {
-      background: #fff;
-      color: #0a0a0a;
-      border-color: #fff !important;
+      background: linear-gradient(135deg, #FF8C1A 0%, #FF6B00 100%);
+      color: #000;
+      border-color: var(--orange) !important;
+      font-weight: 800;
     }
-    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,107,0,.3); }
 
     @media (max-width: 480px) {
       .card { padding: 28px 22px 28px; }
-      .logo { width: 100px; }
+      .logo { width: 110px; }
       h1 { font-size: 1.35rem; }
       .modal-header, .modal-body, .modal-footer { padding-left: 18px; padding-right: 18px; }
       .modal-body { font-size: .88rem; }
       .play-notice { font-size: .78rem; padding: 10px 12px; }
-      .role-card { padding: 14px 8px; }
-      .role-card .emoji { font-size: 1.5rem; }
+      .role-card { padding: 15px 8px 14px; }
+      .role-card svg { width: 28px; height: 28px; }
       .role-card .role-name { font-size: .88rem; }
     }
   </style>
@@ -518,8 +554,8 @@
 
   <div class="card">
 
-    <!-- 🖼️ LOGO -->
-    <img src="logo.png" alt="Logo" class="logo" />
+    <!-- LOGO -->
+    <img src="logo.png" alt="Moto Móvil El Campeón" class="logo" />
 
     <div class="badge">
       <span class="dot"></span>
@@ -533,14 +569,19 @@
 
     <form id="form">
 
-      <!-- 🚗🧍 SELECTOR DE ROL -->
+      <!-- SELECTOR DE ROL -->
       <div class="role-section">
         <span class="role-title">Elige tu rol en la app</span>
         <div class="role-grid">
           <label class="role-option">
             <input type="radio" name="rol" value="conductor" required />
             <div class="role-card">
-              <span class="emoji">🚗</span>
+              <!-- Ícono casco de moto -->
+              <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3C6.5 3 2 7.5 2 13v3a2 2 0 0 0 2 2h3v-3a5 5 0 0 1 10 0v3h3a2 2 0 0 0 2-2v-3c0-5.5-4.5-10-10-10z"/>
+                <path d="M9 15h6"/>
+                <path d="M12 18v2"/>
+              </svg>
               <span class="role-name">Conductor</span>
               <span class="role-desc">Ofrezco viajes</span>
             </div>
@@ -548,7 +589,11 @@
           <label class="role-option">
             <input type="radio" name="rol" value="pasajero" required />
             <div class="role-card">
-              <span class="emoji">🧍</span>
+              <!-- Ícono persona -->
+              <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="8" r="3.5"/>
+                <path d="M5 20v-1.5a6 6 0 0 1 6-6h2a6 6 0 0 1 6 6V20"/>
+              </svg>
               <span class="role-name">Pasajero</span>
               <span class="role-desc">Busco viajes</span>
             </div>
@@ -565,9 +610,13 @@
 
       <div class="email-hint" id="emailHint"></div>
 
-      <!-- ⚠️ AVISO GOOGLE PLAY -->
+      <!-- AVISO GOOGLE PLAY -->
       <div class="play-notice">
-        <span class="icon">⚠️</span>
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 9v4"/>
+          <circle cx="12" cy="17" r=".5" fill="currentColor"/>
+          <path d="M10.3 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.7 3.86a2 2 0 0 0-3.4 0z"/>
+        </svg>
         <span>
           <strong>Importante:</strong> usa el <strong>mismo correo de Gmail</strong> registrado en tu cuenta de <strong>Google Play</strong>. Si usas otro, <strong>NO</strong> podrás acceder al acceso anticipado.
         </span>
@@ -581,10 +630,20 @@
         </label>
       </div>
 
-      <button type="submit" class="submit" id="btn">🎟️ Reservar mi acceso anticipado</button>
+      <button type="submit" class="submit" id="btn">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="8" width="18" height="4" rx="1"/>
+          <path d="M5 12v8a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-8"/>
+          <path d="M12 8v13"/>
+        </svg>
+        Reservar mi acceso anticipado
+      </button>
 
       <div class="micro-info">
-        <span>🔒</span>
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
         <span>Sin spam · Solo para invitaciones oficiales</span>
       </div>
     </form>
@@ -596,7 +655,13 @@
   <div class="modal-overlay" id="modal">
     <div class="modal">
       <div class="modal-header">
-        <h2>🔒 Políticas de Privacidad</h2>
+        <h2>
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          Políticas de Privacidad
+        </h2>
         <button class="modal-close" id="closeModal" aria-label="Cerrar">✕</button>
       </div>
 
@@ -615,7 +680,7 @@
         </ul>
 
         <div class="highlight warn">
-          ⚠️ <strong>Requisito obligatorio:</strong> el correo que registres aquí debe ser <strong>exactamente el mismo</strong> que tienes asociado a tu <strong>cuenta de Google Play</strong>. Google Play Console asocia los testers por correo, por lo que si usas uno distinto <strong>no podrás recibir ni acceder al acceso anticipado</strong>.
+          <strong>Requisito obligatorio:</strong> el correo que registres aquí debe ser <strong>exactamente el mismo</strong> que tienes asociado a tu <strong>cuenta de Google Play</strong>. Google Play Console asocia los testers por correo, por lo que si usas uno distinto <strong>no podrás recibir ni acceder al acceso anticipado</strong>.
         </div>
 
         <h3>3. ¿Para qué usamos tu correo electrónico?</h3>
@@ -629,7 +694,7 @@
         </ul>
 
         <div class="highlight">
-          🔐 <strong>Importante:</strong> Tu correo <strong>NO</strong> será vendido, alquilado ni compartido con terceros ajenos al equipo de desarrollo. Solo se utiliza para el proceso de acceso anticipado en Play Store.
+          <strong>Importante:</strong> Tu correo <strong>NO</strong> será vendido, alquilado ni compartido con terceros ajenos al equipo de desarrollo. Solo se utiliza para el proceso de acceso anticipado en Play Store.
         </div>
 
         <h3>4. Base legal</h3>
@@ -691,6 +756,8 @@
     const btnCancel  = document.getElementById('btnCancel');
     const btnAccept  = document.getElementById('btnAccept');
 
+    const BTN_HTML_ORIGINAL = btn.innerHTML;
+
     // ---------- Modal ----------
     function openModal() {
       modal.classList.add('open');
@@ -709,7 +776,7 @@
       if (e.key === 'Escape' && modal.classList.contains('open')) closeModalFn();
     });
 
-    // ---------- Validación de Gmail ----------
+    // ---------- Validación Gmail ----------
     const GMAIL_REGEX = /^[a-z0-9._%+-]+@(gmail\.com|googlemail\.com)$/i;
 
     function validarEmail() {
@@ -723,13 +790,13 @@
       if (!GMAIL_REGEX.test(valor)) {
         emailInput.classList.add('invalid');
         emailHint.className = 'email-hint show error';
-        emailHint.textContent = '❌ Debe ser una cuenta de Gmail (@gmail.com) registrada en Google Play.';
+        emailHint.textContent = 'Debe ser una cuenta de Gmail (@gmail.com) registrada en Google Play.';
         return false;
       }
       emailInput.classList.remove('invalid');
       emailHint.className = 'email-hint show';
       emailHint.style.color = '#4ade80';
-      emailHint.textContent = '✅ Formato válido. Asegúrate de que sea el mismo correo de tu cuenta de Google Play.';
+      emailHint.textContent = 'Formato válido. Asegúrate de que sea el mismo correo de tu cuenta de Google Play.';
       return true;
     }
     emailInput.addEventListener('input', validarEmail);
@@ -745,22 +812,17 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      // 1. Validar rol
       const rolSeleccionado = document.querySelector('input[name="rol"]:checked');
       if (!rolSeleccionado) {
-        show('⚠️ Debes elegir un rol: Conductor o Pasajero.', 'error');
+        show('Debes elegir un rol: Conductor o Pasajero.', 'error');
         return;
       }
-
-      // 2. Validar aceptación
       if (!acepto.checked) {
-        show('⚠️ Debes aceptar las Políticas de Privacidad.', 'error');
+        show('Debes aceptar las Políticas de Privacidad.', 'error');
         return;
       }
-
-      // 3. Validar email
       if (!validarEmail()) {
-        show('⚠️ Revisa tu correo. Debe ser un Gmail válido.', 'error');
+        show('Revisa tu correo. Debe ser un Gmail válido.', 'error');
         emailInput.focus();
         return;
       }
@@ -778,27 +840,26 @@
         .insert([{ nombre, email, rol }]);
 
       btn.disabled = false;
-      btn.textContent = '🎟️ Reservar mi acceso anticipado';
+      btn.innerHTML = BTN_HTML_ORIGINAL;
 
       if (error) {
         console.error(error);
         if (error.code === '23505') {
-          show('⚠️ Este correo ya tiene un lugar reservado.', 'error');
+          show('Este correo ya tiene un lugar reservado.', 'error');
         } else if (error.code === '23514') {
-          show('⚠️ Rol inválido. Recarga la página e inténtalo de nuevo.', 'error');
+          show('Rol inválido. Recarga la página e inténtalo de nuevo.', 'error');
         } else {
-          show('❌ Error al registrar: ' + error.message, 'error');
+          show('Error al registrar: ' + error.message, 'error');
         }
         return;
       }
 
-      const emoji = rol === 'conductor' ? '🚗' : '🧍';
       const rolTexto = rol === 'conductor' ? 'Conductor' : 'Pasajero';
 
       form.reset();
       emailInput.classList.remove('invalid');
       emailHint.className = 'email-hint';
-      show(`${emoji} ¡Bienvenido como ${rolTexto} al acceso anticipado! Revisa tu Gmail de Google Play para la invitación oficial.`, 'ok');
+      show(`¡Bienvenido como ${rolTexto} al acceso anticipado! Revisa tu Gmail de Google Play para la invitación oficial.`, 'ok');
     });
   </script>
 
