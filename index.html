@@ -1,4 +1,4 @@
-<!-- ROUTE STREET-FOLLOWING V6.9 - GPS HEADING PRIORITY + ROUTE BEARING FALLBACK -->
+<!-- ROUTE STREET-FOLLOWING V7.0 - SNAP-TO-ROUTE MARKER + GPS HEADING PRIORITY -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -366,8 +366,8 @@
             <span><span class="dot" id="statusOnlineDot"></span> Online: <b id="statusOnlineVal">false</b></span>
             <span><span class="dot" id="statusRideDot"></span> Ride: <b id="statusRideVal">null</b></span>
             <span><span class="dot" id="statusPendingDot"></span> Pending: <b id="statusPendingVal">null</b></span>
-            <span><span class="dot" id="statusCompassDot"></span> Brújula: <b id="statusCompassVal">---</b></span>
-            <span><span class="dot" id="statusZoomDot"></span> Zoom: <b id="statusZoomVal">0</b></span>
+            <span><span class="dot" id="statusCompassDot"></span> Heading: <b id="statusCompassVal">---</b></span>
+            <span><span class="dot" id="statusZoomDot"></span> Snap: <b id="statusZoomVal">off</b></span>
             <span><span class="dot" id="statusBrowsingDot"></span> Browse: <b id="statusBrowsingVal">off</b></span>
         </div>
     </div>
@@ -710,12 +710,16 @@
         let cameraSmoothedBearing = null;
         let lastAppliedCameraBearing = null;
 
+        // 🎯 Distancia máxima al snap para pegar el marcador a la vía.
+        // Si el GPS se aleja más de esto, mostramos el GPS crudo (realmente
+        // te saliste de la ruta).
+        const SNAP_TO_ROUTE_MAX_M = 55;
+
         function resetCameraSmoothing() {
             cameraSmoothedBearing = null;
             lastAppliedCameraBearing = null;
         }
 
-        // Bearing del segmento actual de la ruta (coincide con la calle)
         function getRouteForwardBearing() {
             const coords = window.currentRouteCoords;
             if (!coords || coords.length < 2) return null;
@@ -726,8 +730,6 @@
             return calculateBearing(a[1], a[0], b[1], b[0]);
         }
 
-        // Prioridad: 1) GPS heading real, 2) dirección del segmento de ruta,
-        //            3) último bearing conocido, 4) brújula (último recurso)
         function getCameraTargetHeading(gpsHeadingDeg, gpsSpeedKmh) {
             if (gpsSpeedKmh >= GPS_BEARING_MIN_SPEED &&
                 Number.isFinite(gpsHeadingDeg) && !isNaN(gpsHeadingDeg)) {
@@ -760,6 +762,25 @@
                 (cameraSmoothedBearing + diff * CAMERA_BEARING_SMOOTHING + 360) % 360;
             lastAppliedCameraBearing = cameraSmoothedBearing;
             return cameraSmoothedBearing;
+        }
+
+        // 🎯 Devuelve la posición que debe mostrar el marcador:
+        //   - Si está navegando Y el snap está dentro de SNAP_TO_ROUTE_MAX_M
+        //     → usa el punto pegado a la vía.
+        //   - En caso contrario → GPS crudo.
+        function getMarkerDisplayPosition(gpsLat, gpsLng) {
+            const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
+            if (!enNavegacion) {
+                return { lat: gpsLat, lng: gpsLng, snapped: false, distance: null };
+            }
+            const snap = window.currentRouteSnap;
+            if (!snap || !Number.isFinite(snap.lat) || !Number.isFinite(snap.lng)) {
+                return { lat: gpsLat, lng: gpsLng, snapped: false, distance: null };
+            }
+            if (snap.distance > SNAP_TO_ROUTE_MAX_M) {
+                return { lat: gpsLat, lng: gpsLng, snapped: false, distance: snap.distance };
+            }
+            return { lat: snap.lat, lng: snap.lng, snapped: true, distance: snap.distance };
         }
 
         const BROWSING_TIMEOUT_MS = 8000;
@@ -804,9 +825,15 @@
                 compassDot.className = `dot ${(Number.isFinite(gpsH) || compassAvailable) ? 'green' : 'red'}`;
             }
             if (zoomDot && zoomVal) {
-                const z = (map && mapInitialized) ? map.getZoom().toFixed(1) : '0';
-                zoomVal.textContent = z;
-                zoomDot.className = `dot ${z >= 16 ? 'green' : 'red'}`;
+                const snap = window.currentRouteSnap;
+                if (snap && Number.isFinite(snap.distance)) {
+                    const snapped = snap.distance <= SNAP_TO_ROUTE_MAX_M ? 'ON' : 'OFF';
+                    zoomVal.textContent = `${snapped} (${Math.round(snap.distance)}m)`;
+                    zoomDot.className = `dot ${snapped === 'ON' ? 'green' : 'orange'}`;
+                } else {
+                    zoomVal.textContent = 'off';
+                    zoomDot.className = 'dot red';
+                }
             }
             if (browsingDot && browsingVal) {
                 browsingVal.textContent = browsingMode ? 'ON' : 'off';
@@ -2543,7 +2570,6 @@
                     window.currentSpeedKmh = speedKmh;
                     window.currentGpsAccuracy = position.coords.accuracy || 0;
 
-                    // Guardar GPS heading crudo (independiente de la brújula)
                     if (gpsHeading !== null && gpsHeading !== undefined &&
                         !isNaN(gpsHeading) && gpsSpeed > 1.0) {
                         window.lastGpsHeading = gpsHeading;
@@ -2554,8 +2580,6 @@
                     const renderLng = gpsLng;
                     currentPosition = [gpsLat, gpsLng];
 
-                    // smoothedBearing se sigue calculando para calculateRouteProgress
-                    // y para el marcador en vista libre; la cámara ya NO lo usa.
                     let bearing = smoothedBearing || 0;
                     if (compassAvailable && compassHeading !== null) {
                         if (smoothedBearing === null) smoothedBearing = compassHeading;
@@ -2640,7 +2664,9 @@
                     if (enNavegacion) checkAutoReroute(gpsLat, gpsLng);
 
                     if (map && mapInitialized) {
-                        updateDriverMarker(renderLat, renderLng, bearing);
+                        // 🎯 SNAP: pegar el marcador a la vía cuando navega
+                        const display = getMarkerDisplayPosition(renderLat, renderLng);
+                        updateDriverMarker(display.lat, display.lng, bearing);
                         setNavigationMode(enNavegacion);
                         updateDebugStatus();
                     }
@@ -2812,7 +2838,7 @@
 
         document.getElementById('chatInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') sendCentralMessage(); });
 
-        dlog('App iniciada. v6.9 — GPS heading priority + route bearing fallback', 'success');
+        dlog('App iniciada. v7.0 — Snap-to-route + GPS heading priority', 'success');
     </script>
 </body>
 </html>
