@@ -1,4 +1,4 @@
-<!-- ROUTE STREET-FOLLOWING V7.0 - SNAP-TO-ROUTE MARKER + GPS HEADING PRIORITY -->
+<!-- ROUTE STREET-FOLLOWING V6.6 - COMPANION TYPE + ZOOM OUT EXPLORATION + AUTO RECENTER -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -100,6 +100,7 @@
         .action-btn.redirect{background:linear-gradient(135deg,var(--purple),#7c3aed);color:white}
         .action-btn.hidden{display:none}
 
+        /* 🆕 BOTÓN RECENTRAR (aparece en modo exploración) */
         .recenter-btn{
             position:absolute;
             bottom:calc(130px + env(safe-area-inset-bottom,0px));
@@ -366,8 +367,8 @@
             <span><span class="dot" id="statusOnlineDot"></span> Online: <b id="statusOnlineVal">false</b></span>
             <span><span class="dot" id="statusRideDot"></span> Ride: <b id="statusRideVal">null</b></span>
             <span><span class="dot" id="statusPendingDot"></span> Pending: <b id="statusPendingVal">null</b></span>
-            <span><span class="dot" id="statusCompassDot"></span> Heading: <b id="statusCompassVal">---</b></span>
-            <span><span class="dot" id="statusZoomDot"></span> Snap: <b id="statusZoomVal">off</b></span>
+            <span><span class="dot" id="statusCompassDot"></span> Brújula: <b id="statusCompassVal">---</b></span>
+            <span><span class="dot" id="statusZoomDot"></span> Zoom: <b id="statusZoomVal">0</b></span>
             <span><span class="dot" id="statusBrowsingDot"></span> Browse: <b id="statusBrowsingVal">off</b></span>
         </div>
     </div>
@@ -696,91 +697,70 @@
         const NAV_ZOOM_MAX = 18.2;
         const NAV_PITCH = 50;
         const CAMERA_UPDATE_MS = 180;
+
+        // La cámara usa 8 direcciones estables (cada 45°), pero la transición
+        // entre ellas es suave. Los pequeños movimientos del teléfono no hacen
+        // que el mapa esté cambiando de orientación constantemente.
+        const CAMERA_DIRECTION_STEP = 45;
+        const CAMERA_DIRECTION_HYSTERESIS = 10;
+        const CAMERA_ROTATION_DURATION_MS = 260;
+
         let lastCameraUpdate = 0;
         let navigationCameraLocked = false;
         let navigationResumeTimer = null;
-
-        // ============================================================
-        // ORIENTACIÓN DE CÁMARA — GPS PRIMERO, RUTA COMO FALLBACK
-        // ============================================================
-        const CAMERA_DEADZONE_DEG = 8;
-        const GPS_BEARING_MIN_SPEED = 4;
-        const CAMERA_BEARING_SMOOTHING = 0.20;
-
-        let cameraSmoothedBearing = null;
+        let navigationCameraSector = null;
+        let navigationCameraBearing = null;
         let lastAppliedCameraBearing = null;
 
-        // 🎯 Distancia máxima al snap para pegar el marcador a la vía.
-        // Si el GPS se aleja más de esto, mostramos el GPS crudo (realmente
-        // te saliste de la ruta).
-        const SNAP_TO_ROUTE_MAX_M = 55;
+        function normalizeCameraBearing(bearing) {
+            return ((bearing % 360) + 360) % 360;
+        }
 
-        function resetCameraSmoothing() {
-            cameraSmoothedBearing = null;
+        function cameraAngularDifference(from, to) {
+            return ((to - from + 540) % 360) - 180;
+        }
+
+        function getStableNavigationCameraBearing(heading) {
+            if (!Number.isFinite(heading)) {
+                return navigationCameraBearing ?? 0;
+            }
+
+            heading = normalizeCameraBearing(heading);
+
+            // Primera lectura: elegimos la dirección de 45° más cercana.
+            if (navigationCameraSector === null) {
+                navigationCameraSector =
+                    Math.round(heading / CAMERA_DIRECTION_STEP) % 8;
+                navigationCameraBearing =
+                    navigationCameraSector * CAMERA_DIRECTION_STEP;
+                lastAppliedCameraBearing = navigationCameraBearing;
+                return navigationCameraBearing;
+            }
+
+            const currentBearing =
+                navigationCameraSector * CAMERA_DIRECTION_STEP;
+            const difference =
+                cameraAngularDifference(currentBearing, heading);
+
+            // No cambiamos de sector por movimientos pequeños.
+            // El cambio requiere superar 22.5° + la histéresis.
+            const switchThreshold =
+                (CAMERA_DIRECTION_STEP / 2) + CAMERA_DIRECTION_HYSTERESIS;
+
+            if (Math.abs(difference) > switchThreshold) {
+                navigationCameraSector =
+                    Math.round(heading / CAMERA_DIRECTION_STEP) % 8;
+                navigationCameraBearing =
+                    navigationCameraSector * CAMERA_DIRECTION_STEP;
+            }
+
+            return navigationCameraBearing;
+        }
+
+        function resetNavigationCameraDirection() {
+            navigationCameraSector = null;
+            navigationCameraBearing = null;
             lastAppliedCameraBearing = null;
-        }
-
-        function getRouteForwardBearing() {
-            const coords = window.currentRouteCoords;
-            if (!coords || coords.length < 2) return null;
-            const idx = Math.max(0, Math.min(lastRouteProgressIndex, coords.length - 2));
-            const a = coords[idx];
-            const b = coords[idx + 1];
-            if (!a || !b) return null;
-            return calculateBearing(a[1], a[0], b[1], b[0]);
-        }
-
-        function getCameraTargetHeading(gpsHeadingDeg, gpsSpeedKmh) {
-            if (gpsSpeedKmh >= GPS_BEARING_MIN_SPEED &&
-                Number.isFinite(gpsHeadingDeg) && !isNaN(gpsHeadingDeg)) {
-                return gpsHeadingDeg;
-            }
-            const routeBearing = getRouteForwardBearing();
-            if (Number.isFinite(routeBearing)) return routeBearing;
-            if (cameraSmoothedBearing !== null) return cameraSmoothedBearing;
-            if (Number.isFinite(compassHeading)) return compassHeading;
-            return null;
-        }
-
-        function computeCameraBearing(gpsHeadingDeg, gpsSpeedKmh) {
-            const target = getCameraTargetHeading(gpsHeadingDeg, gpsSpeedKmh);
-            if (!Number.isFinite(target)) {
-                return lastAppliedCameraBearing ?? 0;
-            }
-            if (cameraSmoothedBearing === null) {
-                cameraSmoothedBearing = target;
-                lastAppliedCameraBearing = target;
-                return target;
-            }
-            let diff = target - cameraSmoothedBearing;
-            if (diff > 180) diff -= 360;
-            if (diff < -180) diff += 360;
-            if (Math.abs(diff) < CAMERA_DEADZONE_DEG) {
-                return lastAppliedCameraBearing ?? cameraSmoothedBearing;
-            }
-            cameraSmoothedBearing =
-                (cameraSmoothedBearing + diff * CAMERA_BEARING_SMOOTHING + 360) % 360;
-            lastAppliedCameraBearing = cameraSmoothedBearing;
-            return cameraSmoothedBearing;
-        }
-
-        // 🎯 Devuelve la posición que debe mostrar el marcador:
-        //   - Si está navegando Y el snap está dentro de SNAP_TO_ROUTE_MAX_M
-        //     → usa el punto pegado a la vía.
-        //   - En caso contrario → GPS crudo.
-        function getMarkerDisplayPosition(gpsLat, gpsLng) {
-            const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
-            if (!enNavegacion) {
-                return { lat: gpsLat, lng: gpsLng, snapped: false, distance: null };
-            }
-            const snap = window.currentRouteSnap;
-            if (!snap || !Number.isFinite(snap.lat) || !Number.isFinite(snap.lng)) {
-                return { lat: gpsLat, lng: gpsLng, snapped: false, distance: null };
-            }
-            if (snap.distance > SNAP_TO_ROUTE_MAX_M) {
-                return { lat: gpsLat, lng: gpsLng, snapped: false, distance: snap.distance };
-            }
-            return { lat: snap.lat, lng: snap.lng, snapped: true, distance: snap.distance };
         }
 
         const BROWSING_TIMEOUT_MS = 8000;
@@ -819,21 +799,13 @@
             if (rideDot && rideVal) { rideVal.textContent = currentRideId ? currentRideId.substring(0,8) : 'null'; rideDot.className = `dot ${currentRideId ? 'green' : 'red'}`; }
             if (pendingDot && pendingVal) { pendingVal.textContent = pendingRide ? pendingRide.id.substring(0,8) : 'null'; pendingDot.className = `dot ${pendingRide ? 'orange' : 'red'}`; }
             if (compassDot && compassVal) {
-                const gpsH = window.lastGpsHeading;
-                const info = Number.isFinite(gpsH) ? `GPS ${Math.round(gpsH)}°` : (compassAvailable ? `Brúj ${Math.round(compassHeading)}°` : 'no disp.');
-                compassVal.textContent = info;
-                compassDot.className = `dot ${(Number.isFinite(gpsH) || compassAvailable) ? 'green' : 'red'}`;
+                compassVal.textContent = compassAvailable ? `${Math.round(compassHeading)}°` : 'no disp.';
+                compassDot.className = `dot ${compassAvailable ? 'green' : 'red'}`;
             }
             if (zoomDot && zoomVal) {
-                const snap = window.currentRouteSnap;
-                if (snap && Number.isFinite(snap.distance)) {
-                    const snapped = snap.distance <= SNAP_TO_ROUTE_MAX_M ? 'ON' : 'OFF';
-                    zoomVal.textContent = `${snapped} (${Math.round(snap.distance)}m)`;
-                    zoomDot.className = `dot ${snapped === 'ON' ? 'green' : 'orange'}`;
-                } else {
-                    zoomVal.textContent = 'off';
-                    zoomDot.className = 'dot red';
-                }
+                const z = (map && mapInitialized) ? map.getZoom().toFixed(1) : '0';
+                zoomVal.textContent = z;
+                zoomDot.className = `dot ${z >= 16 ? 'green' : 'red'}`;
             }
             if (browsingDot && browsingVal) {
                 browsingVal.textContent = browsingMode ? 'ON' : 'off';
@@ -913,7 +885,7 @@
             if (browsingTimer) clearTimeout(browsingTimer);
             browsingTimer = setTimeout(exitBrowsingMode, BROWSING_TIMEOUT_MS);
             showRecenterButton();
-            dlog('🔍 Modo exploración', 'info');
+            dlog('🔍 Modo exploración: mira el recorrido completo', 'info');
             updateDebugStatus();
         }
         function exitBrowsingMode() {
@@ -962,6 +934,7 @@
                 viajesView?.classList.remove('navigation-active');
                 navigationPanel?.classList.remove('active');
                 navigationCameraLocked = false;
+                resetNavigationCameraDirection();
             }
         }
 
@@ -1161,6 +1134,9 @@
             } catch (e) {}
         }
 
+        // ═══════════════════════════════════════════════════════════════
+        //  🆕 HELPER: Obtener texto del acompañante
+        // ═══════════════════════════════════════════════════════════════
         function getCompanionText(companionType) {
             if (!companionType || companionType === 'none') return null;
             const map = {
@@ -1212,7 +1188,6 @@
         let apLat = null, apLng = null, apSelfieFile = null;
 
         window.currentGpsAccuracy = 0;
-        window.lastGpsHeading = null;
 
         if ('speechSynthesis' in window) {
             window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
@@ -1226,10 +1201,8 @@
             try {
                 const screenH = map.getContainer().offsetHeight || window.innerHeight;
                 const offsetY = Math.round(screenH * (NAV_ARROW_Y_FRACTION - 0.5));
-                const bearing = computeCameraBearing(
-                    window.lastGpsHeading,
-                    Number(window.currentSpeedKmh || 0)
-                );
+                const rawHeading = Number.isFinite(smoothedBearing) ? smoothedBearing : compassHeading;
+                const bearing = getStableNavigationCameraBearing(rawHeading);
                 const speed = Math.max(0, Number(window.currentSpeedKmh || 0));
                 let zoom = NAV_ZOOM_MAX - Math.min(speed * 0.025, 1.2);
                 zoom = Math.max(NAV_ZOOM_MIN, Math.min(NAV_ZOOM_MAX, zoom));
@@ -1260,16 +1233,15 @@
                     const now = performance.now();
                     if (!userInteracting && !browsingMode && navigationCameraLocked && now - lastCameraUpdate >= CAMERA_UPDATE_MS) {
                         lastCameraUpdate = now;
-                        const bearing = computeCameraBearing(
-                            window.lastGpsHeading,
-                            Number(window.currentSpeedKmh || 0)
-                        );
+                        const rawHeading = Number.isFinite(smoothedBearing) ? smoothedBearing : compassHeading;
+                        const bearing = getStableNavigationCameraBearing(rawHeading);
                         const speed = Math.max(0, Number(window.currentSpeedKmh || 0));
                         let zoom = NAV_ZOOM_MAX - Math.min(speed * 0.025, 1.2);
                         zoom = Math.max(NAV_ZOOM_MIN, Math.min(NAV_ZOOM_MAX, zoom));
                         const screenH = map.getContainer().offsetHeight || window.innerHeight;
                         const offsetY = Math.round(screenH * (NAV_ARROW_Y_FRACTION - 0.5));
-                        map.easeTo({ center: [markerCurrentPos[1], markerCurrentPos[0]], zoom, bearing, pitch: NAV_PITCH, offset: [0, offsetY], duration: CAMERA_UPDATE_MS, essential: true });
+                        map.easeTo({ center: [markerCurrentPos[1], markerCurrentPos[0]], zoom, bearing, pitch: NAV_PITCH, offset: [0, offsetY], duration: CAMERA_ROTATION_DURATION_MS, essential: true });
+                        lastAppliedCameraBearing = bearing;
                     }
                 } else {
                     let diff = markerTargetBearing - markerCurrentBearing;
@@ -1712,8 +1684,6 @@
             if (browsingTimer) { clearTimeout(browsingTimer); browsingTimer = null; }
             hideRecenterButton();
             setNavigationMode(false);
-            resetCameraSmoothing();
-            window.lastGpsHeading = null;
         }
 
         function togglePassword() {
@@ -1824,7 +1794,7 @@
                     });
                 } catch (e) {}
 
-                dlog('✅ Mapa inicializado', 'success');
+                dlog('✅ Mapa inicializado (con modo exploración)', 'success');
                 return true;
             } catch (e) {
                 dlog('❌ Error initMap: ' + e.message, 'error');
@@ -1910,6 +1880,7 @@
             document.getElementById('rideDestination').textContent = ride.destination_address || 'No especificado';
             document.getElementById('ridePrice').textContent = `Bs ${parseFloat(ride.price || 0).toFixed(2)}`;
 
+            // 🆕 Mostrar acompañante si existe
             const companionItem = document.getElementById('rideCompanionItem');
             const companionText = document.getElementById('rideCompanion');
             const companionValue = getCompanionText(ride.companion_type);
@@ -1921,6 +1892,7 @@
                 companionItem.classList.add('hidden');
             }
 
+            // 🆕 Mostrar carga si existe
             const cargoItem = document.getElementById('rideCargoItem');
             const cargoText = document.getElementById('rideCargo');
             if (ride.has_cargo) {
@@ -1980,7 +1952,6 @@
             if (browsingTimer) { clearTimeout(browsingTimer); browsingTimer = null; }
             hideRecenterButton();
             setNavigationMode(false);
-            resetCameraSmoothing();
             document.getElementById('rideModal').classList.remove('active');
             document.getElementById('navigation-panel').classList.remove('active');
             currentRideId = null; currentRideStatus = null; pendingRide = null;
@@ -2059,6 +2030,7 @@
                 currentRideId = rideId;
                 currentRideStatus = 'aceptado';
                 pendingRide = null;
+                resetNavigationCameraDirection();
                 hideRideModal();
 
                 showLoading('Preparando navegación...');
@@ -2085,12 +2057,8 @@
                 await new Promise(r => setTimeout(r, 150));
 
                 if (map && mapInitialized && currentPosition) {
-                    resetCameraSmoothing();
-                    let initialBearing = window.lastGpsHeading;
-                    if (!Number.isFinite(initialBearing) && ride.origin_lat && ride.origin_lng) {
-                        initialBearing = calculateBearing(currentPosition[0], currentPosition[1], ride.origin_lat, ride.origin_lng);
-                    }
-                    const bearing = computeCameraBearing(initialBearing, Number(window.currentSpeedKmh || 0));
+                    const rawHeading = Number.isFinite(smoothedBearing) ? smoothedBearing : compassHeading;
+                    const bearing = getStableNavigationCameraBearing(rawHeading);
                     const screenH = map.getContainer().offsetHeight || window.innerHeight;
                     map.jumpTo({
                         center: [currentPosition[1], currentPosition[0]],
@@ -2569,12 +2537,6 @@
                     const speedKmh = gpsSpeed * 3.6;
                     window.currentSpeedKmh = speedKmh;
                     window.currentGpsAccuracy = position.coords.accuracy || 0;
-
-                    if (gpsHeading !== null && gpsHeading !== undefined &&
-                        !isNaN(gpsHeading) && gpsSpeed > 1.0) {
-                        window.lastGpsHeading = gpsHeading;
-                    }
-
                     const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
                     const renderLat = gpsLat;
                     const renderLng = gpsLng;
@@ -2664,9 +2626,7 @@
                     if (enNavegacion) checkAutoReroute(gpsLat, gpsLng);
 
                     if (map && mapInitialized) {
-                        // 🎯 SNAP: pegar el marcador a la vía cuando navega
-                        const display = getMarkerDisplayPosition(renderLat, renderLng);
-                        updateDriverMarker(display.lat, display.lng, bearing);
+                        updateDriverMarker(renderLat, renderLng, bearing);
                         setNavigationMode(enNavegacion);
                         updateDebugStatus();
                     }
@@ -2838,7 +2798,7 @@
 
         document.getElementById('chatInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') sendCentralMessage(); });
 
-        dlog('App iniciada. v7.0 — Snap-to-route + GPS heading priority', 'success');
+        dlog('App iniciada. v6.6 — companion type + zoom out + ruta compartida', 'success');
     </script>
 </body>
 </html>
