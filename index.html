@@ -89,10 +89,13 @@
         .nav-details{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
         .nav-distance{font-size:28px;color:var(--white);font-weight:800;line-height:1;letter-spacing:-0.5px}
         .nav-text{font-size:14px;color:rgba(255,255,255,0.95);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-        .ride-actions-float{position:absolute;bottom:25px;left:0;right:0;z-index:1000;display:flex;flex-wrap:wrap;justify-content:center;gap:10px;padding:0 18px;pointer-events:none}
-        .action-btn{pointer-events:auto;padding:14px 20px;border-radius:var(--border-radius-full);border:none;font-weight:700;font-size:14px;box-shadow:var(--shadow-lg);cursor:pointer;transition:all 0.2s var(--ease-bounce);display:inline-flex;align-items:center;gap:8px;white-space:nowrap;border:1px solid rgba(255,255,255,0.15)}
+        .ride-actions-float{position:absolute;bottom:25px;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:center;gap:14px;padding:0 18px;pointer-events:none}
+        .action-btn{pointer-events:auto;width:58px;height:58px;padding:0;border-radius:50%;border:none;font-weight:700;font-size:14px;box-shadow:var(--shadow-lg);cursor:pointer;transition:all 0.2s var(--ease-bounce);display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;border:1px solid rgba(255,255,255,0.18);flex:0 0 58px}
+        .action-btn i{font-size:21px;margin:0}
+        .action-btn[title]{position:relative}
+        .action-btn:hover{transform:translateY(-2px)}
         .action-btn:active{transform:scale(0.94)}
-        .action-btn i{font-size:16px}
+        .action-btn i{font-size:21px;margin:0}
         .action-btn.pickup{background:linear-gradient(135deg,var(--green-online),#16a34a);color:white;box-shadow:0 8px 20px var(--green-glow)}
         .action-btn.arrived{background:linear-gradient(135deg,var(--blue),#2563eb);color:white}
         .action-btn.finish{background:linear-gradient(135deg,var(--primary-orange),var(--primary-orange-dark));color:white}
@@ -562,11 +565,11 @@
             </button>
 
             <div class="ride-actions-float" id="rideActionsFloat">
-                <button class="action-btn arrived hidden" id="arrivedBtn" onclick="markArrived()"><i class="fas fa-flag"></i> He llegado</button>
-                <button class="action-btn pickup hidden" id="pickupBtn" onclick="startRideWithPassenger()"><i class="fas fa-user-check"></i> Iniciar viaje</button>
-                <button class="action-btn finish hidden" id="finishBtn" onclick="finishRide(true)"><i class="fas fa-flag-checkered"></i> Finalizar viaje</button>
-                <button class="action-btn not-completed hidden" id="notCompletedBtn" onclick="finishRide(false)"><i class="fas fa-times-circle"></i> No completado</button>
-                <button class="action-btn redirect hidden" id="redirectBtn" onclick="redirectRoute()"><i class="fas fa-route"></i> Redireccionar</button>
+                <button class="action-btn arrived hidden" id="arrivedBtn" title="He llegado" aria-label="He llegado" onclick="markArrived()"><i class="fas fa-flag"></i></button>
+                <button class="action-btn pickup hidden" id="pickupBtn" title="Iniciar viaje" aria-label="Iniciar viaje" onclick="startRideWithPassenger()"><i class="fas fa-user-check"></i></button>
+                <button class="action-btn finish hidden" id="finishBtn" title="Finalizar viaje" aria-label="Finalizar viaje" onclick="finishRide(true)"><i class="fas fa-check"></i></button>
+                <button class="action-btn not-completed hidden" id="notCompletedBtn" title="Cancelar viaje" aria-label="Cancelar viaje" onclick="finishRide(false)"><i class="fas fa-times"></i></button>
+                <button class="action-btn redirect hidden" id="redirectBtn" title="Redireccionar" aria-label="Redireccionar" onclick="redirectRoute()"><i class="fas fa-route"></i></button>
             </div>
         </div>
 
@@ -1095,6 +1098,7 @@
 
         let currentDriverId = null, currentDriverData = null, map = null, currentPosition = null, driverMarker = null;
         let currentRideId = null, currentRideStatus = null, pendingRide = null, isDriverOnline = false;
+        let currentRideDestination = null;
         let routeLayers = [], mapInitialized = false, watchId = null, pickupMarker = null, dropoffMarker = null;
         let lastUpdateTime = 0; const UPDATE_INTERVAL = 5000;
         let currentNavigationSteps = [], currentNavigationIndex = 0, currentRouteTarget = null;
@@ -1147,13 +1151,34 @@
             return d;
         }
 
+        // Dirección de la calle/ruta que tenemos por delante. Esto permite que,
+        // cuando el conductor está sobre la línea, la ruta quede recta hacia adelante
+        // sin reaccionar a pequeños movimientos laterales del GPS.
+        function getRouteAheadBearing() {
+            const coords = window.currentRouteCoords;
+            const snap = window.currentRouteSnap;
+            if (!Array.isArray(coords) || coords.length < 2 || !snap || !Number.isFinite(snap.segmentIndex)) return null;
+            const start = Math.max(0, Math.min(coords.length - 2, snap.segmentIndex));
+            const ahead = Math.min(coords.length - 1, start + 7);
+            const a = coords[start], b = coords[ahead];
+            if (!a || !b) return null;
+            const dist = getDistanceFromLatLonInMeters(a[1], a[0], b[1], b[0]);
+            if (dist < 3) return null;
+            return calculateBearing(a[1], a[0], b[1], b[0]);
+        }
+
         // Rumbo exclusivo de la CÁMARA. La posición GPS mueve el mapa, pero
         // el rumbo no se cambia por cada pequeño desplazamiento lateral.
         // Primero seguimos la orientación real del teléfono (brújula), que es
         // mucho más estable para mantener la dirección mientras se avanza.
         function getNavigationCameraBearing(immediate = false) {
             let source = null;
-            if (Number.isFinite(smoothedBearing)) source = smoothedBearing;
+            const routeBearing = getRouteAheadBearing();
+            const snapDistance = Number(window.currentRouteSnap?.distance);
+            // Si estamos realmente sobre la ruta, alineamos la cámara con la calle.
+            // Fuera de la línea conservamos el comportamiento anterior.
+            if (Number.isFinite(routeBearing) && Number.isFinite(snapDistance) && snapDistance <= 12) source = routeBearing;
+            else if (Number.isFinite(smoothedBearing)) source = smoothedBearing;
             else if (compassAvailable && Number.isFinite(compassHeading)) source = compassHeading;
             else if (Number.isFinite(movementHeading)) source = movementHeading;
             if (!Number.isFinite(source)) return Number.isFinite(navigationCameraBearing) ? navigationCameraBearing : 0;
@@ -1938,10 +1963,13 @@
                 map.easeTo({ center: [currentPosition[1], currentPosition[0]], zoom: 15, pitch: 0, bearing: 0, padding: { top: 0, bottom: 0, left: 0, right: 0 }, duration: 1000 });
             }
             currentRouteTarget = null;
+            currentRideDestination = null;
             updateDebugStatus();
         }
 
         function updateRideUI(ride) {
+            currentRideDestination = (ride && Number.isFinite(Number(ride.destination_lat)) && Number.isFinite(Number(ride.destination_lng)))
+                ? { lat: Number(ride.destination_lat), lng: Number(ride.destination_lng) } : null;
             if (ride.status === 'aceptado') {
                 if (!currentRideId && !pendingRide) { showRideRequest(ride); return; }
                 hideRideModal();
@@ -1969,9 +1997,26 @@
         function updateActionButtons() {
             const ids = ['pickupBtn', 'arrivedBtn', 'finishBtn', 'notCompletedBtn', 'redirectBtn'];
             ids.forEach(id => document.getElementById(id)?.classList.add('hidden'));
-            if (currentRideStatus === 'aceptado') { document.getElementById('arrivedBtn').classList.remove('hidden'); document.getElementById('redirectBtn').classList.remove('hidden'); }
-            else if (currentRideStatus === 'llegado_origen') { document.getElementById('pickupBtn').classList.remove('hidden'); }
-            else if (currentRideStatus === 'en_curso') { document.getElementById('finishBtn').classList.remove('hidden'); document.getElementById('notCompletedBtn').classList.remove('hidden'); document.getElementById('redirectBtn').classList.remove('hidden'); }
+            if (currentRideStatus === 'aceptado') {
+                document.getElementById('arrivedBtn').classList.remove('hidden');
+                document.getElementById('redirectBtn').classList.remove('hidden');
+            } else if (currentRideStatus === 'llegado_origen') {
+                document.getElementById('pickupBtn').classList.remove('hidden');
+            } else if (currentRideStatus === 'en_curso') {
+                // El check solo aparece cuando ya estamos cerca del destino.
+                // La validación final de finishRide() se mantiene como segunda barrera.
+                let nearDestination = false;
+                if (currentPosition && currentRideDestination) {
+                    const dist = getDistanceFromLatLonInMeters(
+                        currentPosition[0], currentPosition[1],
+                        currentRideDestination.lat, currentRideDestination.lng
+                    );
+                    nearDestination = Number.isFinite(dist) && dist <= 200;
+                }
+                if (nearDestination) document.getElementById('finishBtn').classList.remove('hidden');
+                document.getElementById('notCompletedBtn').classList.remove('hidden');
+                document.getElementById('redirectBtn').classList.remove('hidden');
+            }
         }
 
         async function acceptRide() {
@@ -2582,6 +2627,7 @@
                     if (enNavegacion && currentNavigationSteps && currentNavigationSteps.length > 0) {
                         checkAndAdvanceManeuver(renderLat, renderLng);
                     }
+                    if (currentRideStatus === 'en_curso') updateActionButtons();
 
                     if (enNavegacion && map && mapInitialized && map.getSource('route-remaining') && window.currentRouteCoords && window.currentRouteCoords.length > 2) {
                         calculateRouteProgress(gpsLat, gpsLng);
