@@ -1,4 +1,4 @@
-<!-- ROUTE STREET-FOLLOWING V6.6 - COMPANION TYPE + ZOOM OUT EXPLORATION + AUTO RECENTER -->
+<!-- ROUTE STREET-FOLLOWING V6.6 - COMPANION TYPE + ZOOM OUT EXPLORATION + AUTO RECENTER --> <!-- ROUTE STREET-FOLLOWING V6.6 - COMPANION TYPE + ZOOM OUT EXPLORATION + AUTO RECENTER -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -2272,15 +2272,9 @@
             if (!map || !mapInitialized) { await initMap(); }
             const mapOk = await ensureMapReady();
             if (!mapOk || !map) { dlog('❌ drawRoute: mapa no disponible', 'error'); return false; }
-            try {
-                if (map.getLayer('route-line')) map.removeLayer('route-line');
-                if (map.getLayer('route-line-bg')) map.removeLayer('route-line-bg');
-                if (map.getSource('route')) map.removeSource('route');
-                if (map.getSource('route-remaining')) map.removeSource('route-remaining');
-            } catch (e) {}
-            routeLayers = [];
-            if (pickupMarker) { pickupMarker.remove(); pickupMarker = null; }
-            if (dropoffMarker) { dropoffMarker.remove(); dropoffMarker = null; }
+            // IMPORTANTE: durante un recálculo conservamos la última ruta válida
+            // visible. Así el conductor nunca se queda sin línea mientras OSRM responde.
+            // La ruta anterior solo se reemplaza cuando la nueva geometría ya fue validada.
             if (maneuverArrowMarker) { maneuverArrowMarker.remove(); maneuverArrowMarker = null; }
             currentNavigationSteps = []; currentNavigationIndex = 0;
             if (window.speechSynthesis) window.speechSynthesis.cancel();
@@ -2317,6 +2311,17 @@
                     if (!Array.isArray(rawCoords) || rawCoords.length < 2) { dlog('❌ Geometría inválida', 'error'); return false; }
                     const cleanedCoords = cleanRoadRouteGeometry(rawCoords);
                     if (!Array.isArray(cleanedCoords) || cleanedCoords.length < 2) { dlog('❌ Limpieza inválida', 'error'); return false; }
+
+                    // La nueva ruta ya es válida: ahora sí reemplazamos la anterior.
+                    try {
+                        if (map.getLayer('route-line')) map.removeLayer('route-line');
+                        if (map.getLayer('route-line-bg')) map.removeLayer('route-line-bg');
+                        if (map.getSource('route')) map.removeSource('route');
+                        if (map.getSource('route-remaining')) map.removeSource('route-remaining');
+                    } catch (e) {}
+                    routeLayers = [];
+                    if (pickupMarker) { pickupMarker.remove(); pickupMarker = null; }
+                    if (dropoffMarker) { dropoffMarker.remove(); dropoffMarker = null; }
 
                     currentNavigationSteps = route.legs.flatMap(leg => leg.steps || []);
                     currentNavigationIndex = 0;
