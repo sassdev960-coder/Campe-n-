@@ -1,4 +1,4 @@
-<!-- ROUTE STREET-FOLLOWING V6.6 - COMPANION TYPE + ZOOM OUT EXPLORATION + AUTO RECENTER --> <!-- ROUTE STREET-FOLLOWING V6.6 - COMPANION TYPE + ZOOM OUT EXPLORATION + AUTO RECENTER -->
+<!-- ROUTE STREET-FOLLOWING V6.6 - COMPANION TYPE + ZOOM OUT EXPLORATION + AUTO RECENTER -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -1158,12 +1158,17 @@
             const coords = window.currentRouteCoords;
             const snap = window.currentRouteSnap;
             if (!Array.isArray(coords) || coords.length < 2 || !snap || !Number.isFinite(snap.segmentIndex)) return null;
-            const start = Math.max(0, Math.min(coords.length - 2, snap.segmentIndex));
-            const ahead = Math.min(coords.length - 1, start + 7);
-            const a = coords[start], b = coords[ahead];
+
+            // Mientras el dispositivo está sobre la ruta, la cámara sigue la
+            // dirección del tramo de calle que realmente está debajo del indicador.
+            // No usamos un promedio lejano de varios puntos porque eso puede hacer
+            // que la cámara se anticipe a un giro o se quede apuntando a otra calle.
+            const i = Math.max(0, Math.min(coords.length - 2, Math.floor(snap.segmentIndex)));
+            const a = coords[i];
+            const b = coords[i + 1];
             if (!a || !b) return null;
             const dist = getDistanceFromLatLonInMeters(a[1], a[0], b[1], b[0]);
-            if (dist < 3) return null;
+            if (dist < 2) return null;
             return calculateBearing(a[1], a[0], b[1], b[0]);
         }
 
@@ -2284,13 +2289,15 @@
                 pe.innerHTML = '<i class="fas fa-user-circle" style="font-size:35px;color:#22c55e;text-shadow:0 0 8px #22c55e;"></i>';
                 pickupMarker = new mapboxgl.Marker(pe).setLngLat([waypointCoords[1], waypointCoords[0]]).addTo(map);
             }
-            const de = document.createElement('div');
-            de.innerHTML = '<i class="fas fa-flag-checkered" style="font-size:35px;color:#ef4444;text-shadow:0 0 8px #ef4444;"></i>';
-            dropoffMarker = new mapboxgl.Marker(de).setLngLat([destinationCoords[1], destinationCoords[0]]).addTo(map);
+            // Durante la fase de recogida, la única meta de navegación es el pasajero.
+            // No mostramos ni calculamos todavía la ruta hacia su destino.
+            const pickupStage = currentRideStatus === 'aceptado';
+            const routeTargetCoords = pickupStage ? waypointCoords : destinationCoords;
 
-            let coordinates = [];
-            if (originCoords[0] === waypointCoords[0] && originCoords[1] === waypointCoords[1]) coordinates = [[originCoords[1],originCoords[0]],[destinationCoords[1],destinationCoords[0]]];
-            else coordinates = [[originCoords[1],originCoords[0]],[waypointCoords[1],waypointCoords[0]],[destinationCoords[1],destinationCoords[0]]];
+            let coordinates = [[originCoords[1], originCoords[0]], [routeTargetCoords[1], routeTargetCoords[0]]];
+            if (!pickupStage && (originCoords[0] !== waypointCoords[0] || originCoords[1] !== waypointCoords[1])) {
+                coordinates = [[originCoords[1], originCoords[0]], [waypointCoords[1], waypointCoords[0]], [destinationCoords[1], destinationCoords[0]]];
+            }
 
             const coordsString = coordinates.map(c => c.join(',')).join(';');
             let url = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson&steps=true&annotations=true`;
@@ -2309,8 +2316,20 @@
                     const route = data.routes[0];
                     const rawCoords = route.geometry && route.geometry.coordinates;
                     if (!Array.isArray(rawCoords) || rawCoords.length < 2) { dlog('❌ Geometría inválida', 'error'); return false; }
-                    const cleanedCoords = cleanRoadRouteGeometry(rawCoords);
+                    let cleanedCoords = cleanRoadRouteGeometry(rawCoords);
                     if (!Array.isArray(cleanedCoords) || cleanedCoords.length < 2) { dlog('❌ Limpieza inválida', 'error'); return false; }
+
+                    // Anclamos el inicio visual al indicador cuando la ruta nueva
+                    // comienza suficientemente cerca. Así, al redireccionar, la línea
+                    // nace desde la posición actual del conductor y luego continúa por
+                    // la geometría real de las calles.
+                    const routeStart = cleanedCoords[0];
+                    const gpsToRouteStart = getDistanceFromLatLonInMeters(
+                        originCoords[0], originCoords[1], routeStart[1], routeStart[0]
+                    );
+                    if (gpsToRouteStart <= 20) {
+                        cleanedCoords = [[originCoords[1], originCoords[0]], ...cleanedCoords];
+                    }
 
                     // La nueva ruta ya es válida: ahora sí reemplazamos la anterior.
                     try {
@@ -2343,14 +2362,33 @@
 
                     routeLayers.push('route', 'route-remaining', 'route-line', 'route-line-bg');
 
+                    // Marcadores de etapa: al buscar al pasajero solo mostramos su punto.
+                    // El destino del pasajero aparece recién cuando comienza el viaje.
+                    if (pickupStage) {
+                        const pe = document.createElement('div');
+                        pe.innerHTML = '<i class="fas fa-user-circle" style="font-size:35px;color:#22c55e;text-shadow:0 0 8px #22c55e;"></i>';
+                        pickupMarker = new mapboxgl.Marker(pe)
+                            .setLngLat([waypointCoords[1], waypointCoords[0]])
+                            .addTo(map);
+                    } else {
+                        const de = document.createElement('div');
+                        de.innerHTML = '<i class="fas fa-flag-checkered" style="font-size:35px;color:#ef4444;text-shadow:0 0 8px #ef4444;"></i>';
+                        dropoffMarker = new mapboxgl.Marker(de)
+                            .setLngLat([destinationCoords[1], destinationCoords[0]])
+                            .addTo(map);
+                    }
+
                     window.currentRouteCoords = cleanedCoords;
                     window.currentRouteDistance = route.distance || 1000;
                     lastRouteProgressIndex = 0;
                     window.currentRouteSnap = null;
 
                     drawManeuverArrow(currentNavigationSteps);
-                    speakInstruction('Siga la ruta');
-                    dlog('✅ Ruta OSRM dibujada: ' + Math.round(route.distance) + 'm', 'success');
+                    currentRouteTarget = { lat: routeTargetCoords[0], lng: routeTargetCoords[1] };
+                    speakInstruction(pickupStage ? 'Dirígete al pasajero' : 'Siga la ruta');
+                    dlog(pickupStage
+                        ? '✅ Ruta conductor → pasajero dibujada: ' + Math.round(route.distance) + 'm'
+                        : '✅ Ruta hacia destino dibujada: ' + Math.round(route.distance) + 'm', 'success');
                     return true;
                 } else { throw new Error('OSRM no devolvió rutas'); }
             } catch (e) {
@@ -2647,13 +2685,16 @@
                         const snapDistance = snap && Number.isFinite(snap.distance) ? snap.distance : Infinity;
 
                         if (snap && Number.isFinite(snap.lat) && Number.isFinite(snap.lng)) {
-                            // La ruta restante debe seguir exclusivamente la geometría de las calles.
-                            // No dibujamos una línea recta desde el GPS hasta la calle, porque eso puede
-                            // atravesar bloques/intersecciones y producir el efecto de "Pacman".
-                            const snapPoint = [snap.lng, snap.lat];
-                            remainingCoords.push(snapPoint);
+                            // El primer punto visible queda anclado al indicador.
+                            // Solo hacemos este pequeño enlace cuando el GPS está cerca
+                            // de la calle para evitar diagonales largas atravesando cuadras.
+                            const gpsToSnap = getDistanceFromLatLonInMeters(gpsLat, gpsLng, snap.lat, snap.lng);
+                            if (gpsToSnap <= 20) {
+                                remainingCoords.push([gpsLng, gpsLat]);
+                            }
+                            remainingCoords.push([snap.lng, snap.lat]);
                         } else {
-                            remainingCoords.push(coords[segIdx]);
+                            remainingCoords.push([gpsLng, gpsLat]);
                         }
 
                         for (let i = segIdx + 1; i < coords.length; i++) remainingCoords.push(coords[i]);
