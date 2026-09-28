@@ -1,4 +1,4 @@
-<!-- ROUTE STREET-FOLLOWING V6.8 - CAMERA SMOOTH + DEADZONE (SIGUE DIRECCIÓN REAL) -->
+<!-- ROUTE STREET-FOLLOWING V6.9 - GPS HEADING PRIORITY + ROUTE BEARING FALLBACK -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -701,21 +701,13 @@
         let navigationResumeTimer = null;
 
         // ============================================================
-        // ORIENTACIÓN DE CÁMARA ESTABLE — SIGUE LA DIRECCIÓN REAL
+        // ORIENTACIÓN DE CÁMARA — GPS PRIMERO, RUTA COMO FALLBACK
         // ============================================================
-        // Zona muerta: si el cambio de rumbo es menor a este valor,
-        // la cámara NO se mueve. Evita el "choreto" por vibración.
         const CAMERA_DEADZONE_DEG = 8;
-
-        // Velocidad mínima (km/h) para confiar en el rumbo del GPS
-        // en lugar de la brújula. Debajo de esto, la brújula manda.
         const GPS_BEARING_MIN_SPEED = 4;
-
-        // Factor de suavizado final (0 = no sigue, 1 = sigue al instante).
-        // 0.18–0.22 es un buen balance: responde rápido sin vibrar.
         const CAMERA_BEARING_SMOOTHING = 0.20;
 
-        let cameraSmoothedBearing = null;   // bearing que realmente usa la cámara
+        let cameraSmoothedBearing = null;
         let lastAppliedCameraBearing = null;
 
         function resetCameraSmoothing() {
@@ -723,45 +715,49 @@
             lastAppliedCameraBearing = null;
         }
 
-        // Devuelve el heading "crudo" que debe seguir la cámara.
-        // Prioriza GPS cuando hay movimiento; si no, mantiene el último rumbo.
+        // Bearing del segmento actual de la ruta (coincide con la calle)
+        function getRouteForwardBearing() {
+            const coords = window.currentRouteCoords;
+            if (!coords || coords.length < 2) return null;
+            const idx = Math.max(0, Math.min(lastRouteProgressIndex, coords.length - 2));
+            const a = coords[idx];
+            const b = coords[idx + 1];
+            if (!a || !b) return null;
+            return calculateBearing(a[1], a[0], b[1], b[0]);
+        }
+
+        // Prioridad: 1) GPS heading real, 2) dirección del segmento de ruta,
+        //            3) último bearing conocido, 4) brújula (último recurso)
         function getCameraTargetHeading(gpsHeadingDeg, gpsSpeedKmh) {
             if (gpsSpeedKmh >= GPS_BEARING_MIN_SPEED &&
-                Number.isFinite(gpsHeadingDeg)) {
+                Number.isFinite(gpsHeadingDeg) && !isNaN(gpsHeadingDeg)) {
                 return gpsHeadingDeg;
             }
+            const routeBearing = getRouteForwardBearing();
+            if (Number.isFinite(routeBearing)) return routeBearing;
             if (cameraSmoothedBearing !== null) return cameraSmoothedBearing;
             if (Number.isFinite(compassHeading)) return compassHeading;
             return null;
         }
 
-        // Aplica zona muerta + suavizado. Devuelve el bearing final
-        // para map.easeTo(). Si no hay cambio relevante, devuelve el
-        // último aplicado (evita easeTo innecesarios).
         function computeCameraBearing(gpsHeadingDeg, gpsSpeedKmh) {
             const target = getCameraTargetHeading(gpsHeadingDeg, gpsSpeedKmh);
             if (!Number.isFinite(target)) {
                 return lastAppliedCameraBearing ?? 0;
             }
-
             if (cameraSmoothedBearing === null) {
                 cameraSmoothedBearing = target;
                 lastAppliedCameraBearing = target;
                 return target;
             }
-
             let diff = target - cameraSmoothedBearing;
             if (diff > 180) diff -= 360;
             if (diff < -180) diff += 360;
-
-            // 🔒 Zona muerta: cambios pequeños NO mueven la cámara
             if (Math.abs(diff) < CAMERA_DEADZONE_DEG) {
                 return lastAppliedCameraBearing ?? cameraSmoothedBearing;
             }
-
             cameraSmoothedBearing =
                 (cameraSmoothedBearing + diff * CAMERA_BEARING_SMOOTHING + 360) % 360;
-
             lastAppliedCameraBearing = cameraSmoothedBearing;
             return cameraSmoothedBearing;
         }
@@ -802,8 +798,10 @@
             if (rideDot && rideVal) { rideVal.textContent = currentRideId ? currentRideId.substring(0,8) : 'null'; rideDot.className = `dot ${currentRideId ? 'green' : 'red'}`; }
             if (pendingDot && pendingVal) { pendingVal.textContent = pendingRide ? pendingRide.id.substring(0,8) : 'null'; pendingDot.className = `dot ${pendingRide ? 'orange' : 'red'}`; }
             if (compassDot && compassVal) {
-                compassVal.textContent = compassAvailable ? `${Math.round(compassHeading)}°` : 'no disp.';
-                compassDot.className = `dot ${compassAvailable ? 'green' : 'red'}`;
+                const gpsH = window.lastGpsHeading;
+                const info = Number.isFinite(gpsH) ? `GPS ${Math.round(gpsH)}°` : (compassAvailable ? `Brúj ${Math.round(compassHeading)}°` : 'no disp.');
+                compassVal.textContent = info;
+                compassDot.className = `dot ${(Number.isFinite(gpsH) || compassAvailable) ? 'green' : 'red'}`;
             }
             if (zoomDot && zoomVal) {
                 const z = (map && mapInitialized) ? map.getZoom().toFixed(1) : '0';
@@ -888,7 +886,7 @@
             if (browsingTimer) clearTimeout(browsingTimer);
             browsingTimer = setTimeout(exitBrowsingMode, BROWSING_TIMEOUT_MS);
             showRecenterButton();
-            dlog('🔍 Modo exploración: mira el recorrido completo', 'info');
+            dlog('🔍 Modo exploración', 'info');
             updateDebugStatus();
         }
         function exitBrowsingMode() {
@@ -1187,6 +1185,7 @@
         let apLat = null, apLng = null, apSelfieFile = null;
 
         window.currentGpsAccuracy = 0;
+        window.lastGpsHeading = null;
 
         if ('speechSynthesis' in window) {
             window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
@@ -1201,7 +1200,7 @@
                 const screenH = map.getContainer().offsetHeight || window.innerHeight;
                 const offsetY = Math.round(screenH * (NAV_ARROW_Y_FRACTION - 0.5));
                 const bearing = computeCameraBearing(
-                    smoothedBearing,
+                    window.lastGpsHeading,
                     Number(window.currentSpeedKmh || 0)
                 );
                 const speed = Math.max(0, Number(window.currentSpeedKmh || 0));
@@ -1235,7 +1234,7 @@
                     if (!userInteracting && !browsingMode && navigationCameraLocked && now - lastCameraUpdate >= CAMERA_UPDATE_MS) {
                         lastCameraUpdate = now;
                         const bearing = computeCameraBearing(
-                            smoothedBearing,
+                            window.lastGpsHeading,
                             Number(window.currentSpeedKmh || 0)
                         );
                         const speed = Math.max(0, Number(window.currentSpeedKmh || 0));
@@ -1687,6 +1686,7 @@
             hideRecenterButton();
             setNavigationMode(false);
             resetCameraSmoothing();
+            window.lastGpsHeading = null;
         }
 
         function togglePassword() {
@@ -1797,7 +1797,7 @@
                     });
                 } catch (e) {}
 
-                dlog('✅ Mapa inicializado (con modo exploración)', 'success');
+                dlog('✅ Mapa inicializado', 'success');
                 return true;
             } catch (e) {
                 dlog('❌ Error initMap: ' + e.message, 'error');
@@ -2059,10 +2059,11 @@
 
                 if (map && mapInitialized && currentPosition) {
                     resetCameraSmoothing();
-                    const bearing = computeCameraBearing(
-                        smoothedBearing,
-                        Number(window.currentSpeedKmh || 0)
-                    );
+                    let initialBearing = window.lastGpsHeading;
+                    if (!Number.isFinite(initialBearing) && ride.origin_lat && ride.origin_lng) {
+                        initialBearing = calculateBearing(currentPosition[0], currentPosition[1], ride.origin_lat, ride.origin_lng);
+                    }
+                    const bearing = computeCameraBearing(initialBearing, Number(window.currentSpeedKmh || 0));
                     const screenH = map.getContainer().offsetHeight || window.innerHeight;
                     map.jumpTo({
                         center: [currentPosition[1], currentPosition[0]],
@@ -2541,11 +2542,20 @@
                     const speedKmh = gpsSpeed * 3.6;
                     window.currentSpeedKmh = speedKmh;
                     window.currentGpsAccuracy = position.coords.accuracy || 0;
+
+                    // Guardar GPS heading crudo (independiente de la brújula)
+                    if (gpsHeading !== null && gpsHeading !== undefined &&
+                        !isNaN(gpsHeading) && gpsSpeed > 1.0) {
+                        window.lastGpsHeading = gpsHeading;
+                    }
+
                     const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
                     const renderLat = gpsLat;
                     const renderLng = gpsLng;
                     currentPosition = [gpsLat, gpsLng];
 
+                    // smoothedBearing se sigue calculando para calculateRouteProgress
+                    // y para el marcador en vista libre; la cámara ya NO lo usa.
                     let bearing = smoothedBearing || 0;
                     if (compassAvailable && compassHeading !== null) {
                         if (smoothedBearing === null) smoothedBearing = compassHeading;
@@ -2802,7 +2812,7 @@
 
         document.getElementById('chatInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') sendCentralMessage(); });
 
-        dlog('App iniciada. v6.8 — cámara suave con zona muerta + sigue dirección real', 'success');
+        dlog('App iniciada. v6.9 — GPS heading priority + route bearing fallback', 'success');
     </script>
 </body>
 </html>
