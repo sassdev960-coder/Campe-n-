@@ -696,72 +696,14 @@
         const NAV_ZOOM_MIN = 16.8;
         const NAV_ZOOM_MAX = 18.2;
         const NAV_PITCH = 50;
-        const CAMERA_UPDATE_MS = 180;
-
-        // La cámara usa 8 direcciones estables (cada 45°), pero la transición
-        // entre ellas es suave. Los pequeños movimientos del teléfono no hacen
-        // que el mapa esté cambiando de orientación constantemente.
-        const CAMERA_DIRECTION_STEP = 45;
-        const CAMERA_DIRECTION_HYSTERESIS = 10;
-        const CAMERA_ROTATION_DURATION_MS = 260;
-
+        const CAMERA_UPDATE_MS = 90;
+        const CAMERA_EASE_MS = 130;
+        const CAMERA_HEADING_DEADZONE = 4;
+        const CAMERA_HEADING_SMOOTHING = 0.18;
         let lastCameraUpdate = 0;
         let navigationCameraLocked = false;
         let navigationResumeTimer = null;
-        let navigationCameraSector = null;
         let navigationCameraBearing = null;
-        let lastAppliedCameraBearing = null;
-
-        function normalizeCameraBearing(bearing) {
-            return ((bearing % 360) + 360) % 360;
-        }
-
-        function cameraAngularDifference(from, to) {
-            return ((to - from + 540) % 360) - 180;
-        }
-
-        function getStableNavigationCameraBearing(heading) {
-            if (!Number.isFinite(heading)) {
-                return navigationCameraBearing ?? 0;
-            }
-
-            heading = normalizeCameraBearing(heading);
-
-            // Primera lectura: elegimos la dirección de 45° más cercana.
-            if (navigationCameraSector === null) {
-                navigationCameraSector =
-                    Math.round(heading / CAMERA_DIRECTION_STEP) % 8;
-                navigationCameraBearing =
-                    navigationCameraSector * CAMERA_DIRECTION_STEP;
-                lastAppliedCameraBearing = navigationCameraBearing;
-                return navigationCameraBearing;
-            }
-
-            const currentBearing =
-                navigationCameraSector * CAMERA_DIRECTION_STEP;
-            const difference =
-                cameraAngularDifference(currentBearing, heading);
-
-            // No cambiamos de sector por movimientos pequeños.
-            // El cambio requiere superar 22.5° + la histéresis.
-            const switchThreshold =
-                (CAMERA_DIRECTION_STEP / 2) + CAMERA_DIRECTION_HYSTERESIS;
-
-            if (Math.abs(difference) > switchThreshold) {
-                navigationCameraSector =
-                    Math.round(heading / CAMERA_DIRECTION_STEP) % 8;
-                navigationCameraBearing =
-                    navigationCameraSector * CAMERA_DIRECTION_STEP;
-            }
-
-            return navigationCameraBearing;
-        }
-
-        function resetNavigationCameraDirection() {
-            navigationCameraSector = null;
-            navigationCameraBearing = null;
-            lastAppliedCameraBearing = null;
-        }
 
         const BROWSING_TIMEOUT_MS = 8000;
         const ZOOM_OUT_THRESHOLD = 15.3;
@@ -934,7 +876,6 @@
                 viajesView?.classList.remove('navigation-active');
                 navigationPanel?.classList.remove('active');
                 navigationCameraLocked = false;
-                resetNavigationCameraDirection();
             }
         }
 
@@ -1158,6 +1099,8 @@
         let lastUpdateTime = 0; const UPDATE_INTERVAL = 5000;
         let currentNavigationSteps = [], currentNavigationIndex = 0, currentRouteTarget = null;
         let userInteracting = false, lastInteractionTime = 0, smoothedBearing = null;
+        let movementHeading = null;
+        let previousGpsForHeading = null;
         let obLat = null, obLng = null, currentSelfieFile = null, currentChatTarget = 'central';
         let chatSubscription = null;
         let maneuverArrowMarker = null;
@@ -1193,6 +1136,51 @@
             window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
         }
 
+        function normalizeBearing360(value) {
+            return ((Number(value) % 360) + 360) % 360;
+        }
+
+        function shortestBearingDelta(from, to) {
+            let d = normalizeBearing360(to) - normalizeBearing360(from);
+            if (d > 180) d -= 360;
+            if (d < -180) d += 360;
+            return d;
+        }
+
+        // Rumbo exclusivo de la CÁMARA. No se usa para girar la flecha ni para
+        // alterar el progreso de la ruta. Los pequeños movimientos del teléfono
+        // quedan dentro de una zona muerta para evitar temblores.
+        function getNavigationCameraBearing(immediate = false) {
+            // En movimiento usamos el rumbo REAL del desplazamiento GPS.
+            // La brújula queda como respaldo cuando estamos prácticamente detenidos.
+            let source = null;
+            const speed = Number(window.currentSpeedKmh || 0);
+            if (speed >= 2.5 && Number.isFinite(movementHeading)) source = movementHeading;
+            else if (compassAvailable && Number.isFinite(compassHeading)) source = compassHeading;
+            else if (Number.isFinite(movementHeading)) source = movementHeading;
+            else if (Number.isFinite(smoothedBearing)) source = smoothedBearing;
+            if (!Number.isFinite(source)) return Number.isFinite(navigationCameraBearing) ? navigationCameraBearing : 0;
+
+            source = normalizeBearing360(source);
+            if (!Number.isFinite(navigationCameraBearing)) {
+                navigationCameraBearing = source;
+                return navigationCameraBearing;
+            }
+
+            const delta = shortestBearingDelta(navigationCameraBearing, source);
+            if (Math.abs(delta) <= CAMERA_HEADING_DEADZONE && !immediate) {
+                return navigationCameraBearing;
+            }
+
+            const factor = immediate ? 1 : CAMERA_HEADING_SMOOTHING;
+            navigationCameraBearing = normalizeBearing360(navigationCameraBearing + delta * factor);
+            return navigationCameraBearing;
+        }
+
+        function resetNavigationCameraBearing() {
+            navigationCameraBearing = null;
+        }
+
         function resumeNavigationCamera(immediate = false) {
             if (navigationResumeTimer) { clearTimeout(navigationResumeTimer); navigationResumeTimer = null; }
             if (!map || !mapInitialized || !navigationCameraLocked || !markerCurrentPos) return;
@@ -1201,12 +1189,11 @@
             try {
                 const screenH = map.getContainer().offsetHeight || window.innerHeight;
                 const offsetY = Math.round(screenH * (NAV_ARROW_Y_FRACTION - 0.5));
-                const rawHeading = Number.isFinite(smoothedBearing) ? smoothedBearing : compassHeading;
-                const bearing = getStableNavigationCameraBearing(rawHeading);
+                const bearing = getNavigationCameraBearing(immediate);
                 const speed = Math.max(0, Number(window.currentSpeedKmh || 0));
                 let zoom = NAV_ZOOM_MAX - Math.min(speed * 0.025, 1.2);
                 zoom = Math.max(NAV_ZOOM_MIN, Math.min(NAV_ZOOM_MAX, zoom));
-                map.easeTo({ center: [markerCurrentPos[1], markerCurrentPos[0]], zoom, bearing, pitch: NAV_PITCH, offset: [0, offsetY], duration: immediate ? 500 : 700, essential: true });
+                map.easeTo({ center: [markerCurrentPos[1], markerCurrentPos[0]], zoom, bearing, pitch: NAV_PITCH, offset: [0, 0], duration: immediate ? 450 : CAMERA_EASE_MS, essential: true });
             } catch (e) {}
         }
 
@@ -1233,15 +1220,13 @@
                     const now = performance.now();
                     if (!userInteracting && !browsingMode && navigationCameraLocked && now - lastCameraUpdate >= CAMERA_UPDATE_MS) {
                         lastCameraUpdate = now;
-                        const rawHeading = Number.isFinite(smoothedBearing) ? smoothedBearing : compassHeading;
-                        const bearing = getStableNavigationCameraBearing(rawHeading);
+                        const bearing = getNavigationCameraBearing(false);
                         const speed = Math.max(0, Number(window.currentSpeedKmh || 0));
                         let zoom = NAV_ZOOM_MAX - Math.min(speed * 0.025, 1.2);
                         zoom = Math.max(NAV_ZOOM_MIN, Math.min(NAV_ZOOM_MAX, zoom));
                         const screenH = map.getContainer().offsetHeight || window.innerHeight;
                         const offsetY = Math.round(screenH * (NAV_ARROW_Y_FRACTION - 0.5));
-                        map.easeTo({ center: [markerCurrentPos[1], markerCurrentPos[0]], zoom, bearing, pitch: NAV_PITCH, offset: [0, offsetY], duration: CAMERA_ROTATION_DURATION_MS, essential: true });
-                        lastAppliedCameraBearing = bearing;
+                        map.easeTo({ center: [markerCurrentPos[1], markerCurrentPos[0]], zoom, bearing, pitch: NAV_PITCH, offset: [0, 0], duration: CAMERA_EASE_MS, essential: true });
                     }
                 } else {
                     let diff = markerTargetBearing - markerCurrentBearing;
@@ -2030,7 +2015,6 @@
                 currentRideId = rideId;
                 currentRideStatus = 'aceptado';
                 pendingRide = null;
-                resetNavigationCameraDirection();
                 hideRideModal();
 
                 showLoading('Preparando navegación...');
@@ -2057,8 +2041,7 @@
                 await new Promise(r => setTimeout(r, 150));
 
                 if (map && mapInitialized && currentPosition) {
-                    const rawHeading = Number.isFinite(smoothedBearing) ? smoothedBearing : compassHeading;
-                    const bearing = getStableNavigationCameraBearing(rawHeading);
+                    const bearing = getNavigationCameraBearing(true);
                     const screenH = map.getContainer().offsetHeight || window.innerHeight;
                     map.jumpTo({
                         center: [currentPosition[1], currentPosition[0]],
@@ -2509,8 +2492,13 @@
             const el = document.createElement('div');
             el.className = 'driver-arrow';
             el.innerHTML = '<i class="fas fa-arrow-up"></i>';
-            driverMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
-                .setLngLat([lng, lat]).setRotation(bearing).addTo(map);
+            driverMarker = new mapboxgl.Marker({
+                element: el,
+                anchor: 'center',
+                rotationAlignment: 'viewport',
+                pitchAlignment: 'viewport'
+            })
+                .setLngLat([lng, lat]).setRotation(0).addTo(map);
             markerCurrentPos = [lat, lng];
             markerTargetPos = [lat, lng];
             markerCurrentBearing = bearing;
@@ -2526,6 +2514,9 @@
             if (watchId) { navigator.geolocation.clearWatch(watchId); watchId = null; }
             let previousCoord = null;
             smoothedBearing = null;
+            movementHeading = null;
+            previousGpsForHeading = null;
+            resetNavigationCameraBearing();
 
             watchId = navigator.geolocation.watchPosition(
                 (position) => {
@@ -2542,7 +2533,25 @@
                     const renderLng = gpsLng;
                     currentPosition = [gpsLat, gpsLng];
 
-                    let bearing = smoothedBearing || 0;
+                    // Rumbo de desplazamiento: más fiable para navegación cuando el vehículo/caminante está avanzando.
+                    if (previousGpsForHeading) {
+                        const movedMeters = getDistanceFromLatLonInMeters(
+                            previousGpsForHeading.lat, previousGpsForHeading.lng, gpsLat, gpsLng
+                        );
+                        if (movedMeters >= 2 && gpsSpeed >= 0.7) {
+                            const rawMovementHeading = calculateBearing(
+                                previousGpsForHeading.lat, previousGpsForHeading.lng, gpsLat, gpsLng
+                            );
+                            if (!Number.isFinite(movementHeading)) movementHeading = rawMovementHeading;
+                            else {
+                                const d = shortestBearingDelta(movementHeading, rawMovementHeading);
+                                movementHeading = normalizeBearing360(movementHeading + d * 0.28);
+                            }
+                        }
+                    }
+                    previousGpsForHeading = { lat: gpsLat, lng: gpsLng };
+
+                    let bearing = smoothedBearing || movementHeading || compassHeading || 0;
                     if (compassAvailable && compassHeading !== null) {
                         if (smoothedBearing === null) smoothedBearing = compassHeading;
                         else {
@@ -2594,9 +2603,10 @@
                         const snapDistance = snap && Number.isFinite(snap.distance) ? snap.distance : Infinity;
 
                         if (snap && Number.isFinite(snap.lat) && Number.isFinite(snap.lng)) {
+                            // La ruta restante debe seguir exclusivamente la geometría de las calles.
+                            // No dibujamos una línea recta desde el GPS hasta la calle, porque eso puede
+                            // atravesar bloques/intersecciones y producir el efecto de "Pacman".
                             const snapPoint = [snap.lng, snap.lat];
-                            const allowGpsLink = snapDistance <= OFF_ROUTE_THRESHOLD_M;
-                            if (allowGpsLink) remainingCoords.push([gpsLng, gpsLat]);
                             remainingCoords.push(snapPoint);
                         } else {
                             remainingCoords.push(coords[segIdx]);
