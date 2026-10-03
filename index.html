@@ -1,4 +1,4 @@
-<!-- ROUTE STREET-FOLLOWING V6.8 - HYBRID CAMERA + SMOOTH REROUTE + SOFT SNAP -->
+<!-- ROUTE STREET-FOLLOWING V6.9 - MAPBOX STANDARD NIGHT + POOL FILTER -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,8 +7,8 @@
     <title>Moto Móvil - Conductor</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
-    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <style>
         :root{--bg-black:#0a0a0b;--bg-dark-gray:#131418;--bg-surface:#1a1c22;--bg-surface-hover:#24262d;--bg-elevated:#2a2d35;--primary-orange:#ff7a00;--primary-orange-dark:#e66a00;--primary-orange-glow:rgba(255,122,0,0.35);--primary-orange-subtle:rgba(255,122,0,0.1);--white:#ffffff;--gray-text:#9ca3af;--gray-light:#d1d5db;--green-online:#22c55e;--green-glow:rgba(34,197,94,0.4);--red:#ef4444;--red-glow:rgba(239,68,68,0.4);--blue:#3b82f6;--purple:#8b5cf6;--yellow:#f59e0b;--shadow-sm:0 2px 8px rgba(0,0,0,0.3);--shadow-md:0 4px 20px rgba(0,0,0,0.4);--shadow-lg:0 8px 32px rgba(0,0,0,0.5);--shadow-glow:0 0 40px var(--primary-orange-glow);--border-radius-sm:8px;--border-radius-md:14px;--border-radius-lg:20px;--border-radius-xl:28px;--border-radius-full:999px;--ease-bounce:cubic-bezier(0.68,-0.55,0.265,1.55);--ease-smooth:cubic-bezier(0.4,0,0.2,1);--ease-out:cubic-bezier(0.16,1,0.3,1)}
@@ -704,8 +704,6 @@
 
         // 🎯 Radio máximo (metros) para mostrar viajes del POOL ABIERTO.
         // Las asignaciones directas (ride.driver_id === yo) NO se filtran nunca.
-        // Si el conductor está en Santa Cruz y el viaje está en Montero (~40 km),
-        // la alerta ya no aparece porque supera este umbral.
         const MAX_POOL_DISTANCE_M = 500;
 
         const NAV_ZOOM_MIN = 16.8;
@@ -721,9 +719,18 @@
         let navigationResumeTimer = null;
         let navigationCameraBearing = null;
 
-        const MAP_STYLE_DAY = 'mapbox://styles/mapbox/streets-v12';
-        const MAP_STYLE_NIGHT = 'mapbox://styles/mapbox/navigation-night-v1';
-        let currentMapTheme = null;
+        // ═══════════════════════════════════════════════════════════════
+        // 🌃 MAPBOX STANDARD — Estilo de alta calidad con cartografía 3D
+        // ═══════════════════════════════════════════════════════════════
+        // Usamos "Mapbox Standard" en vez de los estilos clásicos
+        // (navigation-night-v1 / streets-v12) porque incluye:
+        //   • Edificios 3D con iluminación realista
+        //   • Presets de luz dinámicos (day / dawn / dusk / night)
+        //   • Cartografía detallada con POIs enriquecidos
+        //   • Cambio día/noche INSTANTÁNEO con setConfigProperty
+        //     (sin recargar el estilo, sin perder la ruta dibujada)
+        const MAP_STYLE_STANDARD = 'mapbox://styles/mapbox/standard';
+        let currentMapTheme = null; // 'day' | 'night' (para trackear el preset activo)
         let mapThemeTimer = null;
 
         const BROWSING_TIMEOUT_MS = 8000;
@@ -1749,61 +1756,28 @@
             return hour >= 18 || hour < 6;
         }
 
-        function getMapStyleForCurrentTime() {
-            return isNightMapTime() ? MAP_STYLE_NIGHT : MAP_STYLE_DAY;
-        }
-
-        function restoreRouteLayersAfterStyleChange() {
-            if (!map || !mapInitialized || !window.currentRouteCoords || window.currentRouteCoords.length < 2) return;
-            try {
-                if (map.getLayer('route-line')) map.removeLayer('route-line');
-                if (map.getLayer('route-line-bg')) map.removeLayer('route-line-bg');
-                if (map.getSource('route')) map.removeSource('route');
-                if (map.getSource('route-remaining')) map.removeSource('route-remaining');
-            } catch (e) {}
-            const coords = window.currentRouteCoords.map(c => [c[1], c[0]]);
-            const geo = { type:'Feature', properties:{}, geometry:{type:'LineString', coordinates:coords} };
-            const night = currentMapTheme === 'night';
-            map.addSource('route', {type:'geojson', data:geo});
-            map.addLayer({
-                id:'route-line-bg', type:'line', source:'route',
-                layout:{'line-join':'round','line-cap':'round'},
-                paint:{'line-color':night ? '#021a35' : '#06356b','line-width':12,'line-opacity':night ? 0.95 : 0.32}
-            });
-            map.addSource('route-remaining', {type:'geojson', data:geo});
-            map.addLayer({
-                id:'route-line', type:'line', source:'route-remaining',
-                layout:{'line-join':'round','line-cap':'round'},
-                paint:{
-                    'line-color':night ? '#39a9ff' : '#1687ff',
-                    'line-width':night ? 7 : 7,
-                    'line-opacity':1,
-                    'line-blur':night ? 0.15 : 0
-                }
-            });
-            routeLayers = ['route','route-remaining','route-line','route-line-bg'];
-        }
-
+        // ═══════════════════════════════════════════════════════════════
+        // 🌃 APLICAR PRESET DE LUZ (day / night)
+        // ═══════════════════════════════════════════════════════════════
+        // En Mapbox Standard, el cambio de tema se hace con setConfigProperty
+        // y es INSTANTÁNEO: no recarga el estilo, no pierde rutas ni capas.
         function applyMapTheme(force = false) {
             if (!map || !mapInitialized) return;
             const nextTheme = isNightMapTime() ? 'night' : 'day';
             if (!force && currentMapTheme === nextTheme) return;
             currentMapTheme = nextTheme;
-            const nextStyle = nextTheme === 'night' ? MAP_STYLE_NIGHT : MAP_STYLE_DAY;
             try {
-                map.once('style.load', () => {
-                    restoreRouteLayersAfterStyleChange();
-                });
-                map.setStyle(nextStyle);
+                map.setConfigProperty('basemap', 'lightPreset', nextTheme);
+                dlog(`🌓 Preset de luz: ${nextTheme}`, 'success');
             } catch (e) {
-                dlog('⚠️ No se pudo cambiar el tema del mapa: ' + e.message, 'warning');
+                dlog('⚠️ No se pudo cambiar el preset de luz: ' + e.message, 'warning');
             }
         }
 
         function startAutomaticMapTheme() {
             if (mapThemeTimer) clearInterval(mapThemeTimer);
-            mapThemeTimer = setInterval(() => applyMapTheme(false), 30 * 1000);
-            applyMapTheme(false);
+            mapThemeTimer = setInterval(() => applyMapTheme(false), 60 * 1000);
+            applyMapTheme(true);
         }
 
         async function initMap(center = [-63.1821, -17.7833]) {
@@ -1835,9 +1809,22 @@
                     ? [currentPosition[1], currentPosition[0]]
                     : center;
 
+                const initialPreset = isNightMapTime() ? 'night' : 'day';
+                currentMapTheme = initialPreset;
+
+                // 🌃 Mapbox Standard: cartografía 3D + preset de luz dinámico
                 map = new mapboxgl.Map({
                     container: container,
-                    style: getMapStyleForCurrentTime(),
+                    style: MAP_STYLE_STANDARD,
+                    config: {
+                        basemap: {
+                            lightPreset: initialPreset,
+                            show3dObjects: true,
+                            showPointOfInterestLabels: true,
+                            showTransitLabels: true,
+                            showRoadLabels: true
+                        }
+                    },
                     center: initialCenter,
                     zoom: 16,
                     pitch: 0,
@@ -1845,6 +1832,14 @@
                     attributionControl: false
                 });
                 mapInitialized = true;
+
+                map.on('style.load', () => {
+                    // Cuando el estilo carga (o recarga), forzamos el preset actual
+                    try {
+                        map.setConfigProperty('basemap', 'lightPreset', currentMapTheme || initialPreset);
+                    } catch (e) {}
+                });
+
                 await new Promise((resolve) => {
                     let done = false;
                     const finish = () => { if (!done) { done = true; resolve(); } };
@@ -1887,11 +1882,9 @@
                     });
                 } catch (e) {}
 
-                currentMapTheme = null;
                 startAutomaticMapTheme();
-                setTimeout(() => applyMapTheme(true), 250);
-                dlog(`🌙 Tema automático: ${currentMapTheme === 'night' ? 'noche' : 'día'}`, 'info');
-                dlog('✅ Mapa inicializado (con modo exploración)', 'success');
+                dlog(`🌃 Mapbox Standard listo — preset: ${initialPreset}`, 'success');
+                dlog('✅ Mapa inicializado (modo exploración activo)', 'success');
                 return true;
             } catch (e) {
                 dlog('❌ Error initMap: ' + e.message, 'error');
@@ -3041,7 +3034,7 @@
 
         document.getElementById('chatInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') sendCentralMessage(); });
 
-        dlog('App iniciada. v6.8 — hybrid camera + smooth reroute + soft snap + pool filter', 'success');
+        dlog('App iniciada. v6.9 — Mapbox Standard night + pool filter', 'success');
     </script>
 </body>
 </html>
