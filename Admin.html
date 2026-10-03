@@ -271,7 +271,12 @@
 
     .map-controls {
       position: absolute; top: 20px; left: 20px; z-index: 1000;
-      display: flex; flex-direction: column; gap: 10px;
+      display: flex; flex-direction: column; gap: 8px;
+      background: rgba(15, 15, 16, 0.6);
+      backdrop-filter: blur(12px);
+      padding: 8px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-light);
     }
     .map-control-btn {
       width: 46px; height: 46px; background: var(--bg-card);
@@ -281,7 +286,7 @@
       font-size: 1rem; transition: var(--transition); box-shadow: var(--shadow-md);
     }
     .map-control-btn:hover { background: var(--bg-hover); transform: scale(1.05); }
-    .map-control-btn.active { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
+    .map-control-btn.active { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); border-color: var(--primary); }
 
     .map-legend {
       position: absolute; bottom: 24px; left: 20px; z-index: 1000;
@@ -1000,7 +1005,7 @@
     }
     @keyframes livePulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.2); } }
 
-    /* ========== NUEVA VISTA: CREAR VIAJE (CENTRAL) ========== */
+    /* ========== CREAR VIAJE (CENTRAL) ========== */
     .newride-layout {
       display: flex;
       width: 100%;
@@ -1499,14 +1504,29 @@
             <div id="admin-map"></div>
 
             <div class="map-controls">
-              <button class="map-control-btn" id="btn-center-map" title="Centrar">
+              <button class="map-control-btn" id="btn-center-map" title="Centrar en el centro de la ciudad">
                 <i class="fas fa-crosshairs"></i>
               </button>
-              <button class="map-control-btn active" id="btn-fit-all" title="Ver todos">
+              <button class="map-control-btn active" id="btn-fit-all" title="Ver todos los marcadores">
                 <i class="fas fa-expand"></i>
               </button>
-              <button class="map-control-btn active" id="btn-toggle-routes" title="Rutas">
+              <button class="map-control-btn active" id="btn-toggle-routes" title="Mostrar/ocultar rutas">
                 <i class="fas fa-route"></i>
+              </button>
+
+              <div style="height: 6px;"></div>
+
+              <button class="map-control-btn active" id="btn-tile-google" title="Google Maps" onclick="setAdminMapTile('google')">
+                <i class="fas fa-map"></i>
+              </button>
+              <button class="map-control-btn" id="btn-tile-google-sat" title="Google Satélite" onclick="setAdminMapTile('google-sat')">
+                <i class="fas fa-satellite"></i>
+              </button>
+              <button class="map-control-btn" id="btn-tile-google-terrain" title="Google Terreno" onclick="setAdminMapTile('google-terrain')">
+                <i class="fas fa-mountain"></i>
+              </button>
+              <button class="map-control-btn" id="btn-tile-osm" title="OpenStreetMap" onclick="setAdminMapTile('osm')">
+                <i class="fas fa-globe"></i>
               </button>
             </div>
 
@@ -1576,7 +1596,6 @@
               </div>
             </div>
 
-            <!-- Datos del pasajero -->
             <div class="newride-section">
               <div class="newride-section-title">
                 <i class="fas fa-user"></i> Pasajero
@@ -1604,7 +1623,6 @@
               </div>
             </div>
 
-            <!-- Origen -->
             <div class="newride-section">
               <div class="newride-section-title">
                 <i class="fas fa-circle" style="color: var(--green);"></i> Origen
@@ -1619,7 +1637,6 @@
               <div id="newride-origin-results" class="newride-results"></div>
             </div>
 
-            <!-- Destino -->
             <div class="newride-section">
               <div class="newride-section-title">
                 <i class="fas fa-flag-checkered" style="color: var(--primary);"></i> Destino
@@ -1634,7 +1651,6 @@
               <div id="newride-destination-results" class="newride-results"></div>
             </div>
 
-            <!-- Acompañantes y carga -->
             <div class="newride-section">
               <div class="newride-section-title">
                 <i class="fas fa-users"></i> Acompañante y carga
@@ -1677,7 +1693,6 @@
                 placeholder="Describe la carga (opcional)" style="margin-top: 10px; display: none;">
             </div>
 
-            <!-- Resumen y botón -->
             <div class="newride-summary" id="newride-summary">
               <div class="newride-summary-title">
                 <i class="fas fa-receipt"></i> Desglose del precio
@@ -2049,6 +2064,10 @@
     let appInitialized = false;
     let currentView = 'dashboard';
 
+    // Mapa del admin (Google tiles)
+    let adminMapTileMode = localStorage.getItem('motocampeon_admin_map_tile') || 'google';
+    let adminMapTileLayer = null;
+
     // ========== MONITOREO DE PENDIENTES Y RECHAZOS ==========
     let assignmentTimers = new Map();
     let recentRejections = [];
@@ -2362,15 +2381,59 @@
       document.getElementById('dash-badge-rides').textContent = activeRides + pendingRides;
     }
 
-    // ========== MAPA ==========
+    // ========== MAPA PRINCIPAL (Google tiles) ==========
+    function getAdminTileUrl(mode) {
+      if (mode === 'google') return 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+      if (mode === 'google-sat') return 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
+      if (mode === 'google-terrain') return 'https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}';
+      return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    }
+
+    function getAdminTileAttribution(mode) {
+      if (mode.startsWith('google')) return '© Google Maps';
+      return '© OpenStreetMap';
+    }
+
     function initMap() {
       if (map) return;
       map = L.map('admin-map', { zoomControl: false, attributionControl: false }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19, attribution: '© OpenStreetMap'
+
+      adminMapTileLayer = L.tileLayer(getAdminTileUrl(adminMapTileMode), {
+        maxZoom: 20,
+        subdomains: 'abc',
+        attribution: getAdminTileAttribution(adminMapTileMode)
       }).addTo(map);
+
       L.control.zoom({ position: 'bottomright' }).addTo(map);
-      console.log('🗺️ [MAP] Mapa inicializado');
+      updateAdminMapToggleUI();
+      console.log('🗺️ [MAP] Mapa inicializado en modo:', adminMapTileMode);
+    }
+
+    function setAdminMapTile(mode) {
+      if (!map) return;
+      adminMapTileMode = mode;
+      localStorage.setItem('motocampeon_admin_map_tile', mode);
+
+      if (adminMapTileLayer) map.removeLayer(adminMapTileLayer);
+
+      adminMapTileLayer = L.tileLayer(getAdminTileUrl(mode), {
+        maxZoom: 20,
+        subdomains: 'abc',
+        attribution: getAdminTileAttribution(mode)
+      }).addTo(map);
+      adminMapTileLayer.bringToBack();
+
+      updateAdminMapToggleUI();
+
+      const labels = { 'google': 'Google Maps', 'google-sat': 'Google Satélite', 'google-terrain': 'Google Terreno', 'osm': 'OpenStreetMap' };
+      showToast('Capa cambiada', labels[mode] || mode, 'success');
+    }
+
+    function updateAdminMapToggleUI() {
+      ['google', 'google-sat', 'google-terrain', 'osm'].forEach(m => {
+        const btn = document.getElementById(`btn-tile-${m}`);
+        if (btn) btn.classList.toggle('active', adminMapTileMode === m);
+      });
     }
 
     function createCustomIcon(type, label, imageUrl) {
@@ -4669,6 +4732,8 @@
         renderRejectionAlerts();
       }, 60000);
 
+      updateAdminMapToggleUI();
+
       addActivity('info', 'fa-desktop', 'Centro de control iniciado');
       appInitialized = true;
     }
@@ -4682,7 +4747,7 @@
     });
 
     // ═══════════════════════════════════════════════════════════════
-    //  🚕 MÓDULO: CREAR VIAJE DESDE CENTRAL (Llamadas telefónicas)
+    //  🚕 MÓDULO: CREAR VIAJE DESDE CENTRAL
     // ═══════════════════════════════════════════════════════════════
 
     const GEOAPIFY_API_KEY = '9a279217b21c42ecb86c263aa94de872';
