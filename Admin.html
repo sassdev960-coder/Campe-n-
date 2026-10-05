@@ -252,6 +252,7 @@
     }
     .nav-badge.purple { background: var(--purple); }
     .nav-badge.red { background: var(--red); }
+    .nav-badge.green { background: var(--green); }
 
     .main-content { flex: 1; display: flex; overflow: hidden; position: relative; }
     .view-panel { display: none; width: 100%; height: 100%; overflow: hidden; }
@@ -831,6 +832,56 @@
     }
     .wallet-balance { font-size: 2rem; font-weight: 900; margin: 8px 0; }
     .wallet-label { font-size: 0.8rem; opacity: 0.9; }
+
+    /* ========== COMISIONES ========== */
+    .commission-highlight {
+      background: linear-gradient(135deg, rgba(255,122,0,0.08), rgba(255,122,0,0.02));
+      border: 1px solid rgba(255,122,0,0.25);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .commission-highlight-text {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .commission-highlight-text strong {
+      color: var(--primary);
+    }
+    .commission-rate-control {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .commission-rate-input {
+      padding: 12px 16px;
+      background: var(--bg-input);
+      border: 2px solid var(--border-light);
+      border-radius: var(--radius-md);
+      color: var(--text-main);
+      font-size: 1.1rem;
+      font-weight: 700;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      width: 100px;
+      text-align: center;
+      font-variant-numeric: tabular-nums;
+    }
+    .commission-rate-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(255,122,0,0.1);
+    }
+    .commission-rate-symbol {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
 
     /* ========== TARIFAS EDITOR ========== */
     .tarifa-section {
@@ -1477,6 +1528,11 @@
         <i class="fas fa-wallet"></i>
         Billeteras
       </button>
+      <button class="nav-item" data-view="commissions">
+        <i class="fas fa-chart-line"></i>
+        Comisiones
+        <span class="nav-badge green" id="nav-badge-commissions">Bs 0</span>
+      </button>
       <button class="nav-item" data-view="messages">
         <i class="fas fa-paper-plane"></i>
         Mensajes Central
@@ -1945,6 +2001,64 @@
         </div>
       </div>
 
+      <!-- VISTA: COMISIONES -->
+      <div class="view-panel" id="view-commissions">
+        <div class="content-view">
+          <div class="view-header">
+            <div>
+              <div class="view-title"><i class="fas fa-chart-line"></i> Comisiones de la Plataforma</div>
+              <div class="view-subtitle">Ingresos netos de Moto Móvil por viajes completados</div>
+            </div>
+            <button class="btn btn-ghost" onclick="loadCommissionsData()">
+              <i class="fas fa-sync-alt"></i> Actualizar
+            </button>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card" style="--card-color: var(--primary); --card-bg: rgba(255,122,0,.15);">
+              <div class="stat-card-icon"><i class="fas fa-coins"></i></div>
+              <div class="stat-card-value" id="comm-stat-total">Bs 0</div>
+              <div class="stat-card-label">Comisión total acumulada</div>
+            </div>
+            <div class="stat-card" style="--card-color: var(--green); --card-bg: rgba(16,185,129,.15);">
+              <div class="stat-card-icon"><i class="fas fa-calendar-day"></i></div>
+              <div class="stat-card-value" id="comm-stat-today">Bs 0</div>
+              <div class="stat-card-label">Hoy</div>
+            </div>
+            <div class="stat-card" style="--card-color: var(--blue); --card-bg: rgba(59,130,246,.15);">
+              <div class="stat-card-icon"><i class="fas fa-calendar-week"></i></div>
+              <div class="stat-card-value" id="comm-stat-week">Bs 0</div>
+              <div class="stat-card-label">Últimos 7 días</div>
+            </div>
+            <div class="stat-card" style="--card-color: var(--purple); --card-bg: rgba(139,92,246,.15);">
+              <div class="stat-card-icon"><i class="fas fa-percentage"></i></div>
+              <div class="stat-card-value" id="comm-stat-rate">10%</div>
+              <div class="stat-card-label">Tasa actual</div>
+            </div>
+          </div>
+
+          <div class="commission-highlight">
+            <div class="commission-highlight-text">
+              <strong>⚙️ Configurar comisión</strong><br>
+              Se aplica a los próximos viajes completados. Los viajes ya pagados <strong>NO se modifican</strong>.
+            </div>
+            <div class="commission-rate-control">
+              <input type="number" id="comm-rate-input" class="commission-rate-input"
+                     step="0.5" min="0" max="50" placeholder="10">
+              <span class="commission-rate-symbol">%</span>
+              <button class="btn btn-primary" onclick="saveCommissionRate()">
+                <i class="fas fa-save"></i> Guardar
+              </button>
+            </div>
+          </div>
+
+          <div class="view-title" style="font-size:1rem; margin-bottom:16px;">
+            <i class="fas fa-list"></i> Últimas comisiones
+          </div>
+          <div id="commissions-table-container"></div>
+        </div>
+      </div>
+
       <!-- VISTA: MENSAJES -->
       <div class="view-panel" id="view-messages">
         <div class="content-view">
@@ -2364,6 +2478,7 @@
       updateDriverMarkers();
       updateRideMarkers();
       try { refreshNewRideChipPrices(); updateNewRideSummary(); } catch (e) {}
+      if (currentView === 'commissions') { try { loadCommissionsData(); } catch (e) {} }
     }
 
     function updateStats() {
@@ -2419,7 +2534,7 @@
       adminMapTileLayer = L.tileLayer(getAdminTileUrl(mode), {
         maxZoom: 20,
         subdomains: 'abc',
-        attribution: getAdminTileAttribution(mode)
+        attribution: getAdminMapTileAttribution(mode)
       }).addTo(map);
       adminMapTileLayer.bringToBack();
 
@@ -3284,7 +3399,7 @@
     function renderApplications() {
       const container = document.getElementById('applications-container');
       const searchTerm = (document.getElementById('applications-search')?.value || '').toLowerCase();
-      const statusFilter = document.getElementById('applications-status-filter')?.value || '';
+      const statusFilter = (document.getElementById('applications-status-filter')?.value || '');
 
       const pending = applications.filter(a => a.status === 'pendiente').length;
       const approved = applications.filter(a => a.status === 'aprobado' || a.status === 'aprobada').length;
@@ -4255,6 +4370,7 @@
                 } else if (newRide.status === 'completado') {
                   showToast('🎉 Viaje completado', formatMoney(newRide.price), 'success');
                   assignmentTimers.delete(newRide.id);
+                  if (currentView === 'commissions') loadCommissionsData();
                 } else if (newRide.status === 'no_completado') {
                   showToast('⚠️ Viaje no completado', '', 'warning');
                   assignmentTimers.delete(newRide.id);
@@ -4292,6 +4408,7 @@
           if (payload.new && payload.new.is_active) {
             pricingConfig = payload.new;
             if (currentView === 'tarifas') renderTarifas();
+            if (currentView === 'commissions') loadCommissionsData();
           }
         })
         .subscribe();
@@ -4320,6 +4437,7 @@
         refreshNewRideChipPrices();
         updateNewRideSummary();
       }
+      if (viewName === 'commissions') loadCommissionsData();
       document.getElementById('nav-sidebar').classList.remove('open');
     }
 
@@ -4590,6 +4708,34 @@
           </div>
         </div>
 
+        <div class="tarifa-section">
+          <div class="tarifa-section-header">
+            <div class="tarifa-section-icon green"><i class="fas fa-percentage"></i></div>
+            <div style="flex: 1;">
+              <div class="tarifa-section-title">Comisión de la plataforma</div>
+              <div class="tarifa-section-subtitle">Porcentaje que se queda Moto Móvil por cada viaje completado</div>
+            </div>
+          </div>
+          <div class="tarifa-grid">
+            <div class="tarifa-field">
+              <label class="tarifa-label"><i class="fas fa-percentage"></i> Comisión (%)</label>
+              <div class="tarifa-input-wrapper">
+                <input type="number" class="tarifa-input" id="tarifa-commission-rate"
+                  value="${((c.commission_rate ?? 0.10) * 100).toFixed(1)}" min="0" max="50" step="0.5"
+                  style="padding-right: 46px;">
+                <span class="tarifa-input-unit">%</span>
+              </div>
+              <div class="tarifa-hint">Se aplica a los próximos viajes completados</div>
+            </div>
+            <div class="tarifa-field">
+              <label class="tarifa-label"><i class="fas fa-info-circle"></i> Ejemplo</label>
+              <div class="tarifa-input-wrapper" style="background: var(--bg-hover); padding: 12px 14px; border-radius: var(--radius-md); font-size: 0.85rem; color: var(--text-secondary);">
+                En un viaje de Bs 10, el conductor recibe Bs <span id="tarifa-commission-example">9.00</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="tarifa-preview">
           <div class="tarifa-preview-title">
             <i class="fas fa-eye"></i> Vista previa de precios
@@ -4598,7 +4744,7 @@
         </div>
       `;
 
-      const inputIds = ['tarifa-base-radius', 'tarifa-base-price', 'tarifa-extra-distance', 'tarifa-extra-price', 'tarifa-baby-extra', 'tarifa-child-extra', 'tarifa-teen-extra', 'tarifa-cargo-price'];
+      const inputIds = ['tarifa-base-radius', 'tarifa-base-price', 'tarifa-extra-distance', 'tarifa-extra-price', 'tarifa-baby-extra', 'tarifa-child-extra', 'tarifa-teen-extra', 'tarifa-cargo-price', 'tarifa-commission-rate'];
       inputIds.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.addEventListener('input', updateTarifaPreview);
@@ -4655,6 +4801,14 @@
           </div>
         `;
       }).join('');
+
+      const commissionInput = document.getElementById('tarifa-commission-rate');
+      const exampleEl = document.getElementById('tarifa-commission-example');
+      if (commissionInput && exampleEl) {
+        const pct = parseFloat(commissionInput.value) || 0;
+        const driverGets = 10 * (1 - pct / 100);
+        exampleEl.textContent = driverGets.toFixed(2);
+      }
     }
 
     async function savePricingConfig() {
@@ -4666,6 +4820,12 @@
       btn.innerHTML = '<div class="btn-spinner"></div> Guardando...';
 
       try {
+        const commissionPct = parseFloat(document.getElementById('tarifa-commission-rate').value);
+
+        if (!Number.isFinite(commissionPct) || commissionPct < 0 || commissionPct > 50) {
+          throw new Error('La comisión debe estar entre 0% y 50%');
+        }
+
         const updates = {
           base_radius_meters:    parseFloat(document.getElementById('tarifa-base-radius').value),
           base_price:            parseFloat(document.getElementById('tarifa-base-price').value),
@@ -4676,6 +4836,7 @@
           teen_extra:            parseFloat(document.getElementById('tarifa-teen-extra').value),
           cargo_price:           parseFloat(document.getElementById('tarifa-cargo-price').value),
           cargo_extra:           parseFloat(document.getElementById('tarifa-cargo-price').value),
+          commission_rate:       commissionPct / 100,
           updated_at:            new Date().toISOString()
         };
 
@@ -4692,8 +4853,8 @@
 
         Object.assign(pricingConfig, updates);
 
-        addActivity('info', 'fa-tags', `Tarifas actualizadas: base Bs ${updates.base_price} por ${updates.base_radius_meters}m`);
-        showToast('✅ Tarifas guardadas', 'Los nuevos precios se aplicarán a los próximos viajes', 'success');
+        addActivity('info', 'fa-tags', `Tarifas actualizadas: base Bs ${updates.base_price} · comisión ${commissionPct}%`);
+        showToast('✅ Tarifas guardadas', 'Los nuevos precios y comisión se aplicarán a los próximos viajes', 'success');
 
         refreshNewRideChipPrices();
 
@@ -4705,6 +4866,136 @@
         btn.innerHTML = originalHTML;
       }
     }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  💰 MÓDULO: COMISIONES
+    // ═══════════════════════════════════════════════════════════════
+
+    let commissionsData = [];
+
+    async function loadCommissionsData() {
+      try {
+        const { data: comms, error } = await supabaseClient
+          .from('platform_commissions')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(200);
+        if (error) throw error;
+        commissionsData = comms || [];
+
+        const { data: config } = await supabaseClient
+          .from('pricing_config')
+          .select('commission_rate')
+          .eq('is_active', true)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        const rate = config?.commission_rate ?? 0.10;
+
+        const now = new Date();
+        const todayStr = now.toISOString().slice(0, 10);
+        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        const total = commissionsData.reduce((s, c) => s + Number(c.commission_amount || 0), 0);
+        const today = commissionsData
+          .filter(c => (c.created_at || '').slice(0, 10) === todayStr)
+          .reduce((s, c) => s + Number(c.commission_amount || 0), 0);
+        const week = commissionsData
+          .filter(c => new Date(c.created_at) >= weekAgo)
+          .reduce((s, c) => s + Number(c.commission_amount || 0), 0);
+
+        document.getElementById('comm-stat-total').textContent = `Bs ${total.toFixed(2)}`;
+        document.getElementById('comm-stat-today').textContent = `Bs ${today.toFixed(2)}`;
+        document.getElementById('comm-stat-week').textContent  = `Bs ${week.toFixed(2)}`;
+        document.getElementById('comm-stat-rate').textContent  = `${(rate * 100).toFixed(1)}%`;
+        document.getElementById('comm-rate-input').value       = (rate * 100).toFixed(1);
+
+        const badge = document.getElementById('nav-badge-commissions');
+        if (badge) badge.textContent = `Bs ${total.toFixed(0)}`;
+
+        const container = document.getElementById('commissions-table-container');
+        if (commissionsData.length === 0) {
+          container.innerHTML = '<div class="empty-state"><i class="fas fa-chart-line"></i><p>Sin comisiones registradas</p></div>';
+          return;
+        }
+
+        container.innerHTML = `
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Viaje</th>
+                <th>Conductor</th>
+                <th>Precio</th>
+                <th>Tasa</th>
+                <th>Comisión</th>
+                <th>Neto conductor</th>
+                <th>Fecha</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${commissionsData.map(c => `
+                <tr>
+                  <td style="font-family:monospace; font-size:.75rem;">#${(c.ride_id || '').substring(0, 8)}</td>
+                  <td>${escapeHtml(getDriverName(c.driver_id))}</td>
+                  <td>${formatMoney(c.ride_price)}</td>
+                  <td>${((c.commission_rate || 0) * 100).toFixed(1)}%</td>
+                  <td style="font-weight:700; color: var(--primary);">+${formatMoney(c.commission_amount)}</td>
+                  <td style="color: var(--green);">${formatMoney(c.driver_amount)}</td>
+                  <td style="font-size:.75rem; color: var(--text-muted);">${formatDate(c.created_at)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (e) {
+        console.error('Error cargando comisiones:', e);
+        showToast('Error', 'No se pudieron cargar las comisiones', 'error');
+      }
+    }
+
+    async function saveCommissionRate() {
+      const input = document.getElementById('comm-rate-input');
+      const pct = parseFloat(input.value);
+      if (!Number.isFinite(pct) || pct < 0 || pct > 50) {
+        showToast('Error', 'Ingresa un porcentaje entre 0 y 50', 'error');
+        return;
+      }
+      const rate = pct / 100;
+
+      if (!confirm(`¿Cambiar comisión a ${pct}%?\n\nSe aplicará a los próximos viajes. Los ya completados NO se modifican.`)) return;
+
+      try {
+        const { data: active } = await supabaseClient
+          .from('pricing_config')
+          .select('id')
+          .eq('is_active', true)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!active) throw new Error('No hay configuración activa');
+
+        const { error } = await supabaseClient
+          .from('pricing_config')
+          .update({ commission_rate: rate, updated_at: new Date().toISOString() })
+          .eq('id', active.id);
+
+        if (error) throw error;
+
+        if (pricingConfig) pricingConfig.commission_rate = rate;
+
+        addActivity('info', 'fa-percentage', `Comisión actualizada a ${pct}%`);
+        showToast('✅ Comisión guardada', `Nueva tasa: ${pct}%`, 'success');
+        await loadCommissionsData();
+      } catch (e) {
+        console.error(e);
+        showToast('Error', e.message, 'error');
+      }
+    }
+
+    window.loadCommissionsData = loadCommissionsData;
+    window.saveCommissionRate = saveCommissionRate;
 
     // ========== INICIAR APP ==========
     async function startAdminApp() {
@@ -4733,6 +5024,9 @@
       }, 60000);
 
       updateAdminMapToggleUI();
+
+      // Cargar comisiones inicialmente (silencioso)
+      loadCommissionsData().catch(e => console.warn('Comisiones inicial:', e));
 
       addActivity('info', 'fa-desktop', 'Centro de control iniciado');
       appInitialized = true;
