@@ -1,4 +1,4 @@
-<!-- ROUTE STREET-FOLLOWING V1.7 - 25M FINISH + PAYMENT METHOD -->
+<!-- ROUTE STREET-FOLLOWING V17 - REROUTE RÁPIDO + SIN BEARINGS + MOTOS -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -739,17 +739,21 @@
 
         const NAV_ARROW_Y_FRACTION = 0.72;
         const COMPASS_SMOOTHING = 0.10;
-        const SNAP_MAX_DISTANCE = 60;
-        const OFF_ROUTE_THRESHOLD_M = 45;
-        const OFF_ROUTE_DURATION_MS = 8000;
-        const REROUTE_COOLDOWN_MS = 20000;
+        const SNAP_MAX_DISTANCE = 40;
+        const OFF_ROUTE_THRESHOLD_M = 35;
+        const OFF_ROUTE_FAST_THRESHOLD_M = 60;   // 🆕 Reroute inmediato si supera esto
+        const OFF_ROUTE_DURATION_MS = 3000;       // 8s → 3s
+        const REROUTE_COOLDOWN_MS = 8000;         // 20s → 8s
         const MAX_POOL_DISTANCE_M = 500;
 
-        // ═══════════════════════════════════════════════════════════
-        //  v1.7: DISTANCIA PARA FINALIZAR VIAJE
-        // ═══════════════════════════════════════════════════════════
-        const FINISH_RIDE_DISTANCE_M = 25;      // ⬅️ antes era 200
-        const ARRIVE_AT_ORIGIN_DISTANCE_M = 25; // ⬅️ antes era 50
+        // 🆕 Servidores OSRM (perfil 'driving' = mismas calles urbanas que usa la moto)
+        const OSRM_ENDPOINTS = [
+            'https://router.project-osrm.org/route/v1/driving/',
+            'https://routing.openstreetmap.de/routed-car/route/v1/driving/'
+        ];
+
+        const FINISH_RIDE_DISTANCE_M = 25;
+        const ARRIVE_AT_ORIGIN_DISTANCE_M = 25;
 
         const NAV_ZOOM_MIN = 16.8;
         const NAV_ZOOM_MAX = 18.2;
@@ -1259,6 +1263,9 @@
             return minDist;
         }
 
+        // ═══════════════════════════════════════════════════════════
+        //  v17: REROUTE RÁPIDO + DISPARO INMEDIATO POR DESVÍO SEVERO
+        // ═══════════════════════════════════════════════════════════
         async function checkAutoReroute(driverLat, driverLng) {
             const enNavegacion = (currentRideStatus === 'aceptado' || currentRideStatus === 'en_curso');
             if (!enNavegacion || !currentRideId || !currentRouteTarget) { offRouteStartTime = null; return; }
@@ -1273,11 +1280,28 @@
             const now = Date.now();
             if (now - lastRerouteTime < REROUTE_COOLDOWN_MS) return;
             const dist = getDistanceToRoute(driverLat, driverLng);
+
+            // 🆕 Disparo INMEDIATO si el desvío es muy grande (sin esperar los 3s)
+            if (dist > OFF_ROUTE_FAST_THRESHOLD_M) {
+                dlog(`🚨 Desvío severo (${Math.round(dist)}m). Reroute inmediato.`, 'error');
+                offRouteStartTime = null;
+                await performAutoReroute(driverLat, driverLng);
+                return;
+            }
+
             if (dist > OFF_ROUTE_THRESHOLD_M) {
-                if (offRouteStartTime === null) { offRouteStartTime = now; dlog(`📍 Fuera de ruta (${Math.round(dist)}m). Monitoreando...`, 'warning'); }
-                else if (now - offRouteStartTime > OFF_ROUTE_DURATION_MS) { dlog(`🔄 Auto-reroute disparado`, 'warning'); await performAutoReroute(driverLat, driverLng); }
+                if (offRouteStartTime === null) {
+                    offRouteStartTime = now;
+                    dlog(`📍 Fuera de ruta (${Math.round(dist)}m). Monitoreando...`, 'warning');
+                } else if (now - offRouteStartTime > OFF_ROUTE_DURATION_MS) {
+                    dlog(`🔄 Auto-reroute disparado (${Math.round((now - offRouteStartTime) / 1000)}s fuera)`, 'warning');
+                    await performAutoReroute(driverLat, driverLng);
+                }
             } else {
-                if (offRouteStartTime !== null) { dlog(`✅ De vuelta en ruta`, 'success'); offRouteStartTime = null; }
+                if (offRouteStartTime !== null) {
+                    dlog(`✅ De vuelta en ruta`, 'success');
+                    offRouteStartTime = null;
+                }
             }
         }
 
@@ -2148,9 +2172,6 @@
             if (document.getElementById('view-historial')?.classList.contains('active')) loadHistorial();
         }
 
-        // ═══════════════════════════════════════════════════════════
-        //  v1.7 — updateActionButtons con 25m para finalizar
-        // ═══════════════════════════════════════════════════════════
         function updateActionButtons() {
             const ids = ['pickupBtn', 'arrivedBtn', 'finishBtn', 'notCompletedBtn', 'redirectBtn'];
             ids.forEach(id => document.getElementById(id)?.classList.add('hidden'));
@@ -2166,7 +2187,6 @@
                         currentPosition[0], currentPosition[1],
                         currentRideDestination.lat, currentRideDestination.lng
                     );
-                    // v1.7: mostrar botón solo cuando está a 25m o menos
                     nearDestination = Number.isFinite(dist) && dist <= FINISH_RIDE_DISTANCE_M;
                 }
                 if (nearDestination) document.getElementById('finishBtn').classList.remove('hidden');
@@ -2253,7 +2273,6 @@
             const { data: ride } = await supabaseClient.from('rides').select('origin_lat, origin_lng').eq('id', currentRideId).single();
             if (ride && currentPosition) {
                 const dist = getDistanceFromLatLonInMeters(currentPosition[0], currentPosition[1], ride.origin_lat, ride.origin_lng);
-                // v1.7: umbral para marcar llegada al origen = 25m
                 if (dist > ARRIVE_AT_ORIGIN_DISTANCE_M) { showToast(`Estás a ${Math.round(dist)} m del origen`, 'exclamation-triangle'); return; }
             }
             const { error } = await supabaseClient.from('rides').update({ status: 'llegado_origen' }).eq('id', currentRideId);
@@ -2364,9 +2383,6 @@
             }
         }
 
-        // ═══════════════════════════════════════════════════════════
-        //  v1.7 — finishRide con validación 25m
-        // ═══════════════════════════════════════════════════════════
         async function finishRide(completed) {
             if (!currentRideId) return;
             if (completed) {
@@ -2374,7 +2390,6 @@
                 const { data: ride } = await supabaseClient.from('rides').select('destination_lat, destination_lng, price').eq('id', currentRideId).single();
                 if (ride && ride.destination_lat && ride.destination_lng) {
                     const dist = getDistanceFromLatLonInMeters(currentPosition[0], currentPosition[1], ride.destination_lat, ride.destination_lng);
-                    // v1.7: solo bloquea si está a más de 25m del destino
                     if (dist > FINISH_RIDE_DISTANCE_M) { showToast(`Estás a ${Math.round(dist)} m del destino · Acércate a 25 m para finalizar`, 'exclamation-triangle'); return; }
                 }
                 window.pendingPaymentMethod = null;
@@ -2407,6 +2422,11 @@
             return cleaned.length >= 2 ? cleaned : coords;
         }
 
+        // ═══════════════════════════════════════════════════════════
+        //  v17: SIN BEARINGS + FALLBACK ENTRE 2 SERVIDORES OSRM
+        //  Nota: 'driving' es el perfil correcto para motos urbanas
+        //  (usan las mismas calles que los autos, no ciclovías).
+        // ═══════════════════════════════════════════════════════════
         async function drawRoute(originCoords, waypointCoords, destinationCoords) {
             if (!map || !mapInitialized) { await initMap(); }
             const mapOk = await ensureMapReady();
@@ -2426,17 +2446,34 @@
                 coordinates = [[originCoords[1], originCoords[0]], [waypointCoords[1], waypointCoords[0]], [destinationCoords[1], destinationCoords[0]]];
             }
             const coordsString = coordinates.map(c => c.join(',')).join(';');
-            let url = `https://router.project-osrm.org/route/v1/driving/${coordsString}?overview=full&geometries=geojson&steps=true&annotations=true`;
-            if (Number.isFinite(smoothedBearing)) {
-                const heading = Math.round(((smoothedBearing % 360) + 360) % 360);
-                const bearings = coordinates.map((_, i) => i === 0 ? `${heading},90` : '180,90').join(';');
-                url += `&bearings=${bearings}`;
+            const commonParams = 'overview=full&geometries=geojson&steps=true&annotations=true&continue_straight=false&alternatives=false';
+
+            // 🆕 Probar cada servidor en orden hasta que uno responda
+            let data = null;
+            let lastError = null;
+            for (const endpoint of OSRM_ENDPOINTS) {
+                const url = `${endpoint}${coordsString}?${commonParams}`;
+                try {
+                    dlog(`🛣️ Intentando ruta con ${new URL(endpoint).hostname}...`, 'info');
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 4500);
+                    const response = await fetch(url, { signal: controller.signal });
+                    clearTimeout(timeoutId);
+                    if (!response.ok) { lastError = `HTTP ${response.status}`; continue; }
+                    const json = await response.json();
+                    if (json.routes && json.routes.length > 0) {
+                        data = json;
+                        dlog(`✅ Ruta recibida de ${new URL(endpoint).hostname}`, 'success');
+                        break;
+                    }
+                } catch (err) {
+                    lastError = err.message;
+                    dlog(`⚠️ ${new URL(endpoint).hostname} falló: ${err.message}`, 'warning');
+                }
             }
+
             try {
-                dlog('🛣️ Calculando ruta con OSRM...', 'info');
-                const response = await fetch(url);
-                const data = await response.json();
-                if (data.routes && data.routes.length > 0) {
+                if (data && data.routes && data.routes.length > 0) {
                     const route = data.routes[0];
                     const rawCoords = route.geometry && route.geometry.coordinates;
                     if (!Array.isArray(rawCoords) || rawCoords.length < 2) { dlog('❌ Geometría inválida', 'error'); return false; }
@@ -2478,9 +2515,10 @@
                     drawManeuverArrow(currentNavigationSteps);
                     currentRouteTarget = { lat: routeTargetCoords[0], lng: routeTargetCoords[1] };
                     speakInstruction(pickupStage ? 'Dirígete al pasajero' : 'Siga la ruta');
-                    dlog(pickupStage ? '✅ Ruta conductor → pasajero dibujada: ' + Math.round(route.distance) + 'm' : '✅ Ruta hacia destino dibujada: ' + Math.round(route.distance) + 'm', 'success');
+                    const routeSource = pickupStage ? 'conductor→pasajero' : 'conductor→destino';
+                    dlog(`✅ Ruta ${routeSource}: ${Math.round(route.distance)}m, ${currentNavigationSteps.length} pasos`, 'success');
                     return true;
-                } else { throw new Error('OSRM no devolvió rutas'); }
+                } else { throw new Error(lastError || 'OSRM no devolvió rutas'); }
             } catch (e) {
                 dlog('❌ Error OSRM: ' + e.message, 'error');
                 showToast('No se pudo calcular la ruta. Reintentando...', 'exclamation-triangle');
@@ -2973,7 +3011,7 @@
 
         document.getElementById('chatInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') sendCentralMessage(); });
 
-        dlog('App iniciada. v1.7 — Finalizar viaje a 25m + Modal QR/Efectivo', 'success');
+        dlog('App iniciada. v17 — Reroute rápido (35m/3s + trigger 60m) + sin bearings + fallback OSRM', 'success');
     </script>
 </body>
 </html>
