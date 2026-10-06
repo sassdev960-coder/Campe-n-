@@ -145,6 +145,24 @@
     .leaflet-popup-content-wrapper { background: var(--bg-card-solid); color: var(--text-main); border-radius: var(--radius-md); border: 1px solid var(--border-light); }
     .leaflet-popup-tip { background: var(--bg-card-solid); }
     .leaflet-popup-content { font-family: 'Inter', sans-serif; font-size: 0.85rem; line-height: 1.6; margin: 12px 16px; }
+
+    /* 🆕 v2.1 — Popup de conductores en el mapa de Crear Viaje */
+    .driver-popup-newride .leaflet-popup-content-wrapper {
+      background: rgba(15, 15, 16, 0.96);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+    }
+    .driver-popup-newride .leaflet-popup-tip {
+      background: rgba(15, 15, 16, 0.96);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+    .driver-popup-newride .leaflet-popup-content {
+      margin: 10px 12px;
+      font-family: 'Inter', sans-serif;
+    }
+
     .map-controls { position: absolute; top: 20px; left: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; background: rgba(15, 15, 16, 0.6); backdrop-filter: blur(12px); padding: 8px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); }
     .map-control-btn { width: 46px; height: 46px; background: var(--bg-card); backdrop-filter: blur(20px); border: 1px solid var(--border-light); border-radius: var(--radius-md); color: var(--text-main); cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1rem; transition: var(--transition); box-shadow: var(--shadow-md); }
     .map-control-btn:hover { background: var(--bg-hover); transform: scale(1.05); }
@@ -159,21 +177,170 @@
     .legend-dot.active-ride { background: var(--primary); box-shadow: 0 0 10px var(--primary-glow); }
     .dashboard-sidebar { width: 380px; background: rgba(24, 24, 27, 0.6); border-left: 1px solid var(--border-light); display: flex; flex-direction: column; overflow: hidden; }
 
-    .custom-div-icon { background: none; border: none; }
-    .marker-photo-wrapper { position: relative; display: flex; flex-direction: column; align-items: center; animation: markerAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-    .marker-photo-container { position: relative; width: 46px; height: 46px; }
-    .marker-photo { width: 46px; height: 46px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.95); object-fit: cover; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5); display: block; }
-    .marker-photo-ring { position: absolute; inset: -8px; border-radius: 50%; border: 2px solid var(--green); opacity: 0.6; animation: ripple 2s infinite; pointer-events: none; }
-    .marker-photo-status { position: absolute; bottom: 0; right: 0; width: 14px; height: 14px; border-radius: 50%; background: var(--green); border: 3px solid white; box-shadow: 0 0 10px var(--green-glow); }
-    .marker-wrapper { position: relative; display: flex; flex-direction: column; align-items: center; animation: markerAppear 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
-    @keyframes markerAppear { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    .marker-circle { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: white; border: 3px solid rgba(255,255,255,0.95); box-shadow: 0 4px 20px rgba(0,0,0,0.4); position: relative; }
-    .marker-circle.driver { background: linear-gradient(135deg, var(--green), #059669); }
-    .marker-circle.pending { background: linear-gradient(135deg, var(--yellow), #D97706); }
-    .marker-circle.active { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
-    .marker-circle.driver::after { content: ''; position: absolute; inset: -8px; border-radius: 50%; border: 2px solid var(--green); opacity: 0.6; animation: ripple 2s infinite; }
-    @keyframes ripple { 0% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
-    .marker-label { margin-top: 6px; background: rgba(0,0,0,0.85); color: white; font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 12px; white-space: nowrap; text-transform: uppercase; }
+    /* ═══════════════════════════════════════════════════════════════
+       MARCADORES DEL MAPA — v2.1 (círculos perfectos, sin óvalos)
+       ═══════════════════════════════════════════════════════════════ */
+    .custom-div-icon {
+      background: none !important;
+      border: none !important;
+      overflow: visible !important;
+    }
+
+    .marker-wrapper,
+    .marker-photo-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      width: fit-content;
+      animation: markerAppear 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+      will-change: transform;
+    }
+
+    @keyframes markerAppear {
+      from { transform: scale(0.3); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .marker-photo-container {
+      position: relative;
+      width: 46px;
+      height: 46px;
+      aspect-ratio: 1 / 1;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    .marker-photo {
+      width: 46px;
+      height: 46px;
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      border: 3px solid #ffffff;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+      box-sizing: border-box;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.55);
+      background: #1e1e20;
+    }
+
+    .marker-photo-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 46px;
+      height: 46px;
+      aspect-ratio: 1 / 1;
+      margin: -23px 0 0 -23px;
+      border-radius: 50%;
+      border: 2px solid var(--green);
+      opacity: 0.55;
+      pointer-events: none;
+      animation: ringPulse 2s ease-out infinite;
+      box-sizing: border-box;
+    }
+
+    @keyframes ringPulse {
+      0%   { transform: scale(1);    opacity: 0.55; }
+      70%  { transform: scale(1.65); opacity: 0;    }
+      100% { transform: scale(1.65); opacity: 0;    }
+    }
+
+    .marker-photo-status {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--green);
+      border: 3px solid #ffffff;
+      box-shadow: 0 0 10px var(--green-glow);
+      box-sizing: border-box;
+      z-index: 2;
+    }
+
+    .marker-circle {
+      width: 46px;
+      height: 46px;
+      aspect-ratio: 1 / 1;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #ffffff;
+      border: 3px solid #ffffff;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+      position: relative;
+      box-sizing: border-box;
+      flex-shrink: 0;
+    }
+
+    .marker-circle.driver {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+    .marker-circle.pending {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+    .marker-circle.active {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    }
+
+    .marker-circle.driver::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 46px;
+      height: 46px;
+      margin: -23px 0 0 -23px;
+      border-radius: 50%;
+      border: 2px solid var(--green);
+      opacity: 0.55;
+      animation: ringPulse 2s ease-out infinite;
+      pointer-events: none;
+      box-sizing: border-box;
+    }
+
+    .marker-label {
+      margin-top: 6px;
+      background: rgba(0, 0, 0, 0.88);
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 12px;
+      white-space: nowrap;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      line-height: 1.2;
+    }
+
+    .marker-moto-badge {
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border: 2px solid #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+      z-index: 3;
+    }
 
     .pending-timer { display: inline-flex; align-items: center; gap: 5px; font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 10px; background: rgba(245, 158, 11, 0.15); color: var(--yellow); font-variant-numeric: tabular-nums; }
     .pending-timer.warning { background: rgba(245, 158, 11, 0.25); animation: timerBlink 1.5s infinite; }
@@ -474,7 +641,6 @@
     .newride-chip.selected { background: rgba(255, 122, 0, 0.15); border-color: var(--primary); }
     .newride-chip.selected i, .newride-chip.selected small { color: var(--primary); }
 
-    /* v2.0: carga ligera / pesada */
     .newride-cargo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
     .newride-cargo-chip { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; background: var(--bg-hover); border: 2px solid var(--border-light); border-radius: var(--radius-md); cursor: pointer; transition: var(--transition); text-align: center; }
     .newride-cargo-chip:hover { border-color: rgba(59, 130, 246, 0.4); }
@@ -807,7 +973,6 @@
               </div>
             </div>
 
-            <!-- v2.0: SECCIÓN CARGA NUEVA -->
             <div class="newride-section">
               <div class="newride-section-title"><i class="fas fa-box"></i> Carga / Paquete</div>
               <div class="newride-cargo-grid" id="newride-cargo-grid">
@@ -1089,7 +1254,7 @@
 
   <script>
     // ═══════════════════════════════════════════════════════════════
-    //  ADMIN v2.0 — Carga ligera/pesada + re-render fix + realtime
+    //  ADMIN v2.1 — Conductores en mapa + animación fluida + círculos
     // ═══════════════════════════════════════════════════════════════
 
     const supabaseUrl = 'https://uwdojchfwmaczgdthtfr.supabase.co';
@@ -1128,7 +1293,6 @@
     const PENDING_URGENT_SECONDS = 300;
     const DRIVER_RESPONSE_TIMEOUT = 90;
 
-    // v2.0: Timer de guardado y realtime
     let pricingSaveInProgress = false;
     let lastPricingUpdate = 0;
     let syncIndicatorTimer = null;
@@ -1177,19 +1341,55 @@
       assignmentTimers.set(rideId, { driverId, driverName, assignedAt: Date.now(), warned: false });
     }
 
+    // ═══════════════════════════════════════════════════════════════
+    //  🎥 ANIMACIÓN FLUIDA DE CONDUCTORES — v2.1
+    //  Interpolación suave continua (sin "cortes" al recibir GPS nuevo)
+    // ═══════════════════════════════════════════════════════════════
     let driverPositions = new Map();
     let animationFrameId = null;
+
     function lerp(start, end, factor) { return start + (end - start) * factor; }
+
+    function isCloseEnough(a, b, threshold = 0.000015) {
+      return Math.abs(a[0] - b[0]) < threshold && Math.abs(a[1] - b[1]) < threshold;
+    }
+
     function animateDriverMovement() {
       drivers.forEach(driver => {
         const loc = getDriverLocation(driver.id);
         if (!loc || !loc.is_online || !loc.lat || !loc.lng) return;
+
         let posData = driverPositions.get(driver.id);
-        if (!posData) { posData = { current: [loc.lat, loc.lng], target: [loc.lat, loc.lng] }; driverPositions.set(driver.id, posData); }
-        else { posData.target = [loc.lat, loc.lng]; posData.current[0] = lerp(posData.current[0], posData.target[0], 0.08); posData.current[1] = lerp(posData.current[1], posData.target[1], 0.08); }
+        if (!posData) {
+          posData = {
+            current: [loc.lat, loc.lng],
+            target: [loc.lat, loc.lng],
+            speed: 0.15
+          };
+          driverPositions.set(driver.id, posData);
+        } else {
+          const newTarget = [loc.lat, loc.lng];
+          if (!isCloseEnough(posData.target, newTarget, 0.000001)) {
+            posData.target = newTarget;
+            const dLat = posData.target[0] - posData.current[0];
+            const dLng = posData.target[1] - posData.current[1];
+            const dist = Math.sqrt(dLat * dLat + dLng * dLng);
+            posData.speed = Math.min(0.35, Math.max(0.05, dist * 8));
+          }
+
+          posData.current[0] = lerp(posData.current[0], posData.target[0], posData.speed);
+          posData.current[1] = lerp(posData.current[1], posData.target[1], posData.speed);
+
+          if (isCloseEnough(posData.current, posData.target, 0.000005)) {
+            posData.current[0] = posData.target[0];
+            posData.current[1] = posData.target[1];
+          }
+        }
+
         const marker = markers.drivers.get(driver.id);
         if (marker) marker.setLatLng(posData.current);
       });
+
       animationFrameId = requestAnimationFrame(animateDriverMovement);
     }
 
@@ -1278,7 +1478,6 @@
       return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
-    // v2.0: Indicador de sincronización
     function showSyncIndicator(text = 'Tarifas sincronizadas') {
       const el = document.getElementById('syncIndicator');
       const txt = document.getElementById('syncText');
@@ -1330,6 +1529,8 @@
       renderMessages();
       updateDriverMarkers();
       updateRideMarkers();
+      // 🆕 v2.1 — Refrescar conductores en el mapa de Crear Viaje
+      updateNewRideDriverMarkers();
       try { refreshNewRideChipPrices(); updateNewRideSummary(); } catch (e) {}
       if (currentView === 'commissions') { try { loadCommissionsData(); } catch (e) {} }
       if (currentView === 'tarifas') { try { renderTarifas(); } catch (e) {} }
@@ -1380,16 +1581,84 @@
         if (btn) btn.classList.toggle('active', adminMapTileMode === m);
       });
     }
-    function createCustomIcon(type, label, imageUrl) {
+
+    // ═══════════════════════════════════════════════════════════════
+    //  🎨 ICONOS DE MARCADOR — v2.1 (círculos perfectos)
+    // ═══════════════════════════════════════════════════════════════
+    function createCustomIcon(type, label, imageUrl, extra = {}) {
+      const icons = { driver: 'fa-motorcycle', pending: 'fa-clock', active: 'fa-motorcycle' };
       let markerHtml;
+
       if (imageUrl) {
-        markerHtml = `<div class="marker-photo-wrapper"><div class="marker-photo-container"><img src="${imageUrl}" class="marker-photo" onerror="this.onerror=null; this.outerHTML='<div class=\\'marker-circle driver\\'><i class=\\'fas fa-motorcycle\\'></i></div>'"><div class="marker-photo-ring"></div><div class="marker-photo-status"></div></div>${label ? `<div class="marker-label">${label}</div>` : ''}</div>`;
+        markerHtml = `
+          <div class="marker-photo-wrapper">
+            <div class="marker-photo-container">
+              <img src="${imageUrl}" class="marker-photo" alt=""
+                   onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'marker-circle ${type}\\'><i class=\\'fas ${icons[type] || 'fa-motorcycle'}\\'></i></div>';">
+              <div class="marker-photo-ring"></div>
+              <div class="marker-photo-status"></div>
+            </div>
+            ${label ? `<div class="marker-label">${label}</div>` : ''}
+          </div>
+        `;
       } else {
-        const icons = { driver: 'fa-motorcycle', pending: 'fa-clock', active: 'fa-motorcycle' };
-        markerHtml = `<div class="marker-wrapper"><div class="marker-circle ${type}"><i class="fas ${icons[type]}"></i></div>${label ? `<div class="marker-label">${label}</div>` : ''}</div>`;
+        markerHtml = `
+          <div class="marker-wrapper">
+            <div class="marker-circle ${type}">
+              <i class="fas ${icons[type] || 'fa-motorcycle'}"></i>
+            </div>
+            ${label ? `<div class="marker-label">${label}</div>` : ''}
+          </div>
+        `;
       }
-      return L.divIcon({ className: 'custom-div-icon', html: markerHtml, iconSize: [50, 66], iconAnchor: [25, 33] });
+
+      return L.divIcon({
+        className: 'custom-div-icon',
+        html: markerHtml,
+        iconSize: [46, 70],
+        iconAnchor: [23, 23]
+      });
     }
+
+    // 🆕 v2.1 — Icono compacto para el mapa de Crear Viaje
+    function createNewRideDriverIcon(driver, isSelected = false) {
+      const initial = (driver.full_name || 'C').charAt(0).toUpperCase();
+      const photoUrl = driver.avatar_url || '';
+      const highlight = isSelected ? 'box-shadow: 0 0 0 3px var(--primary), 0 0 20px rgba(255,122,0,0.7);' : '';
+
+      let avatarHtml;
+      if (photoUrl) {
+        avatarHtml = `
+          <img src="${photoUrl}" class="marker-photo" alt="${initial}"
+               style="width:38px;height:38px;border:2px solid #fff;${highlight}"
+               onerror="this.onerror=null; this.outerHTML='<div class=\\'marker-circle driver\\' style=\\'width:38px;height:38px;font-size:14px;${highlight}\\'>${initial}</div>';">
+        `;
+      } else {
+        avatarHtml = `
+          <div class="marker-circle driver"
+               style="width:38px;height:38px;font-size:14px;${highlight}">
+            ${initial}
+          </div>
+        `;
+      }
+
+      const html = `
+        <div class="marker-photo-wrapper" style="gap:3px;">
+          <div class="marker-photo-container" style="width:38px;height:38px;">
+            ${avatarHtml}
+            <div class="marker-moto-badge"><i class="fas fa-motorcycle"></i></div>
+          </div>
+        </div>
+      `;
+
+      return L.divIcon({
+        className: 'custom-div-icon',
+        html,
+        iconSize: [38, 38],
+        iconAnchor: [19, 19]
+      });
+    }
+
     function updateDriverMarkers() {
       if (!map) return;
       markers.drivers.forEach((marker, id) => {
@@ -1404,7 +1673,7 @@
           const marker = L.marker([loc.lat, loc.lng], { icon: createCustomIcon('driver', driver.full_name?.split(' ')[0] || 'Conductor', driver.avatar_url) }).addTo(map);
           marker.bindPopup(`<div style="text-align:center;min-width:160px;">${driver.avatar_url ? `<img src="${driver.avatar_url}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:2px solid #FF7A00;">` : ''}<b>🏍️ ${driver.full_name || 'Conductor'}</b><br><small>${driver.vehicle_plate || 'Sin placa'}</small><br>${loc.battery ? `<small>🔋 Batería: ${loc.battery}%</small><br>` : ''}<span style="color:#10B981;font-weight:600;">● En línea · EN VIVO</span></div>`);
           markers.drivers.set(driver.id, marker);
-          driverPositions.set(driver.id, { current: [loc.lat, loc.lng], target: [loc.lat, loc.lng] });
+          driverPositions.set(driver.id, { current: [loc.lat, loc.lng], target: [loc.lat, loc.lng], speed: 0.15 });
         }
       });
     }
@@ -2132,7 +2401,11 @@
           if (idx >= 0) driverStatus[idx] = payload.new;
           else driverStatus.push(payload.new);
         }
-        updateDriverMarkers(); renderDashDrivers(); updateStats();
+        updateDriverMarkers();
+        // 🆕 v2.1 — Refrescar mapa de Crear Viaje también
+        updateNewRideDriverMarkers();
+        renderDashDrivers();
+        updateStats();
       }).subscribe();
 
       supabaseClient.channel('admin-rides').on('postgres_changes', { event: '*', schema: 'public', table: 'rides' }, (payload) => {
@@ -2167,21 +2440,18 @@
         renderApplications(); updateStats();
       }).subscribe();
 
-      // v2.0: Realtime de pricing_config con re-render
       supabaseClient.channel('admin-pricing').on('postgres_changes', { event: '*', schema: 'public', table: 'pricing_config' }, (payload) => {
         if (payload.new && payload.new.is_active) {
           const oldRate = pricingConfig?.commission_rate;
           const oldBase = pricingConfig?.base_price;
           pricingConfig = payload.new;
 
-          // Detectar si el cambio fue externo (no por savePricingConfig)
           const now = Date.now();
           const isExternal = (now - lastPricingUpdate) > 2000;
 
           if (isExternal) {
             showSyncIndicator('Tarifas sincronizadas');
             showToast('🔄 Tarifas actualizadas', 'Cambios recibidos desde otro dispositivo', 'info');
-            // Re-render vista si está activa
             if (currentView === 'tarifas') renderTarifas();
             if (currentView === 'commissions') loadCommissionsData();
             refreshNewRideChipPrices();
@@ -2199,7 +2469,17 @@
       document.querySelectorAll('.view-panel').forEach(panel => panel.classList.toggle('active', panel.id === `view-${viewName}`));
       if (viewName === 'dashboard' && map) setTimeout(() => map.invalidateSize(), 100);
       if (viewName === 'tarifas') renderTarifas();
-      if (viewName === 'newride') { initNewRideMap(); bindNewRideEvents(); refreshNewRideChipPrices(); updateNewRideSummary(); }
+      if (viewName === 'newride') {
+        initNewRideMap();
+        bindNewRideEvents();
+        refreshNewRideChipPrices();
+        updateNewRideSummary();
+        // 🆕 v2.1 — Refrescar y arrancar animación de conductores
+        setTimeout(() => {
+          updateNewRideDriverMarkers();
+          startNewRideDriverAnimation();
+        }, 250);
+      }
       if (viewName === 'commissions') loadCommissionsData();
       document.getElementById('nav-sidebar').classList.remove('open');
     }
@@ -2422,7 +2702,6 @@
       }
     }
 
-    // v2.0: savePricingConfig con re-render + sync indicator
     async function savePricingConfig() {
       if (pricingSaveInProgress) { showToast('Espera', 'Ya hay un guardado en proceso', 'warning'); return; }
       const btn = document.getElementById('save-tarifas-btn');
@@ -2556,6 +2835,12 @@
     let newRidePickMode = null;
     let newRideSearchTimers = { origin: null, destination: null };
 
+    // 🆕 v2.1 — Capa de conductores en vivo para el mapa de Crear Viaje
+    let newRideDriversLayer = null;
+    let newRideDriverMarkers = new Map();
+    let newRideDriverPositions = new Map();
+    let newRideAnimationFrame = null;
+
     const newRideState = {
       origin: null, originAddress: '',
       destination: null, destinationAddress: '',
@@ -2566,10 +2851,24 @@
     };
 
     function initNewRideMap() {
-      if (newRideMap) { setTimeout(() => newRideMap.invalidateSize(), 150); return; }
+      if (newRideMap) {
+        setTimeout(() => newRideMap.invalidateSize(), 150);
+        // 🆕 Refrescar conductores al volver a la vista
+        setTimeout(updateNewRideDriverMarkers, 250);
+        startNewRideDriverAnimation();
+        return;
+      }
       newRideMap = L.map('newride-map', { zoomControl: true, attributionControl: false }).setView(DEFAULT_CENTER, DEFAULT_ZOOM);
       newRideTileLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 20, subdomains: 'abc' }).addTo(newRideMap);
+
+      // 🆕 v2.1 — Capa de conductores (debajo de marcadores A/B)
+      newRideDriversLayer = L.layerGroup().addTo(newRideMap);
+
       newRideMap.on('click', handleNewRideMapClick);
+
+      // Primer render + arrancar animación
+      setTimeout(updateNewRideDriverMarkers, 200);
+      startNewRideDriverAnimation();
     }
     function handleNewRideMapClick(e) {
       if (!newRidePickMode) return;
@@ -2596,6 +2895,106 @@
       }
     }
     function clearNewRidePickMode() { setNewRidePickMode(null); }
+
+    // ═══════════════════════════════════════════════════════════════
+    //  🏍️ v2.1 — CONDUCTORES EN VIVO EN EL MAPA DE "CREAR VIAJE"
+    // ═══════════════════════════════════════════════════════════════
+    function updateNewRideDriverMarkers() {
+      if (!newRideMap || !newRideDriversLayer) return;
+
+      const activeIds = new Set();
+
+      drivers.forEach(driver => {
+        const loc = getDriverLocation(driver.id);
+        if (!loc || !loc.is_online || !loc.lat || !loc.lng) return;
+        if (!isFinite(loc.lat) || !isFinite(loc.lng)) return;
+
+        activeIds.add(driver.id);
+
+        const existing = newRideDriverMarkers.get(driver.id);
+        const icon = createNewRideDriverIcon(driver);
+
+        if (existing) {
+          existing.setIcon(icon);
+          const posData = newRideDriverPositions.get(driver.id);
+          if (posData) {
+            posData.target = [loc.lat, loc.lng];
+          } else {
+            newRideDriverPositions.set(driver.id, {
+              current: [loc.lat, loc.lng],
+              target: [loc.lat, loc.lng],
+              speed: 0.15
+            });
+          }
+        } else {
+          const marker = L.marker([loc.lat, loc.lng], {
+            icon,
+            zIndexOffset: 500,
+            interactive: true
+          });
+
+          marker.bindPopup(`
+            <div style="text-align:center;min-width:180px;font-family:'Inter',sans-serif;">
+              ${driver.avatar_url
+                ? `<img src="${driver.avatar_url}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;margin-bottom:8px;border:2px solid #10B981;">`
+                : `<div style="width:56px;height:56px;border-radius:50%;background:#10B981;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;margin-bottom:8px;">${(driver.full_name || 'C').charAt(0).toUpperCase()}</div>`
+              }
+              <div style="font-weight:800;font-size:13px;color:#fff;margin-bottom:2px;">${escapeHtml(driver.full_name || 'Conductor')}</div>
+              <div style="font-size:11px;color:#a1a1aa;margin-bottom:6px;">
+                ${escapeHtml(driver.vehicle_model || 'Motocicleta')} · ${escapeHtml(driver.vehicle_plate || 'Sin placa')}
+              </div>
+              <div style="display:flex;align-items:center;justify-content:center;gap:4px;font-size:10px;font-weight:700;color:#10B981;">
+                <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#10B981;"></span>
+                EN LÍNEA${loc.battery ? ` · 🔋 ${loc.battery}%` : ''}
+              </div>
+            </div>
+          `, {
+            className: 'driver-popup-newride',
+            closeButton: false,
+            offset: [0, -6]
+          });
+
+          marker.addTo(newRideDriversLayer);
+          newRideDriverMarkers.set(driver.id, marker);
+          newRideDriverPositions.set(driver.id, {
+            current: [loc.lat, loc.lng],
+            target: [loc.lat, loc.lng],
+            speed: 0.15
+          });
+        }
+      });
+
+      newRideDriverMarkers.forEach((marker, id) => {
+        if (!activeIds.has(id)) {
+          newRideDriversLayer.removeLayer(marker);
+          newRideDriverMarkers.delete(id);
+          newRideDriverPositions.delete(id);
+        }
+      });
+    }
+
+    function startNewRideDriverAnimation() {
+      if (newRideAnimationFrame) return;
+      const tick = () => {
+        newRideDriverPositions.forEach((posData, driverId) => {
+          const marker = newRideDriverMarkers.get(driverId);
+          if (!marker) return;
+
+          posData.current[0] = lerp(posData.current[0], posData.target[0], posData.speed);
+          posData.current[1] = lerp(posData.current[1], posData.target[1], posData.speed);
+
+          if (isCloseEnough(posData.current, posData.target, 0.000005)) {
+            posData.current[0] = posData.target[0];
+            posData.current[1] = posData.target[1];
+          }
+
+          marker.setLatLng(posData.current);
+        });
+        newRideAnimationFrame = requestAnimationFrame(tick);
+      };
+      newRideAnimationFrame = requestAnimationFrame(tick);
+    }
+
     function makeNewRideIcon(type, label) {
       const color = type === 'origin' ? '#10B981' : '#FF7A00';
       return L.divIcon({ className: 'custom-div-icon', html: `<div class="marker-wrapper"><div class="marker-circle" style="background:${color};"><i class="fas fa-${type === 'origin' ? 'circle' : 'flag-checkered'}" style="font-size:14px;"></i></div><div class="marker-label">${label}</div></div>`, iconSize: [50, 66], iconAnchor: [25, 33] });
@@ -2848,7 +3247,6 @@
         if (rideError) throw rideError;
         if (!rideData || rideData.error) throw new Error(rideData?.error || 'Error creando viaje');
         const newRideId = rideData.id;
-        // Guardar cargo_type y companion_type (si las columnas existen)
         try {
           await supabaseClient.from('rides').update({
             cargo_type: newRideState.cargoType,
@@ -2944,7 +3342,7 @@
     // ============ ARRANQUE ============
     async function startAdminApp() {
       if (appInitialized) { if (map) map.invalidateSize(); return; }
-      console.log('🚀 [APP v2.0] Iniciando Centro de Control');
+      console.log('🚀 [APP v2.1] Iniciando Centro de Control');
       initMap();
       await loadAllData();
       setupRealtime();
@@ -2955,11 +3353,10 @@
       setInterval(() => { recentRejections = recentRejections.filter(r => Date.now() - r.timestamp < 10 * 60 * 1000); updateRejectionCounter(); renderRejectionAlerts(); }, 60000);
       updateAdminMapToggleUI();
       loadCommissionsData().catch(e => {});
-      addActivity('info', 'fa-desktop', 'Centro de control v2.0 iniciado');
+      addActivity('info', 'fa-desktop', 'Centro de control v2.1 iniciado');
       appInitialized = true;
     }
 
-    // v2.0: bind del botón Guardar tarifas (funciona siempre)
     document.addEventListener('DOMContentLoaded', bindSaveTarifas);
     window.addEventListener('load', () => setTimeout(bindSaveTarifas, 300));
 
