@@ -1292,6 +1292,10 @@
     const PENDING_WARNING_SECONDS = 120;
     const PENDING_URGENT_SECONDS = 300;
     const DRIVER_RESPONSE_TIMEOUT = 90;
+    // Tiempo máximo que un viaje puede permanecer asignado sin avanzar.
+    // Al cumplirse, el conductor se libera y el viaje vuelve a Pendiente.
+    const ASSIGNED_RIDE_TIMEOUT_MINUTES = 10;
+    let staleReleaseInProgress = false;
 
     let pricingSaveInProgress = false;
     let lastPricingUpdate = 0;
@@ -1339,6 +1343,41 @@
     }
     function trackAssignment(rideId, driverId, driverName) {
       assignmentTimers.set(rideId, { driverId, driverName, assignedAt: Date.now(), warned: false });
+    }
+
+    async function releaseStaleAssignedRides() {
+      if (staleReleaseInProgress || !currentAdmin) return;
+      staleReleaseInProgress = true;
+      try {
+        const { data, error } = await supabaseClient.rpc('admin_release_stale_rides', {
+          p_timeout_minutes: ASSIGNED_RIDE_TIMEOUT_MINUTES
+        });
+        if (error) throw error;
+        const released = Array.isArray(data?.rides) ? data.rides : [];
+        if (!released.length) return;
+
+        released.forEach(item => {
+          const ride = rides.find(r => r.id === item.ride_id);
+          const driverName = ride?.driver_id ? getDriverName(ride.driver_id) : (item.driver_id ? getDriverName(item.driver_id) : 'Conductor');
+          if (ride) {
+            ride.driver_id = null;
+            ride.status = 'pendiente';
+            ride.accepted_at = null;
+          }
+          assignmentTimers.delete(item.ride_id);
+          addActivity('ride', 'fa-hourglass-end', `Viaje #${String(item.ride_id).substring(0, 8)} liberado: ${driverName} superó ${ASSIGNED_RIDE_TIMEOUT_MINUTES} minutos sin avanzar`);
+        });
+
+        recentRejections = recentRejections.filter(r => !released.some(item => item.ride_id === r.rideId));
+        updateRejectionCounter();
+        renderAll();
+        showToast('⏱️ Viaje liberado', `${released.length} viaje(s) volvieron a Pendiente para reasignación.`, 'warning');
+        await loadAllData();
+      } catch (error) {
+        console.error('Error liberando viajes asignados vencidos:', error);
+      } finally {
+        staleReleaseInProgress = false;
+      }
     }
 
     // ═══════════════════════════════════════════════════════════════
@@ -1775,6 +1814,7 @@
           <div class="ride-card-footer"><span class="ride-card-price">${formatMoney(ride.price)}</span><span class="ride-card-time">${formatTime(ride.created_at)}</span></div>
           ${wasRejected ? `<div class="rejected-badge"><i class="fas fa-user-times"></i> Rechazado por conductor - reasignar</div>` : ''}
           ${isPending ? `<button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="event.stopPropagation(); openAssignDriverModal('${ride.id}')"><i class="fas fa-user-check"></i> ${wasRejected ? 'Reasignar conductor' : 'Asignar conductor'}</button>` : ''}
+          <button class="btn btn-danger" style="width:100%;margin-top:10px;" onclick="event.stopPropagation(); deleteRidePermanently('${ride.id}')"><i class="fas fa-trash-alt"></i> Eliminar solicitud definitivamente</button>
         </div>`;
       }).join('');
     }
@@ -1855,6 +1895,69 @@
       </tbody></table>`;
     }
 
+    window.deleteRidePermanently = async function(rideId) {
+      const ride = rides.find(r => r.id === rideId);
+      if (!ride) {
+        showToast('No encontrado', 'La solicitud ya no existe en el panel.', 'warning');
+        return;
+      }
+
+      const passengerName = getPassengerName(ride.passenger_id);
+      const confirmed = confirm(
+        `¿Eliminar DEFINITIVAMENTE esta solicitud de viaje?\n\n` +
+        `Pasajero: ${passengerName}\n` +
+        `Origen: ${ride.origin_address || 'Origen'}\n` +
+        `Destino: ${ride.destination_address || 'Destino'}\n\n` +
+        `Esta acción eliminará el viaje de la base de datos y dejará de aparecer para el conductor. No se puede deshacer.`
+      );
+      if (!confirmed) return;
+
+      try {
+        // Esta relación usa NO ACTION. Si otro viaje depende de este como
+        // queued_after_ride, PostgreSQL no permitirá eliminarlo.
+        const { data: dependentRides, error: dependencyError } = await supabaseClient
+          .from('rides')
+          .select('id')
+          .eq('queued_after_ride', rideId)
+          .limit(1);
+
+        if (dependencyError) throw dependencyError;
+
+        if (dependentRides && dependentRides.length > 0) {
+          showToast(
+            'No se puede eliminar todavía',
+            'Existe otro viaje que depende de esta solicitud. Primero debe resolverse esa relación.',
+            'warning'
+          );
+          return;
+        }
+
+        const { error: deleteError } = await supabaseClient
+          .from('rides')
+          .delete()
+          .eq('id', rideId);
+
+        if (deleteError) throw deleteError;
+
+        // Actualización local inmediata; Realtime también recibirá el DELETE.
+        const marker = markers.rides.get(rideId);
+        if (marker && map) map.removeLayer(marker);
+        markers.rides.delete(rideId);
+        if (routeLines.has(rideId) && map) map.removeLayer(routeLines.get(rideId));
+        routeLines.delete(rideId);
+        assignmentTimers.delete(rideId);
+        rides = rides.filter(r => r.id !== rideId);
+
+        closeModal();
+        renderAll();
+        showToast('Solicitud eliminada', 'El viaje fue eliminado definitivamente y ya no está disponible para el conductor.', 'success');
+      } catch (error) {
+        console.error('Error eliminando viaje definitivamente:', error);
+        const message = error?.message || 'No fue posible eliminar la solicitud.';
+        showToast('Error al eliminar', message, 'error');
+      }
+    };
+
     window.showRideDetail = function(rideId) {
       const ride = rides.find(r => r.id === rideId);
       if (!ride) return;
@@ -1876,9 +1979,55 @@
         <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
           ${ride.status === 'pendiente' ? `<button class="btn btn-success" onclick="closeModal(); openAssignDriverModal('${ride.id}')"><i class="fas fa-user-check"></i> Asignar conductor</button>` : ''}
           <button class="btn btn-primary" onclick="focusOnRide('${ride.id}')"><i class="fas fa-map-marker-alt"></i> Ver ruta en mapa</button>
+          ${['pendiente', 'aceptado', 'llegado_origen', 'en_curso'].includes(ride.status) ? `<button class="btn btn-danger" onclick="deleteRidePermanently('${ride.id}')"><i class="fas fa-trash-alt"></i> Eliminar solicitud definitivamente</button>` : ''}
         </div>
       `);
     };
+    window.deleteRidePermanently = async function(rideId) {
+      const ride = rides.find(r => r.id === rideId);
+      if (!ride) { showToast('No se encontró la solicitud de viaje', '', 'error'); return; }
+
+      const passengerName = getPassengerName(ride.passenger_id) || 'el pasajero';
+      const confirmed = confirm(
+        `¿Eliminar definitivamente esta solicitud de viaje?\n\n` +
+        `Pasajero: ${passengerName}\n` +
+        `Origen: ${ride.origin_address || '-'}\n` +
+        `Destino: ${ride.destination_address || '-'}\n\n` +
+        `Esta acción no se puede deshacer y la solicitud dejará de aparecer para el conductor.`
+      );
+      if (!confirmed) return;
+
+      try {
+        showToast('Eliminando solicitud...', '', 'info');
+
+        const { data, error } = await supabaseClient.rpc('admin_delete_ride', {
+          p_ride_id: rideId
+        });
+
+        if (error) throw error;
+        if (data && data.success === false) {
+          throw new Error(data.message || 'No se pudo eliminar la solicitud');
+        }
+
+        closeModal();
+
+        // Actualización inmediata de la interfaz. Realtime también recibirá el DELETE.
+        const marker = markers.rides.get(rideId);
+        if (marker && map) map.removeLayer(marker);
+        markers.rides.delete(rideId);
+        if (routeLines.has(rideId) && map) map.removeLayer(routeLines.get(rideId));
+        routeLines.delete(rideId);
+        assignmentTimers.delete(rideId);
+        rides = rides.filter(r => r.id !== rideId);
+        renderAll();
+
+        showToast('Solicitud eliminada definitivamente', 'Ya no está disponible para el conductor', 'success');
+      } catch (error) {
+        console.error('Error eliminando solicitud definitivamente:', error);
+        showToast('No se pudo eliminar la solicitud', error?.message || 'Verifica la función admin_delete_ride en Supabase', 'error');
+      }
+    };
+
     window.focusOnRide = function(rideId) {
       closeModal();
       switchView('dashboard');
@@ -2413,6 +2562,17 @@
           rides.unshift(payload.new);
           addActivity('ride', 'fa-plus', `Nuevo viaje - ${formatMoney(payload.new.price)}`);
           showToast('🔔 Nuevo viaje', payload.new.origin_address || 'Nueva solicitud', 'warning');
+        } else if (payload.eventType === 'DELETE') {
+          const deletedRideId = payload.old?.id;
+          if (deletedRideId) {
+            const marker = markers.rides.get(deletedRideId);
+            if (marker && map) map.removeLayer(marker);
+            markers.rides.delete(deletedRideId);
+            if (routeLines.has(deletedRideId) && map) map.removeLayer(routeLines.get(deletedRideId));
+            routeLines.delete(deletedRideId);
+            assignmentTimers.delete(deletedRideId);
+            rides = rides.filter(r => r.id !== deletedRideId);
+          }
         } else if (payload.eventType === 'UPDATE') {
           const idx = rides.findIndex(r => r.id === payload.new.id);
           if (idx >= 0) {
@@ -3350,6 +3510,9 @@
       setInterval(async () => { try { await loadAllData(); } catch (e) {} }, 30000);
       setInterval(() => { updatePendingTimers(); }, 1000);
       setInterval(() => { checkAssignmentTimeouts(); }, 10000);
+      // Revisa periódicamente en Supabase los viajes que llevan demasiado tiempo asignados.
+      releaseStaleAssignedRides();
+      setInterval(() => { releaseStaleAssignedRides(); }, 30000);
       setInterval(() => { recentRejections = recentRejections.filter(r => Date.now() - r.timestamp < 10 * 60 * 1000); updateRejectionCounter(); renderRejectionAlerts(); }, 60000);
       updateAdminMapToggleUI();
       loadCommissionsData().catch(e => {});
@@ -3378,3 +3541,4 @@
   </script>
 </body>
 </html>
+;
