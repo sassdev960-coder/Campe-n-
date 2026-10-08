@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f172a">
-<title>Panel · Barrotes &amp; Carnicería</title>
+<title>Panel · Carnicería &amp; Abarrotes</title>
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
 <style>
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -47,6 +47,9 @@
   .nav-item.active{background:rgba(225,29,72,.14);color:#fff}
   .nav-item.active::before{content:"";position:absolute;left:-10px;top:50%;transform:translateY(-50%);
     width:3px;height:20px;border-radius:0 3px 3px 0;background:var(--primary)}
+  .nav-item .section-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-left:auto}
+  .nav-item .section-dot.carn{background:var(--primary)}
+  .nav-item .section-dot.abar{background:var(--blue)}
   .sidebar-foot{padding:14px;border-top:1px solid rgba(255,255,255,.07)}
   .user{display:flex;align-items:center;gap:10px}
   .user strong{display:block;color:#fff;font-size:13px;font-weight:600}
@@ -102,6 +105,8 @@
   .btn.danger:hover{background:#fff5f7}
   .btn.scan{background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;box-shadow:0 2px 8px rgba(15,23,42,.25)}
   .btn.scan:hover{background:linear-gradient(135deg,#1e293b,#334155)}
+  .btn.blue{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(59,130,246,.25)}
+  .btn.blue:hover{background:#2563eb}
 
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
     box-shadow:var(--shadow);padding:18px}
@@ -155,7 +160,7 @@
     transition:height .5s cubic-bezier(.4,0,.2,1),filter .15s}
   .bar:hover{filter:brightness(1.08)}
   .seg{width:100%}
-  .seg.barrotes{background:#93c5fd}
+  .seg.abarrotes{background:#93c5fd}
   .seg.carniceria{background:var(--primary)}
   .bar-label{font-size:11.5px;color:var(--muted);font-weight:550;text-align:center}
   .tip{position:absolute;top:-6px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;
@@ -194,7 +199,7 @@
     padding:1px 6px;border-radius:5px;background:#f1f4f8;margin-left:4px;
     vertical-align:middle;letter-spacing:.2px}
   .price-unit.kilo{background:var(--primary-soft);color:var(--primary)}
-  .price-unit.barrotes{background:var(--blue-soft);color:var(--blue)}
+  .price-unit.abarrotes{background:var(--blue-soft);color:var(--blue)}
 
   .stock-cell{display:flex;flex-direction:column;gap:2px;align-items:flex-end}
   .stock-main{font-weight:650;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
@@ -202,7 +207,7 @@
   .stock-value{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
   .stock-value b{color:var(--text);font-weight:600}
 
-  .prod-name{display:flex;flex-direction:column;gap:2px}
+  .prod-name{display:flex;flex-direction:column;gap:3px}
   .prod-name strong{font-weight:620;font-size:13.5px}
   .prod-name span{font-size:11.5px;color:var(--muted)}
   .barcode-chip{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:10.5px;font-weight:600;
@@ -210,10 +215,19 @@
     align-items:center;gap:3px;letter-spacing:.3px;margin-top:2px;width:fit-content}
   .barcode-chip svg{width:10px;height:10px;stroke-width:2.4}
 
+  /* ===== SECCIÓN BADGE ===== */
+  .section-badge{
+    display:inline-flex;align-items:center;gap:5px;padding:3px 10px 3px 6px;
+    border-radius:20px;font-size:11.5px;font-weight:650;letter-spacing:.1px;white-space:nowrap;
+  }
+  .section-badge svg{width:13px;height:13px;stroke-width:2}
+  .section-badge.carn{background:var(--primary-soft);color:var(--primary)}
+  .section-badge.abar{background:var(--blue-soft);color:var(--blue)}
+  .section-badge.lg{padding:5px 12px 5px 8px;font-size:12.5px}
+  .section-badge.lg svg{width:15px;height:15px}
+
   .tag{display:inline-block;padding:2.5px 9px;border-radius:20px;font-size:11px;font-weight:650;
     letter-spacing:.1px;white-space:nowrap}
-  .tag.carn{background:var(--primary-soft);color:var(--primary)}
-  .tag.barr{background:var(--blue-soft);color:var(--blue)}
   .tag.ok{background:var(--green-soft);color:var(--green)}
   .tag.warn{background:var(--amber-soft);color:#b45309}
   .tag.bad{background:var(--primary-soft);color:var(--primary)}
@@ -222,7 +236,10 @@
   .stock-item{padding:11px 0;border-bottom:1px dashed var(--border)}
   .stock-item:last-child{border-bottom:none}
   .stock-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;gap:10px}
-  .stock-name{font-size:13.5px;font-weight:550}
+  .stock-name{font-size:13.5px;font-weight:550;display:flex;align-items:center;gap:6px}
+  .stock-name .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .stock-name .dot.carn{background:var(--primary)}
+  .stock-name .dot.abar{background:var(--blue)}
   .stock-qty{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
   .stock-qty b{color:var(--text);font-weight:650}
   .bar-mini{height:6px;border-radius:4px;background:#eef1f6;overflow:hidden}
@@ -235,6 +252,12 @@
   .empty p{font-size:13px;max-width:360px}
   .empty .btn{margin-top:8px}
   .empty .btn-row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+  .empty .empty-icon{width:64px;height:64px;border-radius:18px;display:grid;place-items:center}
+  .empty .empty-icon svg{width:30px;height:30px;stroke-width:1.8;color:#fff}
+  .empty .empty-icon.carn{background:var(--primary-soft)}
+  .empty .empty-icon.carn svg{color:var(--primary)}
+  .empty .empty-icon.abar{background:var(--blue-soft)}
+  .empty .empty-icon.abar svg{color:var(--blue)}
 
   .overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:40;
     opacity:0;transition:opacity .25s}
@@ -248,8 +271,9 @@
     border-radius:10px;color:var(--muted);font-size:10.5px;font-weight:550;transition:.15s;position:relative}
   .bn-item svg{width:22px;height:22px;stroke-width:1.8}
   .bn-item.active{color:var(--primary)}
+  .bn-item.active[data-view="abarrotes"]{color:var(--blue)}
   .bn-item.active::before{content:"";position:absolute;top:-1px;left:50%;transform:translateX(-50%);
-    width:22px;height:3px;border-radius:0 0 4px 4px;background:var(--primary)}
+    width:22px;height:3px;border-radius:0 0 4px 4px;background:currentColor}
   .bn-item.scan{color:var(--primary)}
   .bn-item.scan::after{content:"";position:absolute;top:-6px;left:50%;transform:translateX(-50%);
     width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#e11d48,#f43f5e);
@@ -290,7 +314,54 @@
   .row-inline select{flex:1;min-width:0}
   .row-inline input{width:88px}
 
-  /* campo barcode con botón integrado */
+  /* ================= SELECTOR DE SECCIÓN ================= */
+  .section-label-lg{
+    font-size:13px;font-weight:650;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px;
+  }
+  .section-label-lg .req{color:var(--primary)}
+  .area-selector{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px}
+  .area-card{
+    position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;
+    padding:16px 12px 14px;border:2px solid var(--border);border-radius:14px;
+    background:#fafbfd;cursor:pointer;transition:.18s;text-align:center;overflow:hidden;
+  }
+  .area-card:hover{border-color:#cbd5e1;transform:translateY(-1px)}
+  .area-card:active{transform:scale(.98)}
+  .area-card.selected{
+    background:linear-gradient(135deg,#fff,#fff5f7);
+    border-color:var(--primary);box-shadow:0 4px 16px rgba(225,29,72,.15);
+  }
+  .area-card.selected.abar{
+    background:linear-gradient(135deg,#fff,#eff6ff);
+    border-color:var(--blue);box-shadow:0 4px 16px rgba(59,130,246,.15);
+  }
+  .area-card .ac-icon{
+    width:52px;height:52px;border-radius:14px;display:grid;place-items:center;
+    transition:.2s;
+  }
+  .area-card .ac-icon svg{width:26px;height:26px;stroke-width:1.8}
+  .area-card.carn .ac-icon{background:var(--primary-soft);color:var(--primary)}
+  .area-card.abar .ac-icon{background:var(--blue-soft);color:var(--blue)}
+  .area-card.selected.carn .ac-icon{background:var(--primary);color:#fff;box-shadow:0 6px 16px rgba(225,29,72,.35)}
+  .area-card.selected.abar .ac-icon{background:var(--blue);color:#fff;box-shadow:0 6px 16px rgba(59,130,246,.35)}
+  .area-card strong{font-size:13.5px;font-weight:680;letter-spacing:-.15px;line-height:1.2}
+  .area-card small{font-size:11px;color:var(--muted);font-weight:500}
+  .area-card .ac-check{
+    position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;
+    display:none;place-items:center;color:#fff;
+    animation:checkPop .25s cubic-bezier(.4,0,.2,1);
+  }
+  .area-card.selected.carn .ac-check{background:var(--primary);display:grid}
+  .area-card.selected.abar .ac-check{background:var(--blue);display:grid}
+  .area-card .ac-check svg{width:12px;height:12px;stroke-width:3}
+  @keyframes checkPop{0%{transform:scale(0)}100%{transform:scale(1)}}
+
+  .section-helper{
+    display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);
+    padding:8px 10px;background:#f8fafc;border-radius:8px;margin-top:4px;
+  }
+  .section-helper svg{width:13px;height:13px;stroke-width:2;color:var(--amber);flex-shrink:0}
+
   .barcode-input{display:flex;gap:8px;align-items:stretch}
   .barcode-input input{flex:1;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:13.5px;letter-spacing:.5px}
   .barcode-input .bc-btn{width:48px;flex-shrink:0;border-radius:10px;
@@ -318,13 +389,16 @@
     border-bottom:1px solid var(--border);background:#fafbfd}
   .v-items li:last-child{border-bottom:none}
   .v-items .vi-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .v-items .vi-sub{font-size:11.5px;color:var(--muted)}
+  .v-items .vi-sub{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:5px;margin-top:2px}
   .v-items .vi-price{font-weight:650;font-variant-numeric:tabular-nums}
   .v-items .vi-x{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;color:var(--muted)}
   .v-items .vi-x:hover{background:#fee2e2;color:var(--primary)}
   .v-total{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;margin-top:12px;
     background:#0f172a;color:#fff;border-radius:11px;font-size:14px}
   .v-total b{font-size:17px;font-weight:700}
+  .mini-tag{padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.2px}
+  .mini-tag.carn{background:var(--primary-soft);color:var(--primary)}
+  .mini-tag.abar{background:var(--blue-soft);color:var(--blue)}
 
   .toast-wrap{position:fixed;bottom:calc(24px + var(--safe-bottom));left:50%;transform:translateX(-50%);
     z-index:300;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
@@ -336,9 +410,7 @@
   .toast.error{background:#9f1239}
   .toast.warn{background:#92400e}
 
-  /* ============================================================
-     SCANNER DE CÓDIGO DE BARRAS
-     ============================================================ */
+  /* SCANNER */
   .scanner-bg{position:fixed;inset:0;background:#000;z-index:200;display:none;
     flex-direction:column;opacity:0;transition:opacity .25s}
   .scanner-bg.show{display:flex;opacity:1}
@@ -356,7 +428,6 @@
   .scanner-head .sh-torch:hover{background:rgba(255,255,255,.2)}
   .scanner-head .sh-torch.on{background:var(--amber);color:#fff}
   .scanner-head .sh-torch svg{width:18px;height:18px;stroke-width:2}
-
   .scanner-view{flex:1;position:relative;overflow:hidden;background:#000}
   .scanner-view video{width:100%;height:100%;object-fit:cover;display:block}
   .scanner-overlay{position:absolute;inset:0;display:flex;flex-direction:column;
@@ -372,18 +443,7 @@
     background:linear-gradient(90deg,transparent,#e11d48,#f43f5e,#e11d48,transparent);
     box-shadow:0 0 12px rgba(225,29,72,.9),0 0 24px rgba(225,29,72,.5);
     animation:scannerLaser 2s ease-in-out infinite}
-  @keyframes scannerLaser{
-    0%,100%{top:8px;opacity:.5}
-    50%{top:calc(100% - 11px);opacity:1}
-  }
-  .scanner-hint{position:absolute;bottom:calc(100% + 20px);left:0;right:0;text-align:center;
-    color:#fff;font-size:13.5px;font-weight:550;padding:0 20px;text-shadow:0 2px 8px rgba(0,0,0,.6)}
-  .scanner-hint small{display:block;font-size:11.5px;font-weight:400;opacity:.75;margin-top:3px}
-  .scanner-status{position:absolute;bottom:calc(100% + 20px);left:0;right:0;text-align:center;
-    color:#fff;font-size:13px;text-shadow:0 2px 8px rgba(0,0,0,.6);
-    padding:8px 14px;background:rgba(0,0,0,.5);border-radius:20px;
-    width:fit-content;margin:0 auto;font-weight:500;backdrop-filter:blur(8px)}
-
+  @keyframes scannerLaser{0%,100%{top:8px;opacity:.5}50%{top:calc(100% - 11px);opacity:1}}
   .scanner-foot{padding:18px;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
     background:#0a0f1a;display:flex;flex-direction:column;gap:12px;position:relative;z-index:2}
   .scanner-manual{display:flex;gap:8px}
@@ -394,9 +454,7 @@
   .scanner-manual input:focus{border-color:var(--primary);background:rgba(255,255,255,.12);
     box-shadow:0 0 0 3px rgba(225,29,72,.2)}
   .scanner-manual .btn{background:var(--primary);color:#fff;padding:12px 18px}
-  .scanner-manual .btn:hover{background:#be123c}
   .scanner-tip{font-size:11.5px;color:rgba(255,255,255,.5);text-align:center;line-height:1.4}
-
   .scanner-loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
     justify-content:center;gap:14px;color:#fff;background:#000;z-index:5}
   .scanner-loading.hidden{display:none}
@@ -481,13 +539,19 @@
     .alert-icon{width:34px;height:34px;border-radius:9px}
     .alert-content strong{font-size:13.5px}
     .alert-content p{font-size:11.5px}
-    .scanner-head{padding:14px 14px;padding-top:calc(14px + env(safe-area-inset-top,0px))}
-    .scanner-head h3{font-size:15px}
-    .scanner-hint{font-size:12.5px}
+    .area-card{padding:14px 10px 12px}
+    .area-card .ac-icon{width:46px;height:46px;border-radius:12px}
+    .area-card .ac-icon svg{width:23px;height:23px}
+    .area-card strong{font-size:12.5px}
+    .area-card small{font-size:10.5px}
   }
   @media (max-width:380px){
     .kpi-value{font-size:17px}
     .bn-item span{font-size:10px}
+    .area-selector{gap:8px}
+    .area-card{padding:12px 8px 10px}
+    .area-card .ac-icon{width:42px;height:42px}
+    .area-card strong{font-size:12px}
   }
 </style>
 </head>
@@ -496,9 +560,9 @@
 <div class="app">
   <aside class="sidebar" id="sidebar">
     <div class="brand">
-      <div class="brand-logo">BC</div>
+      <div class="brand-logo">CA</div>
       <div>
-        <strong>Barrotes &amp; Carnicería</strong>
+        <strong>Carnicería &amp; Abarrotes</strong>
         <span>Panel administrador</span>
       </div>
     </div>
@@ -558,11 +622,11 @@
         <rect x="14" y="12.5" width="7" height="8.5" rx="1.8"/><rect x="3" y="16" width="7" height="5" rx="1.8"/>
       </svg><span>Inicio</span>
     </button>
-    <button class="bn-item" data-view="ventas">
+    <button class="bn-item" data-view="carniceria">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/>
-        <path d="M2 3h2.6l2.3 11.4a1.6 1.6 0 0 0 1.6 1.3h8.7a1.6 1.6 0 0 0 1.6-1.3L21 7H5.2"/>
-      </svg><span>Ventas</span>
+        <path d="M14.2 3.2a5.2 5.2 0 0 0-4.8 6.9l-5.1 5.1a2.6 2.6 0 1 0 3.7 3.7l5.1-5.1a5.2 5.2 0 1 0 1.1-10.6z"/>
+        <circle cx="15" cy="8.2" r="1.7"/>
+      </svg><span>Carnicería</span>
     </button>
     <button class="bn-item scan" id="bnScanBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -570,11 +634,11 @@
         <path d="M7 8v8M10 8v8M13 8v8M16 8v8" stroke-width="1.6"/>
       </svg><span>Escanear</span>
     </button>
-    <button class="bn-item" data-view="carniceria">
+    <button class="bn-item" data-view="abarrotes">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M14.2 3.2a5.2 5.2 0 0 0-4.8 6.9l-5.1 5.1a2.6 2.6 0 1 0 3.7 3.7l5.1-5.1a5.2 5.2 0 1 0 1.1-10.6z"/>
-        <circle cx="15" cy="8.2" r="1.7"/>
-      </svg><span>Carnicería</span>
+        <path d="M4 7h16l-1.5 9.5a2 2 0 0 1-2 1.7H7.5a2 2 0 0 1-2-1.7z"/>
+        <path d="M8 7V5a4 4 0 0 1 8 0v2"/>
+      </svg><span>Abarrotes</span>
     </button>
     <button class="bn-item" data-view="caja">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -586,7 +650,6 @@
 
 <div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
 
-<!-- ==================== SCANNER MODAL ==================== -->
 <div class="scanner-bg" id="scannerBg">
   <div class="scanner-head">
     <h3>Escanear código de barras</h3>
@@ -602,7 +665,6 @@
       </svg>
     </button>
   </div>
-
   <div class="scanner-view">
     <video id="scannerVideo" playsinline muted autoplay></video>
     <div class="scanner-loading" id="scannerLoading">
@@ -617,7 +679,6 @@
       </div>
     </div>
   </div>
-
   <div class="scanner-foot">
     <div class="scanner-manual">
       <input type="text" id="scannerManual" placeholder="O escribe el código manualmente"
@@ -638,6 +699,13 @@ const CFG = { moneda:'es-BO', simbolo:'Bs ' };
 const fmt = n => CFG.simbolo + Number(n||0).toLocaleString(CFG.moneda,{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtK = n => CFG.simbolo + Number(n||0).toLocaleString(CFG.moneda,{minimumFractionDigits:0,maximumFractionDigits:0});
 
+/* Secciones del negocio */
+const SECTIONS = {
+  carniceria: { key:'carniceria', label:'Carnicería',       shortLabel:'Carnicería', color:'carn', icon:'carne',    placeholder:'Ej: Carne molida, Chuleta, Pollo' },
+  abarrotes:  { key:'abarrotes',  label:'Tienda de Abarrotes', shortLabel:'Abarrotes', color:'abar', icon:'box',      placeholder:'Ej: Arroz 1kg, Gaseosa 2L, Aceite' }
+};
+function sectionOf(area){ return SECTIONS[area] || SECTIONS.carniceria; }
+
 /* =========================================================
    STORAGE
    ========================================================= */
@@ -657,6 +725,24 @@ function saveState(){
   try{ localStorage.setItem(KEY, JSON.stringify(STATE)); }
   catch(e){ toast('Error al guardar','error'); }
 }
+
+/* Migración: renombrar "barrotes" → "abarrotes" para compatibilidad */
+function migrateState(){
+  let changed = false;
+  if(STATE.productos){
+    STATE.productos.forEach(p => {
+      if(p.area === 'barrotes'){ p.area = 'abarrotes'; changed = true; }
+    });
+  }
+  if(STATE.ventas){
+    STATE.ventas.forEach(v => {
+      if(v.area === 'barrotes'){ v.area = 'abarrotes'; changed = true; }
+    });
+  }
+  if(changed) saveState();
+}
+migrateState();
+
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const todayISO = () => new Date().toISOString().slice(0,10);
 const nowTime  = () => new Date().toTimeString().slice(0,5);
@@ -675,7 +761,8 @@ const ICONS = {
   caja:'<rect x="2.5" y="5.5" width="19" height="13.5" rx="2.4"/><path d="M2.5 10h19"/><circle cx="12" cy="14.6" r="1.9"/>',
   inventario:'<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/>',
   carne:'<path d="M14.2 3.2a5.2 5.2 0 0 0-4.8 6.9l-5.1 5.1a2.6 2.6 0 1 0 3.7 3.7l5.1-5.1a5.2 5.2 0 1 0 1.1-10.6z"/><circle cx="15" cy="8.2" r="1.7"/>',
-  barrotes:'<path d="M14.6 3.4a5 5 0 0 0-6.2 6.2L3.2 14.8a2.3 2.3 0 0 0 3.2 3.2l5.2-5.2a5 5 0 0 0 6.2-6.2l-2.6 2.6-2.7-.5-.5-2.7z"/><path d="M17.5 17.5 21 21"/>',
+  box:'<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/>',
+  carrito:'<path d="M4 7h16l-1.5 9.5a2 2 0 0 1-2 1.7H7.5a2 2 0 0 1-2-1.7z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/>',
   compras:'<rect x="1.8" y="6" width="12" height="10.5" rx="1.8"/><path d="M13.8 9.5h4l2.7 3v4h-6.7"/><circle cx="6" cy="18.5" r="1.9"/><circle cx="16.5" cy="18.5" r="1.9"/>',
   clientes:'<circle cx="9" cy="8" r="3.3"/><path d="M2.8 20a6.4 6.4 0 0 1 12.4 0"/><path d="M16.2 5.4a3.3 3.3 0 0 1 0 5.4M17.6 14.4A6.4 6.4 0 0 1 21.4 20"/>',
   proveedor:'<path d="M3 21V8.5L9 4l6 4.5V21"/><path d="M15 21V11.5h6V21"/><path d="M2 21h20"/><path d="M6.5 12h1M6.5 16h1"/>',
@@ -684,7 +771,6 @@ const ICONS = {
   search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   plus:'<path d="M12 5v14M5 12h14"/>',
   check:'<path d="M20 6 9 17l-5-5"/>',
-  box:'<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5z"/>',
   clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   alert:'<path d="M12 3.5 2.5 20h19z"/><path d="M12 10v4M12 17.2v.1"/>',
   wallet:'<rect x="2.5" y="6" width="19" height="13" rx="2.4"/><path d="M16 12.5h2.5"/>',
@@ -694,8 +780,15 @@ const ICONS = {
   x:'<path d="M18 6 6 18M6 6l12 12"/>',
   arrowDown:'<path d="M12 5v14M6 13l6 6 6-6"/>',
   barcode:'<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8" stroke-width="1.6"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8v.01"/>',
 };
 const icon = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]||''}</svg>`;
+
+/* Badge visual de sección */
+function sectionBadge(area, large=false){
+  const s = sectionOf(area);
+  return `<span class="section-badge ${s.color} ${large?'lg':''}">${icon(s.icon)} ${s.label}</span>`;
+}
 
 /* =========================================================
    TOAST
@@ -738,7 +831,7 @@ function openModal({title, bodyHTML, submitLabel='Guardar', onSubmit, danger=fal
   };
   m.querySelector('#mSubmit').onclick = () => _modalSubmit();
   setTimeout(()=>{
-    const f = m.querySelector('input:not([type=hidden]),select,textarea');
+    const f = m.querySelector('input:not([type=hidden]):not([readonly]),select,textarea');
     if(f) f.focus();
     if(onReady) onReady(m);
   },80);
@@ -795,7 +888,7 @@ const calc = {
       out.push({
         dia: dias[d.getDay()],
         carniceria: ventas.filter(v=>v.area==='carniceria').reduce((s,v)=>s+v.total,0),
-        barrotes:   ventas.filter(v=>v.area==='barrotes').reduce((s,v)=>s+v.total,0),
+        abarrotes:  ventas.filter(v=>v.area==='abarrotes').reduce((s,v)=>s+v.total,0),
       });
     }
     return out;
@@ -808,13 +901,14 @@ const calc = {
 const NAV = [
   { section:'Principal' },
   { id:'dashboard',  label:'Dashboard',    icon:'dashboard', sub:'Resumen general del negocio' },
+  { section:'Secciones del negocio' },
+  { id:'carniceria', label:'Carnicería',   icon:'carne',     sub:'Productos por kilo/lb y unidades', dot:'carn' },
+  { id:'abarrotes',  label:'Abarrotes',    icon:'carrito',   sub:'Productos de tienda y consumo',   dot:'abar' },
   { section:'Operación' },
   { id:'ventas',     label:'Ventas',       icon:'ventas',    sub:'Registro y consulta de ventas' },
   { id:'caja',       label:'Caja',         icon:'caja',      sub:'Movimientos y arqueo de caja' },
-  { id:'carniceria', label:'Carnicería',   icon:'carne',     sub:'Productos por kilo/lb y unidades' },
-  { id:'barrotes',   label:'Barrotes',     icon:'barrotes',  sub:'Productos de ferretería y materiales' },
   { section:'Almacén' },
-  { id:'inventario', label:'Inventario',   icon:'inventario',sub:'Stock general de productos' },
+  { id:'inventario', label:'Inventario',   icon:'inventario',sub:'Stock general de todas las secciones' },
   { id:'compras',    label:'Compras',      icon:'compras',   sub:'Pedidos y recepción de proveedores' },
   { section:'Gestión' },
   { id:'clientes',   label:'Clientes',     icon:'clientes',  sub:'Deudas, abonos y fiados' },
@@ -827,7 +921,8 @@ function renderNav(){
   const nav = document.getElementById('nav');
   nav.innerHTML = NAV.map(item => {
     if(item.section) return `<div class="nav-section">${item.section}</div>`;
-    return `<button class="nav-item" data-view="${item.id}">${icon(item.icon)}<span>${item.label}</span></button>`;
+    const dot = item.dot ? `<span class="section-dot ${item.dot}"></span>` : '';
+    return `<button class="nav-item" data-view="${item.id}">${icon(item.icon)}<span>${item.label}</span>${dot}</button>`;
   }).join('');
   nav.querySelectorAll('.nav-item').forEach(b=>{
     b.addEventListener('click', ()=>{ setView(b.dataset.view); closeSidebar(); });
@@ -861,9 +956,6 @@ function updateNotif(){
   }
 }
 
-/* =========================================================
-   ALERTA DE STOCK
-   ========================================================= */
 function alertaStock(){
   const bajos = calc.stockBajo();
   if(bajos.length === 0) return '';
@@ -904,6 +996,12 @@ VIEWS.dashboard = () => {
                                 .reduce((s,m)=>s+m.monto,0);
   const hayDatos = STATE.productos.length || STATE.ventas.length;
 
+  // Resumen por sección
+  const carnProd = calc.productosPorArea('carniceria').length;
+  const abarProd = calc.productosPorArea('abarrotes').length;
+  const carnHoy = ventasHoy.filter(v=>v.area==='carniceria').reduce((s,v)=>s+v.total,0);
+  const abarHoy = ventasHoy.filter(v=>v.area==='abarrotes').reduce((s,v)=>s+v.total,0);
+
   return `
     <div class="toolbar">
       <div class="chip-row">
@@ -924,10 +1022,14 @@ VIEWS.dashboard = () => {
         <div class="empty">
           ${icon('dashboard')}
           <h3>¡Bienvenido!</h3>
-          <p>Empieza agregando productos (con o sin código de barras) y registra tus primeras ventas.</p>
-          <div class="btn-row">
-            <button class="btn scan" onclick="quickScan()">${icon('barcode')} Escanear producto</button>
-            <button class="btn primary" onclick="openProductoModal()">${icon('plus')} Agregar manual</button>
+          <p>Tu negocio tiene <b>dos secciones</b>. Empieza agregando productos a cada una.</p>
+          <div class="btn-row" style="margin-top:14px">
+            <button class="btn primary" onclick="openProductoModal('carniceria')">
+              ${icon('carne')} Producto Carnicería
+            </button>
+            <button class="btn blue" onclick="openProductoModal('abarrotes')">
+              ${icon('carrito')} Producto Abarrotes
+            </button>
           </div>
         </div>
       </div>
@@ -956,13 +1058,47 @@ VIEWS.dashboard = () => {
       </div>
     </div>
 
+    <!-- Resumen por sección -->
+    <div class="grid-eq">
+      <div class="card" style="border-left:4px solid var(--primary)">
+        <div class="card-head">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              ${sectionBadge('carniceria', true)}
+            </div>
+            <p style="font-size:12.5px;color:var(--muted)">${carnProd} producto${carnProd!==1?'s':''} registrado${carnProd!==1?'s':''}</p>
+          </div>
+          <button class="link right" onclick="setView('carniceria')">Ver →</button>
+        </div>
+        <ul class="list-rows">
+          <li><span class="lbl">Vendido hoy</span><span class="val">${fmt(carnHoy)}</span></li>
+          <li><span class="lbl">Productos</span><span class="val">${carnProd}</span></li>
+        </ul>
+      </div>
+      <div class="card" style="border-left:4px solid var(--blue)">
+        <div class="card-head">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+              ${sectionBadge('abarrotes', true)}
+            </div>
+            <p style="font-size:12.5px;color:var(--muted)">${abarProd} producto${abarProd!==1?'s':''} registrado${abarProd!==1?'s':''}</p>
+          </div>
+          <button class="link right" onclick="setView('abarrotes')">Ver →</button>
+        </div>
+        <ul class="list-rows">
+          <li><span class="lbl">Vendido hoy</span><span class="val">${fmt(abarHoy)}</span></li>
+          <li><span class="lbl">Productos</span><span class="val">${abarProd}</span></li>
+        </ul>
+      </div>
+    </div>
+
     <div class="grid-2">
       <div class="card">
         <div class="card-head">
-          <div><h3>Ventas de la semana</h3><p>Carnicería vs Barrotes</p></div>
+          <div><h3>Ventas de la semana</h3><p>Carnicería vs Abarrotes</p></div>
           <div class="right legend">
             <span><i style="background:#e11d48"></i>Carn.</span>
-            <span><i style="background:#93c5fd"></i>Barr.</span>
+            <span><i style="background:#93c5fd"></i>Abar.</span>
           </div>
         </div>
         <div class="chart" id="chart"></div>
@@ -988,13 +1124,13 @@ VIEWS.dashboard = () => {
         ${ultimas.length===0 ? `<div class="empty" style="padding:30px 10px">${icon('ventas')}<p>Aún no hay ventas registradas</p></div>` : `
         <div class="table-wrap">
           <table>
-            <thead><tr><th>Hora</th><th>Cliente</th><th>Detalle</th><th>Pago</th><th class="num">Total</th></tr></thead>
+            <thead><tr><th>Hora</th><th>Cliente</th><th>Sección</th><th>Pago</th><th class="num">Total</th></tr></thead>
             <tbody>
               ${ultimas.map(v=>`
                 <tr>
                   <td data-label="Fecha">${fmtFecha(v.fecha)} · ${v.hora}</td>
                   <td data-label="Cliente">${esc(v.cliente)||'Consumidor final'}</td>
-                  <td data-label="Detalle">${v.items.length} ${v.items.length===1?'ítem':'ítems'} <span class="tag ${v.area==='carniceria'?'carn':'barr'}">${v.area==='carniceria'?'Carnicería':'Barrotes'}</span></td>
+                  <td data-label="Sección">${sectionBadge(v.area)}</td>
                   <td data-label="Pago">${esc(v.pago)}</td>
                   <td data-label="Total" class="num">${fmt(v.total)}</td>
                 </tr>`).join('')}
@@ -1015,7 +1151,10 @@ VIEWS.dashboard = () => {
             return `
               <li class="stock-item">
                 <div class="stock-top">
-                  <span class="stock-name">${esc(p.nombre)}</span>
+                  <span class="stock-name">
+                    <span class="dot ${p.area==='carniceria'?'carn':'abar'}"></span>
+                    ${esc(p.nombre)}
+                  </span>
                   <span class="stock-qty"><b>${p.stock}</b> / ${p.stockMin} ${esc(p.unidad)}</span>
                 </div>
                 <div class="bar-mini"><i style="width:${pct}%;background:${color}"></i></div>
@@ -1034,8 +1173,8 @@ VIEWS.ventas = () => {
     <div class="toolbar">
       <div class="chip-row">
         <button class="chip active">Todas</button>
-        <button class="chip">Hoy</button>
-        <button class="chip">Semana</button>
+        <button class="chip">Carnicería</button>
+        <button class="chip">Abarrotes</button>
       </div>
       <div class="toolbar-actions">
         <button class="btn primary" onclick="openVentaModal()">${icon('plus')} Nueva venta</button>
@@ -1053,14 +1192,14 @@ VIEWS.ventas = () => {
         </div>` : `
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Fecha</th><th>Cliente</th><th>Detalle</th><th>Área</th><th>Pago</th><th class="num">Total</th><th></th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Cliente</th><th>Detalle</th><th>Sección</th><th>Pago</th><th class="num">Total</th><th></th></tr></thead>
           <tbody>
             ${ventas.map(v=>`
               <tr>
                 <td data-label="Fecha">${fmtFecha(v.fecha)} · ${v.hora}</td>
                 <td data-label="Cliente">${esc(v.cliente)||'Consumidor final'}</td>
                 <td data-label="Detalle">${v.items.map(i=>`${i.cantidad} ${esc(i.unidad)} ${esc(i.nombre)}`).join(', ')}</td>
-                <td data-label="Área"><span class="tag ${v.area==='carniceria'?'carn':'barr'}">${v.area==='carniceria'?'Carnicería':'Barrotes'}</span></td>
+                <td data-label="Sección">${sectionBadge(v.area)}</td>
                 <td data-label="Pago">${esc(v.pago)}</td>
                 <td data-label="Total" class="num">${fmt(v.total)}</td>
                 <td data-label="Acciones"><button class="btn ghost sm" onclick="borrarVenta('${v.id}')">${icon('trash')}</button></td>
@@ -1124,19 +1263,36 @@ VIEWS.caja = () => {
   `;
 };
 
-VIEWS.carniceria = () => vistaProductos('carniceria', 'Carnicería', 'Productos por kilo, libra o unidad');
-VIEWS.barrotes = () => vistaProductos('barrotes', 'Barrotes', 'Productos de ferretería y materiales');
+/* =========================================================
+   VISTAS DE SECCIÓN
+   ========================================================= */
+VIEWS.carniceria = () => vistaProductos('carniceria');
+VIEWS.abarrotes  = () => vistaProductos('abarrotes');
 
-function vistaProductos(area, titulo, subtitulo){
-  const prods = calc.productosPorArea(area);
-  const valorInv = prods.reduce((s,p)=>s + (Number(p.stock)*Number(p.precioCosto||0)), 0);
-  const stockTotal = prods.reduce((s,p)=>s + Number(p.stock||0), 0);
+function vistaProductos(areaKey){
+  const s = SECTIONS[areaKey];
+  const prods = calc.productosPorArea(areaKey);
+  const valorInv = prods.reduce((sum,p)=>sum + (Number(p.stock)*Number(p.precioCosto||0)), 0);
+  const stockTotal = prods.reduce((sum,p)=>sum + Number(p.stock||0), 0);
   const bajos = prods.filter(p => Number(p.stock) <= Number(p.stockMin||0)).length;
+  const isCarn = areaKey === 'carniceria';
+  const accentColor = isCarn ? 'var(--primary)' : 'var(--blue)';
 
   return `
+    <div class="toolbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        ${sectionBadge(areaKey, true)}
+        <span style="font-size:12.5px;color:var(--muted)">${prods.length} producto${prods.length!==1?'s':''}</span>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn scan" onclick="quickScan('${areaKey}')">${icon('barcode')} Escanear</button>
+        <button class="btn ${isCarn?'primary':'blue'}" onclick="openProductoModal('${areaKey}')">${icon('plus')} Nuevo</button>
+      </div>
+    </div>
+
     <div class="kpis">
       <div class="card kpi">
-        <div class="kpi-top"><span class="kpi-label">Productos</span><span class="kpi-icon ${area==='carniceria'?'red':'blue'}">${icon(area==='carniceria'?'carne':'barrotes')}</span></div>
+        <div class="kpi-top"><span class="kpi-label">Productos</span><span class="kpi-icon ${isCarn?'red':'blue'}">${icon(isCarn?'carne':'carrito')}</span></div>
         <div class="kpi-value">${prods.length}</div>
         <div class="kpi-foot">${stockTotal.toFixed(1)} total en stock</div>
       </div>
@@ -1151,24 +1307,24 @@ function vistaProductos(area, titulo, subtitulo){
         <div class="kpi-foot">${bajos===0?'Todo en orden':'Requieren reposición'}</div>
       </div>
     </div>
+
     ${alertaStock()}
-    <div class="toolbar">
-      <div class="chip-row"><button class="chip active">Todos</button><button class="chip">Bajo stock</button></div>
-      <div class="toolbar-actions">
-        <button class="btn scan" onclick="quickScan('${area}')">${icon('barcode')} Escanear</button>
-        <button class="btn primary" onclick="openProductoModal('${area}')">${icon('plus')} Nuevo</button>
-      </div>
-    </div>
+
     <div class="card">
-      <div class="card-head"><div><h3>${titulo}</h3><p>${subtitulo}</p></div></div>
+      <div class="card-head">
+        <div>
+          <h3>Productos de ${s.label}</h3>
+          <p>${isCarn ? 'Control por kilo, libra o unidad' : 'Productos de tienda y consumo diario'}</p>
+        </div>
+      </div>
       ${prods.length===0 ? `
         <div class="empty">
-          ${icon(area==='carniceria'?'carne':'barrotes')}
-          <h3>Sin productos de ${titulo.toLowerCase()}</h3>
-          <p>Escanea un código o agrega un producto manualmente.</p>
+          <div class="empty-icon ${s.color}">${icon(s.icon)}</div>
+          <h3>Sin productos en ${s.label}</h3>
+          <p>Escanea un código o agrega un producto manualmente a esta sección.</p>
           <div class="btn-row">
-            <button class="btn scan" onclick="quickScan('${area}')">${icon('barcode')} Escanear</button>
-            <button class="btn primary" onclick="openProductoModal('${area}')">${icon('plus')} Agregar manual</button>
+            <button class="btn scan" onclick="quickScan('${areaKey}')">${icon('barcode')} Escanear</button>
+            <button class="btn ${isCarn?'primary':'blue'}" onclick="openProductoModal('${areaKey}')">${icon('plus')} Agregar producto</button>
           </div>
         </div>` : `
       <div class="table-wrap">
@@ -1212,8 +1368,8 @@ function vistaProductos(area, titulo, subtitulo){
                   <td data-label="Stock mín." class="num">
                     <span style="color:var(--muted)">${min} ${esc(p.unidad)}</span>
                   </td>
-                  <td data-label="Costo x unidad" class="num">${priceWithUnit(costo, p.unidad, p.area)}</td>
-                  <td data-label="Venta x unidad" class="num">${priceWithUnit(venta, p.unidad, p.area)}</td>
+                  <td data-label="Costo x unidad" class="num">${priceWithUnit(costo, p.unidad, areaKey)}</td>
+                  <td data-label="Venta x unidad" class="num">${priceWithUnit(venta, p.unidad, areaKey)}</td>
                   <td data-label="Valor stock" class="num">
                     <div class="stock-cell">
                       <span class="stock-main">${fmt(valorStock)}</span>
@@ -1223,7 +1379,7 @@ function vistaProductos(area, titulo, subtitulo){
                   <td data-label="Estado"><span class="tag ${estado}">${estadoTxt}</span></td>
                   <td data-label="Acciones" style="display:flex;gap:4px">
                     <button class="btn ghost sm" onclick="openEntradaModal('${p.id}')" title="Entrada de stock">${icon('arrowDown')}</button>
-                    <button class="btn ghost sm" onclick="openProductoModal('${area}','${p.id}')" title="Editar">${icon('edit')}</button>
+                    <button class="btn ghost sm" onclick="openProductoModal('${areaKey}','${p.id}')" title="Editar">${icon('edit')}</button>
                     <button class="btn ghost sm" onclick="borrarProducto('${p.id}')" title="Eliminar">${icon('trash')}</button>
                   </td>
                 </tr>`;
@@ -1235,16 +1391,24 @@ function vistaProductos(area, titulo, subtitulo){
   `;
 }
 
+function priceWithUnit(valor, unidad, area){
+  const cls = area === 'carniceria' ? 'kilo' : 'abarrotes';
+  return `<span class="price-main">${fmt(valor)}</span><span class="price-unit ${cls}">/ ${esc(unidad)}</span>`;
+}
+
 VIEWS.inventario = () => {
   const prods = STATE.productos;
   const valor = calc.valorInventario();
   const bajos = calc.stockBajo();
+  const carn = calc.productosPorArea('carniceria').length;
+  const abar = calc.productosPorArea('abarrotes').length;
+
   return `
     <div class="kpis">
       <div class="card kpi">
-        <div class="kpi-top"><span class="kpi-label">Total productos</span><span class="kpi-icon blue">${icon('box')}</span></div>
+        <div class="kpi-top"><span class="kpi-label">Total productos</span><span class="kpi-icon blue">${icon('inventario')}</span></div>
         <div class="kpi-value">${prods.length}</div>
-        <div class="kpi-foot">${calc.productosPorArea('carniceria').length} carnicería · ${calc.productosPorArea('barrotes').length} barrotes</div>
+        <div class="kpi-foot"><span style="color:var(--primary);font-weight:600">${carn} carn.</span> · <span style="color:var(--blue);font-weight:600">${abar} abar.</span></div>
       </div>
       <div class="card kpi">
         <div class="kpi-top"><span class="kpi-label">Valor inventario</span><span class="kpi-icon green">${icon('wallet')}</span></div>
@@ -1262,7 +1426,7 @@ VIEWS.inventario = () => {
       <div class="chip-row">
         <button class="chip active">Todos</button>
         <button class="chip">Carnicería</button>
-        <button class="chip">Barrotes</button>
+        <button class="chip">Abarrotes</button>
       </div>
       <div class="toolbar-actions">
         <button class="btn scan" onclick="quickScan()">${icon('barcode')} Escanear</button>
@@ -1270,7 +1434,7 @@ VIEWS.inventario = () => {
       </div>
     </div>
     <div class="card">
-      <div class="card-head"><div><h3>Inventario general</h3><p>Stock actual de todos los productos</p></div></div>
+      <div class="card-head"><div><h3>Inventario general</h3><p>Todas las secciones del negocio</p></div></div>
       ${prods.length===0 ? `
         <div class="empty">${icon('inventario')}<h3>Inventario vacío</h3><p>Escanea un código o agrega un producto.</p>
         <div class="btn-row">
@@ -1282,7 +1446,7 @@ VIEWS.inventario = () => {
           <thead>
             <tr>
               <th>Producto</th>
-              <th>Área</th>
+              <th>Sección</th>
               <th class="num">Stock actual</th>
               <th class="num">Costo x unidad</th>
               <th class="num">Venta x unidad</th>
@@ -1308,7 +1472,7 @@ VIEWS.inventario = () => {
                       ${p.barcode ? `<span class="barcode-chip">${icon('barcode')} ${esc(p.barcode)}</span>` : ''}
                     </div>
                   </td>
-                  <td data-label="Área"><span class="tag ${p.area==='carniceria'?'carn':'barr'}">${p.area==='carniceria'?'Carnicería':'Barrotes'}</span></td>
+                  <td data-label="Sección">${sectionBadge(p.area)}</td>
                   <td data-label="Stock actual" class="num">
                     <span class="stock-main">${stock.toLocaleString(CFG.moneda,{maximumFractionDigits:2})}<span class="unit-tag">${esc(p.unidad)}</span></span>
                   </td>
@@ -1460,30 +1624,45 @@ VIEWS.reportes = () => {
     topProductos[i.nombre] = (topProductos[i.nombre]||0) + i.cantidad;
   }));
   const top = Object.entries(topProductos).sort((a,b)=>b[1]-a[1]).slice(0,5);
+
+  const ventasCarn = ventas.filter(v=>v.area==='carniceria').reduce((s,v)=>s+v.total,0);
+  const ventasAbar = ventas.filter(v=>v.area==='abarrotes').reduce((s,v)=>s+v.total,0);
+
   return `
     <div class="grid-eq">
+      <div class="card">
+        <div class="card-head"><div><h3>Resumen por sección</h3><p>Ventas acumuladas</p></div></div>
+        <ul class="list-rows">
+          <li>
+            <span class="lbl">${sectionBadge('carniceria')}</span>
+            <span class="val">${fmt(ventasCarn)}</span>
+          </li>
+          <li>
+            <span class="lbl">${sectionBadge('abarrotes')}</span>
+            <span class="val">${fmt(ventasAbar)}</span>
+          </li>
+          <li class="total">
+            <span class="lbl">Total ventas</span>
+            <span class="val pos">${fmt(totalVentas)}</span>
+          </li>
+        </ul>
+      </div>
       <div class="card">
         <div class="card-head"><div><h3>Resumen general</h3><p>Histórico del negocio</p></div></div>
         <ul class="list-rows">
           <li><span class="lbl">Ventas totales</span><span class="val">${fmt(totalVentas)}</span></li>
           <li><span class="lbl">Compras totales</span><span class="val neg">− ${fmt(totalCompras)}</span></li>
           <li><span class="lbl">Ganancia bruta</span><span class="val">${fmt(ganancia)}</span></li>
-          <li class="total"><span class="lbl">Margen promedio</span><span class="val pos">${totalVentas>0?(ganancia/totalVentas*100).toFixed(1):'0'}%</span></li>
+          <li class="total"><span class="lbl">Margen</span><span class="val pos">${totalVentas>0?(ganancia/totalVentas*100).toFixed(1):'0'}%</span></li>
         </ul>
-      </div>
-      <div class="card">
-        <div class="card-head"><div><h3>Productos más vendidos</h3><p>Top 5 histórico</p></div></div>
-        ${top.length===0 ? `<div class="empty" style="padding:30px 10px">${icon('reportes')}<p>Sin datos de ventas</p></div>` : `
-        <ul class="list-rows">
-          ${top.map(([n,c])=>`<li><span class="lbl">${esc(n)}</span><span class="val">${c.toFixed(2)}</span></li>`).join('')}
-        </ul>`}
       </div>
     </div>
     <div class="card">
-      <div class="empty">
-        ${icon('reportes')}<h3>Más reportes en camino</h3>
-        <p>Comparativas mensuales y exportación a PDF/Excel próximamente.</p>
-      </div>
+      <div class="card-head"><div><h3>Productos más vendidos</h3><p>Top 5 histórico</p></div></div>
+      ${top.length===0 ? `<div class="empty" style="padding:30px 10px">${icon('reportes')}<p>Sin datos de ventas</p></div>` : `
+      <ul class="list-rows">
+        ${top.map(([n,c])=>`<li><span class="lbl">${esc(n)}</span><span class="val">${c.toFixed(2)}</span></li>`).join('')}
+      </ul>`}
     </div>
   `;
 };
@@ -1492,7 +1671,8 @@ VIEWS.config = () => `
   <div class="card">
     <div class="card-head"><div><h3>Datos y almacenamiento</h3><p>Los datos se guardan en tu navegador</p></div></div>
     <ul class="list-rows">
-      <li><span class="lbl">Productos</span><span class="val">${STATE.productos.length}</span></li>
+      <li><span class="lbl">Productos Carnicería</span><span class="val">${calc.productosPorArea('carniceria').length}</span></li>
+      <li><span class="lbl">Productos Abarrotes</span><span class="val">${calc.productosPorArea('abarrotes').length}</span></li>
       <li><span class="lbl">Ventas</span><span class="val">${STATE.ventas.length}</span></li>
       <li><span class="lbl">Compras</span><span class="val">${STATE.compras.length}</span></li>
       <li><span class="lbl">Clientes</span><span class="val">${STATE.clientes.length}</span></li>
@@ -1507,7 +1687,7 @@ VIEWS.config = () => `
 `;
 
 /* =========================================================
-   ============  SCANNER DE CÓDIGO DE BARRAS  ==============
+   SCANNER
    ========================================================= */
 let _zxingReader = null;
 let _scannerCallback = null;
@@ -1518,8 +1698,7 @@ let _scanCooldown = false;
 
 window.openScanner = function(callback){
   if(typeof ZXing === 'undefined'){
-    toast('Cargando librería de escaneo, espera un momento…','warn');
-    // Reintentar después de 1s
+    toast('Cargando librería de escaneo…','warn');
     setTimeout(()=>{
       if(typeof ZXing !== 'undefined') openScanner(callback);
       else toast('No se pudo cargar el escáner. Verifica tu conexión.','error');
@@ -1541,14 +1720,12 @@ async function startCamera(){
   loading.classList.remove('hidden');
   loadingText.textContent = 'Iniciando cámara…';
 
-  // Verificar soporte
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-    loadingText.textContent = 'Tu navegador no soporta acceso a la cámara. Usa la entrada manual.';
+    loadingText.textContent = 'Tu navegador no soporta cámara. Usa la entrada manual.';
     return;
   }
 
   try{
-    // Detener stream anterior si existe
     if(_scannerStream){
       _scannerStream.getTracks().forEach(t => t.stop());
       _scannerStream = null;
@@ -1556,22 +1733,15 @@ async function startCamera(){
 
     _zxingReader = new ZXing.BrowserMultiFormatReader();
     const constraints = {
-      video: {
-        facingMode: { ideal: 'environment' },
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      },
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
       audio: false
     };
-
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     _scannerStream = stream;
     video.srcObject = stream;
     await video.play();
 
-    // Guardar track para linterna
     _torchTrack = stream.getVideoTracks()[0];
-    // Verificar si tiene linterna
     const caps = _torchTrack.getCapabilities ? _torchTrack.getCapabilities() : {};
     const torchBtn = document.getElementById('scannerTorch');
     if(!caps.torch){
@@ -1584,20 +1754,15 @@ async function startCamera(){
 
     loading.classList.add('hidden');
 
-    // Iniciar decodificación continua
     _zxingReader.decodeFromVideoDevice(null, video, (result, err) => {
-      if(result && !_scanCooldown){
-        handleScan(result.getText());
-      }
-      // Los errores NotFound son normales (no hay código en el frame)
+      if(result && !_scanCooldown) handleScan(result.getText());
     });
-
   } catch(e){
     console.error('Camera error:', e);
     loading.classList.add('hidden');
     let msg = 'No se pudo acceder a la cámara.';
     if(e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError'){
-      msg = 'Permiso de cámara denegado. Habilítalo en la configuración del navegador.';
+      msg = 'Permiso de cámara denegado. Habilítalo en el navegador.';
     } else if(e.name === 'NotFoundError' || e.name === 'DevicesNotFoundError'){
       msg = 'No se encontró ninguna cámara disponible.';
     } else if(e.name === 'NotReadableError'){
@@ -1607,7 +1772,6 @@ async function startCamera(){
     }
     document.getElementById('scannerLoadingText').textContent = msg;
     document.getElementById('scannerLoading').classList.remove('hidden');
-    // Ocultar spinner, mostrar solo texto
     const sp = document.querySelector('.scanner-loading .spinner');
     if(sp) sp.style.display = 'none';
   }
@@ -1616,11 +1780,7 @@ async function startCamera(){
 function handleScan(code){
   if(_scanCooldown) return;
   _scanCooldown = true;
-
-  // Feedback
   if(navigator.vibrate) navigator.vibrate([60, 40, 60]);
-
-  // Sonido corto con Web Audio API
   try{
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
@@ -1632,7 +1792,6 @@ function handleScan(code){
     osc.start(); osc.stop(ctx.currentTime + 0.15);
   }catch(e){}
 
-  // Mostrar feedback visual brevemente
   const loading = document.getElementById('scannerLoading');
   const loadingText = document.getElementById('scannerLoadingText');
   const sp = document.querySelector('.scanner-loading .spinner');
@@ -1654,46 +1813,29 @@ function closeScanner(){
   document.getElementById('scannerBg').classList.remove('show');
   document.body.style.overflow = '';
   _scanCooldown = false;
-
-  if(_zxingReader){
-    try { _zxingReader.reset(); } catch(e){}
-    _zxingReader = null;
-  }
-  if(_scannerStream){
-    try { _scannerStream.getTracks().forEach(t => t.stop()); } catch(e){}
-    _scannerStream = null;
-  }
+  if(_zxingReader){ try { _zxingReader.reset(); } catch(e){} _zxingReader = null; }
+  if(_scannerStream){ try { _scannerStream.getTracks().forEach(t => t.stop()); } catch(e){} _scannerStream = null; }
   _torchTrack = null;
   _torchOn = false;
-  const torchBtn = document.getElementById('scannerTorch');
-  torchBtn.classList.remove('on');
-
+  document.getElementById('scannerTorch').classList.remove('on');
   const video = document.getElementById('scannerVideo');
   if(video) video.srcObject = null;
-
-  // Reset spinner
   const sp = document.querySelector('.scanner-loading .spinner');
   if(sp) sp.style.display = '';
   document.getElementById('scannerLoadingText').textContent = 'Iniciando cámara…';
   document.getElementById('scannerLoading').classList.remove('hidden');
 }
 
-/* Toggle linterna */
 document.getElementById('scannerTorch').addEventListener('click', async () => {
   if(!_torchTrack) return;
   try{
     _torchOn = !_torchOn;
     await _torchTrack.applyConstraints({ advanced: [{ torch: _torchOn }] });
     document.getElementById('scannerTorch').classList.toggle('on', _torchOn);
-  }catch(e){
-    toast('Linterna no disponible','warn');
-  }
+  }catch(e){ toast('Linterna no disponible','warn'); }
 });
 
-/* Cerrar scanner */
 document.getElementById('scannerClose').addEventListener('click', closeScanner);
-
-/* Entrada manual */
 document.getElementById('scannerManualBtn').addEventListener('click', () => {
   const v = document.getElementById('scannerManual').value.trim();
   if(!v){ toast('Ingresa un código','error'); return; }
@@ -1706,25 +1848,19 @@ document.getElementById('scannerManual').addEventListener('keydown', (e) => {
   }
 });
 
-/* Escape cierra scanner */
 document.addEventListener('keydown', e => {
   if(e.key === 'Escape' && document.getElementById('scannerBg').classList.contains('show')){
     closeScanner();
   }
 });
 
-/* =========================================================
-   QUICK SCAN desde barra superior y botón flotante
-   ========================================================= */
 window.quickScan = function(areaDefault=''){
   openScanner((code) => {
     const existing = calc.buscarPorBarcode(code);
     if(existing){
-      // Producto encontrado → abrir edición
       toast(`Producto encontrado: ${existing.nombre}`,'success');
       setTimeout(()=>openProductoModal(existing.area, existing.id), 150);
     } else {
-      // No existe → crear con barcode precargado
       toast(`Código ${code} no registrado. Crea el producto.`,'warn');
       setTimeout(()=>openProductoModal(areaDefault, null, code), 150);
     }
@@ -1735,15 +1871,44 @@ window.quickScan = function(areaDefault=''){
    MODALES
    ========================================================= */
 
-/* ---- Producto (con campo de código de barras) ---- */
+/* ---- Producto (con SELECTOR VISUAL de sección) ---- */
 window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
   const p = id ? STATE.productos.find(x=>x.id===id) : null;
   const barcodeValue = p ? (p.barcode||'') : (barcodePrefill||'');
+  const selectedArea = p?.area || areaDefault || 'carniceria';
+  const s = SECTIONS[selectedArea];
 
   const body = `
+    <!-- ============ SELECTOR DE SECCIÓN (grande y claro) ============ -->
+    <div class="field">
+      <div class="section-label-lg">
+        <span>📍 Sección donde va el producto <span class="req">*</span></span>
+      </div>
+      <div class="area-selector" id="areaSelector">
+        <button type="button" class="area-card carn ${selectedArea==='carniceria'?'selected':''}" data-value="carniceria">
+          <span class="ac-check">${icon('check')}</span>
+          <div class="ac-icon">${icon('carne')}</div>
+          <strong>Carnicería</strong>
+          <small>🥩 Venta por kilo / libra</small>
+        </button>
+        <button type="button" class="area-card abar ${selectedArea==='abarrotes'?'selected':''}" data-value="abarrotes">
+          <span class="ac-check">${icon('check')}</span>
+          <div class="ac-icon">${icon('carrito')}</div>
+          <strong>Tienda de Abarrotes</strong>
+          <small>🛒 Productos por unidad</small>
+        </button>
+      </div>
+      <input type="hidden" name="area" value="${selectedArea}">
+      <div class="section-helper" id="sectionHelper">
+        ${icon('info')}
+        <span>El producto aparecerá en la sección <b id="helperSectionName">${s.label}</b></span>
+      </div>
+    </div>
+
     <div class="field">
       <label>Nombre del producto *</label>
-      <input name="nombre" value="${p?esc(p.nombre):''}" placeholder="Ej: Carne molida, Cemento 50 kg">
+      <input name="nombre" id="nombreInput" value="${p?esc(p.nombre):''}"
+             placeholder="${s.placeholder}">
     </div>
 
     <div class="field">
@@ -1756,22 +1921,14 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
           ${icon('barcode')}
         </button>
       </div>
-      ${barcodeValue ? `<div style="font-size:11.5px;color:var(--green);margin-top:6px;display:flex;align-items:center;gap:4px">${icon('check')} Código cargado</div>` : ''}
     </div>
 
-    <div class="field-row">
-      <div class="field">
-        <label>Área *</label>
-        <select name="area">
-          <option value="carniceria" ${(p?.area||areaDefault)==='carniceria'?'selected':''}>Carnicería</option>
-          <option value="barrotes" ${(p?.area||areaDefault)==='barrotes'?'selected':''}>Barrotes</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Categoría</label>
-        <input name="categoria" value="${p?esc(p.categoria):''}" placeholder="Ej: Res, Construcción">
-      </div>
+    <div class="field">
+      <label>Categoría <span class="optional">(opcional)</span></label>
+      <input name="categoria" value="${p?esc(p.categoria):''}"
+             placeholder="${selectedArea==='carniceria'?'Ej: Res, Cerdo, Pollo':'Ej: Bebidas, Granos, Limpieza'}">
     </div>
+
     <div class="field-row">
       <div class="field">
         <label>Unidad de medida *</label>
@@ -1785,19 +1942,12 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
         <input name="stock" type="number" step="0.01" min="0" value="${p?p.stock:0}">
       </div>
     </div>
+
     <div class="field-row">
       <div class="field">
         <label>Stock mínimo <span class="unit-hint" data-hint="unidad">kg</span></label>
         <input name="stockMin" type="number" step="0.01" min="0" value="${p?p.stockMin:0}">
       </div>
-      <div class="field">
-        <label>&nbsp;</label>
-        <div style="font-size:11.5px;color:var(--muted);padding-top:11px">
-          Alerta cuando el stock llegue a este valor
-        </div>
-      </div>
-    </div>
-    <div class="field-row">
       <div class="field">
         <label>Costo por <span class="unit-hint" data-hint="unidad">kg</span> *</label>
         <div class="input-prefix">
@@ -1805,16 +1955,17 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
           <input name="precioCosto" type="number" step="0.01" min="0" value="${p?p.precioCosto:0}">
         </div>
       </div>
-      <div class="field">
-        <label>Venta por <span class="unit-hint" data-hint="unidad">kg</span> *</label>
-        <div class="input-prefix">
-          <span>${CFG.simbolo.trim()}</span>
-          <input name="precioVenta" type="number" step="0.01" min="0" value="${p?p.precioVenta:0}">
-        </div>
+    </div>
+
+    <div class="field">
+      <label>Venta por <span class="unit-hint" data-hint="unidad">kg</span> *</label>
+      <div class="input-prefix">
+        <span>${CFG.simbolo.trim()}</span>
+        <input name="precioVenta" type="number" step="0.01" min="0" value="${p?p.precioVenta:0}">
       </div>
     </div>
 
-    <div class="preview-box" id="previewBox">
+    <div class="preview-box">
       <div class="pb-label">
         Valor total del stock
         <small id="previewFormula">0 kg × Bs 0,00</small>
@@ -1828,6 +1979,10 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
     bodyHTML: body,
     submitLabel: p ? 'Guardar cambios' : 'Crear producto',
     onReady: (m) => {
+      const areaSelector = m.querySelector('#areaSelector');
+      const areaInput = m.querySelector('[name="area"]');
+      const helperSectionName = m.querySelector('#helperSectionName');
+      const nombreInput = m.querySelector('#nombreInput');
       const unidadSel = m.querySelector('[name="unidad"]');
       const stockInp = m.querySelector('[name="stock"]');
       const costoInp = m.querySelector('[name="precioCosto"]');
@@ -1837,6 +1992,44 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
       const bcInput = m.querySelector('#bcInput');
       const bcBtn = m.querySelector('#bcScanBtn');
 
+      // ===== Selector de sección =====
+      areaSelector.querySelectorAll('.area-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const val = card.dataset.value;
+          areaInput.value = val;
+          areaSelector.querySelectorAll('.area-card').forEach(c => {
+            c.classList.toggle('selected', c.dataset.value === val);
+          });
+          const sec = SECTIONS[val];
+          helperSectionName.textContent = sec.label;
+          // Actualizar placeholder del nombre según sección
+          if(!nombreInput.value){
+            nombreInput.placeholder = sec.placeholder;
+          }
+          // Cambiar color del botón submit si es abarrotes
+          const submitBtn = m.querySelector('#mSubmit');
+          if(submitBtn){
+            if(val === 'abarrotes'){
+              submitBtn.style.background = 'var(--blue)';
+              submitBtn.style.boxShadow = '0 2px 8px rgba(59,130,246,.25)';
+            } else {
+              submitBtn.style.background = '';
+              submitBtn.style.boxShadow = '';
+            }
+          }
+        });
+      });
+
+      // Actualizar color del botón submit al iniciar si es abarrotes
+      if(areaInput.value === 'abarrotes'){
+        const submitBtn = m.querySelector('#mSubmit');
+        if(submitBtn){
+          submitBtn.style.background = 'var(--blue)';
+          submitBtn.style.boxShadow = '0 2px 8px rgba(59,130,246,.25)';
+        }
+      }
+
+      // ===== Hints por unidad =====
       const updateHints = () => {
         const u = unidadSel.value;
         hints.forEach(h => h.textContent = u);
@@ -1854,10 +2047,9 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
       stockInp.addEventListener('input', updatePreview);
       costoInp.addEventListener('input', updatePreview);
 
-      // Escanear desde el campo del formulario
+      // ===== Escanear desde el formulario =====
       bcBtn.addEventListener('click', () => {
         openScanner((code) => {
-          // Verificar si ya existe en OTRO producto
           const dup = STATE.productos.find(x => x.barcode === code && x.id !== id);
           if(dup){
             toast(`⚠ Este código ya pertenece a "${dup.nombre}"`,'warn');
@@ -1875,7 +2067,6 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
       const m = document.getElementById('modal');
       const barcode = fieldVal(m,'barcode');
 
-      // Verificar duplicado
       if(barcode){
         const dup = STATE.productos.find(x => x.barcode === barcode && x.id !== id);
         if(dup){
@@ -1899,8 +2090,10 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
       if(data.precioVenta<=0){ toast('El precio de venta debe ser mayor a 0','error'); return false; }
       if(data.precioCosto<=0){ toast('El costo debe ser mayor a 0','error'); return false; }
 
-      if(p){ Object.assign(p, data); toast('Producto actualizado','success'); }
-      else { STATE.productos.push({id:uid(), ...data}); toast('Producto creado','success'); }
+      const sec = SECTIONS[data.area];
+
+      if(p){ Object.assign(p, data); toast(`Producto actualizado en ${sec.label}`,'success'); }
+      else { STATE.productos.push({id:uid(), ...data}); toast(`Producto creado en ${sec.label}`,'success'); }
       saveState(); refresh();
 
       const creado = p || STATE.productos[STATE.productos.length-1];
@@ -1915,7 +2108,7 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
 window.borrarProducto = id => {
   const p = STATE.productos.find(x=>x.id===id);
   if(!p) return;
-  if(!confirm(`¿Eliminar "${p.nombre}"?`)) return;
+  if(!confirm(`¿Eliminar "${p.nombre}" de ${sectionOf(p.area).label}?`)) return;
   STATE.productos = STATE.productos.filter(x=>x.id!==id);
   saveState(); refresh(); toast('Producto eliminado','success');
 };
@@ -1923,7 +2116,11 @@ window.borrarProducto = id => {
 window.openEntradaModal = id => {
   const p = STATE.productos.find(x=>x.id===id);
   if(!p) return;
+  const s = sectionOf(p.area);
   const body = `
+    <div style="margin-bottom:14px">
+      ${sectionBadge(p.area, true)}
+    </div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">
       Producto: <b style="color:var(--text)">${esc(p.nombre)}</b><br>
       Stock actual: <b style="color:var(--text)">${p.stock} ${esc(p.unidad)}</b>
@@ -1964,6 +2161,15 @@ window.openVentaModal = () => {
   }
   const items = [];
 
+  const optgroup = (areaKey) => {
+    const s = SECTIONS[areaKey];
+    const prods = disponibles.filter(p=>p.area===areaKey);
+    if(prods.length === 0) return '';
+    return `<optgroup label="── ${s.label} ──">
+      ${prods.map(p=>`<option value="${p.id}">${esc(p.nombre)} — ${fmt(p.precioVenta)}/${esc(p.unidad)} · disp: ${p.stock}</option>`).join('')}
+    </optgroup>`;
+  };
+
   const body = `
     <div class="field">
       <label>Cliente</label>
@@ -1979,13 +2185,14 @@ window.openVentaModal = () => {
       <label>Agregar producto</label>
       <div class="row-inline">
         <select id="vProd">
-          ${disponibles.map(p=>`<option value="${p.id}">${esc(p.nombre)} — ${fmt(p.precioVenta)}/${esc(p.unidad)} · disp: ${p.stock}</option>`).join('')}
+          ${optgroup('carniceria')}
+          ${optgroup('abarrotes')}
         </select>
         <input id="vCant" type="number" step="0.01" min="0.01" value="1">
         <button type="button" class="btn primary" id="vAdd">${icon('plus')}</button>
       </div>
       <div style="font-size:11.5px;color:var(--muted);margin-top:6px">
-        La cantidad se ingresa en la unidad del producto (kg, lb, unidad, etc.)
+        Los productos están agrupados por sección. La cantidad va en la unidad del producto.
       </div>
     </div>
     <ul class="v-items" id="vItems"></ul>
@@ -2027,7 +2234,7 @@ window.openVentaModal = () => {
         if(pago === 'Efectivo'){
           STATE.caja.push({
             id: uid(), fecha: venta.fecha, hora: venta.hora,
-            tipo:'ingreso', concepto:`Venta ${area==='carniceria'?'carnicería':'barrotes'} — ${cliente}`,
+            tipo:'ingreso', concepto:`Venta ${sectionOf(area).label.toLowerCase()} — ${cliente}`,
             monto: total
           });
         }
@@ -2061,7 +2268,10 @@ window.openVentaModal = () => {
       <li>
         <div class="vi-name">
           <div>${esc(it.nombre)}</div>
-          <div class="vi-sub">${it.cantidad} ${esc(it.unidad)} × ${fmt(it.precio)}/${esc(it.unidad)}</div>
+          <div class="vi-sub">
+            <span class="mini-tag ${it.area==='carniceria'?'carn':'abar'}">${sectionOf(it.area).shortLabel}</span>
+            ${it.cantidad} ${esc(it.unidad)} × ${fmt(it.precio)}/${esc(it.unidad)}
+          </div>
         </div>
         <div class="vi-price">${fmt(it.precio*it.cantidad)}</div>
         <button type="button" class="vi-x" data-idx="${idx}">${icon('x')}</button>
@@ -2166,7 +2376,7 @@ window.openCompraModal = () => {
     </div>
     <div class="field">
       <label>Detalle *</label>
-      <input name="detalle" placeholder="Ej: Carne molida 40 kg, cemento 30 bolsas">
+      <input name="detalle" placeholder="Ej: Carne molida 40 kg, arroz 30 kg">
     </div>
     <div class="field-row">
       <div class="field">
@@ -2310,7 +2520,7 @@ window.openProveedorModal = () => {
     </div>
     <div class="field">
       <label>Rubro</label>
-      <input name="rubro" placeholder="Ej: Carnes, Construcción, Bebidas">
+      <input name="rubro" placeholder="Ej: Carnes, Abarrotes, Bebidas">
     </div>
     <div class="field-row">
       <div class="field">
@@ -2365,7 +2575,7 @@ window.exportarDatos = () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `barrotes-carniceria-backup-${todayISO()}.json`;
+  a.download = `carniceria-abarrotes-backup-${todayISO()}.json`;
   a.click();
   URL.revokeObjectURL(url);
   toast('Backup descargado','success');
@@ -2385,7 +2595,7 @@ function renderChart(){
   const el = document.getElementById('chart');
   if(!el) return;
   const data = calc.ventasSemana();
-  const totales = data.map(d => d.carniceria + d.barrotes);
+  const totales = data.map(d => d.carniceria + d.abarrotes);
   const max = Math.max(...totales, 1);
   el.innerHTML = data.map((d,i) => {
     const total = totales[i];
@@ -2393,11 +2603,11 @@ function renderChart(){
     const pctCarn = total>0 ? (d.carniceria/total)*100 : 50;
     return `
       <div class="bar-col">
-        <div class="tip">${fmtK(total)} · Carn ${fmtK(d.carniceria)} / Barr ${fmtK(d.barrotes)}</div>
+        <div class="tip">${fmtK(total)} · Carn ${fmtK(d.carniceria)} / Abar ${fmtK(d.abarrotes)}</div>
         <div class="bar-track">
           <div class="bar" style="height:${altura}%;background:${total===0?'#eef1f6':''}">
             ${total>0 ? `
-              <div class="seg barrotes" style="flex:${100-pctCarn}"></div>
+              <div class="seg abarrotes" style="flex:${100-pctCarn}"></div>
               <div class="seg carniceria" style="flex:${pctCarn}"></div>
             ` : ''}
           </div>
@@ -2420,7 +2630,6 @@ overlay.addEventListener('click', closeSidebar);
 
 document.querySelectorAll('.bn-item[data-view]').forEach(b =>
   b.addEventListener('click', () => setView(b.dataset.view)));
-
 document.getElementById('bnScanBtn').addEventListener('click', () => quickScan());
 document.getElementById('quickScanBtn').addEventListener('click', () => quickScan());
 
@@ -2457,11 +2666,6 @@ document.getElementById('notifBtn').addEventListener('click', () => {
    ========================================================= */
 renderNav();
 setView('dashboard');
-
-// Aviso si no hay HTTPS al cargar
-if(location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1' && location.protocol !== 'file:'){
-  console.warn('La cámara requiere HTTPS para funcionar en el navegador.');
-}
 </script>
 </body>
 </html>
