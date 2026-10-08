@@ -1792,4 +1792,676 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
       </div>
       <div class="field">
         <label>&nbsp;</label>
-        <div style="font-size:11.5px;color:var(--muted);padding-top:11
+        <div style="font-size:11.5px;color:var(--muted);padding-top:11px">
+          Alerta cuando el stock llegue a este valor
+        </div>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Costo por <span class="unit-hint" data-hint="unidad">kg</span> *</label>
+        <div class="input-prefix">
+          <span>${CFG.simbolo.trim()}</span>
+          <input name="precioCosto" type="number" step="0.01" min="0" value="${p?p.precioCosto:0}">
+        </div>
+      </div>
+      <div class="field">
+        <label>Venta por <span class="unit-hint" data-hint="unidad">kg</span> *</label>
+        <div class="input-prefix">
+          <span>${CFG.simbolo.trim()}</span>
+          <input name="precioVenta" type="number" step="0.01" min="0" value="${p?p.precioVenta:0}">
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-box" id="previewBox">
+      <div class="pb-label">
+        Valor total del stock
+        <small id="previewFormula">0 kg × Bs 0,00</small>
+      </div>
+      <div class="pb-value" id="previewValor">Bs 0,00</div>
+    </div>
+  `;
+
+  openModal({
+    title: p ? 'Editar producto' : 'Nuevo producto',
+    bodyHTML: body,
+    submitLabel: p ? 'Guardar cambios' : 'Crear producto',
+    onReady: (m) => {
+      const unidadSel = m.querySelector('[name="unidad"]');
+      const stockInp = m.querySelector('[name="stock"]');
+      const costoInp = m.querySelector('[name="precioCosto"]');
+      const hints = m.querySelectorAll('[data-hint="unidad"]');
+      const previewFormula = m.querySelector('#previewFormula');
+      const previewValor = m.querySelector('#previewValor');
+      const bcInput = m.querySelector('#bcInput');
+      const bcBtn = m.querySelector('#bcScanBtn');
+
+      const updateHints = () => {
+        const u = unidadSel.value;
+        hints.forEach(h => h.textContent = u);
+      };
+      const updatePreview = () => {
+        const stock = parseFloat(stockInp.value)||0;
+        const costo = parseFloat(costoInp.value)||0;
+        const total = stock * costo;
+        const u = unidadSel.value;
+        previewFormula.textContent = `${stock} ${u} × ${fmt(costo)}`;
+        previewValor.textContent = fmt(total);
+      };
+
+      unidadSel.addEventListener('change', () => { updateHints(); updatePreview(); });
+      stockInp.addEventListener('input', updatePreview);
+      costoInp.addEventListener('input', updatePreview);
+
+      // Escanear desde el campo del formulario
+      bcBtn.addEventListener('click', () => {
+        openScanner((code) => {
+          // Verificar si ya existe en OTRO producto
+          const dup = STATE.productos.find(x => x.barcode === code && x.id !== id);
+          if(dup){
+            toast(`⚠ Este código ya pertenece a "${dup.nombre}"`,'warn');
+          }
+          bcInput.value = code;
+          bcInput.focus();
+          toast('✓ Código capturado','success');
+        });
+      });
+
+      updateHints();
+      updatePreview();
+    },
+    onSubmit: () => {
+      const m = document.getElementById('modal');
+      const barcode = fieldVal(m,'barcode');
+
+      // Verificar duplicado
+      if(barcode){
+        const dup = STATE.productos.find(x => x.barcode === barcode && x.id !== id);
+        if(dup){
+          toast(`El código ya está en "${dup.nombre}"`,'error');
+          return false;
+        }
+      }
+
+      const data = {
+        nombre: fieldVal(m,'nombre'),
+        barcode: barcode,
+        area: fieldVal(m,'area'),
+        categoria: fieldVal(m,'categoria'),
+        unidad: fieldVal(m,'unidad'),
+        stock: parseFloat(fieldVal(m,'stock'))||0,
+        stockMin: parseFloat(fieldVal(m,'stockMin'))||0,
+        precioCosto: parseFloat(fieldVal(m,'precioCosto'))||0,
+        precioVenta: parseFloat(fieldVal(m,'precioVenta'))||0,
+      };
+      if(!data.nombre){ toast('Ingresa el nombre','error'); return false; }
+      if(data.precioVenta<=0){ toast('El precio de venta debe ser mayor a 0','error'); return false; }
+      if(data.precioCosto<=0){ toast('El costo debe ser mayor a 0','error'); return false; }
+
+      if(p){ Object.assign(p, data); toast('Producto actualizado','success'); }
+      else { STATE.productos.push({id:uid(), ...data}); toast('Producto creado','success'); }
+      saveState(); refresh();
+
+      const creado = p || STATE.productos[STATE.productos.length-1];
+      if(Number(creado.stock) <= Number(creado.stockMin)){
+        setTimeout(()=>toast(`⚠ "${creado.nombre}" está en stock bajo`,'warn'), 400);
+      }
+      return true;
+    }
+  });
+};
+
+window.borrarProducto = id => {
+  const p = STATE.productos.find(x=>x.id===id);
+  if(!p) return;
+  if(!confirm(`¿Eliminar "${p.nombre}"?`)) return;
+  STATE.productos = STATE.productos.filter(x=>x.id!==id);
+  saveState(); refresh(); toast('Producto eliminado','success');
+};
+
+window.openEntradaModal = id => {
+  const p = STATE.productos.find(x=>x.id===id);
+  if(!p) return;
+  const body = `
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">
+      Producto: <b style="color:var(--text)">${esc(p.nombre)}</b><br>
+      Stock actual: <b style="color:var(--text)">${p.stock} ${esc(p.unidad)}</b>
+    </p>
+    <div class="field">
+      <label>Cantidad a ingresar <span class="unit-hint">${esc(p.unidad)}</span> *</label>
+      <input name="cantidad" type="number" step="0.01" min="0.01" value="1" autofocus>
+    </div>
+    <div class="field">
+      <label>Nota (opcional)</label>
+      <input name="nota" placeholder="Ej: Lote nuevo, ajuste, devolución">
+    </div>
+  `;
+  openModal({
+    title:'Registrar entrada de stock',
+    bodyHTML:body,
+    submitLabel:'Agregar stock',
+    onSubmit: () => {
+      const m = document.getElementById('modal');
+      const cant = parseFloat(fieldVal(m,'cantidad'));
+      if(!cant || cant<=0){ toast('Cantidad inválida','error'); return false; }
+      p.stock = Number(p.stock) + cant;
+      saveState(); refresh();
+      toast(`+${cant} ${p.unidad} agregado a "${p.nombre}"`,'success');
+      if(Number(p.stock) > Number(p.stockMin)){
+        setTimeout(()=>toast('✓ El stock ya está en nivel normal','success'), 500);
+      }
+      return true;
+    }
+  });
+};
+
+window.openVentaModal = () => {
+  const disponibles = STATE.productos.filter(p => Number(p.stock) > 0);
+  if(disponibles.length === 0){
+    toast('Agrega productos con stock primero','error');
+    return;
+  }
+  const items = [];
+
+  const body = `
+    <div class="field">
+      <label>Cliente</label>
+      <input name="cliente" value="Consumidor final" placeholder="Nombre del cliente">
+    </div>
+    <div class="field">
+      <label>Forma de pago *</label>
+      <select name="pago">
+        <option>Efectivo</option><option>QR</option><option>Transferencia</option><option>Crédito</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Agregar producto</label>
+      <div class="row-inline">
+        <select id="vProd">
+          ${disponibles.map(p=>`<option value="${p.id}">${esc(p.nombre)} — ${fmt(p.precioVenta)}/${esc(p.unidad)} · disp: ${p.stock}</option>`).join('')}
+        </select>
+        <input id="vCant" type="number" step="0.01" min="0.01" value="1">
+        <button type="button" class="btn primary" id="vAdd">${icon('plus')}</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:6px">
+        La cantidad se ingresa en la unidad del producto (kg, lb, unidad, etc.)
+      </div>
+    </div>
+    <ul class="v-items" id="vItems"></ul>
+    <div class="v-total" id="vTotal" style="display:none"><span>Total:</span><b>${fmt(0)}</b></div>
+  `;
+
+  openModal({
+    title:'Nueva venta',
+    bodyHTML:body,
+    submitLabel:'Registrar venta',
+    onSubmit: () => {
+      if(items.length===0){ toast('Agrega al menos un producto','error'); return false; }
+      const m = document.getElementById('modal');
+      const cliente = fieldVal(m,'cliente') || 'Consumidor final';
+      const pago = fieldVal(m,'pago');
+
+      const areas = [...new Set(items.map(i => i.area))];
+      const grupos = areas.map(a => items.filter(i => i.area === a));
+
+      grupos.forEach(grupo => {
+        const total = grupo.reduce((s,i)=> s + i.precio*i.cantidad, 0);
+        const area = grupo[0].area;
+        const venta = {
+          id: uid(), fecha: todayISO(), hora: nowTime(),
+          cliente, pago, area,
+          items: grupo.map(i=>({
+            productoId: i.productoId, nombre: i.nombre, unidad: i.unidad,
+            cantidad: i.cantidad, precio: i.precio, costo: i.costo
+          })),
+          total
+        };
+        STATE.ventas.push(venta);
+
+        grupo.forEach(i => {
+          const p = STATE.productos.find(x=>x.id===i.productoId);
+          if(p) p.stock = Math.max(0, Number(p.stock) - i.cantidad);
+        });
+
+        if(pago === 'Efectivo'){
+          STATE.caja.push({
+            id: uid(), fecha: venta.fecha, hora: venta.hora,
+            tipo:'ingreso', concepto:`Venta ${area==='carniceria'?'carnicería':'barrotes'} — ${cliente}`,
+            monto: total
+          });
+        }
+        if(pago === 'Crédito' && cliente !== 'Consumidor final'){
+          let c = STATE.clientes.find(x=>x.nombre.toLowerCase()===cliente.toLowerCase());
+          if(!c){ c = {id:uid(), nombre:cliente, telefono:'', deuda:0, abonado:0}; STATE.clientes.push(c); }
+          c.deuda = Number(c.deuda) + total;
+        }
+      });
+
+      saveState();
+      const totalGlobal = items.reduce((s,i)=>s+i.precio*i.cantidad,0);
+      toast(`Venta registrada — ${fmt(totalGlobal)}`,'success');
+      items.forEach(i=>{
+        const p = STATE.productos.find(x=>x.id===i.productoId);
+        if(p && Number(p.stock) <= Number(p.stockMin)){
+          setTimeout(()=>toast(`⚠ "${p.nombre}" quedó con stock bajo`,'warn'), 500);
+        }
+      });
+      refresh();
+      return true;
+    }
+  });
+
+  const m = document.getElementById('modal');
+  const ul = m.querySelector('#vItems');
+  const totalEl = m.querySelector('#vTotal');
+
+  function renderItems(){
+    ul.innerHTML = items.map((it,idx)=>`
+      <li>
+        <div class="vi-name">
+          <div>${esc(it.nombre)}</div>
+          <div class="vi-sub">${it.cantidad} ${esc(it.unidad)} × ${fmt(it.precio)}/${esc(it.unidad)}</div>
+        </div>
+        <div class="vi-price">${fmt(it.precio*it.cantidad)}</div>
+        <button type="button" class="vi-x" data-idx="${idx}">${icon('x')}</button>
+      </li>`).join('');
+    ul.querySelectorAll('.vi-x').forEach(b=>{
+      b.onclick = () => { items.splice(parseInt(b.dataset.idx),1); renderItems(); };
+    });
+    const total = items.reduce((s,i)=>s+i.precio*i.cantidad,0);
+    totalEl.style.display = items.length ? 'flex' : 'none';
+    totalEl.querySelector('b').textContent = fmt(total);
+  }
+
+  m.querySelector('#vAdd').onclick = () => {
+    const pid = m.querySelector('#vProd').value;
+    const cant = parseFloat(m.querySelector('#vCant').value);
+    if(!cant || cant<=0){ toast('Cantidad inválida','error'); return; }
+    const p = STATE.productos.find(x=>x.id===pid);
+    if(!p) return;
+    const yaEnCarrito = items.filter(i=>i.productoId===pid).reduce((s,i)=>s+i.cantidad,0);
+    if(yaEnCarrito + cant > Number(p.stock)){
+      toast(`Stock insuficiente. Disponible: ${p.stock - yaEnCarrito} ${p.unidad}`,'error');
+      return;
+    }
+    const existente = items.find(i=>i.productoId===pid);
+    if(existente){ existente.cantidad += cant; }
+    else {
+      items.push({
+        productoId: p.id, nombre: p.nombre, unidad: p.unidad, area: p.area,
+        cantidad: cant, precio: p.precioVenta, costo: p.precioCosto
+      });
+    }
+    m.querySelector('#vCant').value = 1;
+    renderItems();
+  };
+};
+
+window.borrarVenta = id => {
+  if(!confirm('¿Eliminar esta venta? Se devolverá el stock.')) return;
+  const v = STATE.ventas.find(x=>x.id===id);
+  if(!v) return;
+  v.items.forEach(i=>{
+    const p = STATE.productos.find(x=>x.id===i.productoId);
+    if(p) p.stock = Number(p.stock) + i.cantidad;
+  });
+  STATE.ventas = STATE.ventas.filter(x=>x.id!==id);
+  saveState(); refresh(); toast('Venta eliminada','success');
+};
+
+window.openMovCajaModal = () => {
+  const body = `
+    <div class="field">
+      <label>Tipo *</label>
+      <select name="tipo">
+        <option value="ingreso">Ingreso</option>
+        <option value="egreso">Egreso</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Concepto *</label>
+      <input name="concepto" placeholder="Ej: Apertura de caja, Pago de luz, Retiro">
+    </div>
+    <div class="field">
+      <label>Monto *</label>
+      <div class="input-prefix">
+        <span>${CFG.simbolo.trim()}</span>
+        <input name="monto" type="number" step="0.01" min="0.01" placeholder="0.00">
+      </div>
+    </div>
+  `;
+  openModal({
+    title:'Nuevo movimiento de caja',
+    bodyHTML:body,
+    submitLabel:'Registrar',
+    onSubmit: () => {
+      const m = document.getElementById('modal');
+      const concepto = fieldVal(m,'concepto');
+      const monto = parseFloat(fieldVal(m,'monto'));
+      const tipo = fieldVal(m,'tipo');
+      if(!concepto){ toast('Ingresa un concepto','error'); return false; }
+      if(!monto || monto<=0){ toast('Monto inválido','error'); return false; }
+      STATE.caja.push({ id:uid(), fecha:todayISO(), hora:nowTime(), tipo, concepto, monto });
+      saveState(); refresh(); toast('Movimiento registrado','success');
+      return true;
+    }
+  });
+};
+
+window.borrarMovCaja = id => {
+  if(!confirm('¿Eliminar este movimiento?')) return;
+  STATE.caja = STATE.caja.filter(x=>x.id!==id);
+  saveState(); refresh(); toast('Movimiento eliminado','success');
+};
+
+window.openCompraModal = () => {
+  const body = `
+    <div class="field">
+      <label>Proveedor *</label>
+      <input name="proveedor" placeholder="Nombre del proveedor" list="provList">
+      <datalist id="provList">
+        ${STATE.proveedores.map(p=>`<option value="${esc(p.nombre)}">`).join('')}
+      </datalist>
+    </div>
+    <div class="field">
+      <label>Detalle *</label>
+      <input name="detalle" placeholder="Ej: Carne molida 40 kg, cemento 30 bolsas">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Total *</label>
+        <div class="input-prefix">
+          <span>${CFG.simbolo.trim()}</span>
+          <input name="total" type="number" step="0.01" min="0" placeholder="0.00">
+        </div>
+      </div>
+      <div class="field">
+        <label>Estado</label>
+        <select name="estado">
+          <option>Recibida</option>
+          <option>Pendiente</option>
+        </select>
+      </div>
+    </div>
+  `;
+  openModal({
+    title:'Nueva compra',
+    bodyHTML:body,
+    submitLabel:'Registrar compra',
+    onSubmit: () => {
+      const m = document.getElementById('modal');
+      const proveedor = fieldVal(m,'proveedor');
+      const detalle = fieldVal(m,'detalle');
+      const total = parseFloat(fieldVal(m,'total'));
+      const estado = fieldVal(m,'estado');
+      if(!proveedor || !detalle){ toast('Completa los campos','error'); return false; }
+      if(!total || total<=0){ toast('Total inválido','error'); return false; }
+      STATE.compras.push({ id:uid(), fecha:todayISO(), proveedor, detalle, total, estado });
+      if(estado === 'Pendiente'){
+        let p = STATE.proveedores.find(x=>x.nombre.toLowerCase()===proveedor.toLowerCase());
+        if(!p){ p={id:uid(), nombre:proveedor, rubro:'', deuda:0, vencimiento:''}; STATE.proveedores.push(p); }
+        p.deuda = Number(p.deuda) + total;
+      }
+      saveState(); refresh(); toast('Compra registrada','success');
+      return true;
+    }
+  });
+};
+
+window.borrarCompra = id => {
+  if(!confirm('¿Eliminar esta compra?')) return;
+  STATE.compras = STATE.compras.filter(x=>x.id!==id);
+  saveState(); refresh(); toast('Compra eliminada','success');
+};
+
+window.openClienteModal = id => {
+  const c = id ? STATE.clientes.find(x=>x.id===id) : null;
+  const body = `
+    <div class="field">
+      <label>Nombre *</label>
+      <input name="nombre" value="${c?esc(c.nombre):''}" placeholder="Nombre completo">
+    </div>
+    <div class="field">
+      <label>Teléfono</label>
+      <input name="telefono" value="${c?esc(c.telefono||''):''}" placeholder="Opcional">
+    </div>
+    <div class="field">
+      <label>Deuda inicial</label>
+      <div class="input-prefix">
+        <span>${CFG.simbolo.trim()}</span>
+        <input name="deuda" type="number" step="0.01" min="0" value="${c?c.deuda:0}">
+      </div>
+    </div>
+  `;
+  openModal({
+    title: c?'Editar cliente':'Nuevo cliente',
+    bodyHTML:body,
+    submitLabel: c?'Guardar':'Crear',
+    onSubmit: () => {
+      const m = document.getElementById('modal');
+      const nombre = fieldVal(m,'nombre');
+      const telefono = fieldVal(m,'telefono');
+      const deuda = parseFloat(fieldVal(m,'deuda'))||0;
+      if(!nombre){ toast('Ingresa el nombre','error'); return false; }
+      if(c){ Object.assign(c,{nombre,telefono,deuda}); toast('Cliente actualizado','success'); }
+      else { STATE.clientes.push({id:uid(), nombre, telefono, deuda, abonado:0}); toast('Cliente creado','success'); }
+      saveState(); refresh();
+      return true;
+    }
+  });
+};
+
+window.openAbonoModal = id => {
+  const c = STATE.clientes.find(x=>x.id===id);
+  if(!c) return;
+  const saldo = (c.deuda||0)-(c.abonado||0);
+  const body = `
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">
+      Cliente: <b style="color:var(--text)">${esc(c.nombre)}</b><br>
+      Saldo pendiente: <b style="color:var(--primary)">${fmt(saldo)}</b>
+    </p>
+    <div class="field">
+      <label>Monto del abono *</label>
+      <div class="input-prefix">
+        <span>${CFG.simbolo.trim()}</span>
+        <input name="monto" type="number" step="0.01" min="0.01" max="${saldo}" value="${saldo.toFixed(2)}">
+      </div>
+    </div>
+    <div class="field">
+      <label>Forma de pago</label>
+      <select name="pago">
+        <option>Efectivo</option><option>QR</option><option>Transferencia</option>
+      </select>
+    </div>
+  `;
+  openModal({
+    title:'Registrar abono',
+    bodyHTML:body,
+    submitLabel:'Registrar abono',
+    onSubmit: () => {
+      const m = document.getElementById('modal');
+      const monto = parseFloat(fieldVal(m,'monto'));
+      const pago = fieldVal(m,'pago');
+      if(!monto || monto<=0){ toast('Monto inválido','error'); return false; }
+      if(monto > saldo){ toast('El abono supera el saldo','error'); return false; }
+      c.abonado = Number(c.abonado) + monto;
+      if(pago === 'Efectivo'){
+        STATE.caja.push({ id:uid(), fecha:todayISO(), hora:nowTime(), tipo:'ingreso',
+          concepto:`Abono de ${c.nombre}`, monto });
+      }
+      saveState(); refresh(); toast('Abono registrado','success');
+      return true;
+    }
+  });
+};
+
+window.borrarCliente = id => {
+  if(!confirm('¿Eliminar este cliente?')) return;
+  STATE.clientes = STATE.clientes.filter(x=>x.id!==id);
+  saveState(); refresh(); toast('Cliente eliminado','success');
+};
+
+window.openProveedorModal = () => {
+  const body = `
+    <div class="field">
+      <label>Nombre *</label>
+      <input name="nombre" placeholder="Nombre del proveedor">
+    </div>
+    <div class="field">
+      <label>Rubro</label>
+      <input name="rubro" placeholder="Ej: Carnes, Construcción, Bebidas">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Deuda actual</label>
+        <div class="input-prefix">
+          <span>${CFG.simbolo.trim()}</span>
+          <input name="deuda" type="number" step="0.01" min="0" value="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>Vencimiento</label>
+        <input name="vencimiento" type="date">
+      </div>
+    </div>
+  `;
+  openModal({
+    title:'Nuevo proveedor',
+    bodyHTML:body,
+    submitLabel:'Crear proveedor',
+    onSubmit: () => {
+      const m = document.getElementById('modal');
+      const nombre = fieldVal(m,'nombre');
+      if(!nombre){ toast('Ingresa el nombre','error'); return false; }
+      STATE.proveedores.push({
+        id:uid(), nombre,
+        rubro: fieldVal(m,'rubro'),
+        deuda: parseFloat(fieldVal(m,'deuda'))||0,
+        vencimiento: fieldVal(m,'vencimiento')
+      });
+      saveState(); refresh(); toast('Proveedor creado','success');
+      return true;
+    }
+  });
+};
+
+window.borrarProveedor = id => {
+  if(!confirm('¿Eliminar este proveedor?')) return;
+  STATE.proveedores = STATE.proveedores.filter(x=>x.id!==id);
+  saveState(); refresh(); toast('Proveedor eliminado','success');
+};
+
+window.resetearDatos = () => {
+  if(!confirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.')) return;
+  if(!confirm('¿Estás completamente seguro? Se perderá todo.')) return;
+  STATE = defaultState();
+  saveState(); refresh(); toast('Datos reiniciados','success');
+};
+
+window.exportarDatos = () => {
+  const data = JSON.stringify(STATE, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `barrotes-carniceria-backup-${todayISO()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('Backup descargado','success');
+};
+
+/* =========================================================
+   UTIL
+   ========================================================= */
+function esc(s){
+  return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* =========================================================
+   CHART
+   ========================================================= */
+function renderChart(){
+  const el = document.getElementById('chart');
+  if(!el) return;
+  const data = calc.ventasSemana();
+  const totales = data.map(d => d.carniceria + d.barrotes);
+  const max = Math.max(...totales, 1);
+  el.innerHTML = data.map((d,i) => {
+    const total = totales[i];
+    const altura = total>0 ? Math.max(4, Math.round((total/max)*100)) : 4;
+    const pctCarn = total>0 ? (d.carniceria/total)*100 : 50;
+    return `
+      <div class="bar-col">
+        <div class="tip">${fmtK(total)} · Carn ${fmtK(d.carniceria)} / Barr ${fmtK(d.barrotes)}</div>
+        <div class="bar-track">
+          <div class="bar" style="height:${altura}%;background:${total===0?'#eef1f6':''}">
+            ${total>0 ? `
+              <div class="seg barrotes" style="flex:${100-pctCarn}"></div>
+              <div class="seg carniceria" style="flex:${pctCarn}"></div>
+            ` : ''}
+          </div>
+        </div>
+        <span class="bar-label">${d.dia}</span>
+      </div>`;
+  }).join('');
+}
+
+/* =========================================================
+   SIDEBAR MÓVIL
+   ========================================================= */
+const sidebar = document.getElementById('sidebar');
+const overlay = document.getElementById('overlay');
+function openSidebar(){ sidebar.classList.add('open'); overlay.classList.add('show'); }
+function closeSidebar(){ sidebar.classList.remove('open'); overlay.classList.remove('show'); }
+document.getElementById('menuBtn').addEventListener('click', () =>
+  sidebar.classList.contains('open') ? closeSidebar() : openSidebar());
+overlay.addEventListener('click', closeSidebar);
+
+document.querySelectorAll('.bn-item[data-view]').forEach(b =>
+  b.addEventListener('click', () => setView(b.dataset.view)));
+
+document.getElementById('bnScanBtn').addEventListener('click', () => quickScan());
+document.getElementById('quickScanBtn').addEventListener('click', () => quickScan());
+
+document.addEventListener('click', e => {
+  if(e.target.classList.contains('chip')){
+    e.target.closest('.chip-row').querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+    e.target.classList.add('active');
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){
+    if(document.getElementById('scannerBg').classList.contains('show')) return;
+    if(document.getElementById('modalBg').classList.contains('show')) closeModal();
+  }
+});
+
+document.getElementById('notifBtn').addEventListener('click', () => {
+  const bajos = calc.stockBajo();
+  if(bajos.length === 0){
+    toast('✓ Sin alertas de stock','success');
+    return;
+  }
+  const agotados = calc.stockAgotado().length;
+  const msg = agotados > 0
+    ? `${agotados} sin stock · ${bajos.length} con stock bajo`
+    : `${bajos.length} producto${bajos.length>1?'s':''} con stock bajo`;
+  toast(msg,'warn');
+  setTimeout(()=>setView('inventario'), 700);
+});
+
+/* =========================================================
+   INIT
+   ========================================================= */
+renderNav();
+setView('dashboard');
+
+// Aviso si no hay HTTPS al cargar
+if(location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1' && location.protocol !== 'file:'){
+  console.warn('La cámara requiere HTTPS para funcionar en el navegador.');
+}
+</script>
+</body>
+</html>
