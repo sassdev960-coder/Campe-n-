@@ -470,6 +470,33 @@
   .cart-header .cart-badge{background:var(--primary);color:#fff;font-size:10.5px;
     padding:2px 8px;border-radius:10px;font-weight:700;letter-spacing:.3px}
 
+  .toggle-row{display:flex;align-items:center;gap:12px;padding:12px 14px;
+    background:#fafbfd;border:1px solid var(--border);border-radius:11px;cursor:pointer;
+    transition:.15s;user-select:none}
+  .toggle-row:hover{background:#f4f6fa;border-color:#d7dee8}
+  .toggle-row input[type="checkbox"]{
+    appearance:none;-webkit-appearance:none;width:46px;height:26px;border-radius:13px;
+    background:#cbd5e1;position:relative;transition:.22s;cursor:pointer;flex-shrink:0;
+    border:none;margin:0;padding:0
+  }
+  .toggle-row input[type="checkbox"]::after{
+    content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.22s
+  }
+  .toggle-row input[type="checkbox"]:checked{background:var(--green)}
+  .toggle-row input[type="checkbox"]:checked::after{transform:translateX(20px)}
+  .toggle-row .toggle-label{flex:1;min-width:0}
+  .toggle-row .toggle-label strong{display:block;font-size:13.5px;font-weight:650;color:var(--text);
+    letter-spacing:-.1px;margin-bottom:2px}
+  .toggle-row .toggle-label span{font-size:11.5px;color:var(--muted)}
+
+  .help-box{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe;
+    border-left:4px solid var(--blue);border-radius:11px;padding:12px 14px;font-size:12.5px;
+    color:#1e40af;line-height:1.55;margin-top:10px}
+  .help-box strong{display:block;font-weight:700;margin-bottom:4px;color:#1e3a8a}
+  .help-box ol{margin:6px 0 0 18px;padding:0}
+  .help-box li{margin-bottom:3px}
+
   .toast-wrap{position:fixed;bottom:calc(24px + var(--safe-bottom));left:50%;transform:translateX(-50%);
     z-index:300;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
   .toast{background:#0f172a;color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;font-weight:550;
@@ -840,14 +867,26 @@ function fmtCantidadCarrito(item){
    ========================================================= */
 const KEY = 'bc_admin_v1';
 function defaultState(){
-  return { productos:[], ventas:[], compras:[], clientes:[], proveedores:[], caja:[] };
+  return {
+    productos:[], ventas:[], compras:[], clientes:[], proveedores:[], caja:[],
+    config: {
+      nombreNegocio: 'CARNICERÍA & ABARROTES',
+      direccion: '',
+      telefono: '',
+      autoPrint: true,
+      metodoPrint: 'rawbt'
+    }
+  };
 }
 let STATE = loadState();
 function loadState(){
   try{
     const raw = localStorage.getItem(KEY);
     if(!raw) return defaultState();
-    return Object.assign(defaultState(), JSON.parse(raw));
+    const parsed = JSON.parse(raw);
+    const merged = Object.assign(defaultState(), parsed);
+    merged.config = Object.assign(defaultState().config, parsed.config || {});
+    return merged;
   }catch(e){ return defaultState(); }
 }
 function saveState(){
@@ -884,6 +923,10 @@ function migrateState(){
     STATE.ventas.forEach(v => {
       if(v.area === 'barrotes'){ v.area = 'abarrotes'; changed = true; }
     });
+  }
+  if(!STATE.config){
+    STATE.config = defaultState().config;
+    changed = true;
   }
   if(changed) saveState();
 }
@@ -931,7 +974,8 @@ const ICONS = {
   image:'<rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m21 17-5-5-9 9"/>',
   scale:'<path d="M12 3v18M6 7l-3 8a3 3 0 0 0 6 0zM18 7l-3 8a3 3 0 0 0 6 0zM4 7h16"/>',
   print:'<path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/>',
-  cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h2.6l2.3 11.4a1.6 1.6 0 0 0 1.6 1.3h8.7a1.6 1.6 0 0 0 1.6-1.3L21 7H5.2"/>',
+  bluetooth:'<path d="m7 7 10 10-5 5V2l5 5L7 17"/>',
+  shop:'<path d="M3 9h18l-1.5 11a2 2 0 0 1-2 1.7H6.5a2 2 0 0 1-2-1.7z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/>',
 };
 const icon = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]||''}</svg>`;
 
@@ -1021,9 +1065,11 @@ function comprimirImagen(file, maxW = 320, quality = 0.72){
 }
 
 /* =========================================================
-   IMPRESIÓN TÉRMICA 80mm
+   IMPRESIÓN TÉRMICA — HTML (USB/PC)
    ========================================================= */
 function buildTicketHTML(titulo, subtitulo, lineas, total, footer){
+  const cfg = STATE.config || {};
+  const negocio = cfg.nombreNegocio || 'CARNICERÍA & ABARROTES';
   const itemsHTML = lineas.map(l => `
     <tr>
       <td class="cant">${esc(l.cant)}</td>
@@ -1069,7 +1115,9 @@ function buildTicketHTML(titulo, subtitulo, lineas, total, footer){
 </style>
 </head>
 <body>
-  <div class="center bold big">CARNICERÍA &amp; ABARROTES</div>
+  <div class="center bold big">${esc(negocio)}</div>
+  ${cfg.direccion ? `<div class="center small">${esc(cfg.direccion)}</div>` : ''}
+  ${cfg.telefono ? `<div class="center small">Tel: ${esc(cfg.telefono)}</div>` : ''}
   <div class="center small">${esc(subtitulo)}</div>
   <div class="line"></div>
   ${total.fecha ? `<div>Fecha: <span class="bold">${esc(total.fecha)}</span></div>` : ''}
@@ -1117,9 +1165,82 @@ function abrirVentanaImpresion(html){
   }, 400);
 }
 
+/* =========================================================
+   IMPRESIÓN AUTOMÁTICA POR RAWBT (BLUETOOTH)
+   ========================================================= */
+function buildRawBTTicket(venta){
+  const cfg = STATE.config || {};
+  const negocio = cfg.nombreNegocio || 'CARNICERÍA & ABARROTES';
+  const dir = cfg.direccion || '';
+  const tel = cfg.telefono || '';
+
+  const lineas = venta.items.map(it => {
+    const uBase = it.unidad || 'unidad';
+    let cantTxt;
+    if(UNIDADES_GRANEL.includes(uBase)){
+      cantTxt = `${Math.round(it.cantidad * GRAMOS_POR[uBase])}g`;
+    } else {
+      cantTxt = `${it.cantidad}${uBase}`;
+    }
+    const subtotal = fmt(it.precio * it.cantidad);
+    const nombre = it.nombre.length > 18 ? it.nombre.slice(0,18) : it.nombre;
+    return `${cantTxt.padEnd(6)} ${nombre.padEnd(18)} ${subtotal.padStart(10)}`;
+  }).join('\n');
+
+  return `<center><b>${esc(negocio)}</b></center>
+${dir ? `<center>${esc(dir)}</center>` : ''}
+${tel ? `<center>Tel: ${esc(tel)}</center>` : ''}
+--------------------------------
+Fecha: ${fmtFecha(venta.fecha)} ${venta.hora}
+Cliente: ${esc(venta.cliente || 'Consumidor final')}
+Pago: ${esc(venta.pago)}
+--------------------------------
+Cant   Descripción         Subtotal
+--------------------------------
+${lineas}
+--------------------------------
+<right><b>TOTAL: ${fmt(venta.total)}</b></right>
+<center>¡Gracias por su compra!</center>
+<center>Vuelva pronto</center>
+<br><br>`;
+}
+
+function imprimirPorRawBT(ticketHtml){
+  try {
+    const b64 = btoa(unescape(encodeURIComponent(ticketHtml)));
+    window.location.href = 'rawbt:base64,' + b64;
+    return true;
+  } catch(e){
+    console.error('Error RawBT:', e);
+    return false;
+  }
+}
+
+function imprimirTicket(venta){
+  const cfg = STATE.config || {};
+  if(cfg.metodoPrint === 'rawbt'){
+    const ticket = buildRawBTTicket(venta);
+    const ok = imprimirPorRawBT(ticket);
+    if(!ok){
+      toast('No se pudo imprimir. Verifica RawBT instalado.','warn');
+    }
+  } else {
+    imprimirVenta(venta.id);
+  }
+}
+
+/* =========================================================
+   IMPRESIÓN DE CIERRE / VENTAS DEL DÍA
+   ========================================================= */
 window.imprimirVenta = function(ventaId){
   const v = STATE.ventas.find(x => x.id === ventaId);
   if(!v){ toast('Venta no encontrada','error'); return; }
+  const cfg = STATE.config || {};
+  if(cfg.metodoPrint === 'rawbt'){
+    imprimirTicket(v);
+    toast('Enviando a impresora…','success');
+    return;
+  }
   const lineas = v.items.map(it => {
     const uBase = it.unidad || 'unidad';
     let cantTxt;
@@ -1997,12 +2118,106 @@ VIEWS.reportes = () => {
   `;
 };
 
+/* =========================================================
+   CONFIGURACIÓN
+   ========================================================= */
 VIEWS.config = () => {
   const fotos = STATE.productos.filter(p=>p.foto).length;
   const sizeKB = Math.round((localStorage.getItem(KEY)||'').length / 1024);
+  const cfg = STATE.config || {};
+  const esRawBT = cfg.metodoPrint === 'rawbt';
   return `
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="kpi-icon red" style="width:38px;height:38px">${icon('shop')}</div>
+        <div>
+          <h3>Datos del negocio</h3>
+          <p>Aparecerán en el encabezado de cada boucher</p>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Nombre del negocio</label>
+      <input id="cfgNombre" value="${esc(cfg.nombreNegocio||'')}" placeholder="Ej: Bodega Fría Carnicería Rosibel">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Dirección <span class="optional">(opcional)</span></label>
+        <input id="cfgDir" value="${esc(cfg.direccion||'')}" placeholder="Ej: Av. Principal #123">
+      </div>
+      <div class="field">
+        <label>Teléfono <span class="optional">(opcional)</span></label>
+        <input id="cfgTel" value="${esc(cfg.telefono||'')}" placeholder="Ej: 79130635">
+      </div>
+    </div>
+    <button class="btn primary" onclick="guardarConfigNegocio()">${icon('check')} Guardar datos del negocio</button>
+  </div>
+
+  <div class="card" style="margin-bottom:16px">
+    <div class="card-head">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="kpi-icon blue" style="width:38px;height:38px">${icon('print')}</div>
+        <div>
+          <h3>Impresión de bouchers</h3>
+          <p>Configura cómo se imprimen los tickets al cobrar</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Método de impresión</label>
+      <select id="cfgMetodo" onchange="cambiarMetodoPrint()">
+        <option value="rawbt" ${esRawBT?'selected':''}>📱 Bluetooth (RawBT) — para celular</option>
+        <option value="navegador" ${!esRawBT?'selected':''}>💻 USB / WiFi — para PC</option>
+      </select>
+    </div>
+
+    <div class="toggle-row" onclick="toggleAutoPrint(event)">
+      <input type="checkbox" id="cfgAutoPrint" ${cfg.autoPrint?'checked':''}>
+      <div class="toggle-label">
+        <strong>Imprimir boucher automáticamente al cobrar</strong>
+        <span>Sin preguntar — apenas registras la venta sale el ticket</span>
+      </div>
+    </div>
+
+    ${esRawBT ? `
+    <div class="help-box">
+      <strong>📱 Cómo configurar la impresora por Bluetooth (JK-58H)</strong>
+      <ol>
+        <li>Instala <b>RawBT</b> desde Google Play (es gratis)</li>
+        <li>Enciende la impresora</li>
+        <li>Emparejala desde Ajustes → Bluetooth (PIN: 0000)</li>
+        <li>Abre RawBT → "Seleccionar impresora" → elige JK-58H</li>
+        <li>Toca <b>Probar</b> aquí abajo para verificar ✅</li>
+      </ol>
+    </div>` : `
+    <div class="help-box">
+      <strong>💻 Cómo configurar la impresora por USB / WiFi</strong>
+      <ol>
+        <li>Conecta la impresora a tu PC (USB o red)</li>
+        <li>Instala el driver de la JK-58H</li>
+        <li>Marca la impresora como predeterminada en Windows</li>
+        <li>Toca <b>Probar</b> aquí abajo</li>
+      </ol>
+    </div>`}
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+      <button class="btn primary" onclick="guardarConfigPrint()">${icon('check')} Guardar configuración</button>
+      <button class="btn ghost" onclick="probarImpresion()">${icon('print')} Probar impresión</button>
+    </div>
+  </div>
+
   <div class="card">
-    <div class="card-head"><div><h3>Datos y almacenamiento</h3><p>Los datos se guardan en tu navegador</p></div></div>
+    <div class="card-head">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="kpi-icon amber" style="width:38px;height:38px">${icon('inventario')}</div>
+        <div>
+          <h3>Datos y almacenamiento</h3>
+          <p>Los datos se guardan en este navegador</p>
+        </div>
+      </div>
+    </div>
     <ul class="list-rows">
       <li><span class="lbl">Productos Carnicería</span><span class="val">${calc.productosPorArea('carniceria').length}</span></li>
       <li><span class="lbl">Productos Abarrotes</span><span class="val">${calc.productosPorArea('abarrotes').length}</span></li>
@@ -2019,6 +2234,51 @@ VIEWS.config = () => {
       <button class="btn danger" onclick="resetearDatos()">${icon('trash')} Borrar todos los datos</button>
     </div>
   </div>`;
+};
+
+window.guardarConfigNegocio = () => {
+  if(!STATE.config) STATE.config = defaultState().config;
+  STATE.config.nombreNegocio = document.getElementById('cfgNombre').value.trim() || 'CARNICERÍA & ABARROTES';
+  STATE.config.direccion = document.getElementById('cfgDir').value.trim();
+  STATE.config.telefono = document.getElementById('cfgTel').value.trim();
+  saveState();
+  toast('Datos del negocio guardados','success');
+};
+
+window.guardarConfigPrint = () => {
+  if(!STATE.config) STATE.config = defaultState().config;
+  STATE.config.metodoPrint = document.getElementById('cfgMetodo').value;
+  STATE.config.autoPrint = document.getElementById('cfgAutoPrint').checked;
+  saveState();
+  toast('Configuración de impresión guardada','success');
+};
+
+window.cambiarMetodoPrint = () => {
+  const sel = document.getElementById('cfgMetodo');
+  if(!STATE.config) STATE.config = defaultState().config;
+  STATE.config.metodoPrint = sel.value;
+  saveState();
+  refresh();
+};
+
+window.toggleAutoPrint = (ev) => {
+  if(ev.target.tagName === 'INPUT') return;
+  const chk = document.getElementById('cfgAutoPrint');
+  chk.checked = !chk.checked;
+};
+
+window.probarImpresion = () => {
+  const testVenta = {
+    id:'test', fecha:todayISO(), hora:nowTime(),
+    cliente:'Cliente de prueba', pago:'Efectivo', area:'carniceria',
+    items:[
+      { nombre:'Carne molida', unidad:'kg', cantidad:0.25, precio:20, costo:15 },
+      { nombre:'Gaseosa 2L', unidad:'unidad', cantidad:1, precio:12, costo:8 }
+    ],
+    total: 17
+  };
+  imprimirTicket(testVenta);
+  toast('Enviando ticket de prueba…','success');
 };
 
 /* =========================================================
@@ -2535,7 +2795,7 @@ window.openEntradaModal = id => {
 };
 
 /* =========================================================
-   MODAL VENTA — CON UX MEJORADA
+   MODAL VENTA — CON AUTO-IMPRESIÓN
    ========================================================= */
 window.openVentaModal = () => {
   const disponibles = STATE.productos.filter(p => Number(p.stock) > 0);
@@ -2613,7 +2873,6 @@ window.openVentaModal = () => {
     bodyHTML:body,
     submitLabel:'Registrar venta',
     onSubmit: () => {
-      // 🆕 AUTO-AGREGAR: si hay items en el select pero no en el carrito, agregarlo automáticamente
       if(items.length === 0){
         const p = STATE.productos.find(x => x.id === prodSel.value);
         if(p && Number(p.stock) > 0){
@@ -2682,6 +2941,20 @@ window.openVentaModal = () => {
       saveState();
       const totalGlobal = items.reduce((s,i)=>s+i.precio*i.cantidad,0);
       toast(`Venta registrada — ${fmt(totalGlobal)}`,'success');
+
+      const cfg = STATE.config || {};
+      if(ventasCreadas.length > 0){
+        if(cfg.autoPrint){
+          ventasCreadas.forEach((v,i) => setTimeout(()=>imprimirTicket(v), i*400));
+        } else {
+          setTimeout(()=>{
+            if(confirm('¿Deseas imprimir el ticket de esta venta?')){
+              ventasCreadas.forEach((v,i) => setTimeout(()=>imprimirTicket(v), i*400));
+            }
+          }, 400);
+        }
+      }
+
       items.forEach(i=>{
         const p = STATE.productos.find(x=>x.id===i.productoId);
         if(p && Number(p.stock) <= Number(p.stockMin)){
@@ -2689,13 +2962,6 @@ window.openVentaModal = () => {
         }
       });
       refresh();
-      if(ventasCreadas.length > 0){
-        setTimeout(()=>{
-          if(confirm('¿Deseas imprimir el ticket de esta venta?')){
-            ventasCreadas.forEach((v,i) => setTimeout(()=>imprimirVenta(v.id), i*250));
-          }
-        }, 400);
-      }
       return true;
     }
   });
@@ -2752,7 +3018,6 @@ window.openVentaModal = () => {
       cotTotal.textContent = fmt(total);
       cotBox.classList.add('show');
     } else {
-      // Para no-granel también mostramos cotización simple
       cotFormula.innerHTML = `${cant} ${p.unidad} × ${fmt(p.precioVenta)}/${p.unidad}`;
       cotTotal.textContent = fmt(total);
       cotBox.classList.add('show');
@@ -2766,8 +3031,6 @@ window.openVentaModal = () => {
     });
     actualizarCotizacion();
   });
-
-  // 🆕 Enter en el campo cantidad → agrega el item automáticamente
   cantInput.addEventListener('keydown', e => {
     if(e.key === 'Enter'){
       e.preventDefault();
@@ -2807,7 +3070,6 @@ window.openVentaModal = () => {
     cartCount.textContent = items.length;
   }
 
-  // 🆕 Función reutilizable para agregar items
   function agregarItem(){
     const p = productoActual();
     if(!p){ toast('Selecciona un producto','error'); return; }
