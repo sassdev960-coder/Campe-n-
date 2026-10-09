@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SIMGest · Gestión de SIM y Recargas</title>
+<style>
+:root{
+  --bg:#eef2f8; --card:#fff; --line:#e2e8f0; --text:#0f172a; --muted:#64748b;
+  --primary:#2563eb; --ok:#16a34a; --warn:#f59e0b; --danger:#dc2626;
+  --r:14px; --sh:0 1px 3px rgba(15,23,42,.07),0 10px 28px -16px rgba(15,23,42,.25);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);font-size:14px;padding-bottom:60px}
+h1,h2,h3,h4{font-weight:700}
+small{color:var(--muted)}
+
+/* ---------- HEADER ---------- */
+header{background:linear-gradient(135deg,#0f172a,#1e3a8a 60%,#1d4ed8);color:#fff;padding:12px 18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 4px 20px -8px rgba(15,23,42,.5)}
+.brand{display:flex;align-items:center;gap:10px}
+.logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#38bdf8,#2563eb);display:grid;place-items:center;font-weight:800;font-size:13px;letter-spacing:.5px;box-shadow:inset 0 -2px 6px rgba(0,0,0,.25)}
+.brand h1{font-size:17px;line-height:1.1}
+.brand small{color:#a5c4ff;font-size:11px}
+.spacer{flex:1}
+.usr{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);padding:6px 10px;border-radius:11px}
+.usr label{font-size:11px;color:#c7dbff;text-transform:uppercase;letter-spacing:.6px}
+.usr select{background:transparent;border:0;color:#fff;font-weight:600;font-size:13px;outline:none;cursor:pointer}
+.usr select option{color:#0f172a}
+.btn-reset{background:rgba(255,255,255,.12);border:0;color:#dbeafe;padding:8px 12px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:600}
+.btn-reset:hover{background:rgba(255,255,255,.22)}
+
+/* ---------- TABS ---------- */
+nav{background:#fff;border-bottom:1px solid var(--line);padding:0 12px;display:flex;gap:4px;overflow-x:auto;position:sticky;top:0;z-index:20}
+nav button{background:none;border:0;padding:14px 16px;font-size:13.5px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;transition:.15s}
+nav button:hover{color:var(--primary);background:#f8fafc}
+nav button.on{color:var(--primary);border-bottom-color:var(--primary)}
+main{max-width:1280px;margin:0 auto;padding:18px}
+
+/* ---------- CARDS ---------- */
+.card{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);padding:16px;margin-bottom:16px;border:1px solid rgba(226,232,240,.7)}
+.card h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card h3 .tagline{font-size:11px;font-weight:500;color:var(--muted)}
+.grid{display:grid;gap:14px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:900px){.g2,.g3,.g4{grid-template-columns:1fr}}
+
+/* KPI */
+.kpi{background:#fff;border-radius:var(--r);padding:14px 16px;box-shadow:var(--sh);border-left:4px solid var(--primary);position:relative;overflow:hidden}
+.kpi .lbl{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:700}
+.kpi .val{font-size:23px;font-weight:800;margin-top:4px}
+.kpi .sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.kpi.ok{border-left-color:var(--ok)} .kpi.warn{border-left-color:var(--warn)} .kpi.danger{border-left-color:var(--danger)}
+.kpi.purple{border-left-color:#7c3aed}
+
+/* ---------- FORM ---------- */
+label.f{display:block;font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+input,select,textarea{width:100%;padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;font-size:13.5px;font-family:inherit;background:#fbfdff;outline:none;transition:.15s}
+input:focus,select:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,.13)}
+.field{margin-bottom:12px}
+.btn{background:var(--primary);color:#fff;border:0;padding:10px 16px;border-radius:10px;font-weight:700;font-size:13.5px;cursor:pointer;transition:.15s}
+.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn:active{transform:none}
+.btn.ghost{background:#eef2f8;color:var(--text)}
+.btn.ok{background:var(--ok)} .btn.warn{background:var(--warn)} .btn.danger{background:var(--danger)}
+.btn.sm{padding:6px 11px;font-size:12px;border-radius:8px}
+.btn.block{width:100%}
+
+/* ---------- TABLE ---------- */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);padding:8px 8px;border-bottom:2px solid var(--line);font-weight:800;white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+tr:hover td{background:#f8fbff}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.tbl-wrap{overflow-x:auto;margin:0 -16px;padding:0 16px}
+
+/* ---------- BADGES ---------- */
+.b{display:inline-block;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.3px;white-space:nowrap}
+.b-entel{background:#dbeafe;color:#0b5ed7} .b-tigo{background:#e0e7ff;color:#1a237e} .b-viva{background:#fee2e2;color:#b91c1c}
+.b-ok{background:#dcfce7;color:#15803d} .b-warn{background:#fef3c7;color:#b45309} .b-danger{background:#fee2e2;color:#b91c1c}
+.b-info{background:#e0f2fe;color:#0369a1} .b-gray{background:#f1f5f9;color:#475569} .b-purple{background:#ede9fe;color:#6d28d9}
+
+/* ---------- MISC ---------- */
+.alert{display:flex;gap:10px;align-items:flex-start;padding:11px 13px;border-radius:11px;font-size:13px;margin-bottom:12px;line-height:1.45}
+.alert.w{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
+.alert.d{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+.alert.i{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.empty{text-align:center;padding:26px;color:var(--muted);font-size:13px}
+.bolsa{border-radius:12px;padding:13px;color:#fff;position:relative;overflow:hidden}
+.bolsa .n{font-size:11px;opacity:.85;font-weight:700;letter-spacing:.6px;text-transform:uppercase}
+.bolsa .v{font-size:20px;font-weight:800;margin-top:3px}
+.bolsa .s{font-size:11px;opacity:.8;margin-top:1px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(120px);background:#0f172a;color:#fff;padding:12px 20px;border-radius:12px;font-weight:600;font-size:13.5px;box-shadow:0 12px 30px -8px rgba(0,0,0,.5);transition:.3s;z-index:999}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.err{background:#b91c1c} .toast.ok{background:#15803d}
+.pill{display:inline-flex;align-items:center;gap:5px;background:#f1f5f9;padding:4px 10px;border-radius:999px;font-size:11.5px;font-weight:700;color:#475569}
+.cart-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.tot{display:flex;justify-content:space-between;padding:9px 0;font-weight:800;font-size:15px;border-top:2px solid var(--line);margin-top:6px}
+.hint{font-size:11.5px;color:var(--muted);margin-top:4px}
+.opt{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:12.5px}
+.client-card{border:1.5px solid var(--line);border-radius:12px;padding:13px;margin-bottom:10px;transition:.15s}
+.client-card:hover{border-color:#bfdbfe;box-shadow:0 6px 18px -12px rgba(37,99,235,.5)}
+.flex{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mt{margin-top:12px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">SIM</div>
+    <div><h1>SIMGest</h1><small>Distribución de SIM · Tarjetas · Recargas</small></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="usr">
+    <label>Usuario</label>
+    <select id="rolSel" onchange="cambiarRol(this.value)">
+      <option value="admin">👑 Admin (Dueño)</option>
+      <option value="vendedor">🧑‍💼 Vendedor (Mostrador)</option>
+      <option value="cobrador">📋 Cobrador</option>
+    </select>
+  </div>
+  <button class="btn-reset" onclick="reiniciarDemo()">↺ Reiniciar demo</button>
+</header>
+
+<nav id="tabs"></nav>
+<main id="app"></main>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   CONFIGURACIÓN DEL NEGOCIO  (ajustable por el cliente)
+   ===================================================================== */
+const OPERADORES  = ['Entel','Tigo','Viva'];
+const COMISIONES  = { Entel:0.07, Tigo:0.08, Viva:0.10 };   // % ganancia sobre valor nominal
+const DENOMS      = [10,15,30,50,100];
+const SIM_COSTO   = { Entel:5, Tigo:5, Viva:4 };
+const SIM_VENTA   = { Entel:15, Tigo:15, Viva:12 };
+const PLAZOS      = [7,15,30];
+const LS_KEY      = 'simgest_demo_v1';
+
+/* Escalones de mayoreo */
+const TARJ_MAYOR_A = 20,  TARJ_MAYOR_B = 100;   // 20+ y 100+ unidades
+const SIM_MAYOR_A  = 10,  SIM_MAYOR_B  = 50;
+
+/* =====================================================================
+   UTILIDADES
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const HOY = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+const money = n => 'Bs ' + (Number(n)||0).toLocaleString('es-BO',{minimumFractionDigits:2,maximumFractionDigits:2});
+const num2  = n => +(Number(n)||0).toFixed(2);
+const addDias = (f,n) => { const d=new Date(f+'T12:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+const fFecha = iso => { if(!iso) return '—'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
+const mesDe  = iso => (iso||'').slice(0,7);
+const mesActual = () => HOY().slice(0,7);
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const itemId = (op,tipo,den) => tipo==='SIM' ? `${op}-SIM` : `${op}-T${den}`;
+
+function catItem(op,tipo,den){
+  if(tipo==='SIM') return { op,tipo:'SIM',den:0,costo:SIM_COSTO[op],nombre:`Chip/SIM ${op}` };
+  const nombre = tipo==='RECARGA' ? `Recarga ${op} Bs ${den}` : `Tarjeta ${op} Bs ${den}`;
+  return { op,tipo,den,costo:num2(den*(1-COMISIONES[op])),nombre };
+}
+
+function precioVenta(op,tipo,den,cant){
+  if(tipo==='RECARGA') return den;
+  if(tipo==='SIM'){
+    const base = SIM_VENTA[op];
+    if(cant>=SIM_MAYOR_B) return num2(base*0.80);
+    if(cant>=SIM_MAYOR_A) return num2(base*0.90);
+    return base;
+  }
+  const com = COMISIONES[op];
+  if(cant>=TARJ_MAYOR_B) return num2(den*(1-com*0.90));
+  if(cant>=TARJ_MAYOR_A) return num2(den*(1-com*0.50));
+  return den;
+}
+
+function etiquetaPrecio(tipo,cant){
+  if(tipo==='RECARGA') return 'Valor nominal';
+  if(tipo==='SIM'){
+    if(cant>=SIM_MAYOR_B) return 'Mayoreo B (50+)';
+    if(cant>=SIM_MAYOR_A) return 'Mayoreo A (10+)';
+    return 'Raleo (menudeo)';
+  }
+  if(cant>=TARJ_MAYOR_B) return 'Mayoreo B (100+)';
+  if(cant>=TARJ_MAYOR_A) return 'Mayoreo A (20+)';
+  return 'Raleo (menudeo)';
+}
+
+const badgeOp = op => `<span class="b b-${op.toLowerCase()}">${op}</span>`;
+
+/* =====================================================================
+   ESTADO
+   ===================================================================== */
+let state = null;
+let rol   = 'admin';
+let vista = 'dashboard';
+
+const ui = {
+  // formulario de venta
+  vTipo:'Tarjeta', vOp:'Entel', vDen:10, vCant:1,
+  clienteId:'', tipoPago:'contado', plazo:15,
+  carrito:[],
+  filtroInv:'Todos',
+  clienteAbierto:null,
+  abonoMonto:{},
+  cierreMes: mesActual()
+};
+
+const TABS = [
+  {id:'dashboard', label:'📊 Resumen',        roles:['admin','vendedor','cobrador']},
+  {id:'ventas',    label:'🛒 Ventas',          roles:['admin','vendedor']},
+  {id:'inventario',label:'📦 Inventario',      roles:['admin','vendedor']},
+  {id:'clientes',  label:'👥 Créditos',        roles:['admin','vendedor','cobrador']},
+  {id:'compras',   label:'🚚 Compras',         roles:['admin']},
+  {id:'cierre',    label:'🔒 Cierre mensual',  roles:['admin']},
+];
+const esAdmin = () => rol==='admin';
+
+/* =====================================================================
+   PERSISTENCIA + SEED
+   ===================================================================== */
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){ state = JSON.parse(raw); return true; }
+  }catch(e){}
+  return false;
+}
+
+function crearVenta(st, opts){
+  const items = opts.items.map(it=>{
+    const cat = catItem(it.operador, it.tipo, it.den);
+    const precio = precioVenta(it.operador, it.tipo, it.den, it.cant);
+    const comUnit = it.tipo==='RECARGA'
+      ? num2(precio*COMISIONES[it.operador])
+      : num2(precio - cat.costo);
+    return {
+      tipo:it.tipo, operador:it.operador, den:cat.den, cant:it.cant,
+      desc:cat.nombre, precioUnit:precio, costo:cat.costo,
+      subtotal:num2(precio*it.cant), comision:num2(comUnit*it.cant)
+    };
+  });
+  const total    = num2(items.reduce((a,i)=>a+i.subtotal,0));
+  const comision = num2(items.reduce((a,i)=>a+i.comision,0));
+  const cli = opts.clienteId ? st.clientes.find(c=>c.id===opts.clienteId) : null;
+  const v = {
+    id:'V'+(st.seq++), fecha:opts.fecha, hora:opts.hora||'09:00',
+    clienteId:opts.clienteId||null,
+    clienteNombre: cli ? cli.nombre : 'Consumidor final',
+    tipoPago:opts.tipoPago, plazo:opts.plazo||null, vencimiento:null,
+    items, total, comision, pagado:num2(opts.pagado||0),
+    usuario:opts.usuario||'Admin'
+  };
+  if(opts.tipoPago==='credito' && opts.plazo) v.vencimiento = addDias(opts.fecha, opts.plazo);
+
+  // Efectos sobre stock / bolsa
+  items.forEach(i=>{
+    if(i.tipo==='RECARGA') st.bolsa[i.operador] = num2(st.bolsa[i.operador] - i.subtotal);
+    else st.inventario[itemId(i.operador,i.tipo,i.den)].stock -= i.cant;
+  });
+  st.ventas.push(v);
+  return v;
+}
+
+function seed(){
+  const inv = {};
+  OPERADORES.forEach(op=>{
+    DENOMS.forEach(d=>{ inv[`${op}-T${d}`] = { stock:45, inicial:45 }; });
+    inv[`${op}-SIM`] = { stock:30, inicial:30 };
+  });
+
+  const st = {
+    seq:1, abonoSeq:1, compraSeq:1, clienteSeq:1,
+    inventario: inv,
+    bolsa: { Entel:1250, Tigo:940, Viva:620 },
+    bolsaBase: { Entel:1250, Tigo:940, Viva:620 },
+    clientes: [
+      { id:'C1', nombre:'María Quispe',            tel:'71234567', comunidad:'Achachicala',     plazo:15, limite:500,  creado:HOY() },
+      { id:'C2', nombre:'Juan Mamani',             tel:'69876543', comunidad:'Villa Adela',     plazo:7,  limite:300,  creado:HOY() },
+      { id:'C3', nombre:'Tienda El Sol (Mayorista)',tel:'78889900',comunidad:'Mercado Rodríguez',plazo:30, limite:3000, creado:HOY() },
+    ],
+    ventas: [], abonos: [], compras: [], cierres: []
+  };
+  st.seq = 1; st.clienteSeq = 4;
+
+  // --- Ventas de ejemplo ---
+  crearVenta(st,{fecha:HOY(),hora:'08:45',tipoPago:'contado',items:[
+    {tipo:'Tarjeta',operador:'Entel',den:10,cant:5},
+    {tipo:'RECARGA',operador:'Tigo',den:30,cant:2}
+  ]});
+  crearVenta(st,{fecha:HOY(),hora:'09:20',tipoPago:'credito',clienteId:'C1',plazo:15,items:[
+    {tipo:'Tarjeta',operador:'Viva',den:30,cant:3},
+    {tipo:'SIM',operador:'Entel',den:0,cant:1}
+  ]});
+  crearVenta(st,{fecha:addDias(HOY(),-1),hora:'16:10',tipoPago:'contado',items:[
+    {tipo:'SIM',operador:'Tigo',den:0,cant:2},
+    {tipo:'RECARGA',operador:'Entel',den:50,cant:1}
+  ]});
+  const vVencida = crearVenta(st,{fecha:addDias(HOY(),-22),hora:'11:00',tipoPago:'credito',clienteId:'C2',plazo:7,items:[
+    {tipo:'Tarjeta',operador:'Entel',den:50,cant:2}
+  ], pagado:30});
+  crearVenta(st,{fecha:addDias(HOY(),-9),hora:'15:30',tipoPago:'credito',clienteId:'C3',plazo:30,items:[
+    {tipo:'Tarjeta',operador:'Tigo',den:100,cant:10},
+    {tipo:'Tarjeta',operador:'Tigo',den:30,cant:20}
+  ]});
+  st.abonos.push({id:'A'+(st.abonoSeq++),clienteId:'C2',ventaId:vVencida.id,fecha:addDias(HOY(),-10),monto:30,usuario:'Admin'});
+
+  // --- Compras de ejemplo ---
+  st.compras.push({
+    id:'P'+(st.compraSeq++), fecha:addDias(HOY(),-12), operador:'Entel', tipo:'Tarjeta',
+    den:10, cant:100, costoUnit:9.30, total:930, nota:'Factura 0012 - Distribuidora Entel'
+  });
+  st.compras.push({
+    id:'P'+(st.compraSeq++), fecha:addDias(HOY(),-6), operador:'Tigo', tipo:'RECARGA',
+    den:0, cant:1, costoUnit:920, total:920, nota:'Carga de bolsa electrónica Tigo'
+  });
+  return st;
+}
+
+/* =====================================================================
+   LÓGICA DE NEGOCIO
+   ===================================================================== */
+const saldoVenta = v => num2(v.total - (v.pagado||0));
+
+function deudaCliente(clienteId){
+  return num2(state.ventas
+    .filter(v=>v.clienteId===clienteId && v.tipoPago==='credito')
+    .reduce((a,v)=>a+saldoVenta(v),0));
+}
+function deudaVencida(clienteId){
+  const h = HOY();
+  return num2(state.ventas
+    .filter(v=>v.clienteId===clienteId && v.tipoPago==='credito' && saldoVenta(v)>0 && v.vencimiento && v.vencimiento<h)
+    .reduce((a,v)=>a+saldoVenta(v),0));
+}
+function estadoCliente(clienteId){
+  const d = deudaCliente(clienteId);
+  if(d<=0.001) return {txt:'Al día', cls:'b-ok'};
+  if(deudaVencida(clienteId)>0) return {txt:'Vencido', cls:'b-danger'};
+  const prox = state.ventas
+    .filter(v=>v.clienteId===clienteId && v.tipoPago==='credito' && saldoVenta(v)>0 && v.vencimiento)
+    .sort((a,b)=>a.vencimiento.localeCompare(b.vencimiento))[0];
+  if(prox && prox.vencimiento <= addDias(HOY(),3)) return {txt:'Por vencer', cls:'b-warn'};
+  return {txt:'Vigente', cls:'b-info'};
+}
+
+function registrarAbono(clienteId, monto, ventaId){
+  monto = Number(monto);
+  if(!(monto>0)) return toast('Ingresa un monto válido','err');
+  const pend = state.ventas
+    .filter(v=>v.clienteId===clienteId && v.tipoPago==='credito' && saldoVenta(v)>0.001)
+    .sort((a,b)=>a.fecha.localeCompare(b.fecha));
+  const totalPend = num2(pend.reduce((a,v)=>a+saldoVenta(v),0));
+  if(monto > totalPend) monto = totalPend;
+
+  const orden = pend.slice();
+  if(ventaId){
+    const i = orden.findIndex(v=>v.id===ventaId);
+    if(i>0){ const [t]=orden.splice(i,1); orden.unshift(t); }
+  }
+  let restante = monto;
+  orden.forEach(v=>{
+    if(restante<=0.001) return;
+    const s = saldoVenta(v);
+    const apl = Math.min(s, restante);
+    v.pagado = num2((v.pagado||0) + apl);
+    restante = num2(restante - apl);
+  });
+  state.abonos.push({ id:'A'+(state.abonoSeq++), clienteId, ventaId:ventaId||null, fecha:HOY(), monto:num2(monto), usuario:rolNombre() });
+  toast(`Abono de ${money(monto)} registrado`,'ok');
+  render();
+}
+
+function registrarCompra(datos){
+  const {operador,tipo,den,cant,costoUnit,nota} = datos;
+  const total = num2(cant*costoUnit);
+  if(tipo==='RECARGA'){
+    state.bolsa[operador] = num2(state.bolsa[operador] + total);
+  }else{
+    const id = itemId(operador,tipo,den);
+    state.inventario[id].stock += Number(cant);
+  }
+  state.compras.push({
+    id:'P'+(state.compraSeq++), fecha:HOY(), operador, tipo,
+    den: tipo==='SIM'?0:Number(den), cant:Number(cant),
+    costoUnit:Number(costoUnit), total, nota:nota||''
+  });
+  toast(`Compra registrada · ${money(total)}`,'ok');
+  render();
+}
+
+function rolNombre(){
+  return {admin:'Admin', vendedor:'Vendedor', cobrador:'Cobrador'}[rol];
+}
+
+/* =====================================================================
+   RENDER PRINCIPAL
+   ===================================================================== */
+function render(){
+  save();
+  renderTabs();
+  const app = $('app');
+  const tab = TABS.find(t=>t.id===vista);
+  if(!tab || !tab.roles.includes(rol)){ vista = TABS.find(t=>t.roles.includes(rol)).id; }
+  const v = vista;
+  if(v==='dashboard')  app.innerHTML = viewDashboard();
+  if(v==='ventas')     app.innerHTML = viewVentas();
+  if(v==='inventario') app.innerHTML = viewInventario();
+  if(v==='clientes')   app.innerHTML = viewClientes();
+  if(v==='compras')    app.innerHTML = viewCompras();
+  if(v==='cierre')     app.innerHTML = viewCierre();
+  window.scrollTo({top:0,behavior:'instant'});
+}
+
+function renderTabs(){
+  $('tabs').innerHTML = TABS.filter(t=>t.roles.includes(rol))
+    .map(t=>`<button class="${vista===t.id?'on':''}" onclick="ir('${t.id}')">${t.label}</button>`).join('');
+}
+function ir(v){ vista=v; render(); }
+function cambiarRol(r){ rol=r; render(); toast('Sesión: '+rolNombre(),'ok'); }
+
+function toast(msg, tipo){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (tipo||'');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.className='toast '+(tipo||''), 2400);
+}
+
+/* =====================================================================
+   VISTA: DASHBOARD
+   ===================================================================== */
+function viewDashboard(){
+  const h = HOY();
+  const vHoy = state.ventas.filter(v=>v.fecha===h);
+  const abonosHoy = state.abonos.filter(a=>a.fecha===h);
+
+  const efectivoHoy = num2(
+    vHoy.filter(v=>v.tipoPago==='contado').reduce((a,v)=>a+v.total,0) +
+    abonosHoy.reduce((a,x)=>a+x.monto,0)
+  );
+  const creditoHoy  = num2(vHoy.filter(v=>v.tipoPago==='credito').reduce((a,v)=>a+v.total,0));
+  const comisionHoy = num2(vHoy.reduce((a,v)=>a+v.comision,0));
+  const nVentasHoy  = vHoy.length;
+
+  const porCobrar = num2(state.clientes.reduce((a,c)=>a+deudaCliente(c.id),0));
+  const vencido   = num2(state.clientes.reduce((a,c)=>a+deudaVencida(c.id),0));
+
+  const stockBajo = Object.entries(state.inventario)
+    .filter(([,v])=>v.stock<=10)
+    .map(([k,v])=>({k,v}));
+
+  const clientesVencidos = state.clientes.filter(c=>deudaVencida(c.id)>0);
+
+  // Ventas últimos 7 días (mini gráfico de barras)
+  const dias = [];
+  for(let i=6;i>=0;i--){
+    const f = addDias(h,-i);
+    const t = state.ventas.filter(v=>v.fecha===f).reduce((a,v)=>a+v.total,0);
+    dias.push({f,t});
+  }
+  const maxDia = Math.max(...dias.map(d=>d.t),1);
+
+  return `
+  ${clientesVencidos.length ? `
+  <div class="alert d">
+    <span style="font-size:18px">⚠️</span>
+    <div><b>${clientesVencidos.length} cliente(s) con deuda vencida.</b>
+    Total vencido: <b>${money(vencido)}</b> — revisa el módulo de Créditos.
+    <div style="margin-top:4px">${clientesVencidos.map(c=>`<span class="pill" style="margin:2px">${esc(c.nombre)} · ${money(deudaVencida(c.id))}</span>`).join('')}</div>
+    </div>
+  </div>` : ''}
+
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="kpi ok">
+      <div class="lbl">Efectivo en caja hoy</div>
+      <div class="val">${money(efectivoHoy)}</div>
+      <div class="sub">Contado + abonos recibidos</div>
+    </div>
+    <div class="kpi warn">
+      <div class="lbl">Créditos otorgados hoy</div>
+      <div class="val">${money(creditoHoy)}</div>
+      <div class="sub">Ventas a crédito del día</div>
+    </div>
+    <div class="kpi purple">
+      <div class="lbl">Comisión del día</div>
+      <div class="val">${money(comisionHoy)}</div>
+      <div class="sub">${nVentasHoy} venta(s) registrada(s)</div>
+    </div>
+    <div class="kpi ${vencido>0?'danger':''}">
+      <div class="lbl">Por cobrar total</div>
+      <div class="val">${money(porCobrar)}</div>
+      <div class="sub">${vencido>0?`<span style="color:var(--danger);font-weight:700">${money(vencido)} vencido</span>`:'Sin deudas vencidas'}</div>
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>📈 Ventas últimos 7 días <span class="tagline">total diario</span></h3>
+      <div style="display:flex;align-items:flex-end;gap:8px;height:130px;padding:8px 0">
+        ${dias.map(d=>`
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end">
+            <div style="font-size:10px;font-weight:700;color:var(--muted)">${d.t>0?Math.round(d.t):''}</div>
+            <div style="width:100%;background:linear-gradient(180deg,#60a5fa,#2563eb);border-radius:6px 6px 0 0;height:${Math.max(3,(d.t/maxDia)*88)}%"></div>
+            <div style="font-size:10px;color:var(--muted)">${d.f.slice(8)}/${d.f.slice(5,7)}</div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>💼 Bolsa de recargas electrónicas</h3>
+      <div class="grid g3">
+        ${OPERADORES.map(op=>{
+          const v = state.bolsa[op];
+          const col = op==='Entel'?'linear-gradient(135deg,#0b5ed7,#1e40af)':op==='Tigo'?'linear-gradient(135deg,#1a237e,#312e81)':'linear-gradient(135deg,#d32f2f,#991b1b)';
+          const pct = Math.min(100, (v/2000)*100);
+          return `<div class="bolsa" style="background:${col}">
+            <div class="n">${op}</div>
+            <div class="v">${money(v)}</div>
+            <div class="s">Saldo disponible</div>
+            <div style="height:4px;background:rgba(255,255,255,.25);border-radius:9px;margin-top:8px">
+              <div style="height:100%;width:${pct}%;background:#fff;border-radius:9px"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+      ${esAdmin()?`<div class="hint" style="margin-top:10px">Cargá saldo desde el módulo <b>Compras</b> → tipo "Recarga".</div>`:''}
+    </div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>🧾 Últimas ventas</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Hora</th><th>Cliente</th><th>Pago</th><th class="num">Total</th></tr></thead>
+          <tbody>
+          ${state.ventas.slice(-6).reverse().map(v=>`
+            <tr>
+              <td><b>${v.hora}</b><br><small>${fFecha(v.fecha)}</small></td>
+              <td>${esc(v.clienteNombre)}<br><small>${v.items.length} ítem(s)</small></td>
+              <td>${v.tipoPago==='contado'?'<span class="b b-ok">Contado</span>':'<span class="b b-warn">Crédito</span>'}</td>
+              <td class="num"><b>${money(v.total)}</b></td>
+            </tr>`).join('') || '<tr><td colspan="4" class="empty">Sin ventas registradas</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>🔔 Alertas de stock bajo <span class="tagline">≤ 10 unidades</span></h3>
+      ${stockBajo.length===0 ? '<div class="empty">✅ Todo el inventario está por encima del mínimo</div>' : `
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Producto</th><th class="num">Stock</th><th></th></tr></thead>
+        <tbody>${stockBajo.map(({k,v})=>{
+          const [op,resto]=k.split('-');
+          const nombre = resto==='SIM' ? `Chip/SIM ${op}` : `Tarjeta ${op} Bs ${resto.slice(1)}`;
+          return `<tr><td>${badgeOp(op)} ${nombre}</td>
+            <td class="num"><b style="color:var(--danger)">${v.stock}</b></td>
+            <td class="num"><span class="b b-danger">Reponer</span></td></tr>`;
+        }).join('')}</tbody>
+      </table></div>`}
+    </div>
+  </div>`;
+}
+
+/* =====================================================================
+   VISTA: VENTAS
+   ===================================================================== */
+function viewVentas(){
+  const {vTipo,vOp,vDen,vCant} = ui;
+  const cant = Math.max(1, parseInt(vCant)||1);
+  const den  = vTipo==='SIM' ? 0 : Number(vDen);
+  const precio = precioVenta(vOp, vTipo, den, cant);
+  const cat = catItem(vOp, vTipo, den);
+  const comUnit = vTipo==='RECARGA' ? num2(precio*COMISIONES[vOp]) : num2(precio-cat.costo);
+  const etiqueta = etiquetaPrecio(vTipo, cant);
+
+  const totalCarrito = num2(ui.carrito.reduce((a,i)=>a+i.subtotal,0));
+  const comCarrito   = num2(ui.carrito.reduce((a,i)=>a+i.comision,0));
+
+  const clienteSel = state.clientes.find(c=>c.id===ui.clienteId);
+  const excede = clienteSel && (deudaCliente(clienteSel.id) + totalCarrito) > clienteSel.limite;
+
+  return `
+  <div class="grid g2">
+    <div class="card">
+      <h3>➕ Agregar producto</h3>
+      <div class="grid g2">
+        <div class="field">
+          <label class="f">Tipo de producto</label>
+          <select onchange="ui.vTipo=this.value; ui.vCant=1; render()">
+            <option value="Tarjeta" ${vTipo==='Tarjeta'?'selected':''}>🎫 Tarjeta física</option>
+            <option value="SIM"     ${vTipo==='SIM'?'selected':''}>📱 Chip / SIM</option>
+            <option value="RECARGA" ${vTipo==='RECARGA'?'selected':''}>⚡ Recarga electrónica</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="f">Operador</label>
+          <select onchange="ui.vOp=this.value; render()">
+            ${OPERADORES.map(o=>`<option ${vOp===o?'selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="grid g2">
+        <div class="field">
+          <label class="f">Denominación</label>
+          <select ${vTipo==='SIM'?'disabled':''} onchange="ui.vDen=this.value; render()">
+            ${vTipo==='SIM' ? '<option>—</option>' :
+              DENOMS.map(d=>`<option value="${d}" ${Number(vDen)===d?'selected':''}>Bs ${d}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label class="f">Cantidad</label>
+          <input type="number" min="1" value="${vCant}" onchange="ui.vCant=this.value; render()">
+        </div>
+      </div>
+
+      <div class="opt">
+        <div class="flex" style="justify-content:space-between">
+          <div>
+            <div style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase">Precio unitario</div>
+            <div style="font-size:21px;font-weight:800;color:var(--primary)">${money(precio)}</div>
+          </div>
+          <div style="text-align:right">
+            <span class="b b-purple">${etiqueta}</span>
+            ${esAdmin()?`<div style="font-size:11.5px;color:var(--muted);margin-top:5px">Costo ${money(cat.costo)} · Comisión <b style="color:var(--ok)">${money(comUnit)}</b></div>`:''}
+          </div>
+        </div>
+      </div>
+
+      <button class="btn block mt" onclick="agregarAlCarrito()">Agregar a la venta →</button>
+    </div>
+
+    <div class="card">
+      <h3>🛒 Venta actual <span class="tagline">${ui.carrito.length} ítem(s)</span></h3>
+      ${ui.carrito.length===0 ? '<div class="empty">Agrega productos para comenzar la venta</div>' : `
+        ${ui.carrito.map((i,ix)=>`
+          <div class="cart-row">
+            <div>
+              <b>${esc(i.desc)}</b>
+              <div style="font-size:11.5px;color:var(--muted)">${i.cant} × ${money(i.precioUnit)}</div>
+            </div>
+            <div class="flex" style="gap:8px">
+              <b>${money(i.subtotal)}</b>
+              <button class="btn sm ghost" onclick="quitarDelCarrito(${ix})">✕</button>
+            </div>
+          </div>`).join('')}
+        <div class="tot"><span>TOTAL</span><span>${money(totalCarrito)}</span></div>
+        ${esAdmin()?`<div style="font-size:12px;color:var(--ok);font-weight:700;text-align:right">Comisión estimada: ${money(comCarrito)}</div>`:''}
+      `}
+
+      <div class="mt">
+        <div class="grid g2">
+          <div class="field">
+            <label class="f">Cliente</label>
+            <select onchange="ui.clienteId=this.value; render()">
+              <option value="">— Consumidor final —</option>
+              ${state.clientes.map(c=>`<option value="${c.id}" ${ui.clienteId===c.id?'selected':''}>${esc(c.nombre)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field">
+            <label class="f">Forma de pago</label>
+            <select onchange="ui.tipoPago=this.value; render()">
+              <option value="contado" ${ui.tipoPago==='contado'?'selected':''}>💵 Contado</option>
+              <option value="credito" ${ui.tipoPago==='credito'?'selected':''}>📝 Crédito</option>
+            </select>
+          </div>
+        </div>
+
+        ${ui.tipoPago==='credito' ? `
+          <div class="field">
+            <label class="f">Plazo de vencimiento</label>
+            <select onchange="ui.plazo=this.value; render()">
+              <option value="7"  ${Number(ui.plazo)===7?'selected':''}>Semanal (7 días)</option>
+              <option value="15" ${Number(ui.plazo)===15?'selected':''}>Quincenal (15 días)</option>
+              <option value="30" ${Number(ui.plazo)===30?'selected':''}>Mensual (30 días)</option>
+            </select>
+          </div>
+          ${!ui.clienteId ? '<div class="alert w">⚠️ Selecciona un cliente para otorgar crédito.</div>' : ''}
+          ${excede ? `<div class="alert d">🚫 <div>Esta venta supera el límite de crédito de <b>${esc(clienteSel.nombre)}</b>.<br>Deuda actual ${money(deudaCliente(clienteSel.id))} + venta ${money(totalCarrito)} &gt; límite ${money(clienteSel.limite)}.</div></div>`:''}
+        ` : ''}
+
+        <button class="btn ok block" onclick="confirmarVenta()"
+          ${(ui.carrito.length===0 || (ui.tipoPago==='credito' && (!ui.clienteId || excede)))?'disabled style="opacity:.45;cursor:not-allowed"':''}>
+          ✅ Registrar venta · ${money(totalCarrito)}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>📜 Historial de ventas</h3>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Fecha</th><th>Cliente</th><th>Detalle</th><th>Pago</th>
+          <th class="num">Total</th>${esAdmin()?'<th class="num">Comisión</th>':''}<th></th>
+        </tr></thead>
+        <tbody>
+        ${state.ventas.slice().reverse().slice(0,25).map(v=>`
+          <tr>
+            <td><span class="b b-gray">${v.id}</span></td>
+            <td>${fFecha(v.fecha)}<br><small>${v.hora}</small></td>
+            <td>${esc(v.clienteNombre)}</td>
+            <td style="max-width:320px">${v.items.map(i=>`<div style="font-size:12px">${badgeOp(i.operador)} ${esc(i.desc)} × ${i.cant}</div>`).join('')}</td>
+            <td>${v.tipoPago==='contado'
+                ? '<span class="b b-ok">Contado</span>'
+                : `<span class="b b-warn">Crédito</span><br><small>vence ${fFecha(v.vencimiento)}</small>`}</td>
+            <td class="num"><b>${money(v.total)}</b></td>
+            ${esAdmin()?`<td class="num" style="color:var(--ok);font-weight:700">${money(v.comision)}</td>`:''}
+            <td class="num">${v.tipoPago==='credito'?`<span class="b ${saldoVenta(v)<=0.001?'b-ok':'b-danger'}">${saldoVenta(v)<=0.001?'Pagada':'Saldo '+money(saldoVenta(v))}</span>`:''}</td>
+          </tr>`).join('') || '<tr><td colspan="8" class="empty">Sin ventas registradas</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function agregarAlCarrito(){
+  const {vTipo,vOp,vDen} = ui;
+  const cant = Math.max(1, parseInt(ui.vCant)||1);
+  const den  = vTipo==='SIM' ? 0 : Number(vDen);
+
+  // Validación de stock
+  if(vTipo==='RECARGA'){
+    const necesario = den*cant;
+    if(state.bolsa[vOp] < necesario) return toast(`Bolsa ${vOp} insuficiente (${money(state.bolsa[vOp])})`,'err');
+  }else{
+    const id = itemId(vOp, vTipo, den);
+    const disp = state.inventario[id].stock;
+    const yaEnCarrito = ui.carrito.filter(i=>i.id===id).reduce((a,i)=>a+i.cant,0);
+    if(disp < cant + yaEnCarrito) return toast(`Stock insuficiente: quedan ${disp} unidades`,'err');
+  }
+
+  const cat = catItem(vOp, vTipo, den);
+  const precio = precioVenta(vOp, vTipo, den, cant);
+  const comUnit = vTipo==='RECARGA' ? num2(precio*COMISIONES[vOp]) : num2(precio-cat.costo);
+  const id = vTipo==='RECARGA' ? `RECARGA-${vOp}` : itemId(vOp,vTipo,den);
+
+  ui.carrito.push({
+    id, tipo:vTipo, operador:vOp, den, cant,
+    desc:cat.nombre, precioUnit:precio, costo:cat.costo,
+    subtotal:num2(precio*cant), comision:num2(comUnit*cant)
+  });
+  toast('Producto agregado','ok');
+  render();
+}
+function quitarDelCarrito(ix){ ui.carrito.splice(ix,1); render(); }
+
+function confirmarVenta(){
+  if(ui.carrito.length===0) return;
+  const items = ui.carrito.map(i=>({tipo:i.tipo, operador:i.operador, den:i.den, cant:i.cant}));
+  const d = new Date();
+  const hora = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+
+  crearVenta(state, {
+    fecha: HOY(), hora,
+    tipoPago: ui.tipoPago,
+    clienteId: ui.tipoPago==='credito' ? ui.clienteId : (ui.clienteId||null),
+    plazo: ui.tipoPago==='credito' ? Number(ui.plazo) : null,
+    items, usuario: rolNombre()
+  });
+
+  ui.carrito = [];
+  toast('✅ Venta registrada correctamente','ok');
+  render();
+}
+
+/* =====================================================================
+   VISTA: INVENTARIO
+   ===================================================================== */
+function viewInventario(){
+  const filtro = ui.filtroInv;
+  const ops = filtro==='Todos' ? OPERADORES : [filtro];
+
+  const valorTotal = Object.entries(state.inventario).reduce((a,[k,v])=>{
+    const [op,resto]=k.split('-');
+    const tipo = resto==='SIM'?'SIM':'Tarjeta';
+    const den  = resto==='SIM'?0:Number(resto.slice(1));
+    return a + v.stock * catItem(op,tipo,den).costo;
+  },0);
+
+  const unidades = Object.values(state.inventario).reduce((a,v)=>a+v.stock,0);
+  const bolsaTotal = num2(OPERADORES.reduce((a,o)=>a+state.bolsa[o],0));
+
+  return `
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="kpi"><div class="lbl">Unidades en stock</div><div class="val">${unidades}</div><div class="sub">Tarjetas + chips</div></div>
+    <div class="kpi purple"><div class="lbl">Valor del inventario</div><div class="val">${money(valorTotal)}</div><div class="sub">A precio de costo</div></div>
+    <div class="kpi ok"><div class="lbl">Bolsa de recargas</div><div class="val">${money(bolsaTotal)}</div><div class="sub">Saldo digital total</div></div>
+    <div class="kpi warn"><div class="lbl">Ítems bajo mínimo</div><div class="val">${Object.values(state.inventario).filter(v=>v.stock<=10).length}</div><div class="sub">Requieren reposición</div></div>
+  </div>
+
+  <div class="card">
+    <h3>⚡ Bolsa de recargas electrónicas</h3>
+    <div class="grid g3">
+      ${OPERADORES.map(op=>{
+        const col = op==='Entel'?'linear-gradient(135deg,#0b5ed7,#1e40af)':op==='Tigo'?'linear-gradient(135deg,#1a237e,#312e81)':'linear-gradient(135deg,#d32f2f,#991b1b)';
+        return `<div class="bolsa" style="background:${col}">
+          <div class="n">${op}</div>
+          <div class="v">${money(state.bolsa[op])}</div>
+          <div class="s">Saldo inicial del período: ${money(state.bolsaBase[op])}</div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>📦 Stock por operador y denominación</h3>
+    <div class="flex" style="margin-bottom:12px">
+      ${['Todos',...OPERADORES].map(o=>`
+        <button class="btn sm ${filtro===o?'':'ghost'}" onclick="ui.filtroInv='${o}'; render()">${o}</button>`).join('')}
+    </div>
+
+    ${ops.map(op=>{
+      const filas = [];
+      DENOMS.forEach(d=>{
+        const key = `${op}-T${d}`;
+        const v = state.inventario[key];
+        const cat = catItem(op,'Tarjeta',d);
+        filas.push({key, nombre:`Tarjeta Bs ${d}`, v, cat, tipo:'Tarjeta', den:d});
+      });
+      const simKey = `${op}-SIM`;
+      filas.push({key:simKey, nombre:'Chip / SIM', v:state.inventario[simKey], cat:catItem(op,'SIM',0), tipo:'SIM', den:0});
+
+      return `
+      <h4 style="margin:14px 0 8px">${badgeOp(op)} <span style="font-weight:600;font-size:13px;color:var(--muted)">· ${filas.reduce((a,f)=>a+f.v.stock,0)} unidades</span></h4>
+      <div class="tbl-wrap"><table>
+        <thead><tr>
+          <th>Producto</th>
+          <th class="num">Inicial</th>
+          <th class="num">Stock actual</th>
+          ${esAdmin()?'<th class="num">Costo unit.</th><th class="num">Valor</th>':''}
+          <th class="num">Precio raleo</th>
+          <th class="num">Precio mayoreo</th>
+          <th>Estado</th>
+          <th></th>
+        </tr></thead>
+        <tbody>
+        ${filas.map(f=>{
+          const estado = f.v.stock<=0 ? '<span class="b b-danger">Agotado</span>'
+                       : f.v.stock<=10 ? '<span class="b b-warn">Bajo</span>'
+                       : '<span class="b b-ok">OK</span>';
+          const pm = f.tipo==='SIM'
+            ? precioVenta(op,'SIM',0,SIM_MAYOR_A)
+            : precioVenta(op,'Tarjeta',f.den,TARJ_MAYOR_A);
+          return `<tr>
+            <td><b>${f.nombre}</b></td>
+            <td class="num" style="color:var(--muted)">${f.v.inicial}</td>
+            <td class="num"><b style="font-size:15px">${f.v.stock}</b></td>
+            ${esAdmin()?`<td class="num">${money(f.cat.costo)}</td><td class="num">${money(f.v.stock*f.cat.costo)}</td>`:''}
+            <td class="num">${money(f.tipo==='SIM'?SIM_VENTA[op]:f.den)}</td>
+            <td class="num" style="color:var(--primary);font-weight:700">${money(pm)}</td>
+            <td>${estado}</td>
+            <td class="num">
+              ${esAdmin()?`<button class="btn sm ghost" onclick="ajustarStock('${f.key}')">Ajustar</button>`:''}
+            </td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table></div>`;
+    }).join('')}
+  </div>`;
+}
+
+function ajustarStock(key){
+  const v = state.inventario[key];
+  const nuevo = prompt(`Nuevo stock para ${key}\n(actual: ${v.stock})`, v.stock);
+  if(nuevo===null) return;
+  const n = parseInt(nuevo);
+  if(isNaN(n) || n<0) return toast('Valor inválido','err');
+  v.stock = n;
+  toast('Stock actualizado','ok');
+  render();
+}
+
+/* =====================================================================
+   VISTA: CLIENTES / CRÉDITOS
+   ===================================================================== */
+function viewClientes(){
+  const totalPorCobrar = num2(state.clientes.reduce((a,c)=>a+deudaCliente(c.id),0));
+  const totalVencido   = num2(state.clientes.reduce((a,c)=>a+deudaVencida(c.id),0));
+  const conDeuda = state.clientes.filter(c=>deudaCliente(c.id)>0).length;
+
+  return `
+  <div class="grid g3" style="margin-bottom:16px">
+    <div class="kpi"><div class="lbl">Cartera total por cobrar</div><div class="val">${money(totalPorCobrar)}</div><div class="sub">${conDeuda} cliente(s) con saldo</div></div>
+    <div class="kpi danger"><div class="lbl">Monto vencido</div><div class="val">${money(totalVencido)}</div><div class="sub">Requiere cobranza inmediata</div></div>
+    <div class="kpi ok"><div class="lbl">Cobrado (abonos)</div><div class="val">${money(state.abonos.reduce((a,x)=>a+x.monto,0))}</div><div class="sub">${state.abonos.length} abono(s) registrado(s)</div></div>
+  </div>
+
+  <div class="grid g2">
+    <div>
+      ${state.clientes.map(c=>{
+        const deuda = deudaCliente(c.id);
+        const venc  = deudaVencida(c.id);
+        const est   = estadoCliente(c.id);
+        const abierto = ui.clienteAbierto===c.id;
+        const pend = state.ventas.filter(v=>v.clienteId===c.id && v.tipoPago==='credito' && saldoVenta(v)>0.001)
+                        .sort((a,b)=>a.fecha.localeCompare(b.fecha));
+        return `
+        <div class="client-card" style="${venc>0?'border-color:#fecaca;background:#fffbfb':''}">
+          <div class="flex" style="justify-content:space-between">
+            <div style="flex:1">
+              <div style="font-weight:800;font-size:14.5px">${esc(c.nombre)}</div>
+              <div style="font-size:12px;color:var(--muted)">${esc(c.comunidad)} · 📞 ${esc(c.tel)}</div>
+              <div style="margin-top:6px" class="flex">
+                <span class="b ${est.cls}">${est.txt}</span>
+                <span class="pill">Plazo ${c.plazo} días</span>
+                <span class="pill">Límite ${money(c.limite)}</span>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:10.5px;color:var(--muted);font-weight:700;text-transform:uppercase">Debe</div>
+              <div style="font-size:20px;font-weight:800;color:${deuda>0?'var(--danger)':'var(--ok)'}">${money(deuda)}</div>
+              ${venc>0?`<div style="font-size:11px;color:var(--danger);font-weight:700">${money(venc)} vencido</div>`:''}
+            </div>
+          </div>
+
+          <div class="flex mt">
+            <button class="btn sm ghost" onclick="toggleCliente('${c.id}')">${abierto?'▲ Ocultar':'▼ Ver detalle'}</button>
+          </div>
+
+          ${abierto ? `
+          <div style="margin-top:12px;border-top:1px dashed var(--line);padding-top:12px">
+            <div style="font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;margin-bottom:8px">Ventas a crédito pendientes</div>
+            ${pend.length===0 ? '<div style="font-size:12.5px;color:var(--ok);font-weight:600">✅ Sin saldos pendientes</div>' : `
+            <table>
+              <thead><tr><th>Fecha</th><th>Vence</th><th class="num">Total</th><th class="num">Saldo</th><th>Estado</th></tr></thead>
+              <tbody>
+              ${pend.map(v=>{
+                const vencida = v.vencimiento < HOY();
+                return `<tr>
+                  <td>${fFecha(v.fecha)}<br><small>${v.items.map(i=>i.desc+' ×'+i.cant).join(', ').slice(0,38)}</small></td>
+                  <td>${fFecha(v.vencimiento)}</td>
+                  <td class="num">${money(v.total)}</td>
+                  <td class="num"><b style="color:var(--danger)">${money(saldoVenta(v))}</b></td>
+                  <td>${vencida?'<span class="b b-danger">Vencida</span>':'<span class="b b-info">Vigente</span>'}</td>
+                </tr>`;
+              }).join('')}
+              </tbody>
+            </table>`}
+
+            ${deuda>0 ? `
+            <div class="mt" style="background:#f8fafc;border-radius:11px;padding:11px;border:1px solid var(--line)">
+              <label class="f">Registrar abono (pago parcial o total)</label>
+              <div class="flex">
+                <input type="number" step="0.01" min="0" placeholder="Monto en Bs" style="flex:1"
+                  id="abono-${c.id}" value="${ui.abonoMonto[c.id]||''}">
+                <button class="btn ok sm" onclick="abonar('${c.id}')">💵 Abonar</button>
+                <button class="btn sm ghost" onclick="abonar('${c.id}',${deuda})">Pagar todo (${money(deuda)})</button>
+              </div>
+            </div>`:''}
+
+            <div style="font-size:11.5px;font-weight:800;color:var(--muted);text-transform:uppercase;margin:12px 0 6px">Historial de abonos</div>
+            ${state.abonos.filter(a=>a.clienteId===c.id).length===0
+              ? '<div style="font-size:12.5px;color:var(--muted)">Sin abonos registrados</div>'
+              : `<table><tbody>${state.abonos.filter(a=>a.clienteId===c.id).slice().reverse().map(a=>`
+                  <tr><td>${fFecha(a.fecha)}</td><td>${esc(a.usuario||'')}</td>
+                  <td class="num" style="color:var(--ok);font-weight:700">+ ${money(a.monto)}</td></tr>`).join('')}</tbody></table>`}
+          </div>`:''}
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>➕ Nuevo cliente</h3>
+        <div class="field"><label class="f">Nombre completo / Razón social</label><input id="nc-nombre" placeholder="Ej: Pedro Choque"></div>
+        <div class="grid g2">
+          <div class="field"><label class="f">Teléfono</label><input id="nc-tel" placeholder="7XXXXXXX"></div>
+          <div class="field"><label class="f">Comunidad / Zona</label><input id="nc-com" placeholder="Ej: Villa Adela"></div>
+        </div>
+        <div class="grid g2">
+          <div class="field"><label class="f">Plazo habitual</label>
+            <select id="nc-plazo">${PLAZOS.map(p=>`<option value="${p}" ${p===15?'selected':''}>${p} días</option>`).join('')}</select>
+          </div>
+          <div class="field"><label class="f">Límite de crédito (Bs)</label><input id="nc-limite" type="number" value="500"></div>
+        </div>
+        <button class="btn block" onclick="nuevoCliente()">Registrar cliente</button>
+      </div>
+
+      <div class="card">
+        <h3>📋 Resumen de cartera</h3>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Cliente</th><th class="num">Saldo</th><th class="num">Vencido</th></tr></thead>
+          <tbody>
+          ${state.clientes.filter(c=>deudaCliente(c.id)>0).sort((a,b)=>deudaCliente(b.id)-deudaCliente(a.id)).map(c=>`
+            <tr>
+              <td>${esc(c.nombre)}</td>
+              <td class="num"><b>${money(deudaCliente(c.id))}</b></td>
+              <td class="num" style="color:${deudaVencida(c.id)>0?'var(--danger)':'var(--muted)'};font-weight:700">${deudaVencida(c.id)>0?money(deudaVencida(c.id)):'—'}</td>
+            </tr>`).join('') || '<tr><td colspan="3" class="empty">Sin deudas pendientes 🎉</td></tr>'}
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleCliente(id){ ui.clienteAbierto = ui.clienteAbierto===id ? null : id; render(); }
+
+function abonar(clienteId, montoForzado){
+  let monto = montoForzado;
+  if(monto===undefined){
+    const el = $('abono-'+clienteId);
+    monto = el ? el.value : 0;
+  }
+  registrarAbono(clienteId, monto, null);
+}
+
+function nuevoCliente(){
+  const nombre = $('nc-nombre').value.trim();
+  const tel    = $('nc-tel').value.trim();
+  const com    = $('nc-com').value.trim();
+  const plazo  = Number($('nc-plazo').value);
+  const limite = Number($('nc-limite').value)||0;
+  if(!nombre) return toast('Ingresa el nombre del cliente','err');
+  state.clientes.push({
+    id:'C'+(state.clienteSeq++), nombre, tel, comunidad:com||'—',
+    plazo, limite, creado:HOY()
+  });
+  toast('Cliente registrado','ok');
+  render();
+}
+
+/* =====================================================================
+   VISTA: COMPRAS
+   ===================================================================== */
+function viewCompras(){
+  const mes = ui.cierreMes;
+  const comprasMes = state.compras.filter(c=>mesDe(c.fecha)===mes);
+  const totalMes = num2(comprasMes.reduce((a,c)=>a+c.total,0));
+
+  return `
+  <div class="grid g3" style="margin-bottom:16px">
+    <div class="kpi"><div class="lbl">Compras del mes</div><div class="val">${money(totalMes)}</div><div class="sub">${comprasMes.length} registro(s)</div></div>
+    <div class="kpi purple"><div class="lbl">Total histórico</div><div class="val">${money(state.compras.reduce((a,c)=>a+c.total,0))}</div><div class="sub">${state.compras.length} compra(s)</div></div>
+    <div class="kpi ok"><div class="lbl">Bolsa total actual</div><div class="val">${money(OPERADORES.reduce((a,o)=>a+state.bolsa[o],0))}</div><div class="sub">Saldo digital disponible</div></div>
+  </div>
+
+  <div class="card">
+    <h3>🚚 Registrar compra / entrada de mercadería</h3>
+    <div class="grid g4">
+      <div class="field">
+        <label class="f">Operador / Proveedor</label>
+        <select id="cp-op" onchange="sugerirCosto()">
+          ${OPERADORES.map(o=>`<option>${o}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label class="f">Tipo</label>
+        <select id="cp-tipo" onchange="sugerirCosto()">
+          <option value="Tarjeta">🎫 Tarjeta física</option>
+          <option value="SIM">📱 Chip / SIM</option>
+          <option value="RECARGA">⚡ Carga de bolsa</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="f">Denominación</label>
+        <select id="cp-den" onchange="sugerirCosto()">
+          ${DENOMS.map(d=>`<option value="${d}">Bs ${d}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label class="f">Cantidad / Monto</label>
+        <input id="cp-cant" type="number" min="1" value="50" onchange="sugerirCosto()">
+      </div>
+    </div>
+    <div class="grid g2">
+      <div class="field">
+        <label class="f">Costo unitario (Bs)</label>
+        <input id="cp-costo" type="number" step="0.01" value="9.30">
+        <div class="hint" id="cp-hint">Se sugiere automáticamente según el operador.</div>
+      </div>
+      <div class="field">
+        <label class="f">Nota / N° de factura</label>
+        <input id="cp-nota" placeholder="Ej: Factura 0021 - Distribuidora">
+      </div>
+    </div>
+    <button class="btn block" onclick="nuevaCompra()">📥 Registrar entrada al inventario</button>
+  </div>
+
+  <div class="card">
+    <h3>📜 Historial de compras</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>ID</th><th>Fecha</th><th>Proveedor</th><th>Producto</th><th class="num">Cant.</th><th class="num">Costo unit.</th><th class="num">Total</th><th>Nota</th></tr></thead>
+      <tbody>
+      ${state.compras.slice().reverse().map(c=>{
+        const desc = c.tipo==='RECARGA' ? 'Carga de bolsa electrónica'
+                  : c.tipo==='SIM' ? 'Chip / SIM'
+                  : `Tarjeta Bs ${c.den}`;
+        return `<tr>
+          <td><span class="b b-gray">${c.id}</span></td>
+          <td>${fFecha(c.fecha)}</td>
+          <td>${badgeOp(c.operador)}</td>
+          <td>${desc}</td>
+          <td class="num">${c.cant}</td>
+          <td class="num">${money(c.costoUnit)}</td>
+          <td class="num"><b>${money(c.total)}</b></td>
+          <td><small>${esc(c.nota||'—')}</small></td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="8" class="empty">Sin compras registradas</td></tr>'}
+      </tbody>
+    </table></div>
+  </div>`;
+}
+
+function sugerirCosto(){
+  const op   = $('cp-op').value;
+  const tipo = $('cp-tipo').value;
+  const den  = Number($('cp-den').value);
+  const cant = Math.max(1, Number($('cp-cant').value)||1);
+  let costo = 0, hint = '';
+
+  if(tipo==='RECARGA'){
+    costo = num2(den*(1-COMISIONES[op]));
+    hint = `Carga de bolsa ${op}: pagas ${money(costo)} por cada Bs ${den} de saldo. Ganancia: ${money(den-costo)} (${(COMISIONES[op]*100).toFixed(0)}%).`;
+  }else if(tipo==='SIM'){
+    costo = SIM_COSTO[op];
+    hint = `Chip ${op}: costo ${money(costo)} · venta raleo ${money(SIM_VENTA[op])} · margen ${money(SIM_VENTA[op]-costo)}.`;
+  }else{
+    costo = num2(den*(1-COMISIONES[op]));
+    hint = `Tarjeta ${op} Bs ${den}: costo ${money(costo)} · venta raleo Bs ${den} · comisión ${money(den-costo)}.`;
+  }
+  $('cp-costo').value = costo;
+  $('cp-hint').textContent = hint;
+}
+
+function nuevaCompra(){
+  const op   = $('cp-op').value;
+  const tipo = $('cp-tipo').value;
+  const den  = Number($('cp-den').value);
+  const cant = Math.max(1, Number($('cp-cant').value)||1);
+  const costoUnit = Number($('cp-costo').value)||0;
+  const nota = $('cp-nota').value.trim();
+  if(costoUnit<=0) return toast('Ingresa un costo válido','err');
+  registrarCompra({operador:op, tipo, den, cant, costoUnit, nota});
+}
+
+/* =====================================================================
+   VISTA: CIERRE MENSUAL
+   ===================================================================== */
+function viewCierre(){
+  const mes = ui.cierreMes;
+  const ventasMes  = state.ventas.filter(v=>mesDe(v.fecha)===mes);
+  const comprasMes = state.compras.filter(c=>mesDe(c.fecha)===mes);
+  const abonosMes  = state.abonos.filter(a=>mesDe(a.fecha)===mes);
+
+  const totVentas   = num2(ventasMes.reduce((a,v)=>a+v.total,0));
+  const totComision = num2(ventasMes.reduce((a,v)=>a+v.comision,0));
+  const totCompras  = num2(comprasMes.reduce((a,c)=>a+c.total,0));
+  const totContado  = num2(ventasMes.filter(v=>v.tipoPago==='contado').reduce((a,v)=>a+v.total,0));
+  const totCredito  = num2(ventasMes.filter(v=>v.tipoPago==='credito').reduce((a,v)=>a+v.total,0));
+  const totAbonos   = num2(abonosMes.reduce((a,x)=>a+x.monto,0));
+  const utilidad    = num2(totComision);
+
+  return `
+  <div class="card">
+    <h3>🔒 Arqueo y cierre mensual</h3>
+    <div class="flex">
+      <div style="max-width:220px">
+        <label class="f">Período a cerrar</label>
+        <input type="month" value="${mes}" onchange="ui.cierreMes=this.value; render()">
+      </div>
+      <div style="flex:1"></div>
+      <button class="btn warn" onclick="cerrarMes()">🔐 Ejecutar cierre de mes</button>
+    </div>
+    <div class="alert i mt">
+      <span>ℹ️</span>
+      <div>Al ejecutar el cierre, el <b>saldo final</b> de cada producto y de la bolsa de recargas se convierte automáticamente en el <b>saldo inicial</b> del siguiente período. Se guarda un registro histórico del cierre.</div>
+    </div>
+  </div>
+
+  <div class="grid g4" style="margin-bottom:16px">
+    <div class="kpi ok"><div class="lbl">Ventas del mes</div><div class="val">${money(totVentas)}</div><div class="sub">${ventasMes.length} transacción(es)</div></div>
+    <div class="kpi purple"><div class="lbl">Utilidad / Comisión</div><div class="val">${money(utilidad)}</div><div class="sub">Ganancia bruta estimada</div></div>
+    <div class="kpi warn"><div class="lbl">Compras del mes</div><div class="val">${money(totCompras)}</div><div class="sub">${comprasMes.length} entrada(s)</div></div>
+    <div class="kpi"><div class="lbl">Cobrado en el mes</div><div class="val">${money(totAbonos)}</div><div class="sub">Abonos de cartera</div></div>
+  </div>
+
+  <div class="grid g2">
+    <div class="card">
+      <h3>💰 Resumen de caja del mes</h3>
+      <div class="tbl-wrap"><table>
+        <tbody>
+          <tr><td>Ventas al contado</td><td class="num"><b>${money(totContado)}</b></td></tr>
+          <tr><td>Cobros de cartera (abonos)</td><td class="num"><b>${money(totAbonos)}</b></td></tr>
+          <tr style="background:#f0fdf4"><td><b>➜ Efectivo ingresado</b></td><td class="num"><b style="color:var(--ok);font-size:15px">${money(num2(totContado+totAbonos))}</b></td></tr>
+          <tr><td>Ventas a crédito (no ingresó efectivo)</td><td class="num" style="color:var(--warn);font-weight:700">${money(totCredito)}</td></tr>
+          <tr><td>Compras pagadas</td><td class="num" style="color:var(--danger);font-weight:700">- ${money(totCompras)}</td></tr>
+          <tr style="background:#eff6ff"><td><b>➜ Flujo neto de caja</b></td><td class="num"><b style="font-size:15px">${money(num2(totContado+totAbonos-totCompras))}</b></td></tr>
+        </tbody>
+      </table></div>
+      <div class="hint mt">La utilidad real del negocio se refleja en las comisiones: <b>${money(totComision)}</b>.</div>
+    </div>
+
+    <div class="card">
+      <h3>⚡ Bolsa de recargas — arqueo</h3>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Operador</th><th class="num">Inicial</th><th class="num">Cargas</th><th class="num">Vendido</th><th class="num">Saldo final</th></tr></thead>
+        <tbody>
+        ${OPERADORES.map(op=>{
+          const cargas = num2(comprasMes.filter(c=>c.operador===op && c.tipo==='RECARGA').reduce((a,c)=>a+c.total,0));
+          const vendido = num2(ventasMes.flatMap(v=>v.items).filter(i=>i.operador===op && i.tipo==='RECARGA').reduce((a,i)=>a+i.subtotal,0));
+          return `<tr>
+            <td>${badgeOp(op)}</td>
+            <td class="num">${money(state.bolsaBase[op])}</td>
+            <td class="num" style="color:var(--ok)">+${money(cargas)}</td>
+            <td class="num" style="color:var(--danger)">-${money(vendido)}</td>
+            <td class="num"><b>${money(state.bolsa[op])}</b></td>
+          </tr>`;
+        }).join('')}
+        <tr style="background:#f8fafc">
+          <td><b>TOTAL</b></td>
+          <td class="num"><b>${money(OPERADORES.reduce((a,o)=>a+state.bolsaBase[o],0))}</b></td>
+          <td class="num"><b>${money(OPERADORES.reduce((a,o)=>a+num2(comprasMes.filter(c=>c.operador===o&&c.tipo==='RECARGA').reduce((x,c)=>x+c.total,0)),0))}</b></td>
+          <td class="num"><b>${money(OPERADORES.reduce((a,o)=>a+num2(ventasMes.flatMap(v=>v.items).filter(i=>i.operador===o&&i.tipo==='RECARGA').reduce((x,i)=>x+i.subtotal,0)),0))}</b></td>
+          <td class="num"><b style="font-size:15px">${money(OPERADORES.reduce((a,o)=>a+state.bolsa[o],0))}</b></td>
+        </tr>
+        </tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>📦 Arqueo de inventario físico</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Operador</th><th>Producto</th><th class="num">Inicial</th><th class="num">Compras</th><th class="num">Vendido</th><th class="num">Stock final</th>${esAdmin()?'<th class="num">Valor costo</th>':''}</tr></thead>
+      <tbody>
+      ${OPERADORES.map(op=>{
+        const filas = [];
+        DENOMS.forEach(d=>{
+          const key = `${op}-T${d}`;
+          filas.push({key, nombre:`Tarjeta Bs ${d}`, den:d, tipo:'Tarjeta'});
+        });
+        filas.push({key:`${op}-SIM`, nombre:'Chip / SIM', den:0, tipo:'SIM'});
+        return filas.map(f=>{
+          const v = state.inventario[f.key];
+          const comp = comprasMes.filter(c=>c.operador===op && c.tipo===f.tipo && Number(c.den)===f.den).reduce((a,c)=>a+Number(c.cant),0);
+          const vend = ventasMes.flatMap(x=>x.items).filter(i=>i.operador===op && i.tipo===f.tipo && Number(i.den)===f.den).reduce((a,i)=>a+i.cant,0);
+          const costo = catItem(op,f.tipo,f.den).costo;
+          return `<tr>
+            <td>${badgeOp(op)}</td>
+            <td>${f.nombre}</td>
+            <td class="num" style="color:var(--muted)">${v.inicial}</td>
+            <td class="num" style="color:var(--ok)">${comp>0?'+'+comp:'—'}</td>
+            <td class="num" style="color:var(--danger)">${vend>0?'-'+vend:'—'}</td>
+            <td class="num"><b style="font-size:15px">${v.stock}</b></td>
+            ${esAdmin()?`<td class="num">${money(v.stock*costo)}</td>`:''}
+          </tr>`;
+        }).join('');
+      }).join('')}
+      </tbody>
+    </table></div>
+  </div>
+
+  ${state.cierres.length ? `
+  <div class="card">
+    <h3>🗂️ Historial de cierres ejecutados</h3>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Período</th><th>Fecha de cierre</th><th class="num">Ventas</th><th class="num">Comisiones</th><th class="num">Stock final (unid.)</th><th class="num">Bolsa final</th><th>Usuario</th></tr></thead>
+      <tbody>
+      ${state.cierres.slice().reverse().map(c=>`
+        <tr>
+          <td><b>${c.mes}</b></td>
+          <td>${fFecha(c.fecha)}</td>
+          <td class="num">${money(c.ventas)}</td>
+          <td class="num" style="color:var(--ok)">${money(c.comisiones)}</td>
+          <td class="num">${c.stockFinal}</td>
+          <td class="num">${money(c.bolsaFinal)}</td>
+          <td><span class="b b-gray">${esc(c.usuario)}</span></td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>
+  </div>`:''}
+  `;
+}
+
+function cerrarMes(){
+  const mes = ui.cierreMes;
+  const ventasMes = state.ventas.filter(v=>mesDe(v.fecha)===mes);
+  const stockFinal = Object.values(state.inventario).reduce((a,v)=>a+v.stock,0);
+  const bolsaFinal = num2(OPERADORES.reduce((a,o)=>a+state.bolsa[o],0));
+
+  if(!confirm(`¿Confirmar cierre del período ${mes}?\n\nLos saldos finales pasarán a ser los iniciales del próximo período.`)) return;
+
+  state.cierres.push({
+    mes,
+    fecha: HOY(),
+    ventas: num2(ventasMes.reduce((a,v)=>a+v.total,0)),
+    comisiones: num2(ventasMes.reduce((a,v)=>a+v.comision,0)),
+    stockFinal,
+    bolsaFinal,
+    usuario: rolNombre()
+  });
+
+  // Saldo final → inicial del siguiente período
+  Object.values(state.inventario).forEach(v=>{ v.inicial = v.stock; });
+  OPERADORES.forEach(op=>{ state.bolsaBase[op] = state.bolsa[op]; });
+
+  toast(`✅ Cierre ${mes} ejecutado correctamente`,'ok');
+  render();
+}
+
+/* =====================================================================
+   INICIALIZACIÓN
+   ===================================================================== */
+function reiniciarDemo(){
+  if(!confirm('¿Reiniciar la demo con los datos de ejemplo originales?')) return;
+  localStorage.removeItem(LS_KEY);
+  state = seed();
+  ui.carrito = [];
+  ui.clienteAbierto = null;
+  save(); render();
+  toast('Demo reiniciada','ok');
+}
+
+(function init(){
+  if(!load()){ state = seed(); save(); }
+  // Compatibilidad: si el estado guardado no tiene algún campo nuevo
+  if(!state.cierres) state.cierres = [];
+  if(!state.bolsaBase) state.bolsaBase = {...state.bolsa};
+  render();
+})();
+</script>
+</body>
+</html>
