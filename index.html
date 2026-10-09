@@ -207,7 +207,16 @@
   .stock-value{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
   .stock-value b{color:var(--text);font-weight:600}
 
-  .prod-name{display:flex;flex-direction:column;gap:3px}
+  /* ============ PRODUCTO con foto ============ */
+  .prod-cell-wrap{display:flex;align-items:center;gap:12px}
+  .prod-foto-thumb{width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;
+    background:#f1f4f8;border:1px solid var(--border)}
+  .prod-foto-ph{width:44px;height:44px;border-radius:10px;flex-shrink:0;
+    background:#f1f4f8;border:1px solid var(--border);
+    display:grid;place-items:center;color:#c3cddb}
+  .prod-foto-ph svg{width:20px;height:20px;stroke-width:1.6}
+
+  .prod-name{display:flex;flex-direction:column;gap:3px;min-width:0}
   .prod-name strong{font-weight:620;font-size:13.5px}
   .prod-name span{font-size:11.5px;color:var(--muted)}
   .barcode-chip{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:10.5px;font-weight:600;
@@ -314,6 +323,17 @@
   .row-inline select{flex:1;min-width:0}
   .row-inline input{width:88px}
 
+  /* ============ FOTO EN MODAL ============ */
+  .foto-upload{display:flex;align-items:center;gap:14px}
+  .foto-preview{width:92px;height:92px;border-radius:12px;background:#f1f4f8;
+    border:2px dashed var(--border);flex-shrink:0;display:grid;place-items:center;
+    color:#c3cddb;overflow:hidden;position:relative;transition:.15s}
+  .foto-preview:hover{border-color:#cbd5e1}
+  .foto-preview img{width:100%;height:100%;object-fit:cover;display:block}
+  .foto-preview svg{width:28px;height:28px;stroke-width:1.6}
+  .foto-actions{display:flex;flex-direction:column;gap:6px;flex:1;min-width:0}
+  .foto-actions .btn{justify-content:center;font-size:12.5px;padding:9px 12px}
+
   /* ================= SELECTOR DE SECCIÓN ================= */
   .section-label-lg{
     font-size:13px;font-weight:650;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:6px;
@@ -399,6 +419,47 @@
   .mini-tag{padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.2px}
   .mini-tag.carn{background:var(--primary-soft);color:var(--primary)}
   .mini-tag.abar{background:var(--blue-soft);color:var(--blue)}
+
+  /* ============ CANTIDAD + COTIZACIÓN (venta por gramos) ============ */
+  .cant-row{display:flex;gap:8px;align-items:stretch;margin-top:8px}
+  .cant-input-wrap{position:relative;display:flex;align-items:center;background:#fafbfd;
+    border:1px solid var(--border);border-radius:10px;transition:.15s;flex:1;min-width:0}
+  .cant-input-wrap:focus-within{border-color:var(--primary);background:#fff;
+    box-shadow:0 0 0 3px rgba(225,29,72,.08)}
+  .cant-input-wrap input{border:none;background:transparent;padding:11px 13px;font-size:15px;
+    width:100%;outline:none;font-family:inherit;font-weight:600;font-variant-numeric:tabular-nums;
+    color:var(--text)}
+  .cant-input-wrap .cant-suffix{padding:0 14px 0 0;font-size:12.5px;font-weight:700;
+    color:var(--muted);flex-shrink:0;letter-spacing:.3px;text-transform:lowercase}
+  .cant-row .btn{padding:0 18px;border-radius:10px;flex-shrink:0}
+
+  .quick-cants{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+  .quick-cants button{padding:7px 12px;border-radius:8px;background:#f1f4f8;color:var(--text);
+    font-size:12px;font-weight:650;transition:.15s;border:1.5px solid transparent;
+    font-variant-numeric:tabular-nums}
+  .quick-cants button:hover{background:var(--primary-soft);color:var(--primary);border-color:#fecdd3}
+  .quick-cants button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .quick-cants.hidden{display:none}
+
+  .cotizacion-box{margin-top:10px;padding:11px 14px;border-radius:11px;
+    background:linear-gradient(135deg,#ecfdf5,#d1fae5);
+    border:1px solid #a7f3d0;border-left:4px solid var(--green);
+    display:none;align-items:center;gap:10px;font-size:13px;color:#065f46;
+    animation:cotPop .22s cubic-bezier(.4,0,.2,1)}
+  .cotizacion-box.show{display:flex}
+  .cotizacion-box .cot-icon{width:26px;height:26px;border-radius:8px;background:var(--green);
+    color:#fff;display:grid;place-items:center;flex-shrink:0;box-shadow:0 2px 6px rgba(16,185,129,.35)}
+  .cotizacion-box .cot-icon svg{width:14px;height:14px;stroke-width:3}
+  .cotizacion-box .cot-formula{flex:1;min-width:0;font-size:12.5px;line-height:1.35;opacity:.9}
+  .cotizacion-box .cot-formula b{font-weight:700}
+  .cotizacion-box .cot-total{font-size:19px;font-weight:750;letter-spacing:-.5px;
+    font-variant-numeric:tabular-nums;flex-shrink:0}
+  @keyframes cotPop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+
+  .stock-warn-inline{display:flex;align-items:center;gap:6px;padding:8px 11px;margin-top:8px;
+    background:#fffbeb;border:1px solid #fde68a;border-left:3px solid var(--amber);
+    border-radius:8px;font-size:12px;color:#92400e}
+  .stock-warn-inline svg{width:14px;height:14px;stroke-width:2;flex-shrink:0}
 
   .toast-wrap{position:fixed;bottom:calc(24px + var(--safe-bottom));left:50%;transform:translateX(-50%);
     z-index:300;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
@@ -531,6 +592,7 @@
     .stock-item{padding:12px 0}
     .stock-name{font-size:13px}
     .stock-qty{font-size:11.5px}
+    .prod-foto-thumb,.prod-foto-ph{width:40px;height:40px;border-radius:9px}
     .bottom-nav{display:flex}
     .modal{max-width:100%}
     .modal-head,.modal-body,.modal-foot{padding-left:18px;padding-right:18px}
@@ -544,6 +606,11 @@
     .area-card .ac-icon svg{width:23px;height:23px}
     .area-card strong{font-size:12.5px}
     .area-card small{font-size:10.5px}
+    .cant-input-wrap input{padding:10px 12px;font-size:14px}
+    .quick-cants button{padding:6px 10px;font-size:11.5px}
+    .cotizacion-box{padding:10px 12px}
+    .cotizacion-box .cot-total{font-size:17px}
+    .cotizacion-box .cot-formula{font-size:11.5px}
   }
   @media (max-width:380px){
     .kpi-value{font-size:17px}
@@ -707,6 +774,37 @@ const SECTIONS = {
 function sectionOf(area){ return SECTIONS[area] || SECTIONS.carniceria; }
 
 /* =========================================================
+   CONVERSIÓN DE UNIDADES (balanza en gramos)
+   ========================================================= */
+/* Productos que se venden a granel (por peso): el input pide gramos */
+const UNIDADES_GRANEL = ['kg','lb'];
+const GRAMOS_POR = { kg: 1000, lb: 453.592, g: 1 };
+
+/* Devuelve la unidad en la que se ingresa la cantidad al vender */
+function unidadEntrada(producto){
+  if(UNIDADES_GRANEL.includes(producto.unidad)) return 'g';
+  return producto.unidad;
+}
+
+/* Convierte una cantidad expresada en unidadEntrada a la unidad base del producto */
+function aUnidadBase(cantidad, unidadEntradaProd, unidadBase){
+  if(unidadEntradaProd === unidadBase) return cantidad;
+  if(unidadEntradaProd === 'g' && GRAMOS_POR[unidadBase]){
+    return cantidad / GRAMOS_POR[unidadBase];
+  }
+  return cantidad;
+}
+
+/* Formatea una cantidad para mostrar en el carrito, resaltando la unidad de entrada */
+function fmtCantidadCarrito(item){
+  const c = item.cantidadInput;
+  const u = item.unidadInput;
+  const num = Number(c);
+  const txt = num % 1 === 0 ? num.toString() : num.toFixed(2);
+  return `${txt} ${u}`;
+}
+
+/* =========================================================
    STORAGE
    ========================================================= */
 const KEY = 'bc_admin_v1';
@@ -722,8 +820,22 @@ function loadState(){
   }catch(e){ return defaultState(); }
 }
 function saveState(){
-  try{ localStorage.setItem(KEY, JSON.stringify(STATE)); }
-  catch(e){ toast('Error al guardar','error'); }
+  try{
+    const data = JSON.stringify(STATE);
+    // Aviso preventivo si crece mucho (aprox 4.5MB límite blando)
+    if(data.length > 4.2 * 1024 * 1024){
+      toast('⚠ Almacenamiento casi lleno. Exporta un backup.','warn');
+    }
+    localStorage.setItem(KEY, data);
+    return true;
+  }catch(e){
+    if(e.name === 'QuotaExceededError'){
+      toast('❌ Sin espacio. Reduce fotos o exporta backup.','error');
+    } else {
+      toast('Error al guardar','error');
+    }
+    return false;
+  }
 }
 
 /* Migración: renombrar "barrotes" → "abarrotes" para compatibilidad */
@@ -732,6 +844,7 @@ function migrateState(){
   if(STATE.productos){
     STATE.productos.forEach(p => {
       if(p.area === 'barrotes'){ p.area = 'abarrotes'; changed = true; }
+      if(p.foto === undefined) p.foto = '';
     });
   }
   if(STATE.ventas){
@@ -781,6 +894,9 @@ const ICONS = {
   arrowDown:'<path d="M12 5v14M6 13l6 6 6-6"/>',
   barcode:'<path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M10 8v8M13 8v8M16 8v8" stroke-width="1.6"/>',
   info:'<circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8v.01"/>',
+  camera:'<path d="M4 8h3l2-3h6l2 3h3a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2z"/><circle cx="12" cy="14" r="3.5"/>',
+  image:'<rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m21 17-5-5-9 9"/>',
+  scale:'<path d="M12 3v18M6 7l-3 8a3 3 0 0 0 6 0zM18 7l-3 8a3 3 0 0 0 6 0zM4 7h16"/>',
 };
 const icon = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]||''}</svg>`;
 
@@ -841,6 +957,38 @@ function closeModal(){ document.getElementById('modalBg').classList.remove('show
 function fieldVal(root, name){
   const el = root.querySelector(`[name="${name}"]`);
   return el ? el.value.trim() : '';
+}
+
+/* =========================================================
+   IMAGEN: compresión antes de guardar (evita reventar localStorage)
+   ========================================================= */
+function comprimirImagen(file, maxW = 320, quality = 0.72){
+  return new Promise((resolve, reject) => {
+    if(!file.type || !file.type.startsWith('image/')){
+      reject(new Error('No es imagen'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const scale = Math.min(1, maxW / img.width);
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        try {
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        } catch(err){ reject(err); }
+      };
+      img.onerror = () => reject(new Error('No se pudo cargar la imagen'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('Error al leer el archivo'));
+    reader.readAsDataURL(file);
+  });
 }
 
 /* =========================================================
@@ -980,6 +1128,22 @@ function alertaStock(){
     </div>`;
 }
 
+/* Helper para renderizar la miniatura de un producto en tablas */
+function renderProductoCell(p){
+  const thumb = p.foto
+    ? `<img src="${p.foto}" class="prod-foto-thumb" alt="" loading="lazy">`
+    : `<div class="prod-foto-ph">${icon('image')}</div>`;
+  return `
+    <div class="prod-cell-wrap">
+      ${thumb}
+      <div class="prod-name">
+        <strong>${esc(p.nombre)}</strong>
+        <span>${esc(p.categoria)||'Sin categoría'}</span>
+        ${p.barcode ? `<span class="barcode-chip">${icon('barcode')} ${esc(p.barcode)}</span>` : ''}
+      </div>
+    </div>`;
+}
+
 /* =========================================================
    VISTAS
    ========================================================= */
@@ -996,7 +1160,6 @@ VIEWS.dashboard = () => {
                                 .reduce((s,m)=>s+m.monto,0);
   const hayDatos = STATE.productos.length || STATE.ventas.length;
 
-  // Resumen por sección
   const carnProd = calc.productosPorArea('carniceria').length;
   const abarProd = calc.productosPorArea('abarrotes').length;
   const carnHoy = ventasHoy.filter(v=>v.area==='carniceria').reduce((s,v)=>s+v.total,0);
@@ -1058,7 +1221,6 @@ VIEWS.dashboard = () => {
       </div>
     </div>
 
-    <!-- Resumen por sección -->
     <div class="grid-eq">
       <div class="card" style="border-left:4px solid var(--primary)">
         <div class="card-head">
@@ -1198,7 +1360,19 @@ VIEWS.ventas = () => {
               <tr>
                 <td data-label="Fecha">${fmtFecha(v.fecha)} · ${v.hora}</td>
                 <td data-label="Cliente">${esc(v.cliente)||'Consumidor final'}</td>
-                <td data-label="Detalle">${v.items.map(i=>`${i.cantidad} ${esc(i.unidad)} ${esc(i.nombre)}`).join(', ')}</td>
+                <td data-label="Detalle">${v.items.map(i=>{
+                  const item = STATE.productos.find(x=>x.id===i.productoId);
+                  const uBase = i.unidad || (item ? item.unidad : '');
+                  // Mostrar en unidad de entrada si es a granel
+                  let texto;
+                  if(UNIDADES_GRANEL.includes(uBase)){
+                    const gramos = Math.round(i.cantidad * GRAMOS_POR[uBase]);
+                    texto = `${gramos} g ${esc(i.nombre)}`;
+                  } else {
+                    texto = `${i.cantidad} ${esc(uBase)} ${esc(i.nombre)}`;
+                  }
+                  return texto;
+                }).join(', ')}</td>
                 <td data-label="Sección">${sectionBadge(v.area)}</td>
                 <td data-label="Pago">${esc(v.pago)}</td>
                 <td data-label="Total" class="num">${fmt(v.total)}</td>
@@ -1355,13 +1529,7 @@ function vistaProductos(areaKey){
               const estadoTxt = sinStock ? 'Sin stock' : (critico ? 'Bajo' : 'Normal');
               return `
                 <tr class="${rowCls}">
-                  <td data-label="Producto">
-                    <div class="prod-name">
-                      <strong>${esc(p.nombre)}</strong>
-                      <span>${esc(p.categoria)||'Sin categoría'}</span>
-                      ${p.barcode ? `<span class="barcode-chip">${icon('barcode')} ${esc(p.barcode)}</span>` : ''}
-                    </div>
-                  </td>
+                  <td data-label="Producto">${renderProductoCell(p)}</td>
                   <td data-label="Stock actual" class="num">
                     <span class="stock-main">${stock.toLocaleString(CFG.moneda,{maximumFractionDigits:2})}<span class="unit-tag">${esc(p.unidad)}</span></span>
                   </td>
@@ -1465,13 +1633,7 @@ VIEWS.inventario = () => {
               const rowCls = sinStock ? 'row-danger' : (critico ? 'row-warn' : '');
               return `
                 <tr class="${rowCls}">
-                  <td data-label="Producto">
-                    <div class="prod-name">
-                      <strong>${esc(p.nombre)}</strong>
-                      <span>${esc(p.categoria)||'Sin categoría'}</span>
-                      ${p.barcode ? `<span class="barcode-chip">${icon('barcode')} ${esc(p.barcode)}</span>` : ''}
-                    </div>
-                  </td>
+                  <td data-label="Producto">${renderProductoCell(p)}</td>
                   <td data-label="Sección">${sectionBadge(p.area)}</td>
                   <td data-label="Stock actual" class="num">
                     <span class="stock-main">${stock.toLocaleString(CFG.moneda,{maximumFractionDigits:2})}<span class="unit-tag">${esc(p.unidad)}</span></span>
@@ -1667,24 +1829,29 @@ VIEWS.reportes = () => {
   `;
 };
 
-VIEWS.config = () => `
+VIEWS.config = () => {
+  const fotos = STATE.productos.filter(p=>p.foto).length;
+  const sizeKB = Math.round((localStorage.getItem(KEY)||'').length / 1024);
+  return `
   <div class="card">
     <div class="card-head"><div><h3>Datos y almacenamiento</h3><p>Los datos se guardan en tu navegador</p></div></div>
     <ul class="list-rows">
       <li><span class="lbl">Productos Carnicería</span><span class="val">${calc.productosPorArea('carniceria').length}</span></li>
       <li><span class="lbl">Productos Abarrotes</span><span class="val">${calc.productosPorArea('abarrotes').length}</span></li>
+      <li><span class="lbl">Con foto</span><span class="val">${fotos}</span></li>
       <li><span class="lbl">Ventas</span><span class="val">${STATE.ventas.length}</span></li>
       <li><span class="lbl">Compras</span><span class="val">${STATE.compras.length}</span></li>
       <li><span class="lbl">Clientes</span><span class="val">${STATE.clientes.length}</span></li>
       <li><span class="lbl">Proveedores</span><span class="val">${STATE.proveedores.length}</span></li>
       <li><span class="lbl">Movimientos de caja</span><span class="val">${STATE.caja.length}</span></li>
+      <li class="total"><span class="lbl">Tamaño ocupado</span><span class="val">${sizeKB} KB / ~5000 KB</span></li>
     </ul>
     <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
       <button class="btn ghost" onclick="exportarDatos()">${icon('arrowDown')} Exportar JSON</button>
       <button class="btn danger" onclick="resetearDatos()">${icon('trash')} Borrar todos los datos</button>
     </div>
-  </div>
-`;
+  </div>`;
+};
 
 /* =========================================================
    SCANNER
@@ -1868,18 +2035,16 @@ window.quickScan = function(areaDefault=''){
 };
 
 /* =========================================================
-   MODALES
+   MODAL PRODUCTO (con selector de sección, foto y barcode)
    ========================================================= */
-
-/* ---- Producto (con SELECTOR VISUAL de sección) ---- */
 window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
   const p = id ? STATE.productos.find(x=>x.id===id) : null;
   const barcodeValue = p ? (p.barcode||'') : (barcodePrefill||'');
   const selectedArea = p?.area || areaDefault || 'carniceria';
   const s = SECTIONS[selectedArea];
+  const fotoInicial = p?.foto || '';
 
   const body = `
-    <!-- ============ SELECTOR DE SECCIÓN (grande y claro) ============ -->
     <div class="field">
       <div class="section-label-lg">
         <span>📍 Sección donde va el producto <span class="req">*</span></span>
@@ -1902,6 +2067,29 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
       <div class="section-helper" id="sectionHelper">
         ${icon('info')}
         <span>El producto aparecerá en la sección <b id="helperSectionName">${s.label}</b></span>
+      </div>
+    </div>
+
+    <!-- FOTO -->
+    <div class="field">
+      <label>Foto del producto <span class="optional">(opcional)</span></label>
+      <div class="foto-upload">
+        <div class="foto-preview" id="fotoPreview">
+          ${fotoInicial ? `<img src="${fotoInicial}" alt="preview">` : icon('camera')}
+        </div>
+        <div class="foto-actions">
+          <button type="button" class="btn ghost sm" id="fotoBtnSelect">
+            ${icon('camera')} Elegir foto
+          </button>
+          <button type="button" class="btn danger sm" id="fotoBtnRemove"
+                  style="${fotoInicial?'':'display:none'}">
+            ${icon('trash')} Quitar foto
+          </button>
+        </div>
+      </div>
+      <input type="file" id="fotoInput" accept="image/*" style="display:none">
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">
+        La imagen se comprime automáticamente (máx. 320px). Útil cuando varios productos tienen nombres parecidos.
       </div>
     </div>
 
@@ -1932,7 +2120,7 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
     <div class="field-row">
       <div class="field">
         <label>Unidad de medida *</label>
-        <select name="unidad">
+        <select name="unidad" id="unidadSel">
           ${['kg','lb','unidad','bolsa','caja','litro','paquete','metro'].map(u=>
             `<option ${(p?.unidad||'kg')===u?'selected':''}>${u}</option>`).join('')}
         </select>
@@ -1972,6 +2160,12 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
       </div>
       <div class="pb-value" id="previewValor">Bs 0,00</div>
     </div>
+
+    <!-- Aviso útil cuando la unidad es a granel -->
+    <div class="stock-warn-inline" id="hintGranel" style="${['kg','lb'].includes(p?.unidad||'kg')?'':'display:none'}">
+      ${icon('scale')}
+      <span id="hintGranelText"></span>
+    </div>
   `;
 
   openModal({
@@ -1983,7 +2177,7 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
       const areaInput = m.querySelector('[name="area"]');
       const helperSectionName = m.querySelector('#helperSectionName');
       const nombreInput = m.querySelector('#nombreInput');
-      const unidadSel = m.querySelector('[name="unidad"]');
+      const unidadSel = m.querySelector('#unidadSel');
       const stockInp = m.querySelector('[name="stock"]');
       const costoInp = m.querySelector('[name="precioCosto"]');
       const hints = m.querySelectorAll('[data-hint="unidad"]');
@@ -1991,6 +2185,48 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
       const previewValor = m.querySelector('#previewValor');
       const bcInput = m.querySelector('#bcInput');
       const bcBtn = m.querySelector('#bcScanBtn');
+      const fotoInput = m.querySelector('#fotoInput');
+      const fotoPreview = m.querySelector('#fotoPreview');
+      const fotoBtnSelect = m.querySelector('#fotoBtnSelect');
+      const fotoBtnRemove = m.querySelector('#fotoBtnRemove');
+      const hintGranel = m.querySelector('#hintGranel');
+      const hintGranelText = m.querySelector('#hintGranelText');
+      let fotoData = fotoInicial;
+
+      // ===== Foto =====
+      const renderFotoPreview = () => {
+        if(fotoData){
+          fotoPreview.innerHTML = `<img src="${fotoData}" alt="preview">`;
+          fotoBtnRemove.style.display = '';
+        } else {
+          fotoPreview.innerHTML = icon('camera');
+          fotoBtnRemove.style.display = 'none';
+        }
+      };
+      fotoBtnSelect.addEventListener('click', () => fotoInput.click());
+      fotoBtnRemove.addEventListener('click', () => {
+        fotoData = '';
+        fotoInput.value = '';
+        renderFotoPreview();
+        toast('Foto quitada','');
+      });
+      fotoInput.addEventListener('change', async e => {
+        const file = e.target.files && e.target.files[0];
+        if(!file) return;
+        if(!file.type.startsWith('image/')){
+          toast('Selecciona una imagen','error'); return;
+        }
+        try {
+          toast('Procesando imagen…','');
+          fotoData = await comprimirImagen(file, 320, 0.72);
+          renderFotoPreview();
+          toast('✓ Foto cargada','success');
+        } catch(err){
+          console.error(err);
+          toast('Error al procesar la imagen','error');
+        }
+      });
+      renderFotoPreview();
 
       // ===== Selector de sección =====
       areaSelector.querySelectorAll('.area-card').forEach(card => {
@@ -2002,11 +2238,7 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
           });
           const sec = SECTIONS[val];
           helperSectionName.textContent = sec.label;
-          // Actualizar placeholder del nombre según sección
-          if(!nombreInput.value){
-            nombreInput.placeholder = sec.placeholder;
-          }
-          // Cambiar color del botón submit si es abarrotes
+          if(!nombreInput.value) nombreInput.placeholder = sec.placeholder;
           const submitBtn = m.querySelector('#mSubmit');
           if(submitBtn){
             if(val === 'abarrotes'){
@@ -2020,7 +2252,6 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
         });
       });
 
-      // Actualizar color del botón submit al iniciar si es abarrotes
       if(areaInput.value === 'abarrotes'){
         const submitBtn = m.querySelector('#mSubmit');
         if(submitBtn){
@@ -2029,10 +2260,18 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
         }
       }
 
-      // ===== Hints por unidad =====
+      // ===== Unidad / hints / preview =====
       const updateHints = () => {
         const u = unidadSel.value;
         hints.forEach(h => h.textContent = u);
+        // Hint granel
+        if(UNIDADES_GRANEL.includes(u)){
+          hintGranel.style.display = '';
+          const gr = GRAMOS_POR[u];
+          hintGranelText.innerHTML = `Este producto se venderá pidiendo <b>gramos</b> y el sistema cobrará automáticamente. <b>1 ${u} = ${Math.round(gr)} g</b>.`;
+        } else {
+          hintGranel.style.display = 'none';
+        }
       };
       const updatePreview = () => {
         const stock = parseFloat(stockInp.value)||0;
@@ -2051,9 +2290,7 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
       bcBtn.addEventListener('click', () => {
         openScanner((code) => {
           const dup = STATE.productos.find(x => x.barcode === code && x.id !== id);
-          if(dup){
-            toast(`⚠ Este código ya pertenece a "${dup.nombre}"`,'warn');
-          }
+          if(dup) toast(`⚠ Este código ya pertenece a "${dup.nombre}"`,'warn');
           bcInput.value = code;
           bcInput.focus();
           toast('✓ Código capturado','success');
@@ -2085,6 +2322,7 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
         stockMin: parseFloat(fieldVal(m,'stockMin'))||0,
         precioCosto: parseFloat(fieldVal(m,'precioCosto'))||0,
         precioVenta: parseFloat(fieldVal(m,'precioVenta'))||0,
+        foto: (m.querySelector('#fotoPreview img')?.src) || '',
       };
       if(!data.nombre){ toast('Ingresa el nombre','error'); return false; }
       if(data.precioVenta<=0){ toast('El precio de venta debe ser mayor a 0','error'); return false; }
@@ -2117,6 +2355,9 @@ window.openEntradaModal = id => {
   const p = STATE.productos.find(x=>x.id===id);
   if(!p) return;
   const s = sectionOf(p.area);
+  const aGranel = UNIDADES_GRANEL.includes(p.unidad);
+  const uEntrada = aGranel ? 'g' : p.unidad;
+
   const body = `
     <div style="margin-bottom:14px">
       ${sectionBadge(p.area, true)}
@@ -2126,8 +2367,12 @@ window.openEntradaModal = id => {
       Stock actual: <b style="color:var(--text)">${p.stock} ${esc(p.unidad)}</b>
     </p>
     <div class="field">
-      <label>Cantidad a ingresar <span class="unit-hint">${esc(p.unidad)}</span> *</label>
-      <input name="cantidad" type="number" step="0.01" min="0.01" value="1" autofocus>
+      <label>Cantidad a ingresar <span class="unit-hint">${uEntrada}</span> *</label>
+      <input name="cantidad" type="number" step="${aGranel?'1':'0.01'}" min="${aGranel?'1':'0.01'}"
+             value="${aGranel?'1000':'1'}" autofocus>
+      ${aGranel ? `<div style="font-size:11.5px;color:var(--muted);margin-top:6px">
+        Ingresa el peso en <b>gramos</b>. Se convertirá a ${p.unidad} automáticamente.
+      </div>` : ''}
     </div>
     <div class="field">
       <label>Nota (opcional)</label>
@@ -2140,11 +2385,14 @@ window.openEntradaModal = id => {
     submitLabel:'Agregar stock',
     onSubmit: () => {
       const m = document.getElementById('modal');
-      const cant = parseFloat(fieldVal(m,'cantidad'));
-      if(!cant || cant<=0){ toast('Cantidad inválida','error'); return false; }
-      p.stock = Number(p.stock) + cant;
+      const cantInput = parseFloat(fieldVal(m,'cantidad'));
+      if(!cantInput || cantInput<=0){ toast('Cantidad inválida','error'); return false; }
+      // Si es a granel, convertir de gramos a unidad base
+      const cantReal = aGranel ? aUnidadBase(cantInput, 'g', p.unidad) : cantInput;
+      p.stock = Number(p.stock) + cantReal;
       saveState(); refresh();
-      toast(`+${cant} ${p.unidad} agregado a "${p.nombre}"`,'success');
+      const txt = aGranel ? `${cantInput} g (${cantReal.toFixed(3)} ${p.unidad})` : `${cantInput} ${p.unidad}`;
+      toast(`+${txt} agregado a "${p.nombre}"`,'success');
       if(Number(p.stock) > Number(p.stockMin)){
         setTimeout(()=>toast('✓ El stock ya está en nivel normal','success'), 500);
       }
@@ -2153,6 +2401,9 @@ window.openEntradaModal = id => {
   });
 };
 
+/* =========================================================
+   MODAL VENTA — con cotización automática por gramos
+   ========================================================= */
 window.openVentaModal = () => {
   const disponibles = STATE.productos.filter(p => Number(p.stock) > 0);
   if(disponibles.length === 0){
@@ -2166,7 +2417,7 @@ window.openVentaModal = () => {
     const prods = disponibles.filter(p=>p.area===areaKey);
     if(prods.length === 0) return '';
     return `<optgroup label="── ${s.label} ──">
-      ${prods.map(p=>`<option value="${p.id}">${esc(p.nombre)} — ${fmt(p.precioVenta)}/${esc(p.unidad)} · disp: ${p.stock}</option>`).join('')}
+      ${prods.map(p=>`<option value="${p.id}">${esc(p.nombre)} — ${fmt(p.precioVenta)}/${esc(p.unidad)} · disp: ${p.stock} ${esc(p.unidad)}</option>`).join('')}
     </optgroup>`;
   };
 
@@ -2181,20 +2432,42 @@ window.openVentaModal = () => {
         <option>Efectivo</option><option>QR</option><option>Transferencia</option><option>Crédito</option>
       </select>
     </div>
+
     <div class="field">
       <label>Agregar producto</label>
-      <div class="row-inline">
-        <select id="vProd">
-          ${optgroup('carniceria')}
-          ${optgroup('abarrotes')}
-        </select>
-        <input id="vCant" type="number" step="0.01" min="0.01" value="1">
+      <select id="vProd">
+        ${optgroup('carniceria')}
+        ${optgroup('abarrotes')}
+      </select>
+
+      <div class="cant-row">
+        <div class="cant-input-wrap">
+          <input id="vCant" type="number" step="1" min="1" value="250" autocomplete="off">
+          <span class="cant-suffix" id="vCantUnit">g</span>
+        </div>
         <button type="button" class="btn primary" id="vAdd">${icon('plus')}</button>
       </div>
-      <div style="font-size:11.5px;color:var(--muted);margin-top:6px">
+
+      <!-- Atajos rápidos para productos a granel -->
+      <div class="quick-cants" id="vQuickCants">
+        <button type="button" data-val="100">100 g</button>
+        <button type="button" data-val="250">250 g (1/4 kg)</button>
+        <button type="button" data-val="500">500 g (1/2 kg)</button>
+        <button type="button" data-val="1000">1 kg (1000 g)</button>
+      </div>
+
+      <!-- Cotización en vivo -->
+      <div class="cotizacion-box" id="vCotizacion">
+        <span class="cot-icon">${icon('check')}</span>
+        <div class="cot-formula" id="vCotFormula"></div>
+        <div class="cot-total" id="vCotTotal"></div>
+      </div>
+
+      <div style="font-size:11.5px;color:var(--muted);margin-top:8px" id="vHint">
         Los productos están agrupados por sección. La cantidad va en la unidad del producto.
       </div>
     </div>
+
     <ul class="v-items" id="vItems"></ul>
     <div class="v-total" id="vTotal" style="display:none"><span>Total:</span><b>${fmt(0)}</b></div>
   `;
@@ -2262,7 +2535,99 @@ window.openVentaModal = () => {
   const m = document.getElementById('modal');
   const ul = m.querySelector('#vItems');
   const totalEl = m.querySelector('#vTotal');
+  const prodSel = m.querySelector('#vProd');
+  const cantInput = m.querySelector('#vCant');
+  const cantSuffix = m.querySelector('#vCantUnit');
+  const quickCants = m.querySelector('#vQuickCants');
+  const cotBox = m.querySelector('#vCotizacion');
+  const cotFormula = m.querySelector('#vCotFormula');
+  const cotTotal = m.querySelector('#vCotTotal');
+  const vHint = m.querySelector('#vHint');
 
+  /* --- Cotización en vivo --- */
+  function productoActual(){
+    return STATE.productos.find(x => x.id === prodSel.value);
+  }
+
+  function getUnidadEntrada(){
+    const p = productoActual();
+    return p ? unidadEntrada(p) : 'unidad';
+  }
+
+  function actualizarUIProducto(){
+    const p = productoActual();
+    if(!p) return;
+    const uEntrada = unidadEntrada(p);
+    cantSuffix.textContent = uEntrada;
+
+    // Atajos rápidos solo si es a granel
+    const esGranel = UNIDADES_GRANEL.includes(p.unidad);
+    if(esGranel){
+      quickCants.classList.remove('hidden');
+      // Ajustar el step y mínimo: gramos enteros
+      cantInput.step = 1;
+      cantInput.min = 1;
+      // Sugerir 250g si está vacío o era 1
+      if(!cantInput.value || cantInput.value === '1'){
+        cantInput.value = 250;
+      }
+      vHint.innerHTML = `Este producto se vende por <b>${p.unidad}</b> · ingresa los <b>gramos</b> que marca tu balanza.`;
+    } else {
+      quickCants.classList.add('hidden');
+      cantInput.step = 0.01;
+      cantInput.min = 0.01;
+      if(!cantInput.value || cantInput.value === '250'){
+        cantInput.value = 1;
+      }
+      vHint.innerHTML = `Este producto se vende por <b>${p.unidad}</b> · ingresa la cantidad directamente.`;
+    }
+    actualizarCotizacion();
+    // Limpiar selección de botones rápidos
+    quickCants.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+  }
+
+  function actualizarCotizacion(){
+    const p = productoActual();
+    if(!p){ cotBox.classList.remove('show'); return; }
+    const cant = parseFloat(cantInput.value)||0;
+    const uEntrada = unidadEntrada(p);
+    const esGranel = UNIDADES_GRANEL.includes(p.unidad);
+
+    if(cant <= 0){ cotBox.classList.remove('show'); return; }
+
+    const cantBase = aUnidadBase(cant, uEntrada, p.unidad);
+    const total = cantBase * p.precioVenta;
+
+    if(esGranel){
+      const totalFormateado = fmt(total);
+      cotFormula.innerHTML = `${cant} g = <b>${cantBase.toFixed(3)} ${p.unidad}</b> × ${fmt(p.precioVenta)}/${p.unidad}`;
+      cotTotal.textContent = totalFormateado;
+      cotBox.classList.add('show');
+    } else {
+      // Para no-granel no mostramos cotización grande, solo confirmamos
+      cotBox.classList.remove('show');
+    }
+  }
+
+  prodSel.addEventListener('change', actualizarUIProducto);
+  cantInput.addEventListener('input', () => {
+    // Desmarcar botón activo si el valor cambió manualmente
+    quickCants.querySelectorAll('button').forEach(b=>{
+      b.classList.toggle('active', parseFloat(b.dataset.val) === parseFloat(cantInput.value));
+    });
+    actualizarCotizacion();
+  });
+
+  quickCants.querySelectorAll('button').forEach(b => {
+    b.addEventListener('click', () => {
+      cantInput.value = b.dataset.val;
+      quickCants.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      actualizarCotizacion();
+    });
+  });
+
+  /* --- Carrito --- */
   function renderItems(){
     ul.innerHTML = items.map((it,idx)=>`
       <li>
@@ -2270,7 +2635,7 @@ window.openVentaModal = () => {
           <div>${esc(it.nombre)}</div>
           <div class="vi-sub">
             <span class="mini-tag ${it.area==='carniceria'?'carn':'abar'}">${sectionOf(it.area).shortLabel}</span>
-            ${it.cantidad} ${esc(it.unidad)} × ${fmt(it.precio)}/${esc(it.unidad)}
+            ${fmtCantidadCarrito(it)} × ${fmt(it.precio)}/${esc(it.unidad)}
           </div>
         </div>
         <div class="vi-price">${fmt(it.precio*it.cantidad)}</div>
@@ -2285,39 +2650,85 @@ window.openVentaModal = () => {
   }
 
   m.querySelector('#vAdd').onclick = () => {
-    const pid = m.querySelector('#vProd').value;
-    const cant = parseFloat(m.querySelector('#vCant').value);
-    if(!cant || cant<=0){ toast('Cantidad inválida','error'); return; }
-    const p = STATE.productos.find(x=>x.id===pid);
-    if(!p) return;
-    const yaEnCarrito = items.filter(i=>i.productoId===pid).reduce((s,i)=>s+i.cantidad,0);
-    if(yaEnCarrito + cant > Number(p.stock)){
-      toast(`Stock insuficiente. Disponible: ${p.stock - yaEnCarrito} ${p.unidad}`,'error');
+    const p = productoActual();
+    if(!p){ toast('Selecciona un producto','error'); return; }
+    const cantIngresada = parseFloat(cantInput.value);
+    if(!cantIngresada || cantIngresada<=0){ toast('Cantidad inválida','error'); return; }
+
+    const uEntrada = unidadEntrada(p);
+    const cantBase = aUnidadBase(cantIngresada, uEntrada, p.unidad);
+
+    // Validar stock disponible (en unidad base)
+    const yaEnCarrito = items.filter(i=>i.productoId===p.id).reduce((s,i)=>s+i.cantidad,0);
+    if(yaEnCarrito + cantBase > Number(p.stock)){
+      toast(`Stock insuficiente. Disponible: ${(Number(p.stock) - yaEnCarrito).toFixed(3)} ${p.unidad}`,'error');
       return;
     }
-    const existente = items.find(i=>i.productoId===pid);
-    if(existente){ existente.cantidad += cant; }
-    else {
+
+    // Si ya existe el producto, sumar
+    const existente = items.find(i=>i.productoId===p.id && i.unidadInput === uEntrada);
+    if(existente){
+      existente.cantidad += cantBase;
+      existente.cantidadInput += cantIngresada;
+    } else {
       items.push({
-        productoId: p.id, nombre: p.nombre, unidad: p.unidad, area: p.area,
-        cantidad: cant, precio: p.precioVenta, costo: p.precioCosto
+        productoId: p.id,
+        nombre: p.nombre,
+        unidad: p.unidad,             // unidad base (kg, lb, unidad…)
+        area: p.area,
+        cantidad: cantBase,           // cantidad en unidad base (ej: 0.25 kg)
+        cantidadInput: cantIngresada, // lo que el usuario escribió (ej: 250)
+        unidadInput: uEntrada,        // 'g' para granel, o la unidad del producto
+        precio: p.precioVenta,        // precio por unidad base
+        costo: p.precioCosto
       });
     }
-    m.querySelector('#vCant').value = 1;
+
+    // Reset
+    if(UNIDADES_GRANEL.includes(p.unidad)){
+      cantInput.value = 250;
+      quickCants.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+    } else {
+      cantInput.value = 1;
+    }
+    actualizarCotizacion();
     renderItems();
   };
+
+  // Inicializar
+  actualizarUIProducto();
+  renderItems();
 };
 
 window.borrarVenta = id => {
-  if(!confirm('¿Eliminar esta venta? Se devolverá el stock.')) return;
+  if(!confirm('¿Eliminar esta venta? Se devolverá el stock, se revertirá la caja y/o el crédito.')) return;
   const v = STATE.ventas.find(x=>x.id===id);
   if(!v) return;
+
+  // Devolver stock
   v.items.forEach(i=>{
     const p = STATE.productos.find(x=>x.id===i.productoId);
     if(p) p.stock = Number(p.stock) + i.cantidad;
   });
+
+  // Revertir movimiento de caja si fue en efectivo
+  if(v.pago === 'Efectivo'){
+    const idx = STATE.caja.findIndex(m =>
+      m.fecha === v.fecha && m.hora === v.hora && m.tipo === 'ingreso' &&
+      Math.abs(m.monto - v.total) < 0.01 &&
+      m.concepto.startsWith('Venta ')
+    );
+    if(idx >= 0) STATE.caja.splice(idx, 1);
+  }
+
+  // Revertir crédito
+  if(v.pago === 'Crédito' && v.cliente && v.cliente !== 'Consumidor final'){
+    const c = STATE.clientes.find(x=>x.nombre.toLowerCase()===v.cliente.toLowerCase());
+    if(c) c.deuda = Math.max(0, Number(c.deuda||0) - v.total);
+  }
+
   STATE.ventas = STATE.ventas.filter(x=>x.id!==id);
-  saveState(); refresh(); toast('Venta eliminada','success');
+  saveState(); refresh(); toast('Venta eliminada y revertida','success');
 };
 
 window.openMovCajaModal = () => {
@@ -2494,7 +2905,7 @@ window.openAbonoModal = id => {
       const monto = parseFloat(fieldVal(m,'monto'));
       const pago = fieldVal(m,'pago');
       if(!monto || monto<=0){ toast('Monto inválido','error'); return false; }
-      if(monto > saldo){ toast('El abono supera el saldo','error'); return false; }
+      if(monto > saldo + 0.001){ toast('El abono supera el saldo','error'); return false; }
       c.abonado = Number(c.abonado) + monto;
       if(pago === 'Efectivo'){
         STATE.caja.push({ id:uid(), fecha:todayISO(), hora:nowTime(), tipo:'ingreso',
