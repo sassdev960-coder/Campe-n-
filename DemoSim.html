@@ -3,129 +3,106 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SIMGest · Distribución de SIM y Recargas</title>
+<title>SIMGest · Sistema de Gestión</title>
 <style>
 :root{
-  --bg:#f5f4f1;
-  --surface:#ffffff;
-  --surface-soft:#fafaf7;
-  --ink:#15140f;
-  --ink-2:#3a3833;
-  --muted:#7a766d;
-  --line:#e8e6e0;
-  --line-soft:#f1efea;
-  --primary:#1c3d5a;
-  --primary-hover:#152e45;
+  --bg:#f5f4f1; --surface:#fff; --surface-soft:#fafaf7;
+  --ink:#15140f; --ink-2:#3a3833; --muted:#7a766d;
+  --line:#e8e6e0; --line-soft:#f1efea;
+  --primary:#1c3d5a; --primary-hover:#152e45;
   --accent:#8a6d3b;
-  --success:#2d6a4f;
-  --success-soft:#eaf3ee;
-  --warning:#9c6f1f;
-  --warning-soft:#fbf3e2;
-  --danger:#8b2b2b;
-  --danger-soft:#f9ecec;
-  --info:#1e5a8a;
-  --info-soft:#eaf1f7;
-  --r:10px;
+  --success:#2d6a4f; --success-soft:#eaf3ee;
+  --warning:#9c6f1f; --warning-soft:#fbf3e2;
+  --danger:#8b2b2b; --danger-soft:#f9ecec;
+  --info:#1e5a8a; --info-soft:#eaf1f7;
   --r-lg:14px;
   --shadow-sm:0 1px 2px rgba(20,18,12,.04), 0 1px 3px rgba(20,18,12,.03);
   --shadow:0 1px 3px rgba(20,18,12,.05), 0 8px 24px -12px rgba(20,18,12,.10);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
-body{
-  font-family:'Inter','SF Pro Text',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  background:var(--bg);
-  color:var(--ink);
-  font-size:14px;
-  line-height:1.5;
-  -webkit-font-smoothing:antialiased;
-  display:flex;
-  min-height:100vh;
-}
-.sidebar{
-  width:264px;
-  background:var(--surface);
-  border-right:1px solid var(--line);
-  padding:28px 0 24px;
-  display:flex;
-  flex-direction:column;
-  position:fixed;
-  top:0;left:0;bottom:0;
-  z-index:50;
-}
-.brand{padding:0 24px 28px;border-bottom:1px solid var(--line-soft);margin-bottom:18px}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;display:flex;min-height:100vh}
+
+/* Sidebar */
+.sidebar{width:252px;background:var(--surface);border-right:1px solid var(--line);padding:24px 0;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;overflow-y:auto}
+.brand{padding:0 22px 22px;border-bottom:1px solid var(--line-soft);margin-bottom:14px}
 .brand-mark{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-.brand-logo{width:34px;height:34px;border-radius:9px;background:var(--primary);display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;letter-spacing:.4px}
-.brand-name{font-size:16px;font-weight:600;letter-spacing:-.2px;color:var(--ink)}
-.brand-sub{font-size:11.5px;color:var(--muted);line-height:1.4;letter-spacing:.1px}
-.nav{flex:1;padding:0 12px;display:flex;flex-direction:column;gap:2px}
-.nav-label{font-size:10.5px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);padding:14px 12px 8px}
-.nav-item{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:8px;font-size:13.5px;font-weight:500;color:var(--ink-2);cursor:pointer;border:none;background:transparent;width:100%;text-align:left;transition:background .15s, color .15s;font-family:inherit}
-.nav-item:hover{background:var(--surface-soft);color:var(--ink)}
+.brand-logo{width:32px;height:32px;border-radius:9px;background:var(--primary);display:grid;place-items:center;color:#fff;font-weight:700;font-size:11px;letter-spacing:.5px}
+.brand-name{font-size:15px;font-weight:600;letter-spacing:-.2px}
+.brand-sub{font-size:11px;color:var(--muted);line-height:1.4}
+.nav{flex:1;padding:0 10px;display:flex;flex-direction:column;gap:1px}
+.nav-label{font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);padding:14px 12px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 11px;border-radius:8px;font-size:13px;font-weight:500;color:var(--ink-2);cursor:pointer;border:none;background:transparent;width:100%;text-align:left;font-family:inherit;transition:background .15s,color .15s}
+.nav-item:hover{background:var(--surface-soft)}
 .nav-item.active{background:var(--primary);color:#fff}
-.nav-item svg{width:16px;height:16px;stroke:var(--muted);stroke-width:1.6;fill:none;flex-shrink:0}
+.nav-item svg{width:15px;height:15px;stroke:var(--muted);stroke-width:1.6;fill:none;flex-shrink:0}
 .nav-item.active svg{stroke:#fff}
-.sidebar-footer{padding:16px 24px 0;border-top:1px solid var(--line-soft);margin:0 12px}
-.user-box{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;background:var(--surface-soft);border:1px solid var(--line-soft)}
-.user-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:600;font-size:12px;flex-shrink:0}
+.sidebar-footer{padding:14px 22px 0;border-top:1px solid var(--line-soft);margin:0 10px}
+.user-box{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;background:var(--surface-soft);border:1px solid var(--line-soft)}
+.user-avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:600;font-size:12px;flex-shrink:0}
 .user-info{flex:1;min-width:0}
-.user-box select{background:transparent;border:none;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;padding:0;font-family:inherit;outline:none;width:100%;margin-bottom:2px}
-.user-role{font-size:11px;color:var(--muted)}
+.user-box select{background:transparent;border:none;font-size:12.5px;font-weight:600;color:var(--ink);cursor:pointer;padding:0;font-family:inherit;outline:none;width:100%}
+.user-role{font-size:10.5px;color:var(--muted);margin-top:1px}
 
-.main{margin-left:264px;flex:1;padding:36px 44px 60px;max-width:1280px;width:calc(100% - 264px)}
-.mobile-toggle{display:none}
+/* Main */
+.main{margin-left:252px;flex:1;padding:32px 40px 60px;max-width:1300px;width:calc(100% - 252px)}
+.page-head{margin-bottom:28px}
+.page-eyebrow{font-size:10.5px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.page-title{font-size:26px;font-weight:600;letter-spacing:-.5px;line-height:1.2}
+.page-desc{font-size:13.5px;color:var(--muted);margin-top:6px;max-width:680px;line-height:1.55}
 
-.page-head{margin-bottom:32px}
-.page-eyebrow{font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.page-title{font-size:28px;font-weight:600;letter-spacing:-.5px;color:var(--ink);line-height:1.2}
-.page-desc{font-size:14px;color:var(--muted);margin-top:6px;max-width:640px;line-height:1.55}
-
-.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:24px;margin-bottom:20px;box-shadow:var(--shadow-sm)}
-.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap}
-.card-title{font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-.1px}
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;margin-bottom:18px;box-shadow:var(--shadow-sm)}
+.card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px;flex-wrap:wrap}
+.card-title{font-size:14.5px;font-weight:600;letter-spacing:-.1px}
 .card-subtitle{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.5}
 
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
-.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;box-shadow:var(--shadow-sm)}
-.kpi-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
-.kpi-value{font-size:24px;font-weight:600;letter-spacing:-.5px;color:var(--ink);font-variant-numeric:tabular-nums}
+/* KPIs */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px;box-shadow:var(--shadow-sm)}
+.kpi-label{font-size:10.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.kpi-value{font-size:22px;font-weight:600;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
 .kpi-value.is-success{color:var(--success)}
 .kpi-value.is-danger{color:var(--danger)}
 .kpi-value.is-warning{color:var(--warning)}
-.kpi-meta{font-size:12px;color:var(--muted);margin-top:6px}
+.kpi-meta{font-size:11.5px;color:var(--muted);margin-top:4px}
 
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+/* Layout */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 
-.field{margin-bottom:16px}
-.field label{display:block;font-size:12px;font-weight:500;color:var(--ink-2);margin-bottom:6px;letter-spacing:.1px}
-.hint{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.45}
-input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;font-family:inherit;color:var(--ink);background:var(--surface);outline:none;transition:border-color .15s, box-shadow .15s}
+/* Forms */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:11.5px;font-weight:500;color:var(--ink-2);margin-bottom:5px}
+.hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.45}
+input,select,textarea{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;font-family:inherit;color:var(--ink);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s}
 input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(28,61,90,.10)}
-input::placeholder,textarea::placeholder{color:#b5b2ab}
-select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%237a766d' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+input::placeholder{color:#b5b2ab}
+select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%237a766d' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
 
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 18px;border-radius:9px;border:1px solid transparent;font-size:13.5px;font-weight:500;font-family:inherit;cursor:pointer;transition:all .15s;white-space:nowrap}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 16px;border-radius:9px;border:1px solid transparent;font-size:13px;font-weight:500;font-family:inherit;cursor:pointer;transition:all .15s;white-space:nowrap}
 .btn-primary{background:var(--primary);color:#fff}
 .btn-primary:hover{background:var(--primary-hover)}
 .btn-outline{background:var(--surface);border-color:var(--line);color:var(--ink-2)}
 .btn-outline:hover{border-color:#d5d2ca;background:var(--surface-soft)}
 .btn-success{background:var(--success);color:#fff}
 .btn-success:hover{filter:brightness(1.06)}
+.btn-danger{background:var(--danger);color:#fff}
 .btn-ghost{background:transparent;color:var(--primary);padding:6px 10px;font-size:12.5px;border-radius:6px}
 .btn-ghost:hover{background:var(--surface-soft)}
 .btn-block{width:100%}
-.btn-sm{padding:6px 12px;font-size:12.5px;border-radius:8px}
+.btn-sm{padding:5px 11px;font-size:12px;border-radius:7px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
-.btn-row{display:flex;gap:10px;flex-wrap:wrap}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap}
 
-.table-wrap{overflow-x:auto;margin:0 -24px;padding:0 24px}
+/* Tables */
+.table-wrap{overflow-x:auto;margin:0 -22px;padding:0 22px}
 table{width:100%;border-collapse:collapse;font-size:13px}
-thead th{text-align:left;font-size:10.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:0 12px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+thead th{text-align:left;font-size:10.5px;font-weight:600;letter-spacing:.9px;text-transform:uppercase;color:var(--muted);padding:0 10px 11px;border-bottom:1px solid var(--line);white-space:nowrap}
 thead th:first-child{padding-left:0}
 thead th:last-child{padding-right:0;text-align:right}
-tbody td{padding:14px 12px;border-bottom:1px solid var(--line-soft);color:var(--ink-2);vertical-align:middle}
+tbody td{padding:12px 10px;border-bottom:1px solid var(--line-soft);color:var(--ink-2);vertical-align:middle}
 tbody td:first-child{padding-left:0;color:var(--ink)}
 tbody td:last-child{padding-right:0;text-align:right}
 tbody tr:last-child td{border-bottom:none}
@@ -133,102 +110,104 @@ tbody tr:hover td{background:var(--surface-soft)}
 .num{text-align:right;font-variant-numeric:tabular-nums}
 .bold{font-weight:600;color:var(--ink)}
 
-.badge{display:inline-block;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:500;letter-spacing:.1px;white-space:nowrap}
-.badge-entel{background:#eaf0f7;color:#1c3d5a}
-.badge-tigo{background:#eeecf5;color:#3a2f5c}
-.badge-viva{background:#f7ecec;color:#7a2b2b}
+/* Badges */
+.badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:10.5px;font-weight:500;letter-spacing:.1px;white-space:nowrap}
 .badge-success{background:var(--success-soft);color:var(--success)}
 .badge-warning{background:var(--warning-soft);color:var(--warning)}
 .badge-danger{background:var(--danger-soft);color:var(--danger)}
 .badge-info{background:var(--info-soft);color:var(--info)}
 .badge-neutral{background:var(--line-soft);color:var(--muted)}
+.badge-accent{background:#f3ecdc;color:var(--accent)}
 
-.alert{display:flex;gap:12px;padding:14px 16px;border-radius:10px;font-size:13px;line-height:1.55;margin-bottom:16px;border:1px solid}
+/* Alerts */
+.alert{display:flex;gap:10px;padding:12px 14px;border-radius:10px;font-size:12.5px;line-height:1.55;margin-bottom:14px;border:1px solid}
 .alert-info{background:var(--info-soft);border-color:#d1e0ec;color:#183a56}
 .alert-warning{background:var(--warning-soft);border-color:#ecdcae;color:#6d4d13}
 .alert-danger{background:var(--danger-soft);border-color:#ecd1d1;color:#6a2020}
-.alert-title{font-weight:600;margin-bottom:2px;color:inherit}
+.alert-success{background:var(--success-soft);border-color:#c7e0cf;color:#22503c}
+.alert-title{font-weight:600;margin-bottom:2px}
 
-.bolsa-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.bolsa{border-radius:12px;padding:18px;border:1px solid var(--line);background:var(--surface-soft)}
-.bolsa.entel{border-left:3px solid #1c3d5a}
-.bolsa.tigo{border-left:3px solid #4c3f7c}
-.bolsa.viva{border-left:3px solid #8b2b2b}
-.bolsa-op{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
-.bolsa-val{font-size:20px;font-weight:600;color:var(--ink);margin-top:6px;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
-.bolsa-sub{font-size:11.5px;color:var(--muted);margin-top:4px}
-.bolsa-bar{height:3px;background:var(--line);border-radius:99px;margin-top:12px;overflow:hidden}
-.bolsa-bar-fill{height:100%;background:var(--primary);border-radius:99px;transition:width .4s}
-.bolsa.entel .bolsa-bar-fill{background:#1c3d5a}
-.bolsa.tigo .bolsa-bar-fill{background:#4c3f7c}
-.bolsa.viva .bolsa-bar-fill{background:#8b2b2b}
-
-.choice-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.choice{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:14px 12px;cursor:pointer;text-align:left;font-family:inherit;transition:all .15s}
-.choice:hover{border-color:#cdc9c0;background:var(--surface-soft)}
-.choice.active{border-color:var(--primary);background:#f4f7fa;box-shadow:inset 0 0 0 1px var(--primary)}
-.choice-title{font-size:13px;font-weight:500;color:var(--ink);display:block}
-.choice-desc{font-size:11.5px;color:var(--muted);margin-top:3px;display:block;line-height:1.4}
-
-.cart-line{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line-soft)}
+/* Cart */
+.cart-line{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-soft)}
 .cart-line:last-child{border-bottom:none}
 .cart-info{flex:1;min-width:0}
-.cart-name{font-size:13.5px;font-weight:500;color:var(--ink)}
-.cart-meta{font-size:12px;color:var(--muted);margin-top:2px}
-.cart-price{font-size:13.5px;font-weight:600;color:var(--ink);font-variant-numeric:tabular-nums}
-.cart-total{display:flex;justify-content:space-between;align-items:baseline;padding-top:16px;margin-top:12px;border-top:1px solid var(--line)}
-.cart-total-label{font-size:12px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
-.cart-total-value{font-size:22px;font-weight:600;color:var(--ink);letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.cart-name{font-size:13px;font-weight:500;color:var(--ink)}
+.cart-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+.cart-qty{width:60px;padding:4px 6px;font-size:12.5px;text-align:center}
+.cart-price{width:80px;padding:4px 6px;font-size:12.5px;text-align:right}
+.cart-sub{width:80px;text-align:right;font-weight:600;font-size:13px;font-variant-numeric:tabular-nums}
+.cart-total{display:flex;justify-content:space-between;align-items:baseline;padding-top:14px;margin-top:10px;border-top:1px solid var(--line)}
+.cart-total-label{font-size:11.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.cart-total-value{font-size:22px;font-weight:600;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
 
-.price-box{background:var(--surface-soft);border:1px solid var(--line-soft);border-radius:10px;padding:16px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
-.price-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
-.price-value{font-size:22px;font-weight:600;color:var(--primary);letter-spacing:-.4px;font-variant-numeric:tabular-nums;margin-top:4px}
-.price-meta{font-size:12px;color:var(--muted);text-align:right;line-height:1.5}
+/* Product list */
+.prod-list{max-height:400px;overflow-y:auto;margin:0 -8px}
+.prod-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 8px;border-radius:8px;cursor:pointer;transition:background .1s}
+.prod-item:hover{background:var(--surface-soft)}
+.prod-item.stock-0{opacity:.5;cursor:not-allowed}
+.prod-name{font-size:13px;font-weight:500}
+.prod-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.prod-price{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--primary)}
+.prod-stock{font-size:11px;color:var(--muted);text-align:right;margin-top:2px}
 
-.client-card{border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:12px;background:var(--surface);transition:box-shadow .15s, border-color .15s}
-.client-card:hover{box-shadow:var(--shadow)}
-.client-card.vencido{border-left:3px solid var(--danger)}
-.client-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
-.client-name{font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-.1px}
-.client-meta{font-size:12.5px;color:var(--muted);margin-top:3px}
-.client-tags{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.client-debt{text-align:right;flex-shrink:0}
-.client-debt-label{font-size:10.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
-.client-debt-value{font-size:20px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
-.client-debt-value.ok{color:var(--success)}
-.client-debt-value.deuda{color:var(--danger)}
-.client-body{margin-top:16px;padding-top:16px;border-top:1px solid var(--line-soft)}
+/* Caja hero */
+.caja-hero{background:linear-gradient(135deg,var(--primary),#0f2942);color:#fff;border-radius:var(--r-lg);padding:28px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.caja-hero-label{font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:#a5c4ff;margin-bottom:6px}
+.caja-hero-value{font-size:36px;font-weight:600;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+.caja-hero-sub{font-size:12px;color:#a5c4ff;margin-top:6px}
 
-.tag-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:var(--surface-soft);border:1px solid var(--line-soft);font-size:11.5px;color:var(--ink-2);font-weight:500}
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(20,18,12,.45);display:grid;place-items:center;padding:20px;z-index:200;overflow-y:auto}
+.modal{background:var(--surface);border-radius:var(--r-lg);padding:26px;max-width:520px;width:100%;box-shadow:0 20px 60px -20px rgba(0,0,0,.4);max-height:90vh;overflow-y:auto}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}
+.modal-title{font-size:16px;font-weight:600;letter-spacing:-.2px}
+.modal-close{background:none;border:none;font-size:22px;color:var(--muted);cursor:pointer;line-height:1;padding:0 4px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--line-soft)}
+
+/* Misc */
 .empty{text-align:center;padding:32px 16px;color:var(--muted);font-size:13px;line-height:1.6}
-.summary-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:13.5px;color:var(--ink-2);border-bottom:1px solid var(--line-soft)}
+.tag-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;background:var(--surface-soft);border:1px solid var(--line-soft);font-size:11px;color:var(--ink-2);font-weight:500}
+.summary-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:13px;color:var(--ink-2);border-bottom:1px solid var(--line-soft)}
 .summary-row:last-child{border-bottom:none}
 .summary-row.highlight{color:var(--ink);font-weight:600;font-size:14.5px;padding:14px 0;border-top:1px solid var(--line);border-bottom:none}
 .summary-row .label{flex:1}
 .summary-row .value{font-variant-numeric:tabular-nums;font-weight:500}
 
-.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--ink);color:#fff;padding:12px 22px;border-radius:10px;font-size:13.5px;font-weight:500;box-shadow:0 12px 32px -8px rgba(20,18,12,.4);transition:transform .3s cubic-bezier(.2,.9,.3,1.3);z-index:999;max-width:90vw}
+.choice-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.choice{border:1px solid var(--line);background:var(--surface);border-radius:9px;padding:11px 12px;cursor:pointer;text-align:left;font-family:inherit;transition:all .15s}
+.choice:hover{border-color:#cdc9c0;background:var(--surface-soft)}
+.choice.active{border-color:var(--primary);background:#f4f7fa;box-shadow:inset 0 0 0 1px var(--primary)}
+.choice-title{font-size:12.5px;font-weight:500;color:var(--ink);display:block}
+.choice-desc{font-size:11px;color:var(--muted);margin-top:2px;display:block}
+
+.bill-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.bill-btn{padding:8px 4px;border:1px solid var(--line);background:var(--surface);border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s}
+.bill-btn:hover{background:var(--surface-soft);border-color:#cdc9c0}
+.bill-btn.active{background:var(--primary);border-color:var(--primary);color:#fff}
+
+.cambio-box{background:var(--success-soft);border:1px solid #c7e0cf;border-radius:10px;padding:14px;margin-top:12px;display:flex;justify-content:space-between;align-items:baseline}
+.cambio-box.insuf{background:var(--danger-soft);border-color:#ecd1d1}
+.cambio-label{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--success)}
+.cambio-box.insuf .cambio-label{color:var(--danger)}
+.cambio-value{font-size:22px;font-weight:600;color:var(--success);letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+.cambio-box.insuf .cambio-value{color:var(--danger)}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px -8px rgba(20,18,12,.4);transition:transform .3s cubic-bezier(.2,.9,.3,1.3);z-index:999;max-width:90vw}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.ok{background:var(--success)}
 .toast.err{background:var(--danger)}
 
 @media(max-width:900px){
-  .sidebar{transform:translateX(-100%);transition:transform .25s;box-shadow:0 0 40px rgba(0,0,0,.1)}
+  .sidebar{transform:translateX(-100%);transition:transform .25s}
   .sidebar.open{transform:translateX(0)}
-  .main{margin-left:0;width:100%;padding:24px 20px 60px}
+  .main{margin-left:0;width:100%;padding:20px 16px 60px}
   .kpi-grid{grid-template-columns:1fr 1fr}
   .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
   .choice-row{grid-template-columns:1fr}
-  .bolsa-grid{grid-template-columns:1fr}
-  .mobile-toggle{display:flex;align-items:center;gap:10px;padding:14px 20px;background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:40;font-weight:600;font-size:14px;margin:-24px -20px 20px}
-  .mobile-toggle button{background:none;border:none;cursor:pointer;padding:4px;display:flex;align-items:center;gap:6px;font-family:inherit;font-size:13.5px;font-weight:500;color:var(--ink)}
+  .mobile-toggle{display:flex!important}
 }
-@media(max-width:600px){
-  .kpi-grid{grid-template-columns:1fr}
-  .page-title{font-size:22px}
-  .card{padding:18px}
-  .table-wrap{margin:0 -18px;padding:0 18px}
-}
+.mobile-toggle{display:none;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--line);margin:-20px -16px 16px;position:sticky;top:0;z-index:40}
+.mobile-toggle button{background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:inherit;font-size:13px;font-weight:500;color:var(--ink);padding:4px}
 </style>
 </head>
 <body>
@@ -239,11 +218,9 @@ tbody tr:hover td{background:var(--surface-soft)}
       <div class="brand-logo">SG</div>
       <div class="brand-name">SIMGest</div>
     </div>
-    <div class="brand-sub">Control de SIM, tarjetas y recargas</div>
+    <div class="brand-sub">Sistema de gestión comercial</div>
   </div>
-
   <nav class="nav" id="nav"></nav>
-
   <div class="sidebar-footer">
     <div class="user-box">
       <div class="user-avatar" id="avatarIni">A</div>
@@ -259,334 +236,839 @@ tbody tr:hover td{background:var(--surface-soft)}
   </div>
 </aside>
 
-<div class="main" id="main">
+<div class="main">
   <div class="mobile-toggle">
     <button onclick="document.getElementById('sidebar').classList.toggle('open')">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
       Menú
     </button>
   </div>
   <div id="app"></div>
 </div>
 
+<div id="modalRoot"></div>
 <div class="toast" id="toast"></div>
 
 <script>
 /* ================================================================
-   CONFIGURACIÓN DEL NEGOCIO
+   CONFIGURACIÓN BÁSICA
    ================================================================ */
-const OPERADORES = ['Entel','Tigo','Viva'];
-const COMISIONES = { Entel:0.07, Tigo:0.08, Viva:0.10 };
-const DENOMS     = [10,15,30,50,100];
-const SIM_COSTO  = { Entel:5, Tigo:5, Viva:4 };
-const SIM_VENTA  = { Entel:15, Tigo:15, Viva:12 };
-const PLAZOS     = [7,15,30];
-const LS_KEY     = 'simgest_v3';
-
-const TARJ_MAYOR_A = 20,  TARJ_MAYOR_B = 100;
-const SIM_MAYOR_A  = 10,  SIM_MAYOR_B  = 50;
+const UNIDADES = ['unidad','kg','litro','gramo','ml','caja','paquete','docena','metro'];
+const LS_KEY = 'simgest_v4';
 
 /* ================================================================
    UTILIDADES
    ================================================================ */
 const $ = id => document.getElementById(id);
 const HOY = () => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; };
+const horaActual = () => { const d=new Date(); return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; };
 const money = n => 'Bs ' + (Number(n)||0).toLocaleString('es-BO',{minimumFractionDigits:2,maximumFractionDigits:2});
-const num2  = n => +(Number(n)||0).toFixed(2);
+const num2 = n => +(Number(n)||0).toFixed(2);
 const addDias = (f,n) => { const d=new Date(f+'T12:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
 const fFecha = iso => { if(!iso) return '—'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; };
-const mesDe  = iso => (iso||'').slice(0,7);
+const mesDe = iso => (iso||'').slice(0,7);
 const mesActual = () => HOY().slice(0,7);
 const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-
-const itemId = (op,tipo,den) => tipo==='SIM' ? `${op}-SIM` : `${op}-T${den}`;
-
-function catItem(op,tipo,den){
-  if(tipo==='SIM') return { op,tipo:'SIM',den:0,costo:SIM_COSTO[op],nombre:`Chip / SIM ${op}` };
-  const nombre = tipo==='RECARGA' ? `Recarga ${op} Bs ${den}` : `Tarjeta ${op} Bs ${den}`;
-  return { op,tipo,den,costo:num2(den*(1-COMISIONES[op])),nombre };
-}
-
-function precioVenta(op,tipo,den,cant){
-  if(tipo==='RECARGA') return den;
-  if(tipo==='SIM'){
-    const base = SIM_VENTA[op];
-    if(cant>=SIM_MAYOR_B) return num2(base*0.80);
-    if(cant>=SIM_MAYOR_A) return num2(base*0.90);
-    return base;
-  }
-  const com = COMISIONES[op];
-  if(cant>=TARJ_MAYOR_B) return num2(den*(1-com*0.90));
-  if(cant>=TARJ_MAYOR_A) return num2(den*(1-com*0.50));
-  return den;
-}
-
-function etiquetaPrecio(tipo,cant){
-  if(tipo==='RECARGA') return 'Valor nominal';
-  if(tipo==='SIM'){
-    if(cant>=SIM_MAYOR_B) return 'Mayoreo · 50+';
-    if(cant>=SIM_MAYOR_A) return 'Mayoreo · 10+';
-    return 'Raleo';
-  }
-  if(cant>=TARJ_MAYOR_B) return 'Mayoreo · 100+';
-  if(cant>=TARJ_MAYOR_A) return 'Mayoreo · 20+';
-  return 'Raleo';
-}
-
-const badgeOp = op => `<span class="badge badge-${op.toLowerCase()}">${op}</span>`;
+const unidadAbrev = u => ({unidad:'u', kg:'kg', litro:'L', gramo:'g', ml:'ml', caja:'cja', paquete:'paq', docena:'doc', metro:'m'})[u]||u;
 
 /* ================================================================
-   ESTADO
+   ESTADO GLOBAL
    ================================================================ */
 let state = null;
-let rol   = 'admin';
+let rol = 'admin';
 let vista = 'resumen';
 
 const esAdmin = () => rol === 'admin';
 
 const ui = {
-  vTipo:'Tarjeta', vOp:'Entel', vDen:10, vCant:1,
-  clienteId:'', tipoPago:'contado', plazo:15,
-  carrito:[],
-  filtroInv:'Todos',
-  clienteAbierto:null,
+  // Venta
+  ventaCarrito: [],
+  ventaClienteId: '',
+  ventaTipoPago: 'contado',
+  ventaPlazo: 15,
+  ventaPlazoCustom: '',
+  ventaMontoRecibido: '',
+  buscarProd: '',
+  
+  // Compra
+  compraCarrito: [],
+  compraProveedorId: '',
+  compraNota: '',
+  buscarProdCompra: '',
+  
+  // Modales
+  modal: null, // { tipo, id } - tipo: 'nuevoProducto', 'editarProducto', 'nuevaCategoria', 'nuevoProveedor', 'nuevoCliente', 'agregarDinero', 'retirarDinero', 'editarCliente'
+  
+  // Otros
+  filtroInv: 'Todas',
+  clienteAbierto: null,
   cierreMes: mesActual()
 };
+
+/* ================================================================
+   PERSISTENCIA
+   ================================================================ */
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){ state = JSON.parse(raw); return true; }
+  }catch(e){}
+  return false;
+}
+function initState(){
+  return {
+    seq: { venta:1, compra:1, abono:1, cliente:1, producto:1, proveedor:1, categoria:1, mov:1, cierre:1 },
+    proveedores: [],
+    categorias: [],
+    productos: [],
+    clientes: [],
+    ventas: [],
+    abonos: [],
+    compras: [],
+    caja: { saldoInicial: 0, movimientos: [] },
+    cierres: []
+  };
+}
+
+/* ================================================================
+   HELPERS DE DATOS
+   ================================================================ */
+const catById = id => state.categorias.find(c => c.id === id);
+const provById = id => state.proveedores.find(p => p.id === id);
+const prodById = id => state.productos.find(p => p.id === id);
+
+function saldoCaja(){
+  if(!state) return 0;
+  return num2(state.caja.saldoInicial + state.caja.movimientos.reduce((a,m)=>a+m.monto,0));
+}
+
+function agregarMovimientoCaja(tipo, monto, descripcion, referencia){
+  state.caja.movimientos.push({
+    id: 'M' + (state.seq.mov++),
+    fecha: HOY(),
+    hora: horaActual(),
+    tipo, // aporte | retiro | venta | abono | compra
+    monto: num2(monto),
+    descripcion,
+    referencia: referencia || null
+  });
+}
+
+function eliminarMovimientosPorRef(ref){
+  state.caja.movimientos = state.caja.movimientos.filter(m => m.referencia !== ref);
+}
+
+const saldoVenta = v => num2(v.total - (v.pagado||0));
+
+function deudaCliente(cid){
+  return num2(state.ventas
+    .filter(v => v.clienteId === cid && v.tipoPago === 'credito')
+    .reduce((a,v) => a + saldoVenta(v), 0));
+}
+function deudaVencida(cid){
+  const h = HOY();
+  return num2(state.ventas
+    .filter(v => v.clienteId === cid && v.tipoPago === 'credito' && saldoVenta(v) > 0 && v.vencimiento && v.vencimiento < h)
+    .reduce((a,v) => a + saldoVenta(v), 0));
+}
+function estadoCliente(cid){
+  const d = deudaCliente(cid);
+  if(d <= 0.001) return { txt:'Al día', cls:'badge-success' };
+  if(deudaVencida(cid) > 0) return { txt:'Vencido', cls:'badge-danger' };
+  const prox = state.ventas
+    .filter(v => v.clienteId === cid && v.tipoPago === 'credito' && saldoVenta(v) > 0 && v.vencimiento)
+    .sort((a,b) => a.vencimiento.localeCompare(b.vencimiento))[0];
+  if(prox && prox.vencimiento <= addDias(HOY(),3)) return { txt:'Por vencer', cls:'badge-warning' };
+  return { txt:'Vigente', cls:'badge-info' };
+}
+
+function toast(msg, tipo){
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (tipo||'');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = 'toast ' + (tipo||''), 2600);
+}
+
+function rolNombre(){
+  return { admin:'Administrador', vendedor:'Vendedor', cobrador:'Cobrador' }[rol];
+}
 
 /* ================================================================
    NAVEGACIÓN
    ================================================================ */
 const ICONS = {
   resumen:   '<path d="M3 12l9-9 9 9M5 10v10h14V10"/>',
+  caja:      '<rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20M16 14h2"/>',
   ventas:    '<path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><path d="M3 6h18M16 10a4 4 0 01-8 0"/>',
-  inventario:'<path d="M21 16V8a2 2 0 00-1-1.7l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.7l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/>',
+  inventario:'<path d="M21 16V8a2 2 0 00-1-1.7l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.7l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>',
   clientes:  '<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>',
   compras:   '<path d="M1 1h4l2.7 13.4a2 2 0 002 1.6h9.7a2 2 0 002-1.6L23 6H6"/>',
+  productos: '<path d="M21 16V8a2 2 0 00-1-1.7l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.7l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.3 7L12 12l8.7-5M12 22V12"/>',
+  categorias:'<path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.5"/>',
+  proveedores:'<path d="M16 3.13a4 4 0 010 7.75M17 21v-2a4 4 0 00-3-3.87M9 7a4 4 0 11-8 0 4 4 0 018 0zM3 21v-2a4 4 0 013-3.87M16 21v-2a4 4 0 00-3-3.87"/>',
   cierre:    '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'
 };
 
 const TABS = [
-  {id:'resumen',    label:'Resumen del día',       roles:['admin','vendedor','cobrador']},
-  {id:'ventas',     label:'Punto de venta',         roles:['admin','vendedor']},
-  {id:'inventario', label:'Inventario y bolsa',     roles:['admin','vendedor']},
-  {id:'clientes',   label:'Clientes y créditos',    roles:['admin','vendedor','cobrador']},
-  {id:'compras',    label:'Compras y proveedores',  roles:['admin']},
-  {id:'cierre',     label:'Cierre mensual',         roles:['admin']},
+  { id:'resumen',    label:'Resumen',           roles:['admin','vendedor','cobrador'], grupo:'Operación' },
+  { id:'caja',       label:'Caja',              roles:['admin','vendedor'], grupo:'Operación' },
+  { id:'ventas',     label:'Punto de venta',    roles:['admin','vendedor'], grupo:'Operación' },
+  { id:'inventario', label:'Inventario',        roles:['admin','vendedor'], grupo:'Operación' },
+  { id:'clientes',   label:'Clientes y créditos', roles:['admin','vendedor','cobrador'], grupo:'Operación' },
+  { id:'compras',    label:'Compras',           roles:['admin'], grupo:'Operación' },
+  { id:'productos',  label:'Productos',         roles:['admin'], grupo:'Configuración' },
+  { id:'categorias', label:'Categorías',        roles:['admin'], grupo:'Configuración' },
+  { id:'proveedores',label:'Proveedores',       roles:['admin'], grupo:'Configuración' },
+  { id:'cierre',     label:'Cierre mensual',    roles:['admin'], grupo:'Configuración' },
 ];
 
 function renderNav(){
-  $('nav').innerHTML = `
-    <div class="nav-label">Operación</div>
-    ${TABS.filter(t=>t.roles.includes(rol)).map(t=>`
+  const visibles = TABS.filter(t => t.roles.includes(rol));
+  const grupos = {};
+  visibles.forEach(t => { (grupos[t.grupo] = grupos[t.grupo] || []).push(t); });
+  $('nav').innerHTML = Object.entries(grupos).map(([g, items]) => `
+    <div class="nav-label">${g}</div>
+    ${items.map(t => `
       <button class="nav-item ${vista===t.id?'active':''}" onclick="ir('${t.id}')">
         <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">${ICONS[t.id]}</svg>
         ${t.label}
-      </button>
-    `).join('')}
+      </button>`).join('')}
+  `).join('');
+}
+
+function ir(v){ vista = v; ui.modal = null; $('sidebar').classList.remove('open'); render(); }
+
+function cambiarRol(r, silent){
+  rol = r;
+  const map = { admin:['A','Acceso completo'], vendedor:['V','Mostrador'], cobrador:['C','Cobranzas'] };
+  if($('avatarIni')) $('avatarIni').textContent = map[r][0];
+  if($('rolLbl')) $('rolLbl').textContent = map[r][1];
+  if($('rolSel')) $('rolSel').value = r;
+  const tab = TABS.find(t => t.id === vista);
+  if(!tab || !tab.roles.includes(r)){
+    vista = TABS.find(t => t.roles.includes(r)).id;
+  }
+  render();
+  if(!silent) toast('Sesión: ' + rolNombre(), 'ok');
+}
+
+/* ================================================================
+   MODALES
+   ================================================================ */
+function abrirModal(tipo, id){
+  ui.modal = { tipo, id: id || null };
+  renderModal();
+}
+function cerrarModal(){
+  ui.modal = null;
+  renderModal();
+}
+function renderModal(){
+  const root = $('modalRoot');
+  if(!ui.modal){ root.innerHTML = ''; return; }
+  const { tipo, id } = ui.modal;
+  let contenido = '';
+  if(tipo === 'nuevoProducto' || tipo === 'editarProducto') contenido = modalProducto(id);
+  else if(tipo === 'nuevaCategoria') contenido = modalCategoria();
+  else if(tipo === 'nuevoProveedor') contenido = modalProveedor();
+  else if(tipo === 'nuevoCliente' || tipo === 'editarCliente') contenido = modalCliente(id);
+  else if(tipo === 'agregarDinero') contenido = modalDinero('aporte');
+  else if(tipo === 'retirarDinero') contenido = modalDinero('retiro');
+  else if(tipo === 'saldoInicial') contenido = modalSaldoInicial();
+  root.innerHTML = `<div class="modal-overlay" onclick="if(event.target===this) cerrarModal()"><div class="modal">${contenido}</div></div>`;
+}
+
+function modalProducto(id){
+  const p = id ? prodById(id) : null;
+  return `
+    <div class="modal-head">
+      <div><div class="modal-title">${p ? 'Editar producto' : 'Nuevo producto'}</div>
+      <div class="card-subtitle">Completa los datos. Los campos con etiqueta son obligatorios.</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="field">
+      <label>Nombre del producto *</label>
+      <input id="m-prod-nombre" value="${p?esc(p.nombre):''}" placeholder="Ej: Tarjeta Entel Bs 10, Coca 500ml">
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Categoría *</label>
+        <select id="m-prod-cat">
+          <option value="">Selecciona una categoría</option>
+          ${state.categorias.map(c => `<option value="${c.id}" ${p&&p.categoriaId===c.id?'selected':''}>${esc(c.nombre)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>Unidad de medida *</label>
+        <select id="m-prod-unidad">
+          ${UNIDADES.map(u => `<option value="${u}" ${p&&p.unidad===u?'selected':''}>${u}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Proveedor (opcional)</label>
+      <select id="m-prod-prov">
+        <option value="">Sin proveedor específico</option>
+        ${state.proveedores.map(pr => `<option value="${pr.id}" ${p&&p.proveedorId===pr.id?'selected':''}>${esc(pr.nombre)}</option>`).join('')}
+      </select>
+      <div class="hint">Asígnalo si este producto lo compras siempre al mismo proveedor.</div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Costo de compra (Bs) *</label>
+        <input id="m-prod-costo" type="number" step="0.01" min="0" value="${p?p.costo:''}" placeholder="0.00">
+      </div>
+      <div class="field">
+        <label>Precio de venta (Bs) *</label>
+        <input id="m-prod-precio" type="number" step="0.01" min="0" value="${p?p.precio:''}" placeholder="0.00">
+      </div>
+    </div>
+    ${!p ? `
+    <div class="field">
+      <label>Stock inicial</label>
+      <input id="m-prod-stock" type="number" step="0.01" min="0" value="0" placeholder="0">
+      <div class="hint">Si empiezas con 0, el stock lo defines luego al registrar una compra.</div>
+    </div>`:''}
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarProducto(${p ? `'${p.id}'` : 'null'})">${p ? 'Guardar cambios' : 'Crear producto'}</button>
+    </div>
   `;
 }
 
-function ir(v){ vista=v; $('sidebar').classList.remove('open'); render(); }
+function modalCategoria(){
+  return `
+    <div class="modal-head">
+      <div><div class="modal-title">Nueva categoría</div>
+      <div class="card-subtitle">Agrupa tus productos: Telefonía, Dulces, Útiles escolares, Bebidas...</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="field">
+      <label>Nombre de la categoría *</label>
+      <input id="m-cat-nombre" placeholder="Ej: Telefonía, Dulces, Útiles escolares">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCategoria()">Crear categoría</button>
+    </div>
+  `;
+}
 
-function cambiarRol(r, silent){
-  rol=r;
-  const map = { admin:['A','Acceso completo'], vendedor:['V','Mostrador'], cobrador:['C','Cobranzas'] };
-  const elA = $('avatarIni'); if(elA) elA.textContent = map[r][0];
-  const elR = $('rolLbl'); if(elR) elR.textContent = map[r][1];
-  const sel = $('rolSel'); if(sel) sel.value = r;
-  const tab = TABS.find(t=>t.id===vista);
-  if(!tab || !tab.roles.includes(r)) vista = TABS.find(t=>t.roles.includes(r)).id;
-  render();
-  if(!silent) toast('Sesión iniciada como ' + (r==='admin'?'Administrador':r==='vendedor'?'Vendedor':'Cobrador'));
+function modalProveedor(){
+  return `
+    <div class="modal-head">
+      <div><div class="modal-title">Nuevo proveedor</div>
+      <div class="card-subtitle">Operador telefónico o distribuidora de productos.</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="field">
+      <label>Nombre del proveedor *</label>
+      <input id="m-prov-nombre" placeholder="Ej: Entel, Tigo, Distribuidora Central">
+    </div>
+    <div class="field">
+      <label>Notas (opcional)</label>
+      <input id="m-prov-nota" placeholder="Teléfono, contacto, condiciones...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarProveedor()">Crear proveedor</button>
+    </div>
+  `;
+}
+
+function modalCliente(id){
+  const c = id ? state.clientes.find(x => x.id === id) : null;
+  return `
+    <div class="modal-head">
+      <div><div class="modal-title">${c ? 'Editar cliente' : 'Nuevo cliente'}</div>
+      <div class="card-subtitle">Cliente para ventas a crédito o registro de compras.</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="field">
+      <label>Nombre completo *</label>
+      <input id="m-cli-nombre" value="${c?esc(c.nombre):''}" placeholder="Ej: María Quispe">
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Teléfono</label>
+        <input id="m-cli-tel" value="${c?esc(c.tel):''}" placeholder="71234567">
+      </div>
+      <div class="field">
+        <label>Comunidad / Zona</label>
+        <input id="m-cli-com" value="${c?esc(c.comunidad):''}" placeholder="Ej: Villa Adela">
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Plazo habitual de crédito</label>
+        <select id="m-cli-plazo">
+          <option value="15" ${c&&c.plazo===15?'selected':''}>15 días</option>
+          <option value="20" ${c&&c.plazo===20?'selected':''}>20 días</option>
+          <option value="30" ${c&&c.plazo===30?'selected':''}>30 días</option>
+          <option value="7"  ${c&&c.plazo===7?'selected':''}>7 días</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Límite de crédito (Bs)</label>
+        <input id="m-cli-limite" type="number" value="${c?c.limite:500}" placeholder="0">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCliente(${c ? `'${c.id}'` : 'null'})">${c ? 'Guardar' : 'Registrar cliente'}</button>
+    </div>
+  `;
+}
+
+function modalDinero(tipo){
+  const esAporte = tipo === 'aporte';
+  return `
+    <div class="modal-head">
+      <div><div class="modal-title">${esAporte ? 'Agregar dinero a la caja' : 'Retirar dinero de la caja'}</div>
+      <div class="card-subtitle">${esAporte ? 'Inyecta efectivo al negocio (aporte de capital, fondo inicial, etc.)' : 'Registra una salida de efectivo que no sea una compra de productos.'}</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="field">
+      <label>Monto (Bs) *</label>
+      <input id="m-dinero-monto" type="number" step="0.01" min="0.01" placeholder="0.00" autofocus>
+    </div>
+    <div class="field">
+      <label>Concepto</label>
+      <input id="m-dinero-concepto" placeholder="${esAporte ? 'Ej: Aporte del dueño, fondo semanal' : 'Ej: Retiro, gasto operativo'}">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn ${esAporte ? 'btn-success' : 'btn-danger'}" onclick="confirmarDinero('${tipo}')">${esAporte ? 'Agregar' : 'Retirar'}</button>
+    </div>
+  `;
+}
+
+function modalSaldoInicial(){
+  return `
+    <div class="modal-head">
+      <div><div class="modal-title">Ajustar saldo inicial</div>
+      <div class="card-subtitle">Es el efectivo con el que arranca el negocio antes de cualquier movimiento.</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="field">
+      <label>Saldo inicial (Bs)</label>
+      <input id="m-saldo-ini" type="number" step="0.01" value="${state.caja.saldoInicial}" placeholder="0.00">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarSaldoInicial()">Guardar</button>
+    </div>
+  `;
 }
 
 /* ================================================================
-   PERSISTENCIA + SEED
+   ACCIONES DE MODALES
    ================================================================ */
-function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
-function load(){
-  try{ const raw = localStorage.getItem(LS_KEY); if(raw){ state = JSON.parse(raw); return true; } }catch(e){}
-  return false;
-}
+function guardarProducto(id){
+  const nombre = $('m-prod-nombre').value.trim();
+  const catId = $('m-prod-cat').value;
+  const unidad = $('m-prod-unidad').value;
+  const provId = $('m-prod-prov').value;
+  const costo = Number($('m-prod-costo').value);
+  const precio = Number($('m-prod-precio').value);
+  if(!nombre) return toast('El nombre es obligatorio','err');
+  if(!catId) return toast('Selecciona una categoría','err');
+  if(isNaN(costo) || costo < 0) return toast('Costo inválido','err');
+  if(isNaN(precio) || precio < 0) return toast('Precio inválido','err');
 
-function crearVenta(st, opts){
-  const items = opts.items.map(it=>{
-    const cat = catItem(it.operador, it.tipo, it.den);
-    const precio = precioVenta(it.operador, it.tipo, it.den, it.cant);
-    const comUnit = it.tipo==='RECARGA'
-      ? num2(precio*COMISIONES[it.operador])
-      : num2(precio - cat.costo);
-    return {
-      tipo:it.tipo, operador:it.operador, den:cat.den, cant:it.cant,
-      desc:cat.nombre, precioUnit:precio, costo:cat.costo,
-      subtotal:num2(precio*it.cant), comision:num2(comUnit*it.cant)
+  if(id){
+    const p = prodById(id);
+    p.nombre = nombre;
+    p.categoriaId = catId;
+    p.unidad = unidad;
+    p.proveedorId = provId || null;
+    p.costo = num2(costo);
+    p.precio = num2(precio);
+    toast('Producto actualizado','ok');
+  }else{
+    const stockIni = Number($('m-prod-stock').value) || 0;
+    const nuevo = {
+      id: 'PR' + (state.seq.producto++),
+      nombre, categoriaId: catId, unidad,
+      proveedorId: provId || null,
+      costo: num2(costo), precio: num2(precio),
+      stock: num2(stockIni), stockInicial: num2(stockIni)
     };
-  });
-  const total    = num2(items.reduce((a,i)=>a+i.subtotal,0));
-  const comision = num2(items.reduce((a,i)=>a+i.comision,0));
-  const cli = opts.clienteId ? st.clientes.find(c=>c.id===opts.clienteId) : null;
-  const v = {
-    id:'V'+(st.seq++), fecha:opts.fecha, hora:opts.hora||'09:00',
-    clienteId:opts.clienteId||null,
-    clienteNombre: cli ? cli.nombre : 'Consumidor final',
-    tipoPago:opts.tipoPago, plazo:opts.plazo||null, vencimiento:null,
-    items, total, comision, pagado:num2(opts.pagado||0),
-    usuario:opts.usuario||'Admin'
-  };
-  if(opts.tipoPago==='credito' && opts.plazo) v.vencimiento = addDias(opts.fecha, opts.plazo);
-
-  items.forEach(i=>{
-    if(i.tipo==='RECARGA') st.bolsa[i.operador] = num2(st.bolsa[i.operador] - i.subtotal);
-    else st.inventario[itemId(i.operador,i.tipo,i.den)].stock -= i.cant;
-  });
-  st.ventas.push(v);
-  return v;
+    state.productos.push(nuevo);
+    toast('Producto creado','ok');
+  }
+  cerrarModal();
+  render();
 }
 
-function seed(){
-  const inv = {};
-  OPERADORES.forEach(op=>{
-    DENOMS.forEach(d=>{ inv[`${op}-T${d}`] = { stock:45, inicial:45 }; });
-    inv[`${op}-SIM`] = { stock:30, inicial:30 };
-  });
+function guardarCategoria(){
+  const nombre = $('m-cat-nombre').value.trim();
+  if(!nombre) return toast('Ingresa un nombre','err');
+  if(state.categorias.some(c => c.nombre.toLowerCase() === nombre.toLowerCase()))
+    return toast('Ya existe una categoría con ese nombre','err');
+  state.categorias.push({ id:'CA'+(state.seq.categoria++), nombre });
+  toast('Categoría creada','ok');
+  cerrarModal();
+  render();
+}
 
-  const st = {
-    seq:1, abonoSeq:1, compraSeq:1, clienteSeq:1,
-    inventario: inv,
-    bolsa: { Entel:1250, Tigo:940, Viva:620 },
-    bolsaBase: { Entel:1250, Tigo:940, Viva:620 },
-    clientes: [
-      { id:'C1', nombre:'María Quispe',  tel:'71234567', comunidad:'Achachicala',       plazo:15, limite:500,  creado:HOY() },
-      { id:'C2', nombre:'Juan Mamani',   tel:'69876543', comunidad:'Villa Adela',       plazo:7,  limite:300,  creado:HOY() },
-      { id:'C3', nombre:'Tienda El Sol', tel:'78889900', comunidad:'Mercado Rodríguez', plazo:30, limite:3000, creado:HOY() },
-    ],
-    ventas: [], abonos: [], compras: [], cierres: []
-  };
-  st.seq = 1; st.clienteSeq = 4;
+function guardarProveedor(){
+  const nombre = $('m-prov-nombre').value.trim();
+  const nota = $('m-prov-nota').value.trim();
+  if(!nombre) return toast('Ingresa un nombre','err');
+  if(state.proveedores.some(p => p.nombre.toLowerCase() === nombre.toLowerCase()))
+    return toast('Ya existe un proveedor con ese nombre','err');
+  state.proveedores.push({ id:'PV'+(state.seq.proveedor++), nombre, nota });
+  toast('Proveedor creado','ok');
+  cerrarModal();
+  render();
+}
 
-  crearVenta(st,{fecha:HOY(),hora:'08:45',tipoPago:'contado',items:[
-    {tipo:'Tarjeta',operador:'Entel',den:10,cant:5},
-    {tipo:'RECARGA',operador:'Tigo',den:30,cant:2}
-  ]});
-  crearVenta(st,{fecha:HOY(),hora:'09:20',tipoPago:'credito',clienteId:'C1',plazo:15,items:[
-    {tipo:'Tarjeta',operador:'Viva',den:30,cant:3},
-    {tipo:'SIM',operador:'Entel',den:0,cant:1}
-  ]});
-  crearVenta(st,{fecha:addDias(HOY(),-1),hora:'16:10',tipoPago:'contado',items:[
-    {tipo:'SIM',operador:'Tigo',den:0,cant:2},
-    {tipo:'RECARGA',operador:'Entel',den:50,cant:1}
-  ]});
-  const vVencida = crearVenta(st,{fecha:addDias(HOY(),-22),hora:'11:00',tipoPago:'credito',clienteId:'C2',plazo:7,items:[
-    {tipo:'Tarjeta',operador:'Entel',den:50,cant:2}
-  ], pagado:30});
-  crearVenta(st,{fecha:addDias(HOY(),-9),hora:'15:30',tipoPago:'credito',clienteId:'C3',plazo:30,items:[
-    {tipo:'Tarjeta',operador:'Tigo',den:100,cant:10},
-    {tipo:'Tarjeta',operador:'Tigo',den:30,cant:20}
-  ]});
-  st.abonos.push({id:'A'+(st.abonoSeq++),clienteId:'C2',ventaId:vVencida.id,fecha:addDias(HOY(),-10),monto:30,usuario:'Admin'});
+function guardarCliente(id){
+  const nombre = $('m-cli-nombre').value.trim();
+  const tel = $('m-cli-tel').value.trim();
+  const com = $('m-cli-com').value.trim();
+  const plazo = Number($('m-cli-plazo').value);
+  const limite = Number($('m-cli-limite').value)||0;
+  if(!nombre) return toast('Ingresa el nombre','err');
+  if(id){
+    const c = state.clientes.find(x => x.id === id);
+    c.nombre = nombre; c.tel = tel; c.comunidad = com; c.plazo = plazo; c.limite = limite;
+    toast('Cliente actualizado','ok');
+  }else{
+    state.clientes.push({
+      id:'C'+(state.seq.cliente++),
+      nombre, tel, comunidad: com||'—', plazo, limite, creado: HOY()
+    });
+    toast('Cliente registrado','ok');
+  }
+  cerrarModal();
+  render();
+}
 
-  st.compras.push({
-    id:'P'+(st.compraSeq++), fecha:addDias(HOY(),-12), operador:'Entel', tipo:'Tarjeta',
-    den:10, cant:100, costoUnit:9.30, total:930, nota:'Factura 0012 · Distribuidora Entel'
-  });
-  st.compras.push({
-    id:'P'+(st.compraSeq++), fecha:addDias(HOY(),-6), operador:'Tigo', tipo:'RECARGA',
-    den:0, cant:1, costoUnit:920, total:920, nota:'Carga de bolsa electrónica Tigo'
-  });
-  return st;
+function confirmarDinero(tipo){
+  const monto = Number($('m-dinero-monto').value);
+  const concepto = $('m-dinero-concepto').value.trim() || (tipo === 'aporte' ? 'Aporte de efectivo' : 'Retiro de efectivo');
+  if(!(monto > 0)) return toast('Ingresa un monto válido','err');
+  if(tipo === 'retiro' && monto > saldoCaja()) return toast('No hay suficiente saldo en caja','err');
+  agregarMovimientoCaja(tipo, tipo === 'aporte' ? monto : -monto, concepto, null);
+  toast(tipo === 'aporte' ? 'Dinero agregado a caja' : 'Dinero retirado de caja','ok');
+  cerrarModal();
+  render();
+}
+
+function guardarSaldoInicial(){
+  const v = Number($('m-saldo-ini').value) || 0;
+  state.caja.saldoInicial = num2(v);
+  toast('Saldo inicial actualizado','ok');
+  cerrarModal();
+  render();
 }
 
 /* ================================================================
-   LÓGICA DE NEGOCIO
+   LÓGICA: VENTAS
    ================================================================ */
-const saldoVenta = v => num2(v.total - (v.pagado||0));
+function agregarAlCarritoVenta(productoId, cantidad){
+  const p = prodById(productoId);
+  if(!p) return;
+  cantidad = Number(cantidad) || 1;
+  if(cantidad <= 0) return toast('Cantidad inválida','err');
+  if(p.stock < cantidad) return toast(`Stock insuficiente de ${p.nombre} (disponible: ${p.stock} ${unidadAbrev(p.unidad)})`,'err');
+  const enCarrito = ui.ventaCarrito.filter(i => i.productoId === productoId).reduce((a,i) => a + i.cantidad, 0);
+  if(p.stock < enCarrito + cantidad) return toast(`Ya tienes ${enCarrito} en el carrito. Stock disponible: ${p.stock}`,'err');
+  const existe = ui.ventaCarrito.find(i => i.productoId === productoId);
+  if(existe){
+    existe.cantidad = num2(existe.cantidad + cantidad);
+    existe.subtotal = num2(existe.cantidad * existe.precioUnit);
+  }else{
+    ui.ventaCarrito.push({
+      productoId, nombre: p.nombre, unidad: p.unidad,
+      cantidad: num2(cantidad),
+      precioUnit: p.precio,
+      costoUnit: p.costo,
+      subtotal: num2(cantidad * p.precio)
+    });
+  }
+  render();
+}
 
-function deudaCliente(clienteId){
-  return num2(state.ventas
-    .filter(v=>v.clienteId===clienteId && v.tipoPago==='credito')
-    .reduce((a,v)=>a+saldoVenta(v),0));
-}
-function deudaVencida(clienteId){
-  const h = HOY();
-  return num2(state.ventas
-    .filter(v=>v.clienteId===clienteId && v.tipoPago==='credito' && saldoVenta(v)>0 && v.vencimiento && v.vencimiento<h)
-    .reduce((a,v)=>a+saldoVenta(v),0));
-}
-function estadoCliente(clienteId){
-  const d = deudaCliente(clienteId);
-  if(d<=0.001) return {txt:'Al día', cls:'badge-success'};
-  if(deudaVencida(clienteId)>0) return {txt:'Vencido', cls:'badge-danger'};
-  const prox = state.ventas
-    .filter(v=>v.clienteId===clienteId && v.tipoPago==='credito' && saldoVenta(v)>0 && v.vencimiento)
-    .sort((a,b)=>a.vencimiento.localeCompare(b.vencimiento))[0];
-  if(prox && prox.vencimiento <= addDias(HOY(),3)) return {txt:'Por vencer', cls:'badge-warning'};
-  return {txt:'Vigente', cls:'badge-info'};
+function actualizarLineaCarrito(ix, campo, valor){
+  const it = ui.ventaCarrito[ix];
+  if(!it) return;
+  if(campo === 'cantidad'){
+    const v = num2(valor);
+    if(v <= 0) return toast('Cantidad inválida','err');
+    const p = prodById(it.productoId);
+    if(p && v > p.stock) return toast(`Stock insuficiente (disponible: ${p.stock})`,'err');
+    it.cantidad = v;
+  }else if(campo === 'precioUnit'){
+    it.precioUnit = num2(valor);
+  }
+  it.subtotal = num2(it.cantidad * it.precioUnit);
+  render();
 }
 
+function quitarDelCarrito(ix){
+  ui.ventaCarrito.splice(ix,1);
+  render();
+}
+
+function totalCarritoVenta(){
+  return num2(ui.ventaCarrito.reduce((a,i) => a + i.subtotal, 0));
+}
+
+function confirmarVenta(){
+  if(ui.ventaCarrito.length === 0) return toast('El carrito está vacío','err');
+  // Verificar stock
+  for(const it of ui.ventaCarrito){
+    const p = prodById(it.productoId);
+    if(!p) return toast(`Producto eliminado: ${it.nombre}`,'err');
+    if(p.stock < it.cantidad) return toast(`Stock insuficiente de ${p.nombre}`,'err');
+  }
+  // Cliente y forma de pago
+  const cliente = ui.ventaClienteId ? state.clientes.find(c => c.id === ui.ventaClienteId) : null;
+  if(ui.ventaTipoPago === 'credito' && !cliente) return toast('Selecciona un cliente para dar crédito','err');
+
+  let plazo = null, vencimiento = null;
+  if(ui.ventaTipoPago === 'credito'){
+    plazo = ui.ventaPlazo === 'custom' ? Number(ui.ventaPlazoCustom) : Number(ui.ventaPlazo);
+    if(!(plazo > 0)) return toast('Define un plazo válido','err');
+    vencimiento = addDias(HOY(), plazo);
+    const nuevaDeuda = deudaCliente(cliente.id) + totalCarritoVenta();
+    if(cliente.limite > 0 && nuevaDeuda > cliente.limite)
+      return toast(`Supera el límite de crédito (${money(cliente.limite)})`,'err');
+  }
+
+  const total = totalCarritoVenta();
+  let montoRecibido = null, cambio = null;
+  if(ui.ventaTipoPago === 'contado'){
+    montoRecibido = Number(ui.ventaMontoRecibido);
+    if(!(montoRecibido >= total)) return toast('El monto recibido debe cubrir el total','err');
+    cambio = num2(montoRecibido - total);
+  }
+
+  const venta = {
+    id: 'V' + (state.seq.venta++),
+    fecha: HOY(),
+    hora: horaActual(),
+    clienteId: cliente ? cliente.id : null,
+    clienteNombre: cliente ? cliente.nombre : 'Consumidor final',
+    tipoPago: ui.ventaTipoPago,
+    plazo: plazo,
+    vencimiento: vencimiento,
+    items: ui.ventaCarrito.map(i => ({ ...i })),
+    total,
+    pagado: ui.ventaTipoPago === 'contado' ? total : 0,
+    montoRecibido, cambio,
+    usuario: rolNombre()
+  };
+  state.ventas.push(venta);
+
+  // Descontar stock
+  venta.items.forEach(it => {
+    const p = prodById(it.productoId);
+    if(p) p.stock = num2(p.stock - it.cantidad);
+  });
+
+  // Caja (solo contado)
+  if(venta.tipoPago === 'contado'){
+    agregarMovimientoCaja('venta', total, 'Venta ' + venta.id + ' · ' + venta.clienteNombre, venta.id);
+  }
+
+  // Reset
+  ui.ventaCarrito = [];
+  ui.ventaClienteId = '';
+  ui.ventaMontoRecibido = '';
+  ui.ventaTipoPago = 'contado';
+  ui.ventaPlazo = 15;
+  ui.ventaPlazoCustom = '';
+
+  toast('Venta registrada · ' + money(total),'ok');
+  render();
+}
+
+function eliminarVenta(id){
+  const v = state.ventas.find(x => x.id === id);
+  if(!v) return;
+  const abonosAsoc = state.abonos.filter(a => a.ventaId === id);
+  let msg = '¿Eliminar esta venta?\n\nSe devolverá el stock de los productos.';
+  if(v.tipoPago === 'contado') msg += '\nSe quitará el movimiento de caja asociado.';
+  if(abonosAsoc.length) msg += `\n\nATENCIÓN: esta venta tiene ${abonosAsoc.length} abono(s) aplicado(s). Se eliminarán también.`;
+  if(!confirm(msg)) return;
+
+  // Devolver stock
+  v.items.forEach(it => {
+    const p = prodById(it.productoId);
+    if(p) p.stock = num2(p.stock + it.cantidad);
+  });
+
+  // Eliminar abonos y sus movimientos
+  state.abonos = state.abonos.filter(a => {
+    if(a.ventaId === id){ eliminarMovimientosPorRef(a.id); return false; }
+    return true;
+  });
+
+  // Eliminar movimiento de caja asociado a la venta
+  eliminarMovimientosPorRef(id);
+
+  // Eliminar venta
+  state.ventas = state.ventas.filter(x => x.id !== id);
+
+  toast('Venta eliminada','ok');
+  render();
+}
+
+/* ================================================================
+   LÓGICA: COMPRAS
+   ================================================================ */
+function agregarAlCarritoCompra(productoId, cantidad, costoUnit){
+  const p = prodById(productoId);
+  if(!p) return;
+  cantidad = num2(cantidad);
+  if(cantidad <= 0) return toast('Cantidad inválida','err');
+  costoUnit = num2(costoUnit);
+  if(costoUnit < 0) return toast('Costo inválido','err');
+  const existe = ui.compraCarrito.find(i => i.productoId === productoId && i.costoUnit === costoUnit);
+  if(existe){
+    existe.cantidad = num2(existe.cantidad + cantidad);
+    existe.subtotal = num2(existe.cantidad * existe.costoUnit);
+  }else{
+    ui.compraCarrito.push({
+      productoId, nombre: p.nombre, unidad: p.unidad,
+      cantidad, costoUnit,
+      subtotal: num2(cantidad * costoUnit)
+    });
+  }
+  render();
+}
+
+function actualizarLineaCompra(ix, campo, valor){
+  const it = ui.compraCarrito[ix];
+  if(!it) return;
+  if(campo === 'cantidad') it.cantidad = num2(valor);
+  if(campo === 'costoUnit') it.costoUnit = num2(valor);
+  if(it.cantidad <= 0) it.cantidad = 1;
+  it.subtotal = num2(it.cantidad * it.costoUnit);
+  render();
+}
+
+function quitarDelCarritoCompra(ix){ ui.compraCarrito.splice(ix,1); render(); }
+
+function totalCarritoCompra(){
+  return num2(ui.compraCarrito.reduce((a,i) => a + i.subtotal, 0));
+}
+
+function confirmarCompra(){
+  if(ui.compraCarrito.length === 0) return toast('Agrega productos a la compra','err');
+  const total = totalCarritoCompra();
+  if(total > saldoCaja()){
+    if(!confirm(`El total de la compra (${money(total)}) supera el saldo en caja (${money(saldoCaja())}).\n\n¿Deseas continuar? La caja quedará en negativo.`)) return;
+  }
+  const prov = ui.compraProveedorId ? provById(ui.compraProveedorId) : null;
+
+  const compra = {
+    id: 'P' + (state.seq.compra++),
+    fecha: HOY(),
+    hora: horaActual(),
+    proveedorId: prov ? prov.id : null,
+    proveedorNombre: prov ? prov.nombre : 'Sin proveedor',
+    items: ui.compraCarrito.map(i => ({ ...i })),
+    total,
+    nota: ui.compraNota.trim(),
+    usuario: rolNombre()
+  };
+  state.compras.push(compra);
+
+  // Aumentar stock
+  compra.items.forEach(it => {
+    const p = prodById(it.productoId);
+    if(p) p.stock = num2(p.stock + it.cantidad);
+  });
+
+  // Descontar de caja
+  agregarMovimientoCaja('compra', -total, 'Compra ' + compra.id + ' · ' + compra.proveedorNombre, compra.id);
+
+  // Reset
+  ui.compraCarrito = [];
+  ui.compraProveedorId = '';
+  ui.compraNota = '';
+
+  toast('Compra registrada · ' + money(total),'ok');
+  render();
+}
+
+function eliminarCompra(id){
+  const c = state.compras.find(x => x.id === id);
+  if(!c) return;
+  if(!confirm('¿Eliminar esta compra?\n\nSe quitará el stock ingresado y se devolverá el dinero a la caja.')) return;
+
+  // Quitar stock
+  c.items.forEach(it => {
+    const p = prodById(it.productoId);
+    if(p){
+      p.stock = num2(p.stock - it.cantidad);
+      if(p.stock < 0) p.stock = 0;
+    }
+  });
+
+  // Devolver dinero a caja
+  eliminarMovimientosPorRef(id);
+  agregarMovimientoCaja('aporte', c.total, 'Reverso compra ' + c.id, null);
+
+  state.compras = state.compras.filter(x => x.id !== id);
+  toast('Compra eliminada y dinero devuelto a caja','ok');
+  render();
+}
+
+/* ================================================================
+   LÓGICA: ABONOS
+   ================================================================ */
 function registrarAbono(clienteId, monto){
   monto = Number(monto);
-  if(!(monto>0)) return toast('Ingresa un monto válido','err');
+  if(!(monto > 0)) return toast('Ingresa un monto válido','err');
   const pend = state.ventas
-    .filter(v=>v.clienteId===clienteId && v.tipoPago==='credito' && saldoVenta(v)>0.001)
-    .sort((a,b)=>a.fecha.localeCompare(b.fecha));
-  const totalPend = num2(pend.reduce((a,v)=>a+saldoVenta(v),0));
+    .filter(v => v.clienteId === clienteId && v.tipoPago === 'credito' && saldoVenta(v) > 0.001)
+    .sort((a,b) => a.fecha.localeCompare(b.fecha));
+  const totalPend = num2(pend.reduce((a,v) => a + saldoVenta(v), 0));
   if(monto > totalPend) monto = totalPend;
 
+  const abonoId = 'A' + (state.seq.abono++);
   let restante = monto;
-  pend.forEach(v=>{
-    if(restante<=0.001) return;
+  pend.forEach(v => {
+    if(restante <= 0.001) return;
     const s = saldoVenta(v);
     const apl = Math.min(s, restante);
     v.pagado = num2((v.pagado||0) + apl);
     restante = num2(restante - apl);
   });
-  state.abonos.push({ id:'A'+(state.abonoSeq++), clienteId, ventaId:null, fecha:HOY(), monto:num2(monto), usuario:rolNombre() });
-  toast(`Abono registrado · ${money(monto)}`,'ok');
-  render();
-}
 
-function registrarCompra(datos){
-  const {operador,tipo,den,cant,costoUnit,nota} = datos;
-  const total = num2(cant*costoUnit);
-  if(tipo==='RECARGA'){
-    state.bolsa[operador] = num2(state.bolsa[operador] + total);
-  }else{
-    const id = itemId(operador,tipo,den);
-    state.inventario[id].stock += Number(cant);
-  }
-  state.compras.push({
-    id:'P'+(state.compraSeq++), fecha:HOY(), operador, tipo,
-    den: tipo==='SIM'?0:Number(den), cant:Number(cant),
-    costoUnit:Number(costoUnit), total, nota:nota||''
+  state.abonos.push({
+    id: abonoId, clienteId, ventaId: null,
+    fecha: HOY(), monto: num2(monto), usuario: rolNombre()
   });
-  toast(`Compra registrada · ${money(total)}`,'ok');
+
+  agregarMovimientoCaja('abono', monto, 'Abono cliente · ' + (state.clientes.find(c=>c.id===clienteId)?.nombre || ''), abonoId);
+
+  toast('Abono registrado · ' + money(monto),'ok');
   render();
-}
-
-function rolNombre(){
-  return {admin:'Administrador', vendedor:'Vendedor', cobrador:'Cobrador'}[rol];
-}
-
-function toast(msg, tipo){
-  const t = $('toast');
-  if(!t) return;
-  t.textContent = msg;
-  t.className = 'toast show ' + (tipo||'');
-  clearTimeout(t._t);
-  t._t = setTimeout(()=>t.className='toast '+(tipo||''), 2600);
 }
 
 /* ================================================================
-   RENDER
+   NAVEGACIÓN: VISTAS
    ================================================================ */
 function render(){
   save();
   renderNav();
-  const tab = TABS.find(t=>t.id===vista);
-  if(!tab || !tab.roles.includes(rol)) vista = TABS.find(t=>t.roles.includes(rol)).id;
-  const v = vista;
-  const fns = {resumen:viewResumen,ventas:viewVentas,inventario:viewInventario,clientes:viewClientes,compras:viewCompras,cierre:viewCierre};
-  $('app').innerHTML = fns[v]();
+  const tab = TABS.find(t => t.id === vista);
+  if(!tab || !tab.roles.includes(rol)) vista = TABS.find(t => t.roles.includes(rol)).id;
+  const fns = {
+    resumen: viewResumen, caja: viewCaja, ventas: viewVentas, inventario: viewInventario,
+    clientes: viewClientes, compras: viewCompras, productos: viewProductos,
+    categorias: viewCategorias, proveedores: viewProveedores, cierre: viewCierre
+  };
+  $('app').innerHTML = fns[vista]();
   window.scrollTo({top:0,behavior:'instant'});
 }
 
@@ -595,424 +1077,393 @@ function render(){
    ================================================================ */
 function viewResumen(){
   const h = HOY();
-  const vHoy = state.ventas.filter(v=>v.fecha===h);
-  const abonosHoy = state.abonos.filter(a=>a.fecha===h);
-
+  const vHoy = state.ventas.filter(v => v.fecha === h);
+  const abonosHoy = state.abonos.filter(a => a.fecha === h);
   const efectivoHoy = num2(
-    vHoy.filter(v=>v.tipoPago==='contado').reduce((a,v)=>a+v.total,0) +
-    abonosHoy.reduce((a,x)=>a+x.monto,0)
+    vHoy.filter(v => v.tipoPago === 'contado').reduce((a,v) => a + v.total, 0) +
+    abonosHoy.reduce((a,x) => a + x.monto, 0)
   );
-  const creditoHoy  = num2(vHoy.filter(v=>v.tipoPago==='credito').reduce((a,v)=>a+v.total,0));
-  const comisionHoy = num2(vHoy.reduce((a,v)=>a+v.comision,0));
-  const porCobrar   = num2(state.clientes.reduce((a,c)=>a+deudaCliente(c.id),0));
-  const vencido     = num2(state.clientes.reduce((a,c)=>a+deudaVencida(c.id),0));
+  const creditoHoy = num2(vHoy.filter(v => v.tipoPago === 'credito').reduce((a,v) => a + v.total, 0));
+  const porCobrar = num2(state.clientes.reduce((a,c) => a + deudaCliente(c.id), 0));
+  const vencido = num2(state.clientes.reduce((a,c) => a + deudaVencida(c.id), 0));
+  const clientesVencidos = state.clientes.filter(c => deudaVencida(c.id) > 0);
+  const stockBajo = state.productos.filter(p => p.stock <= 5);
 
-  const stockBajo = Object.entries(state.inventario).filter(([,v])=>v.stock<=10);
-  const clientesVencidos = state.clientes.filter(c=>deudaVencida(c.id)>0);
+  // Estado inicial (setup)
+  const configurado = state.productos.length > 0 && state.categorias.length > 0;
 
-  const dias = [];
-  for(let i=6;i>=0;i--){
-    const f = addDias(h,-i);
-    const t = state.ventas.filter(v=>v.fecha===f).reduce((a,v)=>a+v.total,0);
-    dias.push({f,t});
+  if(!configurado){
+    return `
+    <div class="page-head">
+      <div class="page-eyebrow">Bienvenido</div>
+      <h1 class="page-title">Configura tu sistema</h1>
+      <p class="page-desc">Aún no tienes productos. Antes de empezar a vender y comprar necesitas crear al menos una categoría y un producto.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Primeros pasos</div>
+      <div class="card-subtitle">Puedes crear todo desde cero o cargar una configuración base con categorías y proveedores telefónicos comunes.</div>
+      <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="cargarBase()">Cargar configuración base</button>
+        <button class="btn btn-outline" onclick="abrirModal('nuevaCategoria')">Crear mi primera categoría</button>
+      </div>
+      <div class="hint" style="margin-top:12px">La configuración base crea: categorías (Telefonía, Dulces, Útiles escolares, Bebidas, Otros), proveedores (Entel, Tigo, Viva) y productos típicos de telefonía. Todo con stock en cero para que tú hagas la primera compra.</div>
+    </div>`;
   }
-  const maxDia = Math.max(...dias.map(d=>d.t),1);
 
   return `
   <div class="page-head">
     <div class="page-eyebrow">Hoy · ${fFecha(h)}</div>
     <h1 class="page-title">Resumen del día</h1>
-    <p class="page-desc">Vista general de caja, créditos y comisiones del negocio. Todo lo del día de hoy, de un vistazo.</p>
+    <p class="page-desc">Estado general del negocio: caja, créditos y movimientos de hoy.</p>
   </div>
 
   ${clientesVencidos.length ? `
   <div class="alert alert-danger">
     <div>
-      <div class="alert-title">Hay ${clientesVencidos.length} ${clientesVencidos.length===1?'cliente':'clientes'} con deuda vencida</div>
-      Total por cobrar de esos clientes: <b>${money(vencido)}</b>. Revisa el módulo de Clientes y créditos.
-      <div class="client-tags" style="margin-top:8px">
-        ${clientesVencidos.map(c=>`<span class="tag-pill">${esc(c.nombre)} · ${money(deudaVencida(c.id))}</span>`).join('')}
-      </div>
+      <div class="alert-title">${clientesVencidos.length} ${clientesVencidos.length===1?'cliente tiene':'clientes tienen'} deuda vencida · ${money(vencido)}</div>
+      ${clientesVencidos.map(c => `<span class="tag-pill" style="margin:4px 4px 0 0">${esc(c.nombre)} · ${money(deudaVencida(c.id))}</span>`).join('')}
     </div>
   </div>` : ''}
 
   <div class="kpi-grid">
     <div class="kpi">
-      <div class="kpi-label">Efectivo en caja hoy</div>
+      <div class="kpi-label">Saldo en caja</div>
+      <div class="kpi-value ${saldoCaja() < 0 ? 'is-danger' : ''}">${money(saldoCaja())}</div>
+      <div class="kpi-meta">Efectivo disponible ahora</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Efectivo ingresado hoy</div>
       <div class="kpi-value is-success">${money(efectivoHoy)}</div>
-      <div class="kpi-meta">Ventas al contado + abonos recibidos</div>
+      <div class="kpi-meta">Contado + abonos</div>
     </div>
     <div class="kpi">
-      <div class="kpi-label">Créditos otorgados hoy</div>
+      <div class="kpi-label">Crédito otorgado hoy</div>
       <div class="kpi-value is-warning">${money(creditoHoy)}</div>
-      <div class="kpi-meta">Ventas a crédito del día</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Comisión del día</div>
-      <div class="kpi-value">${money(comisionHoy)}</div>
-      <div class="kpi-meta">${vHoy.length} ${vHoy.length===1?'venta registrada':'ventas registradas'}</div>
+      <div class="kpi-meta">${vHoy.filter(v=>v.tipoPago==='credito').length} venta(s) a crédito</div>
     </div>
     <div class="kpi">
       <div class="kpi-label">Por cobrar (total)</div>
-      <div class="kpi-value ${vencido>0?'is-danger':''}">${money(porCobrar)}</div>
-      <div class="kpi-meta">${vencido>0?`<span style="color:var(--danger);font-weight:600">${money(vencido)} vencido</span>`:'Sin deudas vencidas'}</div>
+      <div class="kpi-value ${vencido > 0 ? 'is-danger' : ''}">${money(porCobrar)}</div>
+      <div class="kpi-meta">${vencido > 0 ? money(vencido) + ' vencido' : 'Sin vencidos'}</div>
     </div>
   </div>
 
   <div class="grid-2">
     <div class="card">
       <div class="card-head">
-        <div>
-          <div class="card-title">Ventas de los últimos 7 días</div>
-          <div class="card-subtitle">Total diario, para ver el movimiento de la semana</div>
-        </div>
+        <div><div class="card-title">Últimas ventas</div>
+        <div class="card-subtitle">${state.ventas.length} en total</div></div>
       </div>
-      <div style="display:flex;align-items:flex-end;gap:10px;height:150px;padding:8px 0">
-        ${dias.map(d=>`
-          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end">
-            <div style="font-size:10.5px;font-weight:600;color:var(--muted)">${d.t>0?Math.round(d.t):''}</div>
-            <div style="width:100%;max-width:42px;background:var(--primary);border-radius:5px 5px 2px 2px;height:${Math.max(3,(d.t/maxDia)*88)}%;opacity:${d.t>0?'0.9':'0.25'};transition:height .4s"></div>
-            <div style="font-size:10.5px;color:var(--muted)">${d.f.slice(8)}/${d.f.slice(5,7)}</div>
-          </div>`).join('')}
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-head">
-        <div>
-          <div class="card-title">Bolsa de recargas electrónicas</div>
-          <div class="card-subtitle">Saldo digital disponible por operador</div>
-        </div>
-      </div>
-      <div class="bolsa-grid">
-        ${OPERADORES.map(op=>{
-          const v = state.bolsa[op];
-          const pct = Math.min(100, (v/2000)*100);
-          return `<div class="bolsa ${op.toLowerCase()}">
-            <div class="bolsa-op">${op}</div>
-            <div class="bolsa-val">${money(v)}</div>
-            <div class="bolsa-sub">Saldo disponible</div>
-            <div class="bolsa-bar"><div class="bolsa-bar-fill" style="width:${pct}%"></div></div>
-          </div>`;
-        }).join('')}
-      </div>
-      ${esAdmin()?`<div class="hint" style="margin-top:14px">Puedes cargar saldo desde el módulo de <b>Compras y proveedores</b>, eligiendo el tipo "Recarga".</div>`:''}
-    </div>
-  </div>
-
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-head">
-        <div>
-          <div class="card-title">Últimas ventas</div>
-          <div class="card-subtitle">Movimiento reciente del punto de venta</div>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Hora</th><th>Cliente</th><th>Forma de pago</th><th class="num">Total</th></tr></thead>
-          <tbody>
-          ${state.ventas.slice(-6).reverse().map(v=>`
-            <tr>
-              <td><span class="bold">${v.hora}</span><br><span style="font-size:12px;color:var(--muted)">${fFecha(v.fecha)}</span></td>
-              <td>${esc(v.clienteNombre)}<br><span style="font-size:12px;color:var(--muted)">${v.items.length} ${v.items.length===1?'producto':'productos'}</span></td>
-              <td>${v.tipoPago==='contado'?'<span class="badge badge-success">Contado</span>':'<span class="badge badge-warning">Crédito</span>'}</td>
-              <td class="num bold">${money(v.total)}</td>
-            </tr>`).join('') || '<tr><td colspan="4" class="empty">Aún no hay ventas registradas</td></tr>'}
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-head">
-        <div>
-          <div class="card-title">Alertas de inventario</div>
-          <div class="card-subtitle">Productos con 10 unidades o menos</div>
-        </div>
-      </div>
-      ${stockBajo.length===0 ? '<div class="empty">Todo el inventario está por encima del mínimo recomendado.</div>' : `
       <div class="table-wrap"><table>
-        <thead><tr><th>Producto</th><th class="num">Stock</th><th class="num">Estado</th></tr></thead>
-        <tbody>${stockBajo.map(([k,v])=>{
-          const [op,resto]=k.split('-');
-          const nombre = resto==='SIM' ? `Chip / SIM ${op}` : `Tarjeta ${op} Bs ${resto.slice(1)}`;
-          return `<tr><td>${badgeOp(op)} ${nombre}</td>
-            <td class="num bold" style="color:var(--danger)">${v.stock}</td>
-            <td class="num"><span class="badge badge-danger">Reponer</span></td></tr>`;
-        }).join('')}</tbody>
+        <thead><tr><th>Hora</th><th>Cliente</th><th>Pago</th><th class="num">Total</th></tr></thead>
+        <tbody>
+        ${state.ventas.slice(-6).reverse().map(v => `
+          <tr>
+            <td><span class="bold">${v.hora}</span><br><span style="font-size:11.5px;color:var(--muted)">${fFecha(v.fecha)}</span></td>
+            <td>${esc(v.clienteNombre)}</td>
+            <td>${v.tipoPago === 'contado' ? '<span class="badge badge-success">Contado</span>' : '<span class="badge badge-warning">Crédito</span>'}</td>
+            <td class="num bold">${money(v.total)}</td>
+          </tr>`).join('') || '<tr><td colspan="4" class="empty">Sin ventas registradas</td></tr>'}
+        </tbody>
+      </table></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div><div class="card-title">Productos con stock bajo</div>
+        <div class="card-subtitle">5 unidades o menos</div></div>
+      </div>
+      ${stockBajo.length === 0 ? '<div class="empty">Todo el inventario está por encima del mínimo.</div>' : `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Producto</th><th class="num">Stock</th></tr></thead>
+        <tbody>${stockBajo.slice(0,8).map(p => `
+          <tr><td>${esc(p.nombre)}</td><td class="num bold" style="color:var(--danger)">${p.stock} ${unidadAbrev(p.unidad)}</td></tr>`).join('')}
+        </tbody>
       </table></div>`}
     </div>
+  </div>
+  `;
+}
+
+/* ================================================================
+   VISTA: CAJA
+   ================================================================ */
+function viewCaja(){
+  const mov = state.caja.movimientos.slice().reverse();
+  const ingresosHoy = num2(state.caja.movimientos.filter(m => m.fecha === HOY() && m.monto > 0).reduce((a,m) => a+m.monto, 0));
+  const egresosHoy = num2(state.caja.movimientos.filter(m => m.fecha === HOY() && m.monto < 0).reduce((a,m) => a+m.monto, 0));
+
+  return `
+  <div class="page-head">
+    <div class="page-eyebrow">Tesorería</div>
+    <h1 class="page-title">Caja</h1>
+    <p class="page-desc">Control del efectivo del negocio. Las ventas al contado y los abonos suman; las compras y los retiros restan.</p>
+  </div>
+
+  <div class="caja-hero">
+    <div>
+      <div class="caja-hero-label">Saldo disponible en caja</div>
+      <div class="caja-hero-value">${money(saldoCaja())}</div>
+      <div class="caja-hero-sub">Saldo inicial: ${money(state.caja.saldoInicial)} · ${state.caja.movimientos.length} movimiento(s)</div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-success" onclick="abrirModal('agregarDinero')">Agregar dinero</button>
+      <button class="btn btn-outline" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3);color:#fff" onclick="abrirModal('retirarDinero')">Retirar</button>
+      <button class="btn btn-outline" style="background:transparent;border-color:rgba(255,255,255,.3);color:#fff" onclick="abrirModal('saldoInicial')">Saldo inicial</button>
+    </div>
+  </div>
+
+  <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="kpi">
+      <div class="kpi-label">Ingresos de hoy</div>
+      <div class="kpi-value is-success">+ ${money(ingresosHoy)}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Egresos de hoy</div>
+      <div class="kpi-value is-danger">${money(egresosHoy)}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Neto del día</div>
+      <div class="kpi-value">${money(num2(ingresosHoy + egresosHoy))}</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div><div class="card-title">Movimientos</div>
+      <div class="card-subtitle">Historial completo de entradas y salidas de efectivo</div></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th class="num">Monto</th>${esAdmin()?'<th></th>':''}</tr></thead>
+      <tbody>
+      ${mov.slice(0,80).map(m => {
+        const tipoLbl = { aporte:'Aporte', retiro:'Retiro', venta:'Venta', abono:'Abono', compra:'Compra' }[m.tipo] || m.tipo;
+        const cls = m.monto > 0 ? 'badge-success' : 'badge-danger';
+        const puedeEliminar = esAdmin() && (m.tipo === 'aporte' || m.tipo === 'retiro') && !m.referencia;
+        return `<tr>
+          <td>${fFecha(m.fecha)}<br><span style="font-size:11.5px;color:var(--muted)">${m.hora||''}</span></td>
+          <td><span class="badge ${cls}">${tipoLbl}</span></td>
+          <td>${esc(m.descripcion)}</td>
+          <td class="num bold" style="color:${m.monto > 0 ? 'var(--success)' : 'var(--danger)'}">${m.monto > 0 ? '+' : ''}${money(m.monto)}</td>
+          ${esAdmin()?`<td class="num">${puedeEliminar ? `<button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="eliminarMovimiento('${m.id}')">Eliminar</button>` : ''}</td>`:''}
+        </tr>`;
+      }).join('') || '<tr><td colspan="5" class="empty">Aún no hay movimientos en caja. Comienza agregando dinero o registrando una venta.</td></tr>'}
+      </tbody>
+    </table></div>
   </div>`;
+}
+
+function eliminarMovimiento(id){
+  const m = state.caja.movimientos.find(x => x.id === id);
+  if(!m || m.referencia) return;
+  if(!confirm('¿Eliminar este movimiento de caja?')) return;
+  state.caja.movimientos = state.caja.movimientos.filter(x => x.id !== id);
+  toast('Movimiento eliminado','ok');
+  render();
 }
 
 /* ================================================================
    VISTA: PUNTO DE VENTA
    ================================================================ */
 function viewVentas(){
-  const {vTipo,vOp,vDen,vCant} = ui;
-  const cant = Math.max(1, parseInt(vCant)||1);
-  const den  = vTipo==='SIM' ? 0 : Number(vDen);
-  const precio = precioVenta(vOp, vTipo, den, cant);
-  const cat = catItem(vOp, vTipo, den);
-  const comUnit = vTipo==='RECARGA' ? num2(precio*COMISIONES[vOp]) : num2(precio-cat.costo);
-  const etiqueta = etiquetaPrecio(vTipo, cant);
+  const total = totalCarritoVenta();
+  const cliente = ui.ventaClienteId ? state.clientes.find(c => c.id === ui.ventaClienteId) : null;
+  const montoRecibido = Number(ui.ventaMontoRecibido) || 0;
+  const cambio = num2(montoRecibido - total);
+  const cambioValido = montoRecibido >= total;
 
-  const totalCarrito = num2(ui.carrito.reduce((a,i)=>a+i.subtotal,0));
-  const comCarrito   = num2(ui.carrito.reduce((a,i)=>a+i.comision,0));
-  const clienteSel = state.clientes.find(c=>c.id===ui.clienteId);
-  const excede = clienteSel && (deudaCliente(clienteSel.id) + totalCarrito) > clienteSel.limite;
+  // Filtrar productos
+  const q = ui.buscarProd.trim().toLowerCase();
+  const prods = state.productos.filter(p => p.stock > 0 || p.stock === 0).filter(p => !q || p.nombre.toLowerCase().includes(q)).sort((a,b) => a.nombre.localeCompare(b.nombre));
 
   return `
   <div class="page-head">
-    <div class="page-eyebrow">Ventas de mostrador</div>
+    <div class="page-eyebrow">Ventas</div>
     <h1 class="page-title">Punto de venta</h1>
-    <p class="page-desc">Elige el producto, la cantidad y cómo paga el cliente. El sistema calcula automáticamente el precio según el volumen.</p>
+    <p class="page-desc">Agrega productos al carrito, define si es contado o crédito y calcula el cambio automáticamente.</p>
   </div>
 
   <div class="grid-2">
+    <!-- Catálogo -->
     <div class="card">
       <div class="card-head">
-        <div>
-          <div class="card-title">¿Qué vas a vender?</div>
-          <div class="card-subtitle">Selecciona el tipo de producto</div>
-        </div>
+        <div><div class="card-title">Catálogo</div>
+        <div class="card-subtitle">Click en un producto para agregarlo</div></div>
       </div>
-
-      <div class="choice-row" style="margin-bottom:20px">
-        <button class="choice ${vTipo==='Tarjeta'?'active':''}" onclick="ui.vTipo='Tarjeta';ui.vCant=1;render()">
-          <span class="choice-title">Tarjeta</span>
-          <span class="choice-desc">Física por denominación</span>
-        </button>
-        <button class="choice ${vTipo==='SIM'?'active':''}" onclick="ui.vTipo='SIM';ui.vCant=1;render()">
-          <span class="choice-title">Chip / SIM</span>
-          <span class="choice-desc">Para activación</span>
-        </button>
-        <button class="choice ${vTipo==='RECARGA'?'active':''}" onclick="ui.vTipo='RECARGA';ui.vCant=1;render()">
-          <span class="choice-title">Recarga</span>
-          <span class="choice-desc">Electrónica al paso</span>
-        </button>
-      </div>
-
       <div class="field">
-        <label>Operador</label>
-        <select onchange="ui.vOp=this.value; render()">
-          ${OPERADORES.map(o=>`<option ${vOp===o?'selected':''}>${o}</option>`).join('')}
-        </select>
+        <input placeholder="Buscar por nombre..." value="${esc(ui.buscarProd)}" oninput="ui.buscarProd=this.value; render(); this.focus()" id="buscadorProd">
       </div>
-
-      ${vTipo!=='SIM' ? `
-      <div class="field">
-        <label>Denominación</label>
-        <select onchange="ui.vDen=this.value; render()">
-          ${DENOMS.map(d=>`<option value="${d}" ${Number(vDen)===d?'selected':''}>Bs ${d}</option>`).join('')}
-        </select>
-      </div>`:''}
-
-      <div class="field">
-        <label>Cantidad</label>
-        <input type="number" min="1" value="${vCant}" onchange="ui.vCant=this.value; render()">
-        <div class="hint">El precio baja automáticamente cuando la cantidad es alta (mayoreo).</div>
+      <div class="prod-list">
+        ${prods.length === 0 ? '<div class="empty">No hay productos. Crea uno en Configuración → Productos.</div>' : prods.map(p => {
+          const sinStock = p.stock <= 0;
+          return `
+          <div class="prod-item ${sinStock ? 'stock-0' : ''}" onclick="${sinStock ? '' : `agregarAlCarritoVenta('${p.id}',1)`}">
+            <div>
+              <div class="prod-name">${esc(p.nombre)}</div>
+              <div class="prod-meta">${unidadAbrev(p.unidad)} · ${esc(catById(p.categoriaId)?.nombre || 'Sin categoría')}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="prod-price">${money(p.precio)}</div>
+              <div class="prod-stock" style="${sinStock ? 'color:var(--danger);font-weight:600' : ''}">${sinStock ? 'Agotado' : 'Stock: ' + p.stock}</div>
+            </div>
+          </div>`;
+        }).join('')}
       </div>
-
-      <div class="price-box">
-        <div>
-          <div class="price-label">Precio unitario</div>
-          <div class="price-value">${money(precio)}</div>
-        </div>
-        <div class="price-meta">
-          <span class="badge badge-info">${etiqueta}</span>
-          ${esAdmin()?`<div style="margin-top:6px">Costo: ${money(cat.costo)} · Comisión: <b style="color:var(--success)">${money(comUnit)}</b></div>`:''}
-        </div>
-      </div>
-
-      <button class="btn btn-primary btn-block" style="margin-top:16px" onclick="agregarAlCarrito()">
-        Agregar a la venta
-      </button>
     </div>
 
+    <!-- Carrito -->
     <div class="card">
       <div class="card-head">
-        <div>
-          <div class="card-title">Venta en curso</div>
-          <div class="card-subtitle">${ui.carrito.length===0 ? 'Aún no agregaste productos' : ui.carrito.length + ' ' + (ui.carrito.length===1?'producto agregado':'productos agregados')}</div>
-        </div>
+        <div><div class="card-title">Carrito</div>
+        <div class="card-subtitle">${ui.ventaCarrito.length === 0 ? 'Aún no agregaste productos' : ui.ventaCarrito.length + ' producto(s)'}</div></div>
+        ${ui.ventaCarrito.length > 0 ? `<button class="btn-ghost" onclick="ui.ventaCarrito=[]; render()">Vaciar</button>` : ''}
       </div>
 
-      ${ui.carrito.length===0 ? `
-        <div class="empty" style="padding:40px 16px">
-          Agrega productos desde el panel izquierdo<br>para iniciar la venta.
-        </div>
-      ` : `
-        ${ui.carrito.map((i,ix)=>`
-          <div class="cart-line">
-            <div class="cart-info">
-              <div class="cart-name">${esc(i.desc)}</div>
-              <div class="cart-meta">${i.cant} × ${money(i.precioUnit)}</div>
+      ${ui.ventaCarrito.length === 0 ? `
+        <div class="empty" style="padding:30px 16px">Agrega productos desde el catálogo para iniciar la venta.</div>
+      `:`
+        <div>
+          ${ui.ventaCarrito.map((i, ix) => `
+            <div class="cart-line">
+              <div class="cart-info">
+                <div class="cart-name">${esc(i.nombre)}</div>
+                <div class="cart-meta">${money(i.precioUnit)} × ${i.cantidad} ${unidadAbrev(i.unidad)}</div>
+              </div>
+              <input type="number" step="0.01" class="cart-qty" value="${i.cantidad}" onchange="actualizarLineaCarrito(${ix},'cantidad',this.value)" title="Cantidad">
+              <input type="number" step="0.01" class="cart-price" value="${i.precioUnit}" onchange="actualizarLineaCarrito(${ix},'precioUnit',this.value)" title="Precio unitario">
+              <div class="cart-sub">${money(i.subtotal)}</div>
+              <button class="btn-ghost" style="padding:2px 8px" onclick="quitarDelCarrito(${ix})">×</button>
             </div>
-            <div class="cart-price">${money(i.subtotal)}</div>
-            <button class="btn-ghost" style="padding:4px 8px" onclick="quitarDelCarrito(${ix})">Quitar</button>
-          </div>
-        `).join('')}
-        <div class="cart-total">
-          <span class="cart-total-label">Total</span>
-          <span class="cart-total-value">${money(totalCarrito)}</span>
+          `).join('')}
         </div>
-        ${esAdmin()?`<div style="text-align:right;font-size:12px;color:var(--success);font-weight:600;margin-top:4px">Comisión estimada: ${money(comCarrito)}</div>`:''}
 
-        <div style="margin-top:22px;padding-top:20px;border-top:1px solid var(--line)">
+        <div class="cart-total">
+          <span class="cart-total-label">Total a pagar</span>
+          <span class="cart-total-value">${money(total)}</span>
+        </div>
+
+        <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--line)">
           <div class="field">
             <label>Cliente</label>
-            <select onchange="ui.clienteId=this.value; render()">
+            <select onchange="ui.ventaClienteId=this.value; render()">
               <option value="">Consumidor final (sin registrar)</option>
-              ${state.clientes.map(c=>`<option value="${c.id}" ${ui.clienteId===c.id?'selected':''}>${esc(c.nombre)}</option>`).join('')}
+              ${state.clientes.map(c => `<option value="${c.id}" ${ui.ventaClienteId===c.id?'selected':''}>${esc(c.nombre)}</option>`).join('')}
             </select>
+            ${state.clientes.length === 0 ? '<div class="hint">No hay clientes registrados. Los puedes crear en Clientes y créditos.</div>' : ''}
           </div>
 
           <div class="field">
             <label>Forma de pago</label>
-            <select onchange="ui.tipoPago=this.value; render()">
-              <option value="contado" ${ui.tipoPago==='contado'?'selected':''}>Contado — paga en el momento</option>
-              <option value="credito" ${ui.tipoPago==='credito'?'selected':''}>Crédito — queda debiendo</option>
-            </select>
+            <div class="choice-row">
+              <button class="choice ${ui.ventaTipoPago==='contado'?'active':''}" onclick="ui.ventaTipoPago='contado'; render()">
+                <span class="choice-title">Contado</span>
+                <span class="choice-desc">Paga en el momento</span>
+              </button>
+              <button class="choice ${ui.ventaTipoPago==='credito'?'active':''}" onclick="ui.ventaTipoPago='credito'; render()">
+                <span class="choice-title">Crédito</span>
+                <span class="choice-desc">Queda debiendo</span>
+              </button>
+            </div>
           </div>
 
-          ${ui.tipoPago==='credito' ? `
+          ${ui.ventaTipoPago === 'credito' ? `
             <div class="field">
               <label>Plazo para pagar</label>
-              <select onchange="ui.plazo=this.value; render()">
-                <option value="7"  ${Number(ui.plazo)===7?'selected':''}>7 días (semanal)</option>
-                <option value="15" ${Number(ui.plazo)===15?'selected':''}>15 días (quincenal)</option>
-                <option value="30" ${Number(ui.plazo)===30?'selected':''}>30 días (mensual)</option>
-              </select>
+              <div class="choice-row" style="grid-template-columns:repeat(4,1fr)">
+                <button class="choice ${ui.ventaPlazo===15?'active':''}" onclick="ui.ventaPlazo=15; render()"><span class="choice-title">15 días</span></button>
+                <button class="choice ${ui.ventaPlazo===20?'active':''}" onclick="ui.ventaPlazo=20; render()"><span class="choice-title">20 días</span></button>
+                <button class="choice ${ui.ventaPlazo===30?'active':''}" onclick="ui.ventaPlazo=30; render()"><span class="choice-title">30 días</span></button>
+                <button class="choice ${ui.ventaPlazo==='custom'?'active':''}" onclick="ui.ventaPlazo='custom'; render()"><span class="choice-title">Otro</span></button>
+              </div>
+              ${ui.ventaPlazo === 'custom' ? `
+                <input type="number" min="1" placeholder="Días manuales" value="${ui.ventaPlazoCustom}" onchange="ui.ventaPlazoCustom=this.value; render()" style="margin-top:8px">
+              `:''}
             </div>
-            ${!ui.clienteId ? '<div class="alert alert-warning" style="margin-bottom:12px"><div>Para dar crédito necesitas elegir un cliente registrado.</div></div>' : ''}
-            ${excede ? `<div class="alert alert-danger" style="margin-bottom:12px"><div><b>Supera el límite de crédito</b><br>Deuda actual ${money(deudaCliente(clienteSel.id))} + venta ${money(totalCarrito)} supera el límite de ${money(clienteSel.limite)}.</div></div>`:''}
-          ` : ''}
+            ${!cliente ? '<div class="alert alert-warning" style="margin-bottom:10px"><div>Selecciona un cliente para dar crédito.</div></div>' : ''}
+          `:''}
 
-          <button class="btn btn-success btn-block" onclick="confirmarVenta()"
-            ${(ui.tipoPago==='credito' && (!ui.clienteId || excede))?'disabled':''}>
-            Confirmar venta · ${money(totalCarrito)}
+          ${ui.ventaTipoPago === 'contado' ? `
+            <div class="field">
+              <label>Monto recibido</label>
+              <input type="number" step="0.01" min="0" placeholder="¿Cuánto te entregó el cliente?" value="${ui.ventaMontoRecibido}" oninput="ui.ventaMontoRecibido=this.value; render(); this.focus()" id="inputRecibido">
+              <div class="bill-grid" style="margin-top:8px">
+                ${[10,20,50,100,200].map(b => `<button class="bill-btn ${Number(ui.ventaMontoRecibido)===b?'active':''}" onclick="ui.ventaMontoRecibido='${b}'; render()">Bs ${b}</button>`).join('')}
+                <button class="bill-btn" onclick="ui.ventaMontoRecibido='${total}'; render()">Exacto</button>
+              </div>
+            </div>
+            ${montoRecibido > 0 ? `
+              <div class="cambio-box ${cambioValido?'':'insuf'}">
+                <span class="cambio-label">${cambioValido ? 'Cambio a devolver' : 'Falta'}</span>
+                <span class="cambio-value">${money(cambioValido ? cambio : (total - montoRecibido))}</span>
+              </div>
+            `:''}
+          `:''}
+
+          <button class="btn btn-success btn-block" style="margin-top:16px" onclick="confirmarVenta()"
+            ${(ui.ventaTipoPago==='contado' && !cambioValido) || (ui.ventaTipoPago==='credito' && !cliente) ? 'disabled' : ''}>
+            Confirmar venta · ${money(total)}
           </button>
         </div>
       `}
     </div>
   </div>
 
+  <!-- Historial de ventas -->
   <div class="card">
     <div class="card-head">
-      <div>
-        <div class="card-title">Historial de ventas</div>
-        <div class="card-subtitle">Últimas 25 transacciones registradas</div>
-      </div>
+      <div><div class="card-title">Historial de ventas</div>
+      <div class="card-subtitle">Todas las ventas registradas · ${state.ventas.length} en total</div></div>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr>
-          <th>Referencia</th><th>Fecha</th><th>Cliente</th><th>Detalle</th><th>Pago</th>
-          <th class="num">Total</th>${esAdmin()?'<th class="num">Comisión</th>':''}<th class="num">Estado</th>
-        </tr></thead>
-        <tbody>
-        ${state.ventas.slice().reverse().slice(0,25).map(v=>`
-          <tr>
-            <td><span class="badge badge-neutral">${v.id}</span></td>
-            <td>${fFecha(v.fecha)}<br><span style="font-size:12px;color:var(--muted)">${v.hora}</span></td>
-            <td>${esc(v.clienteNombre)}</td>
-            <td style="max-width:300px">${v.items.map(i=>`<div style="font-size:12.5px;padding:1px 0">${badgeOp(i.operador)} ${esc(i.desc)} <span style="color:var(--muted)">× ${i.cant}</span></div>`).join('')}</td>
-            <td>${v.tipoPago==='contado'
-                ? '<span class="badge badge-success">Contado</span>'
-                : `<span class="badge badge-warning">Crédito</span><br><span style="font-size:11.5px;color:var(--muted)">vence ${fFecha(v.vencimiento)}</span>`}</td>
-            <td class="num bold">${money(v.total)}</td>
-            ${esAdmin()?`<td class="num" style="color:var(--success);font-weight:600">${money(v.comision)}</td>`:''}
-            <td class="num">${v.tipoPago==='credito'
-                ? `<span class="badge ${saldoVenta(v)<=0.001?'badge-success':'badge-danger'}">${saldoVenta(v)<=0.001?'Pagada':'Debe '+money(saldoVenta(v))}</span>`
-                : '<span class="badge badge-neutral">Pagado</span>'}</td>
-          </tr>`).join('') || '<tr><td colspan="8" class="empty">Sin ventas registradas</td></tr>'}
-        </tbody>
-      </table>
-    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Detalle</th><th>Pago</th><th class="num">Total</th><th class="num">Estado</th>${esAdmin()?'<th></th>':''}
+      </tr></thead>
+      <tbody>
+      ${state.ventas.slice().reverse().slice(0,30).map(v => `
+        <tr>
+          <td><span class="badge badge-neutral">${v.id}</span></td>
+          <td>${fFecha(v.fecha)}<br><span style="font-size:11.5px;color:var(--muted)">${v.hora}</span></td>
+          <td>${esc(v.clienteNombre)}</td>
+          <td style="max-width:280px">${v.items.map(i => `<div style="font-size:12px;padding:1px 0">${esc(i.nombre)} × ${i.cantidad} ${unidadAbrev(i.unidad)}</div>`).join('')}</td>
+          <td>${v.tipoPago === 'contado'
+              ? '<span class="badge badge-success">Contado</span>'
+              : `<span class="badge badge-warning">Crédito ${v.plazo}d</span><br><span style="font-size:11px;color:var(--muted)">vence ${fFecha(v.vencimiento)}</span>`}</td>
+          <td class="num bold">${money(v.total)}</td>
+          <td class="num">${v.tipoPago === 'credito'
+              ? `<span class="badge ${saldoVenta(v)<=0.001?'badge-success':'badge-danger'}">${saldoVenta(v)<=0.001?'Pagada':'Debe '+money(saldoVenta(v))}</span>`
+              : '<span class="badge badge-neutral">Pagado</span>'}</td>
+          ${esAdmin()?`<td class="num"><button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="eliminarVenta('${v.id}')">Eliminar</button></td>`:''}
+        </tr>`).join('') || `<tr><td colspan="${esAdmin()?8:7}" class="empty">Aún no hay ventas registradas</td></tr>`}
+      </tbody>
+    </table></div>
   </div>`;
-}
-
-function agregarAlCarrito(){
-  const {vTipo,vOp,vDen} = ui;
-  const cant = Math.max(1, parseInt(ui.vCant)||1);
-  const den  = vTipo==='SIM' ? 0 : Number(vDen);
-
-  if(vTipo==='RECARGA'){
-    const necesario = den*cant;
-    if(state.bolsa[vOp] < necesario) return toast(`Bolsa ${vOp} insuficiente (${money(state.bolsa[vOp])})`,'err');
-  }else{
-    const id = itemId(vOp, vTipo, den);
-    const disp = state.inventario[id].stock;
-    const yaEnCarrito = ui.carrito.filter(i=>i.id===id).reduce((a,i)=>a+i.cant,0);
-    if(disp < cant + yaEnCarrito) return toast(`Stock insuficiente. Quedan ${disp} unidades`,'err');
-  }
-
-  const cat = catItem(vOp, vTipo, den);
-  const precio = precioVenta(vOp, vTipo, den, cant);
-  const comUnit = vTipo==='RECARGA' ? num2(precio*COMISIONES[vOp]) : num2(precio-cat.costo);
-  const id = vTipo==='RECARGA' ? `RECARGA-${vOp}` : itemId(vOp,vTipo,den);
-
-  ui.carrito.push({
-    id, tipo:vTipo, operador:vOp, den, cant,
-    desc:cat.nombre, precioUnit:precio, costo:cat.costo,
-    subtotal:num2(precio*cant), comision:num2(comUnit*cant)
-  });
-  toast('Producto agregado','ok');
-  render();
-}
-function quitarDelCarrito(ix){ ui.carrito.splice(ix,1); render(); }
-
-function confirmarVenta(){
-  if(ui.carrito.length===0) return;
-  const items = ui.carrito.map(i=>({tipo:i.tipo, operador:i.operador, den:i.den, cant:i.cant}));
-  const d = new Date();
-  const hora = `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-
-  crearVenta(state, {
-    fecha: HOY(), hora,
-    tipoPago: ui.tipoPago,
-    clienteId: ui.clienteId||null,
-    plazo: ui.tipoPago==='credito' ? Number(ui.plazo) : null,
-    items, usuario: rolNombre()
-  });
-
-  ui.carrito = [];
-  toast('Venta registrada correctamente','ok');
-  render();
 }
 
 /* ================================================================
    VISTA: INVENTARIO
    ================================================================ */
 function viewInventario(){
+  const cats = ['Todas', ...state.categorias.map(c => c.id)];
   const filtro = ui.filtroInv;
-  const ops = filtro==='Todos' ? OPERADORES : [filtro];
+  const prods = state.productos
+    .filter(p => filtro === 'Todas' || p.categoriaId === filtro)
+    .sort((a,b) => a.nombre.localeCompare(b.nombre));
 
-  const valorTotal = Object.entries(state.inventario).reduce((a,[k,v])=>{
-    const [op,resto]=k.split('-');
-    const tipo = resto==='SIM'?'SIM':'Tarjeta';
-    const den  = resto==='SIM'?0:Number(resto.slice(1));
-    return a + v.stock * catItem(op,tipo,den).costo;
-  },0);
-
-  const unidades = Object.values(state.inventario).reduce((a,v)=>a+v.stock,0);
-  const bolsaTotal = num2(OPERADORES.reduce((a,o)=>a+state.bolsa[o],0));
-  const bajos = Object.values(state.inventario).filter(v=>v.stock<=10).length;
+  const valorTotal = num2(state.productos.reduce((a,p) => a + p.stock * p.costo, 0));
+  const bajos = state.productos.filter(p => p.stock <= 5).length;
 
   return `
   <div class="page-head">
-    <div class="page-eyebrow">Control de existencias</div>
-    <h1 class="page-title">Inventario y bolsa</h1>
-    <p class="page-desc">Cantidad de tarjetas y chips en stock, y saldo digital disponible en la bolsa de recargas de cada operador.</p>
+    <div class="page-eyebrow">Existencias</div>
+    <h1 class="page-title">Inventario</h1>
+    <p class="page-desc">Stock disponible de todos los productos. Se actualiza automáticamente con cada compra y venta.</p>
   </div>
 
   <div class="kpi-grid">
     <div class="kpi">
-      <div class="kpi-label">Unidades en stock</div>
-      <div class="kpi-value">${unidades}</div>
-      <div class="kpi-meta">Tarjetas físicas + chips</div>
+      <div class="kpi-label">Productos activos</div>
+      <div class="kpi-value">${state.productos.length}</div>
+      <div class="kpi-meta">${state.categorias.length} categoría(s)</div>
     </div>
     <div class="kpi">
       <div class="kpi-label">Valor del inventario</div>
@@ -1020,223 +1471,147 @@ function viewInventario(){
       <div class="kpi-meta">A precio de costo</div>
     </div>
     <div class="kpi">
-      <div class="kpi-label">Bolsa de recargas</div>
-      <div class="kpi-value is-success">${money(bolsaTotal)}</div>
-      <div class="kpi-meta">Saldo digital total</div>
+      <div class="kpi-label">Saldo en caja</div>
+      <div class="kpi-value ${saldoCaja()<0?'is-danger':''}">${money(saldoCaja())}</div>
+      <div class="kpi-meta">Efectivo disponible</div>
     </div>
     <div class="kpi">
-      <div class="kpi-label">Productos bajo mínimo</div>
+      <div class="kpi-label">Bajo stock</div>
       <div class="kpi-value ${bajos>0?'is-warning':''}">${bajos}</div>
-      <div class="kpi-meta">${bajos>0?'Requieren reposición':'Todo en orden'}</div>
+      <div class="kpi-meta">${bajos>0?'Reponer pronto':'Todo en orden'}</div>
     </div>
   </div>
 
   <div class="card">
     <div class="card-head">
-      <div>
-        <div class="card-title">Bolsa de recargas electrónicas</div>
-        <div class="card-subtitle">Saldo digital para vender recargas y paquetes al paso</div>
-      </div>
-    </div>
-    <div class="bolsa-grid">
-      ${OPERADORES.map(op=>{
-        const v = state.bolsa[op];
-        const base = state.bolsaBase[op];
-        const pct = Math.min(100, (v/2000)*100);
-        return `<div class="bolsa ${op.toLowerCase()}">
-          <div class="bolsa-op">${op}</div>
-          <div class="bolsa-val">${money(v)}</div>
-          <div class="bolsa-sub">Saldo al inicio del período: ${money(base)}</div>
-          <div class="bolsa-bar"><div class="bolsa-bar-fill" style="width:${pct}%"></div></div>
-        </div>`;
-      }).join('')}
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-head">
-      <div>
-        <div class="card-title">Stock por operador y denominación</div>
-        <div class="card-subtitle">Detalle de existencias y precios de venta</div>
-      </div>
+      <div><div class="card-title">Productos en stock</div>
+      <div class="card-subtitle">${prods.length} producto(s) mostrados</div></div>
       <div class="btn-row">
-        ${['Todos',...OPERADORES].map(o=>`
-          <button class="btn btn-sm ${filtro===o?'btn-primary':'btn-outline'}" onclick="ui.filtroInv='${o}'; render()">${o}</button>`).join('')}
+        <button class="btn btn-sm ${filtro==='Todas'?'btn-primary':'btn-outline'}" onclick="ui.filtroInv='Todas'; render()">Todas</button>
+        ${state.categorias.map(c => `<button class="btn btn-sm ${filtro===c.id?'btn-primary':'btn-outline'}" onclick="ui.filtroInv='${c.id}'; render()">${esc(c.nombre)}</button>`).join('')}
       </div>
     </div>
-
-    ${ops.map(op=>{
-      const filas = [];
-      DENOMS.forEach(d=>{
-        const key = `${op}-T${d}`;
-        const v = state.inventario[key];
-        const cat = catItem(op,'Tarjeta',d);
-        filas.push({key, nombre:`Tarjeta Bs ${d}`, v, cat, tipo:'Tarjeta', den:d});
-      });
-      const simKey = `${op}-SIM`;
-      filas.push({key:simKey, nombre:'Chip / SIM', v:state.inventario[simKey], cat:catItem(op,'SIM',0), tipo:'SIM', den:0});
-
-      return `
-      <div style="margin-top:24px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          ${badgeOp(op)}
-          <span style="font-size:12.5px;color:var(--muted)">${filas.reduce((a,f)=>a+f.v.stock,0)} unidades en total</span>
-        </div>
-        <div class="table-wrap"><table>
-          <thead><tr>
-            <th>Producto</th>
-            <th class="num">Inicial</th>
-            <th class="num">Actual</th>
-            ${esAdmin()?'<th class="num">Costo</th><th class="num">Valor</th>':''}
-            <th class="num">Precio raleo</th>
-            <th class="num">Precio mayoreo</th>
-            <th class="num">Estado</th>
-            <th class="num"></th>
-          </tr></thead>
-          <tbody>
-          ${filas.map(f=>{
-            const estado = f.v.stock<=0 ? '<span class="badge badge-danger">Agotado</span>'
-                         : f.v.stock<=10 ? '<span class="badge badge-warning">Bajo</span>'
-                         : '<span class="badge badge-success">OK</span>';
-            const pm = f.tipo==='SIM'
-              ? precioVenta(op,'SIM',0,SIM_MAYOR_A)
-              : precioVenta(op,'Tarjeta',f.den,TARJ_MAYOR_A);
-            return `<tr>
-              <td class="bold">${f.nombre}</td>
-              <td class="num" style="color:var(--muted)">${f.v.inicial}</td>
-              <td class="num bold" style="font-size:14px">${f.v.stock}</td>
-              ${esAdmin()?`<td class="num">${money(f.cat.costo)}</td><td class="num">${money(f.v.stock*f.cat.costo)}</td>`:''}
-              <td class="num">${money(f.tipo==='SIM'?SIM_VENTA[op]:f.den)}</td>
-              <td class="num" style="color:var(--primary);font-weight:600">${money(pm)}</td>
-              <td class="num">${estado}</td>
-              <td class="num">${esAdmin()?`<button class="btn btn-outline btn-sm" onclick="ajustarStock('${f.key}')">Ajustar</button>`:''}</td>
-            </tr>`;
-          }).join('')}
-          </tbody>
-        </table></div>
-      </div>`;
-    }).join('')}
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Producto</th><th>Categoría</th><th>Proveedor</th>
+        <th class="num">Stock</th>
+        ${esAdmin()?'<th class="num">Costo</th>':''}
+        <th class="num">Precio venta</th>
+        <th class="num">Estado</th>
+      </tr></thead>
+      <tbody>
+      ${prods.map(p => {
+        const cat = catById(p.categoriaId);
+        const prov = provById(p.proveedorId);
+        const estado = p.stock <= 0 ? '<span class="badge badge-danger">Agotado</span>'
+                     : p.stock <= 5 ? '<span class="badge badge-warning">Bajo</span>'
+                     : '<span class="badge badge-success">OK</span>';
+        return `<tr>
+          <td class="bold">${esc(p.nombre)}</td>
+          <td>${cat ? esc(cat.nombre) : '—'}</td>
+          <td>${prov ? esc(prov.nombre) : '—'}</td>
+          <td class="num bold" style="font-size:14px">${p.stock} <span style="font-size:11px;color:var(--muted);font-weight:400">${unidadAbrev(p.unidad)}</span></td>
+          ${esAdmin()?`<td class="num">${money(p.costo)}</td>`:''}
+          <td class="num" style="color:var(--primary);font-weight:600">${money(p.precio)}</td>
+          <td class="num">${estado}</td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="7" class="empty">No hay productos. Créalos en Configuración → Productos.</td></tr>'}
+      </tbody>
+    </table></div>
   </div>`;
 }
 
-function ajustarStock(key){
-  const v = state.inventario[key];
-  const nuevo = prompt(`Nuevo stock para ${key}\nStock actual: ${v.stock}`, v.stock);
-  if(nuevo===null) return;
-  const n = parseInt(nuevo);
-  if(isNaN(n) || n<0) return toast('Valor inválido','err');
-  v.stock = n;
-  toast('Stock actualizado','ok');
-  render();
-}
-
 /* ================================================================
-   VISTA: CLIENTES / CRÉDITOS
+   VISTA: CLIENTES
    ================================================================ */
 function viewClientes(){
-  const totalPorCobrar = num2(state.clientes.reduce((a,c)=>a+deudaCliente(c.id),0));
-  const totalVencido   = num2(state.clientes.reduce((a,c)=>a+deudaVencida(c.id),0));
-  const conDeuda = state.clientes.filter(c=>deudaCliente(c.id)>0).length;
+  const totalPorCobrar = num2(state.clientes.reduce((a,c) => a + deudaCliente(c.id), 0));
+  const totalVencido = num2(state.clientes.reduce((a,c) => a + deudaVencida(c.id), 0));
+  const conDeuda = state.clientes.filter(c => deudaCliente(c.id) > 0).length;
 
   return `
   <div class="page-head">
-    <div class="page-eyebrow">Cartera de clientes</div>
+    <div class="page-eyebrow">Cartera</div>
     <h1 class="page-title">Clientes y créditos</h1>
-    <p class="page-desc">Registra clientes, controla sus deudas y abonos, y da seguimiento a los pagos con plazos semanales, quincenales o mensuales.</p>
+    <p class="page-desc">Historial de clientes, deudas y abonos. Da seguimiento a los pagos con plazos de 15, 20 o 30 días.</p>
   </div>
 
-  <div class="grid-3" style="margin-bottom:24px">
+  <div class="grid-3" style="margin-bottom:20px">
     <div class="kpi">
       <div class="kpi-label">Cartera por cobrar</div>
       <div class="kpi-value">${money(totalPorCobrar)}</div>
-      <div class="kpi-meta">${conDeuda} ${conDeuda===1?'cliente con saldo':'clientes con saldo'}</div>
+      <div class="kpi-meta">${conDeuda} cliente(s) con saldo</div>
     </div>
     <div class="kpi">
       <div class="kpi-label">Monto vencido</div>
       <div class="kpi-value ${totalVencido>0?'is-danger':''}">${money(totalVencido)}</div>
-      <div class="kpi-meta">${totalVencido>0?'Requiere cobranza':'Sin deudas vencidas'}</div>
+      <div class="kpi-meta">${totalVencido>0?'Requiere cobranza':'Sin vencidos'}</div>
     </div>
     <div class="kpi">
       <div class="kpi-label">Cobrado en abonos</div>
       <div class="kpi-value is-success">${money(state.abonos.reduce((a,x)=>a+x.monto,0))}</div>
-      <div class="kpi-meta">${state.abonos.length} ${state.abonos.length===1?'abono registrado':'abonos registrados'}</div>
+      <div class="kpi-meta">${state.abonos.length} abono(s)</div>
     </div>
   </div>
 
   <div class="grid-2">
     <div>
-      <h3 style="font-size:15px;font-weight:600;margin-bottom:14px">Lista de clientes</h3>
-      ${state.clientes.map(c=>{
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="font-size:15px;font-weight:600">Lista de clientes</h3>
+        <button class="btn btn-primary btn-sm" onclick="abrirModal('nuevoCliente')">Nuevo cliente</button>
+      </div>
+      ${state.clientes.length === 0 ? '<div class="card"><div class="empty">No tienes clientes registrados. Crea uno para poder vender a crédito y llevar su historial.</div></div>' : ''}
+      ${state.clientes.map(c => {
         const deuda = deudaCliente(c.id);
-        const venc  = deudaVencida(c.id);
-        const est   = estadoCliente(c.id);
-        const abierto = ui.clienteAbierto===c.id;
-        const pend = state.ventas.filter(v=>v.clienteId===c.id && v.tipoPago==='credito' && saldoVenta(v)>0.001)
-                        .sort((a,b)=>a.fecha.localeCompare(b.fecha));
+        const venc = deudaVencida(c.id);
+        const est = estadoCliente(c.id);
+        const abierto = ui.clienteAbierto === c.id;
+        const pend = state.ventas.filter(v => v.clienteId === c.id && v.tipoPago === 'credito' && saldoVenta(v) > 0.001)
+                      .sort((a,b) => a.fecha.localeCompare(b.fecha));
         return `
-        <div class="client-card ${venc>0?'vencido':''}">
-          <div class="client-head">
+        <div class="card" style="padding:18px 20px;${venc>0?'border-left:3px solid var(--danger)':''}">
+          <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start">
             <div style="flex:1;min-width:0">
-              <div class="client-name">${esc(c.nombre)}</div>
-              <div class="client-meta">${esc(c.comunidad)} · Tel. ${esc(c.tel)}</div>
-              <div class="client-tags">
+              <div style="font-size:15px;font-weight:600">${esc(c.nombre)}</div>
+              <div style="font-size:12.5px;color:var(--muted);margin-top:2px">${esc(c.comunidad)} · Tel. ${esc(c.tel) || '—'}</div>
+              <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
                 <span class="badge ${est.cls}">${est.txt}</span>
-                <span class="tag-pill">Plazo ${c.plazo} días</span>
+                <span class="tag-pill">Plazo ${c.plazo}d</span>
                 <span class="tag-pill">Límite ${money(c.limite)}</span>
               </div>
             </div>
-            <div class="client-debt">
-              <div class="client-debt-label">Debe</div>
-              <div class="client-debt-value ${deuda>0?'deuda':'ok'}">${money(deuda)}</div>
-              ${venc>0?`<div style="font-size:11.5px;color:var(--danger);font-weight:600;margin-top:3px">${money(venc)} vencido</div>`:''}
+            <div style="text-align:right">
+              <div style="font-size:10.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Debe</div>
+              <div style="font-size:20px;font-weight:600;color:${deuda>0?'var(--danger)':'var(--success)'};font-variant-numeric:tabular-nums;margin-top:2px">${money(deuda)}</div>
+              ${venc>0?`<div style="font-size:11px;color:var(--danger);font-weight:600">${money(venc)} vencido</div>`:''}
             </div>
           </div>
-
-          <div style="margin-top:14px">
-            <button class="btn btn-outline btn-sm" onclick="toggleCliente('${c.id}')">
-              ${abierto?'Ocultar detalle':'Ver detalle y abonar'}
-            </button>
+          <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-outline btn-sm" onclick="toggleCliente('${c.id}')">${abierto ? 'Ocultar' : 'Ver detalle y abonar'}</button>
+            <button class="btn-ghost" style="font-size:12px" onclick="abrirModal('editarCliente','${c.id}')">Editar</button>
           </div>
 
           ${abierto ? `
-          <div class="client-body">
+          <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line-soft)">
             <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Ventas a crédito pendientes</div>
-            ${pend.length===0 ? '<div style="font-size:13px;color:var(--success);font-weight:500;padding:8px 0">Sin saldos pendientes</div>' : `
+            ${pend.length === 0 ? '<div style="font-size:13px;color:var(--success);font-weight:500;padding:6px 0">Sin saldos pendientes</div>' : `
             <div class="table-wrap" style="margin:0;padding:0"><table>
-              <thead><tr><th>Fecha</th><th>Vence</th><th class="num">Total</th><th class="num">Saldo</th><th class="num">Estado</th></tr></thead>
-              <tbody>
-              ${pend.map(v=>{
-                const vencida = v.vencimiento < HOY();
-                return `<tr>
-                  <td>${fFecha(v.fecha)}<br><span style="font-size:11.5px;color:var(--muted)">${v.items.map(i=>i.desc+' ×'+i.cant).join(', ').slice(0,34)}</span></td>
-                  <td>${fFecha(v.vencimiento)}</td>
-                  <td class="num">${money(v.total)}</td>
-                  <td class="num bold" style="color:var(--danger)">${money(saldoVenta(v))}</td>
-                  <td class="num">${vencida?'<span class="badge badge-danger">Vencida</span>':'<span class="badge badge-info">Vigente</span>'}</td>
-                </tr>`;
-              }).join('')}
+              <thead><tr><th>Fecha</th><th>Vence</th><th class="num">Total</th><th class="num">Saldo</th></tr></thead>
+              <tbody>${pend.map(v => `
+                <tr><td>${fFecha(v.fecha)}</td><td>${fFecha(v.vencimiento)}</td>
+                <td class="num">${money(v.total)}</td>
+                <td class="num bold" style="color:var(--danger)">${money(saldoVenta(v))}</td></tr>`).join('')}
               </tbody>
             </table></div>`}
 
-            ${deuda>0 ? `
-            <div style="margin-top:16px;background:var(--surface-soft);border-radius:10px;padding:14px;border:1px solid var(--line-soft)">
+            ${deuda > 0 ? `
+            <div style="margin-top:14px;background:var(--surface-soft);border-radius:10px;padding:12px;border:1px solid var(--line-soft)">
               <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Registrar abono</div>
               <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <input type="number" step="0.01" min="0" placeholder="Monto en Bs" style="flex:1;min-width:120px"
-                  id="abono-${c.id}" value="">
+                <input type="number" step="0.01" min="0" placeholder="Monto en Bs" style="flex:1;min-width:120px" id="abono-${c.id}">
                 <button class="btn btn-success btn-sm" onclick="abonar('${c.id}')">Abonar</button>
                 <button class="btn btn-outline btn-sm" onclick="abonar('${c.id}',${deuda})">Pagar todo</button>
               </div>
-            </div>`:''}
-
-            ${state.abonos.filter(a=>a.clienteId===c.id).length>0 ? `
-            <div style="margin-top:16px">
-              <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Historial de abonos</div>
-              <table><tbody>
-                ${state.abonos.filter(a=>a.clienteId===c.id).slice().reverse().map(a=>`
-                  <tr><td>${fFecha(a.fecha)}</td><td style="color:var(--muted);font-size:12.5px">${esc(a.usuario||'')}</td>
-                  <td class="num bold" style="color:var(--success)">+ ${money(a.monto)}</td></tr>`).join('')}
-              </tbody></table>
             </div>`:''}
           </div>`:''}
         </div>`;
@@ -1246,229 +1621,312 @@ function viewClientes(){
     <div>
       <div class="card">
         <div class="card-head">
-          <div>
-            <div class="card-title">Registrar nuevo cliente</div>
-            <div class="card-subtitle">Para ventas a crédito en la comunidad</div>
-          </div>
+          <div><div class="card-title">Resumen de cartera</div>
+          <div class="card-subtitle">Clientes con saldo pendiente</div></div>
         </div>
-        <div class="field">
-          <label>Nombre completo o razón social</label>
-          <input id="nc-nombre" placeholder="Ej: Pedro Choque">
-        </div>
-        <div class="field">
-          <label>Teléfono de contacto</label>
-          <input id="nc-tel" placeholder="Ej: 71234567">
-        </div>
-        <div class="field">
-          <label>Comunidad o zona</label>
-          <input id="nc-com" placeholder="Ej: Villa Adela">
-        </div>
-        <div class="grid-2">
-          <div class="field">
-            <label>Plazo habitual</label>
-            <select id="nc-plazo">${PLAZOS.map(p=>`<option value="${p}" ${p===15?'selected':''}>${p} días</option>`).join('')}</select>
-          </div>
-          <div class="field">
-            <label>Límite de crédito</label>
-            <input id="nc-limite" type="number" value="500">
-          </div>
-        </div>
-        <button class="btn btn-primary btn-block" onclick="nuevoCliente()">Registrar cliente</button>
-      </div>
-
-      <div class="card">
-        <div class="card-head">
-          <div>
-            <div class="card-title">Resumen de cartera</div>
-            <div class="card-subtitle">Clientes con saldo pendiente</div>
-          </div>
-        </div>
-        <div class="table-wrap" style="margin:0;padding:0">
-          <table>
-            <thead><tr><th>Cliente</th><th class="num">Saldo</th><th class="num">Vencido</th></tr></thead>
-            <tbody>
-            ${state.clientes.filter(c=>deudaCliente(c.id)>0).sort((a,b)=>deudaCliente(b.id)-deudaCliente(a.id)).map(c=>`
-              <tr>
-                <td>${esc(c.nombre)}</td>
-                <td class="num bold">${money(deudaCliente(c.id))}</td>
-                <td class="num" style="color:${deudaVencida(c.id)>0?'var(--danger)':'var(--muted)'};font-weight:${deudaVencida(c.id)>0?'600':'400'}">${deudaVencida(c.id)>0?money(deudaVencida(c.id)):'—'}</td>
-              </tr>`).join('') || '<tr><td colspan="3" class="empty">Sin deudas pendientes</td></tr>'}
-            </tbody>
-          </table>
-        </div>
+        <div class="table-wrap" style="margin:0;padding:0"><table>
+          <thead><tr><th>Cliente</th><th class="num">Saldo</th><th class="num">Vencido</th></tr></thead>
+          <tbody>
+          ${state.clientes.filter(c => deudaCliente(c.id) > 0).sort((a,b) => deudaCliente(b.id) - deudaCliente(a.id)).map(c => `
+            <tr><td>${esc(c.nombre)}</td>
+            <td class="num bold">${money(deudaCliente(c.id))}</td>
+            <td class="num" style="color:${deudaVencida(c.id)>0?'var(--danger)':'var(--muted)'};font-weight:${deudaVencida(c.id)>0?'600':'400'}">${deudaVencida(c.id)>0?money(deudaVencida(c.id)):'—'}</td></tr>
+          `).join('') || '<tr><td colspan="3" class="empty">Sin deudas pendientes</td></tr>'}
+          </tbody>
+        </table></div>
       </div>
     </div>
   </div>`;
 }
 
-function toggleCliente(id){ ui.clienteAbierto = ui.clienteAbierto===id ? null : id; render(); }
+function toggleCliente(id){ ui.clienteAbierto = ui.clienteAbierto === id ? null : id; render(); }
 
-function abonar(clienteId, montoForzado){
+function abonar(cid, montoForzado){
   let monto = montoForzado;
-  if(monto===undefined){
-    const el = $('abono-'+clienteId);
+  if(monto === undefined){
+    const el = $('abono-'+cid);
     monto = el ? el.value : 0;
   }
-  registrarAbono(clienteId, monto);
-}
-
-function nuevoCliente(){
-  const nombre = $('nc-nombre').value.trim();
-  const tel    = $('nc-tel').value.trim();
-  const com    = $('nc-com').value.trim();
-  const plazo  = Number($('nc-plazo').value);
-  const limite = Number($('nc-limite').value)||0;
-  if(!nombre) return toast('Ingresa el nombre del cliente','err');
-  state.clientes.push({
-    id:'C'+(state.clienteSeq++), nombre, tel, comunidad:com||'—',
-    plazo, limite, creado:HOY()
-  });
-  toast('Cliente registrado','ok');
-  render();
+  registrarAbono(cid, monto);
 }
 
 /* ================================================================
    VISTA: COMPRAS
    ================================================================ */
 function viewCompras(){
+  const total = totalCarritoCompra();
+  const q = ui.buscarProdCompra.trim().toLowerCase();
+  const prods = state.productos.filter(p => !q || p.nombre.toLowerCase().includes(q)).sort((a,b) => a.nombre.localeCompare(b.nombre));
   const mes = ui.cierreMes;
-  const comprasMes = state.compras.filter(c=>mesDe(c.fecha)===mes);
-  const totalMes = num2(comprasMes.reduce((a,c)=>a+c.total,0));
+  const comprasMes = state.compras.filter(c => mesDe(c.fecha) === mes);
+  const totalMes = num2(comprasMes.reduce((a,c) => a + c.total, 0));
 
   return `
   <div class="page-head">
-    <div class="page-eyebrow">Entradas de mercadería</div>
-    <h1 class="page-title">Compras y proveedores</h1>
-    <p class="page-desc">Registra lo que compras a cada operador. Al guardar, el inventario y la bolsa de recargas se actualizan automáticamente.</p>
+    <div class="page-eyebrow">Ingresos de mercadería</div>
+    <h1 class="page-title">Compras a proveedores</h1>
+    <p class="page-desc">Registra las compras que haces. Al confirmar, el stock aumenta y el dinero se descuenta de la caja automáticamente.</p>
   </div>
 
-  <div class="grid-3" style="margin-bottom:24px">
-    <div class="kpi">
-      <div class="kpi-label">Compras del mes</div>
-      <div class="kpi-value">${money(totalMes)}</div>
-      <div class="kpi-meta">${comprasMes.length} ${comprasMes.length===1?'registro':'registros'}</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Total histórico</div>
-      <div class="kpi-value">${money(state.compras.reduce((a,c)=>a+c.total,0))}</div>
-      <div class="kpi-meta">${state.compras.length} compras registradas</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Bolsa total actual</div>
-      <div class="kpi-value is-success">${money(OPERADORES.reduce((a,o)=>a+state.bolsa[o],0))}</div>
-      <div class="kpi-meta">Saldo digital disponible</div>
+  <div class="alert alert-info">
+    <div>
+      <div class="alert-title">¿Cómo funciona?</div>
+      Selecciona los productos y cantidades, define el costo y confirma. Si el proveedor finalmente no despacha, puedes <b>eliminar la compra</b> desde el historial: el stock y el dinero se revierten.
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-head">
-      <div>
-        <div class="card-title">Registrar compra</div>
-        <div class="card-subtitle">Elige qué compraste y a qué costo. El sistema actualiza el stock automáticamente.</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-head">
+        <div><div class="card-title">Productos disponibles</div>
+        <div class="card-subtitle">Click para agregar a la compra</div></div>
+      </div>
+      <div class="field">
+        <input placeholder="Buscar producto..." value="${esc(ui.buscarProdCompra)}" oninput="ui.buscarProdCompra=this.value; render(); this.focus()">
+      </div>
+      <div class="prod-list">
+        ${prods.length === 0 ? '<div class="empty">No hay productos. Créalos primero en Configuración → Productos.</div>' : prods.map(p => `
+          <div class="prod-item" onclick="agregarAlCarritoCompra('${p.id}',1,${p.costo})">
+            <div>
+              <div class="prod-name">${esc(p.nombre)}</div>
+              <div class="prod-meta">Costo actual: ${money(p.costo)} · Stock: ${p.stock} ${unidadAbrev(p.unidad)}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="prod-price">${money(p.costo)}</div>
+            </div>
+          </div>`).join('')}
       </div>
     </div>
-    <div class="grid-4">
-      <div class="field">
-        <label>Operador / Proveedor</label>
-        <select id="cp-op" onchange="sugerirCosto()">
-          ${OPERADORES.map(o=>`<option>${o}</option>`).join('')}
-        </select>
+
+    <div class="card">
+      <div class="card-head">
+        <div><div class="card-title">Carrito de compra</div>
+        <div class="card-subtitle">${ui.compraCarrito.length === 0 ? 'Sin productos' : ui.compraCarrito.length + ' producto(s)'}</div></div>
+        ${ui.compraCarrito.length > 0 ? `<button class="btn-ghost" onclick="ui.compraCarrito=[]; render()">Vaciar</button>` : ''}
       </div>
-      <div class="field">
-        <label>Tipo de producto</label>
-        <select id="cp-tipo" onchange="sugerirCosto()">
-          <option value="Tarjeta">Tarjeta física</option>
-          <option value="SIM">Chip / SIM</option>
-          <option value="RECARGA">Carga de bolsa</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Denominación</label>
-        <select id="cp-den" onchange="sugerirCosto()">
-          ${DENOMS.map(d=>`<option value="${d}">Bs ${d}</option>`).join('')}
-        </select>
-      </div>
-      <div class="field">
-        <label>Cantidad</label>
-        <input id="cp-cant" type="number" min="1" value="50" onchange="sugerirCosto()">
-      </div>
+
+      ${ui.compraCarrito.length === 0 ? `
+        <div class="empty" style="padding:30px 16px">Agrega productos desde la lista para comenzar a registrar la compra.</div>
+      `:`
+        <div>
+          ${ui.compraCarrito.map((i, ix) => `
+            <div class="cart-line">
+              <div class="cart-info">
+                <div class="cart-name">${esc(i.nombre)}</div>
+                <div class="cart-meta">${unidadAbrev(i.unidad)}</div>
+              </div>
+              <input type="number" step="0.01" class="cart-qty" value="${i.cantidad}" onchange="actualizarLineaCompra(${ix},'cantidad',this.value)" title="Cantidad">
+              <input type="number" step="0.01" class="cart-price" value="${i.costoUnit}" onchange="actualizarLineaCompra(${ix},'costoUnit',this.value)" title="Costo unitario">
+              <div class="cart-sub">${money(i.subtotal)}</div>
+              <button class="btn-ghost" style="padding:2px 8px" onclick="quitarDelCarritoCompra(${ix})">×</button>
+            </div>
+          `).join('')}
+        </div>
+
+        <div class="cart-total">
+          <span class="cart-total-label">Total de la compra</span>
+          <span class="cart-total-value">${money(total)}</span>
+        </div>
+
+        <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--line)">
+          <div class="field">
+            <label>Proveedor</label>
+            <select onchange="ui.compraProveedorId=this.value; render()">
+              <option value="">Sin proveedor específico</option>
+              ${state.proveedores.map(p => `<option value="${p.id}" ${ui.compraProveedorId===p.id?'selected':''}>${esc(p.nombre)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field">
+            <label>Nota o N° de factura</label>
+            <input placeholder="Ej: Factura 0021" value="${esc(ui.compraNota)}" oninput="ui.compraNota=this.value">
+          </div>
+
+          <div class="alert ${saldoCaja() >= total ? 'alert-success' : 'alert-warning'}" style="margin-bottom:12px">
+            <div>
+              Saldo en caja: <b>${money(saldoCaja())}</b> · Después de esta compra: <b>${money(num2(saldoCaja() - total))}</b>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-block" onclick="confirmarCompra()">Registrar compra · ${money(total)}</button>
+        </div>
+      `}
     </div>
-    <div class="grid-2">
-      <div class="field">
-        <label>Costo unitario (Bs)</label>
-        <input id="cp-costo" type="number" step="0.01" value="9.30">
-        <div class="hint" id="cp-hint">Se calcula automáticamente según la comisión del operador.</div>
-      </div>
-      <div class="field">
-        <label>Nota o N° de factura</label>
-        <input id="cp-nota" placeholder="Ej: Factura 0021 · Distribuidora">
-      </div>
-    </div>
-    <button class="btn btn-primary btn-block" onclick="nuevaCompra()">Registrar entrada al inventario</button>
   </div>
 
   <div class="card">
     <div class="card-head">
       <div>
         <div class="card-title">Historial de compras</div>
-        <div class="card-subtitle">Todas las entradas registradas</div>
+        <div class="card-subtitle">${state.compras.length} compra(s) registrada(s) · Mes actual: ${money(totalMes)}</div>
+      </div>
+      <div class="btn-row">
+        <input type="month" value="${mes}" onchange="ui.cierreMes=this.value; render()" style="width:auto;padding:6px 10px;font-size:12.5px">
       </div>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Ref.</th><th>Fecha</th><th>Proveedor</th><th>Producto</th><th class="num">Cant.</th><th class="num">Costo unit.</th><th class="num">Total</th><th>Nota</th></tr></thead>
-        <tbody>
-        ${state.compras.slice().reverse().map(c=>{
-          const desc = c.tipo==='RECARGA' ? 'Carga de bolsa electrónica'
-                    : c.tipo==='SIM' ? 'Chip / SIM'
-                    : `Tarjeta Bs ${c.den}`;
-          return `<tr>
-            <td><span class="badge badge-neutral">${c.id}</span></td>
-            <td>${fFecha(c.fecha)}</td>
-            <td>${badgeOp(c.operador)}</td>
-            <td>${desc}</td>
-            <td class="num">${c.cant}</td>
-            <td class="num">${money(c.costoUnit)}</td>
-            <td class="num bold">${money(c.total)}</td>
-            <td style="color:var(--muted);font-size:12.5px">${esc(c.nota||'—')}</td>
-          </tr>`;
-        }).join('') || '<tr><td colspan="8" class="empty">Sin compras registradas</td></tr>'}
-        </tbody>
-      </table>
-    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Ref.</th><th>Fecha</th><th>Proveedor</th><th>Detalle</th><th class="num">Total</th><th>Nota</th><th></th>
+      </tr></thead>
+      <tbody>
+      ${state.compras.slice().reverse().map(c => `
+        <tr>
+          <td><span class="badge badge-neutral">${c.id}</span></td>
+          <td>${fFecha(c.fecha)}<br><span style="font-size:11.5px;color:var(--muted)">${c.hora||''}</span></td>
+          <td>${esc(c.proveedorNombre)}</td>
+          <td style="max-width:280px">${c.items.map(i => `<div style="font-size:12px;padding:1px 0">${esc(i.nombre)} × ${i.cantidad} ${unidadAbrev(i.unidad)} <span style="color:var(--muted)">@ ${money(i.costoUnit)}</span></div>`).join('')}</td>
+          <td class="num bold">${money(c.total)}</td>
+          <td style="font-size:12px;color:var(--muted)">${esc(c.nota||'—')}</td>
+          <td class="num"><button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="eliminarCompra('${c.id}')">Eliminar</button></td>
+        </tr>`).join('') || '<tr><td colspan="7" class="empty">Sin compras registradas</td></tr>'}
+      </tbody>
+    </table></div>
   </div>`;
 }
 
-function sugerirCosto(){
-  const elOp = $('cp-op'); if(!elOp) return;
-  const op   = elOp.value;
-  const tipo = $('cp-tipo').value;
-  const den  = Number($('cp-den').value);
-  let costo = 0, hint = '';
+/* ================================================================
+   VISTA: PRODUCTOS (ADMIN)
+   ================================================================ */
+function viewProductos(){
+  return `
+  <div class="page-head">
+    <div class="page-eyebrow">Configuración</div>
+    <h1 class="page-title">Productos</h1>
+    <p class="page-desc">Administra tu catálogo. Puedes crear productos de telefonía, dulces, útiles escolares o cualquier otra categoría.</p>
+  </div>
 
-  if(tipo==='RECARGA'){
-    costo = num2(den*(1-COMISIONES[op]));
-    hint = `Compras Bs ${den} de saldo ${op} a ${money(costo)}. Tu comisión por cada venta: ${money(den-costo)}.`;
-  }else if(tipo==='SIM'){
-    costo = SIM_COSTO[op];
-    hint = `Chip ${op}: costo ${money(costo)} · venta ${money(SIM_VENTA[op])} · margen ${money(SIM_VENTA[op]-costo)}.`;
-  }else{
-    costo = num2(den*(1-COMISIONES[op]));
-    hint = `Tarjeta ${op} Bs ${den}: costo ${money(costo)} · valor nominal ${money(den)} · comisión ${money(den-costo)}.`;
-  }
-  $('cp-costo').value = costo;
-  $('cp-hint').textContent = hint;
+  <div class="card">
+    <div class="card-head">
+      <div><div class="card-title">Catálogo · ${state.productos.length} producto(s)</div>
+      <div class="card-subtitle">Los precios y stocks se actualizan con cada compra y venta</div></div>
+      <button class="btn btn-primary" onclick="abrirModal('nuevoProducto')">Nuevo producto</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Nombre</th><th>Categoría</th><th>Proveedor</th><th>Unidad</th>
+        <th class="num">Costo</th><th class="num">Precio</th>
+        <th class="num">Stock</th><th></th>
+      </tr></thead>
+      <tbody>
+      ${state.productos.sort((a,b) => a.nombre.localeCompare(b.nombre)).map(p => {
+        const cat = catById(p.categoriaId);
+        const prov = provById(p.proveedorId);
+        return `<tr>
+          <td class="bold">${esc(p.nombre)}</td>
+          <td>${cat ? esc(cat.nombre) : '<span style="color:var(--danger)">Sin categoría</span>'}</td>
+          <td>${prov ? esc(prov.nombre) : '—'}</td>
+          <td>${p.unidad}</td>
+          <td class="num">${money(p.costo)}</td>
+          <td class="num bold" style="color:var(--primary)">${money(p.precio)}</td>
+          <td class="num">${p.stock} ${unidadAbrev(p.unidad)}</td>
+          <td class="num">
+            <button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('editarProducto','${p.id}')">Editar</button>
+            <button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="eliminarProducto('${p.id}')">Eliminar</button>
+          </td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="8" class="empty">Aún no tienes productos. Comienza creando el primero.</td></tr>'}
+      </tbody>
+    </table></div>
+  </div>`;
 }
 
-function nuevaCompra(){
-  const op   = $('cp-op').value;
-  const tipo = $('cp-tipo').value;
-  const den  = Number($('cp-den').value);
-  const cant = Math.max(1, Number($('cp-cant').value)||1);
-  const costoUnit = Number($('cp-costo').value)||0;
-  const nota = $('cp-nota').value.trim();
-  if(costoUnit<=0) return toast('Ingresa un costo válido','err');
-  registrarCompra({operador:op, tipo, den, cant, costoUnit, nota});
+function eliminarProducto(id){
+  const p = prodById(id);
+  if(!p) return;
+  const enVentas = state.ventas.some(v => v.items.some(i => i.productoId === id));
+  const enCompras = state.compras.some(c => c.items.some(i => i.productoId === id));
+  let msg = `¿Eliminar "${p.nombre}"?`;
+  if(enVentas || enCompras) msg += '\n\nEste producto aparece en ventas o compras anteriores. El historial se conservará, solo se eliminará del catálogo.';
+  if(!confirm(msg)) return;
+  state.productos = state.productos.filter(x => x.id !== id);
+  toast('Producto eliminado','ok');
+  render();
+}
+
+/* ================================================================
+   VISTA: CATEGORÍAS (ADMIN)
+   ================================================================ */
+function viewCategorias(){
+  return `
+  <div class="page-head">
+    <div class="page-eyebrow">Configuración</div>
+    <h1 class="page-title">Categorías</h1>
+    <p class="page-desc">Agrupa tus productos por tipo: Telefonía, Dulces, Útiles escolares, Bebidas, etc.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div><div class="card-title">Tus categorías · ${state.categorias.length}</div>
+      <div class="card-subtitle">Cada producto pertenece a una categoría</div></div>
+      <button class="btn btn-primary" onclick="abrirModal('nuevaCategoria')">Nueva categoría</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Nombre</th><th class="num">Productos</th><th></th></tr></thead>
+      <tbody>
+      ${state.categorias.map(c => {
+        const count = state.productos.filter(p => p.categoriaId === c.id).length;
+        return `<tr>
+          <td class="bold">${esc(c.nombre)}</td>
+          <td class="num">${count}</td>
+          <td class="num"><button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="eliminarCategoria('${c.id}')">Eliminar</button></td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="3" class="empty">Aún no hay categorías.</td></tr>'}
+      </tbody>
+    </table></div>
+  </div>`;
+}
+
+function eliminarCategoria(id){
+  const enUso = state.productos.some(p => p.categoriaId === id);
+  if(enUso) return toast('No se puede eliminar: hay productos en esta categoría','err');
+  if(!confirm('¿Eliminar esta categoría?')) return;
+  state.categorias = state.categorias.filter(c => c.id !== id);
+  toast('Categoría eliminada','ok');
+  render();
+}
+
+/* ================================================================
+   VISTA: PROVEEDORES (ADMIN)
+   ================================================================ */
+function viewProveedores(){
+  return `
+  <div class="page-head">
+    <div class="page-eyebrow">Configuración</div>
+    <h1 class="page-title">Proveedores</h1>
+    <p class="page-desc">Operadores telefónicos (Entel, Tigo, Viva) o distribuidoras de productos. Puedes agregar los que necesites.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div><div class="card-title">Tus proveedores · ${state.proveedores.length}</div>
+      <div class="card-subtitle">Se usan al registrar compras y en el catálogo</div></div>
+      <button class="btn btn-primary" onclick="abrirModal('nuevoProveedor')">Nuevo proveedor</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Nombre</th><th>Notas</th><th class="num">Productos</th><th class="num">Compras</th><th></th></tr></thead>
+      <tbody>
+      ${state.proveedores.map(p => {
+        const countProd = state.productos.filter(x => x.proveedorId === p.id).length;
+        const countComp = state.compras.filter(c => c.proveedorId === p.id).length;
+        return `<tr>
+          <td class="bold">${esc(p.nombre)}</td>
+          <td style="color:var(--muted);font-size:12.5px">${esc(p.nota||'—')}</td>
+          <td class="num">${countProd}</td>
+          <td class="num">${countComp}</td>
+          <td class="num"><button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="eliminarProveedor('${p.id}')">Eliminar</button></td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="5" class="empty">Aún no hay proveedores.</td></tr>'}
+      </tbody>
+    </table></div>
+  </div>`;
+}
+
+function eliminarProveedor(id){
+  const enUso = state.productos.some(p => p.proveedorId === id) || state.compras.some(c => c.proveedorId === id);
+  if(enUso) return toast('No se puede eliminar: está asociado a productos o compras','err');
+  if(!confirm('¿Eliminar este proveedor?')) return;
+  state.proveedores = state.proveedores.filter(p => p.id !== id);
+  toast('Proveedor eliminado','ok');
+  render();
 }
 
 /* ================================================================
@@ -1476,37 +1934,39 @@ function nuevaCompra(){
    ================================================================ */
 function viewCierre(){
   const mes = ui.cierreMes;
-  const ventasMes  = state.ventas.filter(v=>mesDe(v.fecha)===mes);
-  const comprasMes = state.compras.filter(c=>mesDe(c.fecha)===mes);
-  const abonosMes  = state.abonos.filter(a=>mesDe(a.fecha)===mes);
+  const ventasMes = state.ventas.filter(v => mesDe(v.fecha) === mes);
+  const comprasMes = state.compras.filter(c => mesDe(c.fecha) === mes);
+  const abonosMes = state.abonos.filter(a => mesDe(a.fecha) === mes);
+  const movMes = state.caja.movimientos.filter(m => mesDe(m.fecha) === mes);
 
-  const totVentas   = num2(ventasMes.reduce((a,v)=>a+v.total,0));
-  const totComision = num2(ventasMes.reduce((a,v)=>a+v.comision,0));
-  const totCompras  = num2(comprasMes.reduce((a,c)=>a+c.total,0));
-  const totContado  = num2(ventasMes.filter(v=>v.tipoPago==='contado').reduce((a,v)=>a+v.total,0));
-  const totCredito  = num2(ventasMes.filter(v=>v.tipoPago==='credito').reduce((a,v)=>a+v.total,0));
-  const totAbonos   = num2(abonosMes.reduce((a,x)=>a+x.monto,0));
+  const totVentas = num2(ventasMes.reduce((a,v) => a + v.total, 0));
+  const totCompras = num2(comprasMes.reduce((a,c) => a + c.total, 0));
+  const totContado = num2(ventasMes.filter(v => v.tipoPago === 'contado').reduce((a,v) => a + v.total, 0));
+  const totCredito = num2(ventasMes.filter(v => v.tipoPago === 'credito').reduce((a,v) => a + v.total, 0));
+  const totAbonos = num2(abonosMes.reduce((a,x) => a + x.monto, 0));
+  const ingresosMes = num2(movMes.filter(m => m.monto > 0).reduce((a,m) => a + m.monto, 0));
+  const egresosMes = num2(movMes.filter(m => m.monto < 0).reduce((a,m) => a + m.monto, 0));
 
   return `
   <div class="page-head">
-    <div class="page-eyebrow">Arqueo y cierre</div>
+    <div class="page-eyebrow">Arqueo</div>
     <h1 class="page-title">Cierre mensual</h1>
-    <p class="page-desc">Revisa el resumen del mes y ejecuta el cierre. El saldo final de cada producto se convierte automáticamente en el saldo inicial del próximo período.</p>
+    <p class="page-desc">Revisa el resumen del mes y ejecuta el cierre. Los saldos finales pasan a ser los iniciales del próximo período.</p>
   </div>
 
   <div class="card">
     <div class="card-head">
       <div>
-        <div class="card-title">Período a cerrar</div>
-        <div class="card-subtitle">Elige el mes que quieres arquear</div>
+        <div class="card-title">Período</div>
+        <div class="card-subtitle">Elige el mes y ejecuta el cierre cuando estés listo</div>
       </div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <div class="btn-row">
         <input type="month" value="${mes}" onchange="ui.cierreMes=this.value; render()" style="width:auto">
-        <button class="btn btn-primary" onclick="cerrarMes()">Ejecutar cierre del mes</button>
+        <button class="btn btn-primary" onclick="ejecutarCierre()">Ejecutar cierre</button>
       </div>
     </div>
     <div class="alert alert-info" style="margin-bottom:0">
-      <div>Al ejecutar el cierre, el <b>saldo final</b> de cada producto y de la bolsa de recargas pasa a ser el <b>saldo inicial</b> del siguiente período. Se guarda un registro histórico del cierre.</div>
+      <div>Al ejecutar el cierre, el stock actual y el saldo de caja se guardan como punto de partida del próximo período. Se conserva un registro histórico.</div>
     </div>
   </div>
 
@@ -1514,184 +1974,178 @@ function viewCierre(){
     <div class="kpi">
       <div class="kpi-label">Ventas del mes</div>
       <div class="kpi-value">${money(totVentas)}</div>
-      <div class="kpi-meta">${ventasMes.length} ${ventasMes.length===1?'transacción':'transacciones'}</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Utilidad / Comisión</div>
-      <div class="kpi-value is-success">${money(totComision)}</div>
-      <div class="kpi-meta">Ganancia bruta estimada</div>
+      <div class="kpi-meta">${ventasMes.length} transacción(es)</div>
     </div>
     <div class="kpi">
       <div class="kpi-label">Compras del mes</div>
       <div class="kpi-value is-warning">${money(totCompras)}</div>
-      <div class="kpi-meta">${comprasMes.length} ${comprasMes.length===1?'entrada':'entradas'}</div>
+      <div class="kpi-meta">${comprasMes.length} entrada(s)</div>
     </div>
     <div class="kpi">
-      <div class="kpi-label">Cobrado en el mes</div>
-      <div class="kpi-value">${money(totAbonos)}</div>
-      <div class="kpi-meta">Abonos de cartera</div>
+      <div class="kpi-label">Cobrado en abonos</div>
+      <div class="kpi-value is-success">${money(totAbonos)}</div>
+      <div class="kpi-meta">${abonosMes.length} abono(s)</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Saldo final en caja</div>
+      <div class="kpi-value">${money(saldoCaja())}</div>
+      <div class="kpi-meta">Al día de hoy</div>
     </div>
   </div>
 
   <div class="grid-2">
     <div class="card">
       <div class="card-head">
-        <div>
-          <div class="card-title">Resumen de caja del mes</div>
-          <div class="card-subtitle">Cómo se movió el efectivo en el período</div>
-        </div>
+        <div><div class="card-title">Resumen de caja del mes</div>
+        <div class="card-subtitle">Movimiento de efectivo</div></div>
       </div>
       <div class="summary-row"><span class="label">Ventas al contado</span><span class="value">${money(totContado)}</span></div>
-      <div class="summary-row"><span class="label">Cobros de cartera (abonos)</span><span class="value">${money(totAbonos)}</span></div>
-      <div class="summary-row" style="background:var(--success-soft);margin:0 -14px;padding:12px 14px;border-radius:8px;border:none"><span class="label" style="font-weight:600;color:var(--success)">Efectivo ingresado</span><span class="value" style="font-weight:700;color:var(--success);font-size:15px">${money(num2(totContado+totAbonos))}</span></div>
-      <div class="summary-row" style="margin-top:8px"><span class="label">Ventas a crédito (no ingresó efectivo)</span><span class="value" style="color:var(--warning);font-weight:600">${money(totCredito)}</span></div>
-      <div class="summary-row"><span class="label">Compras pagadas</span><span class="value" style="color:var(--danger);font-weight:600">− ${money(totCompras)}</span></div>
-      <div class="summary-row highlight"><span class="label">Flujo neto de caja</span><span class="value">${money(num2(totContado+totAbonos-totCompras))}</span></div>
-      <div class="hint" style="margin-top:12px">La utilidad real del negocio se refleja en las comisiones: <b style="color:var(--success)">${money(totComision)}</b>.</div>
+      <div class="summary-row"><span class="label">Abonos cobrados</span><span class="value">${money(totAbonos)}</span></div>
+      <div class="summary-row" style="background:var(--success-soft);margin:0 -14px;padding:12px 14px;border-radius:8px;border:none">
+        <span class="label" style="font-weight:600;color:var(--success)">Ingresos totales</span>
+        <span class="value" style="font-weight:700;color:var(--success);font-size:15px">${money(ingresosMes)}</span>
+      </div>
+      <div class="summary-row"><span class="label">Compras</span><span class="value" style="color:var(--danger);font-weight:600">− ${money(totCompras)}</span></div>
+      <div class="summary-row"><span class="label">Retiros y otros egresos</span><span class="value" style="color:var(--danger);font-weight:600">${money(num2(egresosMes + totCompras))}</span></div>
+      <div class="summary-row highlight"><span class="label">Flujo neto del mes</span><span class="value">${money(num2(ingresosMes + egresosMes))}</span></div>
+      <div class="summary-row"><span class="label">Ventas a crédito (no ingresó efectivo)</span><span class="value" style="color:var(--warning)">${money(totCredito)}</span></div>
     </div>
 
     <div class="card">
       <div class="card-head">
-        <div>
-          <div class="card-title">Bolsa de recargas — arqueo</div>
-          <div class="card-subtitle">Movimiento del saldo digital en el mes</div>
-        </div>
+        <div><div class="card-title">Inventario al cierre</div>
+        <div class="card-subtitle">Stock y valor actual</div></div>
       </div>
-      <div class="table-wrap" style="margin:0;padding:0">
-        <table>
-          <thead><tr><th>Operador</th><th class="num">Inicial</th><th class="num">Cargas</th><th class="num">Vendido</th><th class="num">Saldo final</th></tr></thead>
-          <tbody>
-          ${OPERADORES.map(op=>{
-            const cargas = num2(comprasMes.filter(c=>c.operador===op && c.tipo==='RECARGA').reduce((a,c)=>a+c.total,0));
-            const vendido = num2(ventasMes.flatMap(v=>v.items).filter(i=>i.operador===op && i.tipo==='RECARGA').reduce((a,i)=>a+i.subtotal,0));
-            return `<tr>
-              <td>${badgeOp(op)}</td>
-              <td class="num">${money(state.bolsaBase[op])}</td>
-              <td class="num" style="color:var(--success)">+${money(cargas)}</td>
-              <td class="num" style="color:var(--danger)">−${money(vendido)}</td>
-              <td class="num bold">${money(state.bolsa[op])}</td>
-            </tr>`;
-          }).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-head">
-      <div>
-        <div class="card-title">Arqueo de inventario físico</div>
-        <div class="card-subtitle">Inicial + compras − ventas = stock final</div>
-      </div>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Operador</th><th>Producto</th><th class="num">Inicial</th><th class="num">Compras</th><th class="num">Vendido</th><th class="num">Stock final</th>${esAdmin()?'<th class="num">Valor</th>':''}</tr></thead>
-        <tbody>
-        ${OPERADORES.map(op=>{
-          const filas = [];
-          DENOMS.forEach(d=>{
-            filas.push({key:`${op}-T${d}`, nombre:`Tarjeta Bs ${d}`, den:d, tipo:'Tarjeta'});
-          });
-          filas.push({key:`${op}-SIM`, nombre:'Chip / SIM', den:0, tipo:'SIM'});
-          return filas.map(f=>{
-            const v = state.inventario[f.key];
-            const comp = comprasMes.filter(c=>c.operador===op && c.tipo===f.tipo && Number(c.den)===f.den).reduce((a,c)=>a+Number(c.cant),0);
-            const vend = ventasMes.flatMap(x=>x.items).filter(i=>i.operador===op && i.tipo===f.tipo && Number(i.den)===f.den).reduce((a,i)=>a+i.cant,0);
-            const costo = catItem(op,f.tipo,f.den).costo;
-            return `<tr>
-              <td>${badgeOp(op)}</td>
-              <td class="bold">${f.nombre}</td>
-              <td class="num" style="color:var(--muted)">${v.inicial}</td>
-              <td class="num" style="color:var(--success)">${comp>0?'+'+comp:'—'}</td>
-              <td class="num" style="color:var(--danger)">${vend>0?'−'+vend:'—'}</td>
-              <td class="num bold" style="font-size:14px">${v.stock}</td>
-              ${esAdmin()?`<td class="num">${money(v.stock*costo)}</td>`:''}
-            </tr>`;
-          }).join('');
-        }).join('')}
-        </tbody>
-      </table>
+      <div class="summary-row"><span class="label">Productos distintos</span><span class="value">${state.productos.length}</span></div>
+      <div class="summary-row"><span class="label">Unidades totales</span><span class="value">${state.productos.reduce((a,p) => a + p.stock, 0).toFixed(2)}</span></div>
+      <div class="summary-row"><span class="label">Valor del inventario (costo)</span><span class="value">${money(num2(state.productos.reduce((a,p) => a + p.stock * p.costo, 0)))}</span></div>
+      <div class="summary-row"><span class="label">Cartera por cobrar</span><span class="value">${money(num2(state.clientes.reduce((a,c) => a + deudaCliente(c.id), 0)))}</span></div>
+      <div class="summary-row highlight"><span class="label">Efectivo en caja</span><span class="value">${money(saldoCaja())}</span></div>
     </div>
   </div>
 
   ${state.cierres.length ? `
   <div class="card">
     <div class="card-head">
-      <div>
-        <div class="card-title">Historial de cierres ejecutados</div>
-        <div class="card-subtitle">Registro de cierres anteriores</div>
-      </div>
+      <div><div class="card-title">Cierres anteriores</div>
+      <div class="card-subtitle">Registro histórico</div></div>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Período</th><th>Fecha de cierre</th><th class="num">Ventas</th><th class="num">Comisiones</th><th class="num">Stock final</th><th class="num">Bolsa final</th><th>Usuario</th></tr></thead>
-        <tbody>
-        ${state.cierres.slice().reverse().map(c=>`
-          <tr>
-            <td class="bold">${c.mes}</td>
-            <td>${fFecha(c.fecha)}</td>
-            <td class="num">${money(c.ventas)}</td>
-            <td class="num" style="color:var(--success);font-weight:600">${money(c.comisiones)}</td>
-            <td class="num">${c.stockFinal}</td>
-            <td class="num">${money(c.bolsaFinal)}</td>
-            <td><span class="badge badge-neutral">${esc(c.usuario)}</span></td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Período</th><th>Fecha</th><th class="num">Ventas</th><th class="num">Caja final</th><th class="num">Stock unid.</th><th>Usuario</th></tr></thead>
+      <tbody>
+      ${state.cierres.slice().reverse().map(c => `
+        <tr><td class="bold">${c.mes}</td><td>${fFecha(c.fecha)}</td>
+        <td class="num">${money(c.ventas)}</td>
+        <td class="num">${money(c.cajaFinal)}</td>
+        <td class="num">${c.stockTotal}</td>
+        <td><span class="badge badge-neutral">${esc(c.usuario)}</span></td></tr>`).join('')}
+      </tbody>
+    </table></div>
   </div>`:''}
   `;
 }
 
-function cerrarMes(){
+function ejecutarCierre(){
   const mes = ui.cierreMes;
-  const ventasMes = state.ventas.filter(v=>mesDe(v.fecha)===mes);
-  const stockFinal = Object.values(state.inventario).reduce((a,v)=>a+v.stock,0);
-  const bolsaFinal = num2(OPERADORES.reduce((a,o)=>a+state.bolsa[o],0));
-
-  if(!confirm(`¿Confirmar cierre del período ${mes}?\n\nLos saldos finales pasarán a ser los iniciales del próximo período.`)) return;
-
+  if(!confirm(`¿Confirmar cierre del período ${mes}?\n\nSe guardará un registro y los saldos actuales serán el punto de partida del próximo período.`)) return;
+  const ventasMes = state.ventas.filter(v => mesDe(v.fecha) === mes);
   state.cierres.push({
-    mes, fecha: HOY(),
-    ventas: num2(ventasMes.reduce((a,v)=>a+v.total,0)),
-    comisiones: num2(ventasMes.reduce((a,v)=>a+v.comision,0)),
-    stockFinal, bolsaFinal,
+    mes,
+    fecha: HOY(),
+    ventas: num2(ventasMes.reduce((a,v) => a + v.total, 0)),
+    cajaFinal: saldoCaja(),
+    stockTotal: state.productos.reduce((a,p) => a + p.stock, 0),
     usuario: rolNombre()
   });
-
-  Object.values(state.inventario).forEach(v=>{ v.inicial = v.stock; });
-  OPERADORES.forEach(op=>{ state.bolsaBase[op] = state.bolsa[op]; });
-
-  toast(`Cierre ${mes} ejecutado correctamente`,'ok');
+  toast(`Cierre ${mes} guardado`,'ok');
   render();
 }
 
 /* ================================================================
-   INICIALIZACIÓN (con protección de errores visible)
+   CONFIGURACIÓN BASE (OPCIONAL)
    ================================================================ */
+function cargarBase(){
+  if(!confirm('Se cargará una configuración base con categorías, proveedores y productos típicos.\n\n¿Continuar?')) return;
+  const h = HOY();
+  // Categorías
+  const cats = ['Telefonía','Dulces','Útiles escolares','Bebidas','Otros'].map(n => {
+    const c = { id:'CA'+(state.seq.categoria++), nombre:n };
+    state.categorias.push(c);
+    return c;
+  });
+  const catPorNombre = n => cats.find(c => c.nombre === n).id;
+
+  // Proveedores
+  const provs = ['Entel','Tigo','Viva'].map(n => {
+    const p = { id:'PV'+(state.seq.proveedor++), nombre:n, nota:'' };
+    state.proveedores.push(p);
+    return p;
+  });
+  const provPorNombre = n => provs.find(p => p.nombre === n).id;
+
+  // Productos de telefonía
+  const productosBase = [];
+  ['Entel','Tigo','Viva'].forEach(op => {
+    // Chips
+    productosBase.push({ nombre: `Chip ${op}`, cat:'Telefonía', prov:op, unidad:'unidad', costo:5, precio:15 });
+    // Tarjetas por denominación
+    [10,15,30,50,100].forEach(d => {
+      productosBase.push({ nombre:`Tarjeta ${op} Bs ${d}`, cat:'Telefonía', prov:op, unidad:'unidad', costo: num2(d * (op==='Entel'?0.93:op==='Tigo'?0.92:0.90)), precio:d });
+    });
+  });
+  // Productos generales de ejemplo
+  productosBase.push({ nombre:'Chicle', cat:'Dulces', unidad:'unidad', costo:0.50, precio:1 });
+  productosBase.push({ nombre:'Caramelo', cat:'Dulces', unidad:'unidad', costo:0.30, precio:0.50 });
+  productosBase.push({ nombre:'Cuaderno', cat:'Útiles escolares', unidad:'unidad', costo:5, precio:8 });
+  productosBase.push({ nombre:'Lápiz', cat:'Útiles escolares', unidad:'unidad', costo:0.80, precio:2 });
+  productosBase.push({ nombre:'Coca Cola 500ml', cat:'Bebidas', unidad:'unidad', costo:4, precio:6 });
+
+  productosBase.forEach(pb => {
+    state.productos.push({
+      id:'PR'+(state.seq.producto++),
+      nombre: pb.nombre,
+      categoriaId: catPorNombre(pb.cat),
+      proveedorId: pb.prov ? provPorNombre(pb.prov) : null,
+      unidad: pb.unidad,
+      costo: num2(pb.costo),
+      precio: num2(pb.precio),
+      stock: 0, stockInicial: 0
+    });
+  });
+
+  save(); render();
+  toast('Configuración base cargada','ok');
+}
+
+/* ================================================================
+   INICIALIZACIÓN
+   ================================================================ */
+function reiniciarTodo(){
+  if(!confirm('Se borrarán TODOS los datos: productos, ventas, compras, clientes, movimientos de caja y cierres.\n\n¿Confirmas?')) return;
+  if(!confirm('Esta acción no se puede deshacer. ¿Reiniciar todo?')) return;
+  localStorage.removeItem(LS_KEY);
+  state = initState();
+  save(); render();
+  toast('Sistema reiniciado','ok');
+}
+
 (function init(){
   try{
-    if(!load()){ state = seed(); save(); }
+    if(!load()){ state = initState(); save(); }
+    // Compatibilidad
     if(!state.cierres) state.cierres = [];
-    if(!state.bolsaBase) state.bolsaBase = {...state.bolsa};
+    if(!state.caja) state.caja = { saldoInicial:0, movimientos:[] };
+    if(!state.seq.mov) state.seq.mov = 1;
     cambiarRol('admin', true);
   }catch(e){
     console.error(e);
-    const app = document.getElementById('app');
-    if(app){
-      app.innerHTML = `
-        <div class="card" style="max-width:640px;margin:40px auto">
-          <div class="card-title" style="color:var(--danger);font-size:16px">No se pudo iniciar la aplicación</div>
-          <p style="margin-top:10px;color:var(--muted);line-height:1.55">
-            Ocurrió un error al cargar. Puedes intentar restablecer los datos locales:
-          </p>
-          <p style="margin-top:10px;font-family:monospace;font-size:12px;background:var(--surface-soft);padding:10px;border-radius:6px;color:var(--ink-2);word-break:break-all">${esc(e.message||e)}</p>
-          <button class="btn btn-primary" style="margin-top:16px" onclick="localStorage.clear(); location.reload();">Restablecer y recargar</button>
-        </div>
-      `;
-    }
+    document.getElementById('app').innerHTML = `
+      <div class="card" style="max-width:640px;margin:40px auto">
+        <div class="card-title" style="color:var(--danger);font-size:16px">Error al iniciar</div>
+        <p style="margin-top:10px;color:var(--muted);line-height:1.55">${esc(e.message||String(e))}</p>
+        <button class="btn btn-primary" style="margin-top:16px" onclick="localStorage.clear(); location.reload();">Restablecer y recargar</button>
+      </div>
+    `;
   }
 })();
 </script>
