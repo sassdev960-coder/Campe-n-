@@ -437,6 +437,20 @@
   .cant-row .btn-add:active{transform:scale(.97)}
   .cant-row .btn-add svg{width:15px;height:15px;stroke-width:2.4}
 
+  /* 🆕 Botón grande de escanear dentro del carrito */
+  .scan-cta{display:flex;gap:8px;margin-top:10px}
+  .scan-cta button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:13px 12px;border-radius:11px;font-size:13.5px;font-weight:650;
+    transition:.15s;border:2px dashed}
+  .scan-cta .scan-primary{background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;
+    border:2px solid #0f172a;box-shadow:0 2px 8px rgba(15,23,42,.25)}
+  .scan-cta .scan-primary:hover{background:linear-gradient(135deg,#1e293b,#334155)}
+  .scan-cta .scan-primary:active{transform:scale(.98)}
+  .scan-cta .scan-primary svg{width:18px;height:18px;stroke-width:2}
+  .scan-cta .search-secondary{background:#fff;color:var(--muted);border-color:var(--border)}
+  .scan-cta .search-secondary:hover{background:#f8fafc;color:var(--text);border-color:#cbd5e1}
+  .scan-cta .search-secondary svg{width:17px;height:17px;stroke-width:2}
+
   .quick-cants{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
   .quick-cants button{padding:7px 12px;border-radius:8px;background:#f1f4f8;color:var(--text);
     font-size:12px;font-weight:650;transition:.15s;border:1.5px solid transparent;
@@ -756,7 +770,7 @@
 
 <div class="scanner-bg" id="scannerBg">
   <div class="scanner-head">
-    <h3>Escanear código de barras</h3>
+    <h3 id="scannerTitle">Escanear código de barras</h3>
     <button class="sh-torch" id="scannerTorch" aria-label="Linterna" title="Linterna">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
         <path d="M9 2h6l-1 6 3 3v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-9l3-3z"/>
@@ -1001,7 +1015,8 @@ function toast(msg, tipo=''){
    MODAL
    ========================================================= */
 let _modalSubmit = null;
-function openModal({title, bodyHTML, submitLabel='Guardar', onSubmit, danger=false, onReady}){
+let _modalOnClose = null;
+function openModal({title, bodyHTML, submitLabel='Guardar', onSubmit, danger=false, onReady, onClose}){
   const bg = document.getElementById('modalBg');
   const m  = document.getElementById('modal');
   m.innerHTML = `
@@ -1015,7 +1030,12 @@ function openModal({title, bodyHTML, submitLabel='Guardar', onSubmit, danger=fal
       <button class="btn ${danger?'danger':'primary'}" id="mSubmit">${submitLabel}</button>
     </div>`;
   bg.classList.add('show');
-  const close = () => { bg.classList.remove('show'); _modalSubmit=null; };
+  _modalOnClose = onClose || null;
+  const close = () => {
+    bg.classList.remove('show');
+    _modalSubmit = null;
+    if(_modalOnClose){ try{ _modalOnClose(); }catch(e){} _modalOnClose = null; }
+  };
   m.querySelector('#mClose').onclick = close;
   m.querySelector('#mCancel').onclick = close;
   bg.onclick = e => { if(e.target===bg) close(); };
@@ -1174,23 +1194,23 @@ function buildRawBTTicket(venta){
   const dir = cfg.direccion || '';
   const tel = cfg.telefono || '';
 
-  // ============ COMANDOS ESC/POS ============
+  // === COMANDOS ESC/POS ===
   const ESC = String.fromCharCode(0x1B);
   const GS  = String.fromCharCode(0x1D);
   const LF  = '\n';
 
-  const init       = ESC + '@';                                // Inicializar impresora
-  const alignLeft  = ESC + 'a' + String.fromCharCode(0);       // Alinear izquierda
-  const alignCent  = ESC + 'a' + String.fromCharCode(1);       // Alinear centro
-  const alignRight = ESC + 'a' + String.fromCharCode(2);       // Alinear derecha
-  const boldOn     = ESC + 'E' + String.fromCharCode(1);       // Negrita ON
-  const boldOff    = ESC + 'E' + String.fromCharCode(0);       // Negrita OFF
-  const dobleAlto  = ESC + '!' + String.fromCharCode(0x10);    // Doble altura
-  const normalFont = ESC + '!' + String.fromCharCode(0x00);    // Fuente normal
-  const feed       = n => ESC + 'd' + String.fromCharCode(n);  // Avanzar n líneas
-  const cut        = GS + 'V' + String.fromCharCode(0);        // Cortar papel
+  const init       = ESC + '@';
+  const alignLeft  = ESC + 'a' + String.fromCharCode(0);
+  const alignCent  = ESC + 'a' + String.fromCharCode(1);
+  const alignRight = ESC + 'a' + String.fromCharCode(2);
+  const boldOn     = ESC + 'E' + String.fromCharCode(1);
+  const boldOff    = ESC + 'E' + String.fromCharCode(0);
+  const dobleAlto  = ESC + '!' + String.fromCharCode(0x10);
+  const normalFont = ESC + '!' + String.fromCharCode(0x00);
+  const feed       = n => ESC + 'd' + String.fromCharCode(n);
+  const cut        = GS + 'V' + String.fromCharCode(0);
 
-  const W = 32; // Ancho en caracteres para papel 58mm (fuente A)
+  const W = 32;
   const line = '='.repeat(W);
   const dash = '-'.repeat(W);
 
@@ -1216,12 +1236,15 @@ function buildRawBTTicket(venta){
     if(UNIDADES_GRANEL.includes(uBase)){
       cantTxt = Math.round(it.cantidad * GRAMOS_POR[uBase]) + 'g';
     } else {
-      cantTxt = it.cantidad + uBase;
+      // Acortar unidades para que quepa en 58mm
+      const uAbrev = uBase === 'unidad' ? 'u' : (uBase.length > 3 ? uBase.slice(0,3) : uBase);
+      const q = (it.cantidad % 1 === 0) ? it.cantidad : it.cantidad.toFixed(2);
+      cantTxt = q + uAbrev;
     }
     const subtotal = fmt(it.precio * it.cantidad);
-    const nombre = (it.nombre || '').slice(0, 17);
-    // [cant 6][espacio][nombre 17][subtotal 8] = 32
-    t += cantTxt.padEnd(6).slice(0,6) + ' ' + nombre.padEnd(17).slice(0,17) + subtotal.padStart(8) + LF;
+    const nombre = (it.nombre || '').slice(0, 15);
+    // [cant 6][espacio 1][nombre 15][espacio 1][subtotal 9] = 32
+    t += cantTxt.padEnd(6).slice(0,6) + ' ' + nombre.padEnd(15).slice(0,15) + ' ' + subtotal.padStart(9) + LF;
   });
 
   t += line + LF;
@@ -1240,7 +1263,6 @@ function buildRawBTTicket(venta){
 
 function imprimirPorRawBT(ticketText){
   try {
-    // Convertir UTF-8 → base64 (soporta acentos)
     const utf8Bytes = new TextEncoder().encode(ticketText);
     let binary = '';
     utf8Bytes.forEach(b => binary += String.fromCharCode(b));
@@ -2328,6 +2350,11 @@ let _torchOn = false;
 let _torchTrack = null;
 let _scanCooldown = false;
 
+/* Referencia al carrito de venta abierto actualmente.
+   Si no es null → hay un modal de venta abierto
+   y podemos agregar productos directamente. */
+let _carritoUI = null;
+
 window.openScanner = function(callback){
   if(typeof ZXing === 'undefined'){
     toast('Cargando librería de escaneo…','warn');
@@ -2464,16 +2491,49 @@ document.addEventListener('keydown', e => {
   if(e.key === 'Escape' && document.getElementById('scannerBg').classList.contains('show')) closeScanner();
 });
 
+/* =========================================================
+   QUICK SCAN — detecta contexto
+   ========================================================= */
 window.quickScan = function(areaDefault=''){
+  // Si hay un carrito de venta abierto → agregar directamente
+  if(_carritoUI && typeof _carritoUI.agregarPorCodigo === 'function'){
+    escanearParaVenta();
+    return;
+  }
+  // Si no hay venta abierta → buscar producto y abrir modal de venta
   openScanner((code) => {
-    const existing = calc.buscarPorBarcode(code);
-    if(existing){
-      toast(`Producto encontrado: ${existing.nombre}`,'success');
-      setTimeout(()=>openProductoModal(existing.area, existing.id), 150);
+    const p = calc.buscarPorBarcode(code);
+    if(p){
+      // Producto existe → abrir venta con ese producto ya cargado
+      toast(`Producto: ${p.nombre}`,'success');
+      setTimeout(()=>openVentaModal(p.id), 150);
     } else {
+      // Producto NO existe → preguntar si crear
       toast(`Código ${code} no registrado. Crea el producto.`,'warn');
       setTimeout(()=>openProductoModal(areaDefault, null, code), 150);
     }
+  });
+};
+
+/* =========================================================
+   ESCANEO DENTRO DE LA VENTA — agrega al carrito
+   ========================================================= */
+window.escanearParaVenta = function(){
+  if(!_carritoUI || typeof _carritoUI.agregarPorCodigo !== 'function'){
+    toast('Primero abre una venta','warn');
+    return;
+  }
+  openScanner((code) => {
+    const p = calc.buscarPorBarcode(code);
+    if(!p){
+      toast(`Código ${code} no registrado`,'error');
+      return;
+    }
+    if(Number(p.stock) <= 0){
+      toast(`${p.nombre} no tiene stock`,'error');
+      return;
+    }
+    _carritoUI.agregarPorCodigo(p);
   });
 };
 
@@ -2832,9 +2892,9 @@ window.openEntradaModal = id => {
 };
 
 /* =========================================================
-   MODAL VENTA — CON AUTO-IMPRESIÓN
+   MODAL VENTA — CARRITO ACUMULATIVO + ESCANEO RÁPIDO
    ========================================================= */
-window.openVentaModal = () => {
+window.openVentaModal = (productoIdInicial = null) => {
   const disponibles = STATE.productos.filter(p => Number(p.stock) > 0);
   if(disponibles.length === 0){
     toast('Agrega productos con stock primero','error');
@@ -2863,8 +2923,15 @@ window.openVentaModal = () => {
       </select>
     </div>
 
-    <div class="field">
-      <label>1️⃣ Elige el producto y presiona "Agregar"</label>
+    <!-- 🆕 Botón grande de escanear -->
+    <div class="scan-cta">
+      <button type="button" class="scan-primary" id="vScanBtn">
+        ${icon('barcode')} Escanear producto
+      </button>
+    </div>
+
+    <div class="field" style="margin-top:14px">
+      <label>O agrega manualmente</label>
       <select id="vProd">
         ${optgroup('carniceria')}
         ${optgroup('abarrotes')}
@@ -2894,12 +2961,12 @@ window.openVentaModal = () => {
       </div>
 
       <div style="font-size:11.5px;color:var(--muted);margin-top:8px" id="vHint">
-        Los productos están agrupados por sección. La cantidad va en la unidad del producto.
+        Escanea o selecciona productos y se irán sumando al carrito.
       </div>
     </div>
 
     <div class="cart-header" id="vCartHeader" style="display:none">
-      2️⃣ Carrito <span class="cart-badge" id="vCartCount">0</span>
+      🛒 Carrito <span class="cart-badge" id="vCartCount">0</span>
     </div>
     <ul class="v-items" id="vItems"></ul>
     <div class="v-total" id="vTotal" style="display:none"><span>Total:</span><b>${fmt(0)}</b></div>
@@ -2908,8 +2975,10 @@ window.openVentaModal = () => {
   openModal({
     title:'Nueva venta',
     bodyHTML:body,
-    submitLabel:'Registrar venta',
+    submitLabel:'Cobrar',
+    onClose: () => { _carritoUI = null; },
     onSubmit: () => {
+      // Auto-agregar si hay producto seleccionado y no está en el carrito
       if(items.length === 0){
         const p = STATE.productos.find(x => x.id === prodSel.value);
         if(p && Number(p.stock) > 0){
@@ -2930,7 +2999,7 @@ window.openVentaModal = () => {
       }
 
       if(items.length===0){
-        toast('Debes presionar el botón "＋ Agregar" para añadir el producto al carrito','error');
+        toast('Agrega al menos un producto al carrito','error');
         return false;
       }
       const m = document.getElementById('modal');
@@ -3069,10 +3138,7 @@ window.openVentaModal = () => {
     actualizarCotizacion();
   });
   cantInput.addEventListener('keydown', e => {
-    if(e.key === 'Enter'){
-      e.preventDefault();
-      agregarItem();
-    }
+    if(e.key === 'Enter'){ e.preventDefault(); agregarItem(); }
   });
 
   quickCants.querySelectorAll('button').forEach(b => {
@@ -3107,6 +3173,7 @@ window.openVentaModal = () => {
     cartCount.textContent = items.length;
   }
 
+  /* Agregar por producto actual (desde el selector) */
   function agregarItem(){
     const p = productoActual();
     if(!p){ toast('Selecciona un producto','error'); return; }
@@ -3114,13 +3181,24 @@ window.openVentaModal = () => {
     if(!cantIngresada || cantIngresada<=0){ toast('Cantidad inválida','error'); return; }
     const uEntrada = unidadEntrada(p);
     const cantBase = aUnidadBase(cantIngresada, uEntrada, p.unidad);
+    if(!agregarAlCarrito(p, cantBase, cantIngresada, uEntrada)) return;
+    if(UNIDADES_GRANEL.includes(p.unidad)){
+      cantInput.value = 250;
+      quickCants.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+    } else {
+      cantInput.value = 1;
+    }
+    actualizarCotizacion();
+    renderItems();
+  }
 
+  /* Núcleo: agrega cualquier producto al carrito */
+  function agregarAlCarrito(p, cantBase, cantIngresada, uEntrada){
     const yaEnCarrito = items.filter(i=>i.productoId===p.id).reduce((s,i)=>s+i.cantidad,0);
     if(yaEnCarrito + cantBase > Number(p.stock)){
       toast(`Stock insuficiente. Disponible: ${(Number(p.stock) - yaEnCarrito).toFixed(3)} ${p.unidad}`,'error');
-      return;
+      return false;
     }
-
     const existente = items.find(i=>i.productoId===p.id && i.unidadInput === uEntrada);
     if(existente){
       existente.cantidad += cantBase;
@@ -3132,21 +3210,69 @@ window.openVentaModal = () => {
         precio: p.precioVenta, costo: p.precioCosto
       });
     }
-    if(UNIDADES_GRANEL.includes(p.unidad)){
-      cantInput.value = 250;
-      quickCants.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
-    } else {
-      cantInput.value = 1;
-    }
-    actualizarCotizacion();
-    renderItems();
-    toast(`✓ ${p.nombre} agregado al carrito`,'success');
+    return true;
   }
 
   m.querySelector('#vAdd').onclick = agregarItem;
 
+  /* 🆕 Botón de escanear desde el modal */
+  m.querySelector('#vScanBtn').onclick = () => {
+    openScanner((code) => {
+      const p = calc.buscarPorBarcode(code);
+      if(!p){
+        toast(`Código ${code} no registrado`,'error');
+        return;
+      }
+      if(Number(p.stock) <= 0){
+        toast(`${p.nombre} no tiene stock`,'error');
+        return;
+      }
+      // Por defecto agregamos 1 unidad (o 250g si es granel)
+      const esGranel = UNIDADES_GRANEL.includes(p.unidad);
+      const uEntrada = unidadEntrada(p);
+      const cantIngresada = esGranel ? 250 : 1;
+      const cantBase = aUnidadBase(cantIngresada, uEntrada, p.unidad);
+      if(agregarAlCarrito(p, cantBase, cantIngresada, uEntrada)){
+        renderItems();
+        toast(`✓ ${p.nombre} agregado`,'success');
+      }
+    });
+  };
+
+  /* 🆕 Exponer funciones al carrito global
+     para que quickScan / escanearParaVenta puedan agregar productos */
+  _carritoUI = {
+    agregarPorCodigo: function(p){
+      const esGranel = UNIDADES_GRANEL.includes(p.unidad);
+      const uEntrada = unidadEntrada(p);
+      const cantIngresada = esGranel ? 250 : 1;
+      const cantBase = aUnidadBase(cantIngresada, uEntrada, p.unidad);
+      if(agregarAlCarrito(p, cantBase, cantIngresada, uEntrada)){
+        renderItems();
+        toast(`✓ ${p.nombre} agregado`,'success');
+      }
+    }
+  };
+
   actualizarUIProducto();
   renderItems();
+
+  /* Si nos pasaron un producto inicial, agregarlo directo */
+  if(productoIdInicial){
+    const p = STATE.productos.find(x => x.id === productoIdInicial);
+    if(p && Number(p.stock) > 0){
+      prodSel.value = productoIdInicial;
+      actualizarUIProducto();
+      const esGranel = UNIDADES_GRANEL.includes(p.unidad);
+      const uEntrada = unidadEntrada(p);
+      const cantIngresada = esGranel ? 250 : 1;
+      const cantBase = aUnidadBase(cantIngresada, uEntrada, p.unidad);
+      if(agregarAlCarrito(p, cantBase, cantIngresada, uEntrada)){
+        renderItems();
+        toast(`✓ ${p.nombre} agregado`,'success');
+      }
+    }
+  }
 };
 
 window.borrarVenta = id => {
