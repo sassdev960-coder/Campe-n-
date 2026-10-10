@@ -1166,7 +1166,7 @@ function abrirVentanaImpresion(html){
 }
 
 /* =========================================================
-   IMPRESIÓN AUTOMÁTICA POR RAWBT (BLUETOOTH)
+   IMPRESIÓN AUTOMÁTICA POR RAWBT (BLUETOOTH + ESC/POS)
    ========================================================= */
 function buildRawBTTicket(venta){
   const cfg = STATE.config || {};
@@ -1174,40 +1174,77 @@ function buildRawBTTicket(venta){
   const dir = cfg.direccion || '';
   const tel = cfg.telefono || '';
 
-  const lineas = venta.items.map(it => {
+  // ============ COMANDOS ESC/POS ============
+  const ESC = String.fromCharCode(0x1B);
+  const GS  = String.fromCharCode(0x1D);
+  const LF  = '\n';
+
+  const init       = ESC + '@';                                // Inicializar impresora
+  const alignLeft  = ESC + 'a' + String.fromCharCode(0);       // Alinear izquierda
+  const alignCent  = ESC + 'a' + String.fromCharCode(1);       // Alinear centro
+  const alignRight = ESC + 'a' + String.fromCharCode(2);       // Alinear derecha
+  const boldOn     = ESC + 'E' + String.fromCharCode(1);       // Negrita ON
+  const boldOff    = ESC + 'E' + String.fromCharCode(0);       // Negrita OFF
+  const dobleAlto  = ESC + '!' + String.fromCharCode(0x10);    // Doble altura
+  const normalFont = ESC + '!' + String.fromCharCode(0x00);    // Fuente normal
+  const feed       = n => ESC + 'd' + String.fromCharCode(n);  // Avanzar n líneas
+  const cut        = GS + 'V' + String.fromCharCode(0);        // Cortar papel
+
+  const W = 32; // Ancho en caracteres para papel 58mm (fuente A)
+  const line = '='.repeat(W);
+  const dash = '-'.repeat(W);
+
+  let t = '';
+  t += init;
+  t += alignCent + boldOn + dobleAlto;
+  t += negocio + LF;
+  t += normalFont + boldOff;
+  if(dir) t += dir + LF;
+  if(tel) t += 'Tel: ' + tel + LF;
+  t += line + LF;
+  t += alignLeft;
+  t += 'Fecha: ' + fmtFecha(venta.fecha) + ' ' + venta.hora + LF;
+  t += 'Cliente: ' + (venta.cliente || 'Consumidor final') + LF;
+  t += 'Pago: ' + venta.pago + LF;
+  t += line + LF;
+  t += 'Cant  Descripcion      Subtotal' + LF;
+  t += dash + LF;
+
+  venta.items.forEach(it => {
     const uBase = it.unidad || 'unidad';
     let cantTxt;
     if(UNIDADES_GRANEL.includes(uBase)){
-      cantTxt = `${Math.round(it.cantidad * GRAMOS_POR[uBase])}g`;
+      cantTxt = Math.round(it.cantidad * GRAMOS_POR[uBase]) + 'g';
     } else {
-      cantTxt = `${it.cantidad}${uBase}`;
+      cantTxt = it.cantidad + uBase;
     }
     const subtotal = fmt(it.precio * it.cantidad);
-    const nombre = it.nombre.length > 18 ? it.nombre.slice(0,18) : it.nombre;
-    return `${cantTxt.padEnd(6)} ${nombre.padEnd(18)} ${subtotal.padStart(10)}`;
-  }).join('\n');
+    const nombre = (it.nombre || '').slice(0, 17);
+    // [cant 6][espacio][nombre 17][subtotal 8] = 32
+    t += cantTxt.padEnd(6).slice(0,6) + ' ' + nombre.padEnd(17).slice(0,17) + subtotal.padStart(8) + LF;
+  });
 
-  return `<center><b>${esc(negocio)}</b></center>
-${dir ? `<center>${esc(dir)}</center>` : ''}
-${tel ? `<center>Tel: ${esc(tel)}</center>` : ''}
---------------------------------
-Fecha: ${fmtFecha(venta.fecha)} ${venta.hora}
-Cliente: ${esc(venta.cliente || 'Consumidor final')}
-Pago: ${esc(venta.pago)}
---------------------------------
-Cant   Descripción         Subtotal
---------------------------------
-${lineas}
---------------------------------
-<right><b>TOTAL: ${fmt(venta.total)}</b></right>
-<center>¡Gracias por su compra!</center>
-<center>Vuelva pronto</center>
-<br><br>`;
+  t += line + LF;
+  t += alignRight + boldOn;
+  t += 'TOTAL: ' + fmt(venta.total) + LF;
+  t += boldOff;
+  t += alignCent;
+  t += 'Gracias por su compra!' + LF;
+  t += 'Vuelva pronto' + LF;
+  t += LF + LF;
+  t += feed(3);
+  t += cut;
+
+  return t;
 }
 
-function imprimirPorRawBT(ticketHtml){
+function imprimirPorRawBT(ticketText){
   try {
-    const b64 = btoa(unescape(encodeURIComponent(ticketHtml)));
+    // Convertir UTF-8 → base64 (soporta acentos)
+    const utf8Bytes = new TextEncoder().encode(ticketText);
+    let binary = '';
+    utf8Bytes.forEach(b => binary += String.fromCharCode(b));
+    const b64 = btoa(binary);
     window.location.href = 'rawbt:base64,' + b64;
     return true;
   } catch(e){
