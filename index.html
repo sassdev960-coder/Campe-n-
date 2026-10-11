@@ -453,65 +453,64 @@
   .mini-tag.carn{background:var(--primary-soft);color:var(--primary)}
   .mini-tag.abar{background:var(--blue-soft);color:var(--blue)}
 
-  .cant-row{display:flex;gap:8px;align-items:stretch;margin-top:8px}
-  .cant-input-wrap{position:relative;display:flex;align-items:center;background:#fafbfd;
-    border:1px solid var(--border);border-radius:10px;transition:.15s;flex:1;min-width:0}
-  .cant-input-wrap:focus-within{border-color:var(--primary);background:#fff;
+  /* ============ 🔍 BUSCADOR DE PRODUCTOS ============ */
+  .prod-search{position:relative;margin-top:10px}
+  .prod-search-input{display:flex;align-items:center;gap:10px;background:#fff;
+    border:1.5px solid var(--border);border-radius:11px;padding:12px 14px;transition:.15s}
+  .prod-search-input:focus-within{border-color:var(--primary);background:#fff;
     box-shadow:0 0 0 3px rgba(225,29,72,.08)}
-  .cant-input-wrap input{border:none;background:transparent;padding:11px 13px;font-size:15px;
-    width:100%;outline:none;font-family:inherit;font-weight:600;font-variant-numeric:tabular-nums;
-    color:var(--text)}
-  .cant-input-wrap .cant-suffix{padding:0 14px 0 0;font-size:12.5px;font-weight:700;
-    color:var(--muted);flex-shrink:0;letter-spacing:.3px;text-transform:lowercase}
-  .cant-row .btn-add{display:inline-flex;align-items:center;gap:6px;padding:0 20px;
-    border-radius:10px;background:var(--primary);color:#fff;font-weight:650;font-size:13.5px;
-    box-shadow:0 2px 8px rgba(225,29,72,.25);transition:.15s;flex-shrink:0;white-space:nowrap}
-  .cant-row .btn-add:hover{background:#be123c}
-  .cant-row .btn-add:active{transform:scale(.97)}
-  .cant-row .btn-add svg{width:15px;height:15px;stroke-width:2.4}
+  .prod-search-input > svg{width:18px;height:18px;color:var(--muted);flex-shrink:0;stroke-width:2}
+  .prod-search-input input{flex:1;border:none;outline:none;background:none;
+    font-size:14.5px;font-family:inherit;color:var(--text);width:100%;padding:0;margin:0}
+  .prod-search-input input::placeholder{color:#9aa8bb}
+  .prod-search-input .ps-clear{width:26px;height:26px;border-radius:50%;display:none;place-items:center;
+    background:#f1f4f8;color:var(--muted);flex-shrink:0;font-size:14px;line-height:1;font-weight:700}
+  .prod-search-input .ps-clear:hover{background:#fee2e2;color:var(--primary)}
+  .prod-search-input .ps-clear.visible{display:grid}
 
-  .scan-cta{display:flex;gap:8px;margin-top:10px}
-  .scan-cta button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;
-    padding:13px 12px;border-radius:11px;font-size:13.5px;font-weight:650;
-    transition:.15s;border:2px dashed}
-  .scan-cta .scan-primary{background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;
-    border:2px solid #0f172a;box-shadow:0 2px 8px rgba(15,23,42,.25)}
-  .scan-cta .scan-primary:hover{background:linear-gradient(135deg,#1e293b,#334155)}
-  .scan-cta .scan-primary:active{transform:scale(.98)}
-  .scan-cta .scan-primary svg{width:18px;height:18px;stroke-width:2}
+  .prod-search-results{position:absolute;top:calc(100% + 6px);left:0;right:0;
+    background:#fff;border:1px solid var(--border);border-radius:12px;
+    box-shadow:0 12px 32px rgba(15,23,42,.18);
+    max-height:340px;overflow-y:auto;z-index:60;display:none}
+  .prod-search-results.visible{display:block}
+  .prod-search-results::-webkit-scrollbar{width:6px}
+  .prod-search-results::-webkit-scrollbar-thumb{background:#e2e8f0;border-radius:3px}
 
-  .quick-cants{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
-  .quick-cants button{padding:7px 12px;border-radius:8px;background:#f1f4f8;color:var(--text);
-    font-size:12px;font-weight:650;transition:.15s;border:1.5px solid transparent;
-    font-variant-numeric:tabular-nums}
-  .quick-cants button:hover{background:var(--primary-soft);color:var(--primary);border-color:#fecdd3}
-  .quick-cants button.active{background:var(--primary);color:#fff;border-color:var(--primary)}
-  .quick-cants.hidden{display:none}
+  .sr-header{padding:9px 14px;font-size:11px;font-weight:700;color:var(--muted);
+    text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);
+    background:#fafbfd;border-radius:12px 12px 0 0;position:sticky;top:0;z-index:1}
 
-  .cotizacion-box{margin-top:10px;padding:11px 14px;border-radius:11px;
-    background:linear-gradient(135deg,#ecfdf5,#d1fae5);
-    border:1px solid #a7f3d0;border-left:4px solid var(--green);
-    display:none;align-items:center;gap:10px;font-size:13px;color:#065f46;
-    animation:cotPop .22s cubic-bezier(.4,0,.2,1)}
-  .cotizacion-box.show{display:flex}
-  .cotizacion-box .cot-icon{width:26px;height:26px;border-radius:8px;background:var(--green);
-    color:#fff;display:grid;place-items:center;flex-shrink:0;box-shadow:0 2px 6px rgba(16,185,129,.35)}
-  .cotizacion-box .cot-icon svg{width:14px;height:14px;stroke-width:3}
-  .cotizacion-box .cot-formula{flex:1;min-width:0;font-size:12.5px;line-height:1.35;opacity:.9}
-  .cotizacion-box .cot-formula b{font-weight:700}
-  .cotizacion-box .cot-total{font-size:19px;font-weight:750;letter-spacing:-.5px;
-    font-variant-numeric:tabular-nums;flex-shrink:0}
-  @keyframes cotPop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+  .search-result{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;
+    border-bottom:1px solid var(--border);text-align:left;transition:.15s;background:#fff}
+  .search-result:last-child{border-bottom:none;border-radius:0 0 12px 12px}
+  .search-result:hover{background:#fff5f7}
+  .search-result:active{background:#ffe9ee}
+  .sr-foto{width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;
+    background:#f1f4f8;border:1px solid var(--border)}
+  .sr-foto-ph{width:44px;height:44px;border-radius:10px;flex-shrink:0;
+    background:#f1f4f8;border:1px solid var(--border);display:grid;place-items:center;color:#c3cddb}
+  .sr-foto-ph svg{width:18px;height:18px;stroke-width:1.6}
+  .sr-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+  .sr-nombre{font-weight:620;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;
+    white-space:nowrap;color:var(--text)}
+  .sr-meta{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);flex-wrap:wrap}
+  .sr-meta .mini-tag{padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.2px}
+  .sr-meta .mini-tag.carn{background:var(--primary-soft);color:var(--primary)}
+  .sr-meta .mini-tag.abar{background:var(--blue-soft);color:var(--blue)}
+  .sr-precio{font-weight:650;color:var(--text);font-variant-numeric:tabular-nums}
+  .sr-stock{font-variant-numeric:tabular-nums}
+  .sr-add{width:34px;height:34px;border-radius:9px;background:var(--primary);
+    color:#fff;display:grid;place-items:center;flex-shrink:0;
+    box-shadow:0 2px 6px rgba(225,29,72,.25)}
+  .sr-add svg{width:16px;height:16px;stroke-width:2.5}
 
-  .stock-warn-inline{display:flex;align-items:center;gap:6px;padding:8px 11px;margin-top:8px;
-    background:#fffbeb;border:1px solid #fde68a;border-left:3px solid var(--amber);
-    border-radius:8px;font-size:12px;color:#92400e}
-  .stock-warn-inline svg{width:14px;height:14px;stroke-width:2;flex-shrink:0}
-
-  .cart-header{display:flex;align-items:center;gap:8px;margin-top:14px;margin-bottom:4px;
-    font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
-  .cart-header .cart-badge{background:var(--primary);color:#fff;font-size:10.5px;
-    padding:2px 8px;border-radius:10px;font-weight:700;letter-spacing:.3px}
+  .search-empty{padding:24px 20px;text-align:center;color:var(--muted);font-size:13px;
+    display:flex;flex-direction:column;gap:12px;align-items:center}
+  .search-empty p{margin:0}
+  .search-empty b{color:var(--text)}
+  .search-hint{padding:24px 20px;text-align:center;color:var(--muted);font-size:13px;
+    display:flex;flex-direction:column;gap:6px;align-items:center}
+  .search-hint svg{width:28px;height:28px;color:#c3cddb;stroke-width:1.6}
 
   /* ============ 💵 CAMBIO ============ */
   .cambio-box{margin-top:14px;padding:14px;border-radius:12px;
@@ -562,6 +561,21 @@
     color:#059669;font-variant-numeric:tabular-nums}
   .cambio-box.error .cambio-resultado .cr-valor{color:#dc2626;font-size:18px}
   .cambio-box.exacto .cambio-resultado .cr-valor{color:#2563eb}
+
+  .scan-cta{display:flex;gap:8px;margin-top:10px}
+  .scan-cta button{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    padding:13px 12px;border-radius:11px;font-size:13.5px;font-weight:650;
+    transition:.15s;border:2px dashed}
+  .scan-cta .scan-primary{background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;
+    border:2px solid #0f172a;box-shadow:0 2px 8px rgba(15,23,42,.25)}
+  .scan-cta .scan-primary:hover{background:linear-gradient(135deg,#1e293b,#334155)}
+  .scan-cta .scan-primary:active{transform:scale(.98)}
+  .scan-cta .scan-primary svg{width:18px;height:18px;stroke-width:2}
+
+  .cart-header{display:flex;align-items:center;gap:8px;margin-top:14px;margin-bottom:4px;
+    font-size:12px;font-weight:650;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .cart-header .cart-badge{background:var(--primary);color:#fff;font-size:10.5px;
+    padding:2px 8px;border-radius:10px;font-weight:700;letter-spacing:.3px}
 
   .toggle-row{display:flex;align-items:center;gap:12px;padding:12px 14px;
     background:#fafbfd;border:1px solid var(--border);border-radius:11px;cursor:pointer;
@@ -727,6 +741,9 @@
     .v-item-qty{width:58px;padding:5px 3px;font-size:13px}
     .v-item-btn{width:28px;height:28px}
     .v-item-total{min-width:60px;font-size:13px}
+    .sr-foto,.sr-foto-ph{width:40px;height:40px;border-radius:9px}
+    .sr-nombre{font-size:13px}
+    .sr-meta{font-size:11px}
     .bottom-nav{display:flex}
     .modal{max-width:100%}
     .modal-head,.modal-body,.modal-foot{padding-left:18px;padding-right:18px}
@@ -740,16 +757,10 @@
     .area-card .ac-icon svg{width:23px;height:23px}
     .area-card strong{font-size:12.5px}
     .area-card small{font-size:10.5px}
-    .cant-input-wrap input{padding:10px 12px;font-size:14px}
-    .cant-row .btn-add{padding:0 14px;font-size:12.5px}
-    .cant-row .btn-add span{display:none}
-    .quick-cants button{padding:6px 10px;font-size:11.5px}
-    .cotizacion-box{padding:10px 12px}
-    .cotizacion-box .cot-total{font-size:17px}
-    .cotizacion-box .cot-formula{font-size:11.5px}
     .billetes-rapidos button{padding:8px 3px;font-size:11.5px}
     .recibido-wrap input{font-size:17px;padding:12px 12px 12px 38px}
     .cambio-resultado .cr-valor{font-size:22px}
+    .prod-search-results{max-height:280px}
   }
   @media (max-width:380px){
     .kpi-value{font-size:17px}
@@ -1285,7 +1296,7 @@ function abrirVentanaImpresion(html){
 }
 
 /* =========================================================
-   IMPRESIÓN POR RAWBT — TICKET COMBINADO CON TODOS LOS ITEMS
+   IMPRESIÓN POR RAWBT — TICKET COMBINADO
    ========================================================= */
 function _lineasTicket(ventas){
   const lineas = [];
@@ -2708,7 +2719,7 @@ document.addEventListener('keydown', e => {
 });
 
 /* =========================================================
-   QUICK SCAN — SIEMPRE AL CARRITO
+   QUICK SCAN
    ========================================================= */
 window.quickScan = function(areaDefault=''){
   if(_carritoUI && typeof _carritoUI.agregarPorCodigo === 'function'){
@@ -3117,7 +3128,7 @@ window.openEntradaModal = id => {
 };
 
 /* =========================================================
-   MODAL VENTA
+   MODAL VENTA — CON BUSCADOR EN VIVO
    ========================================================= */
 window.openVentaModal = (productoIdInicial = null) => {
   const disponibles = STATE.productos.filter(p => Number(p.stock) > 0);
@@ -3126,15 +3137,6 @@ window.openVentaModal = (productoIdInicial = null) => {
     return;
   }
   const items = [];
-
-  const optgroup = (areaKey) => {
-    const s = SECTIONS[areaKey];
-    const prods = disponibles.filter(p=>p.area===areaKey);
-    if(prods.length === 0) return '';
-    return `<optgroup label="── ${s.label} ──">
-      ${prods.map(p=>`<option value="${p.id}">${esc(p.nombre)} — ${fmt(p.precioVenta)}/${esc(p.unidad)} · disp: ${p.stock} ${esc(p.unidad)}</option>`).join('')}
-    </optgroup>`;
-  };
 
   const body = `
     <div class="field">
@@ -3150,42 +3152,23 @@ window.openVentaModal = (productoIdInicial = null) => {
 
     <div class="scan-cta">
       <button type="button" class="scan-primary" id="vScanBtn">
-        ${icon('barcode')} Escanear producto
+        ${icon('barcode')} Escanear código de barras
       </button>
     </div>
 
-    <div class="field" style="margin-top:14px">
-      <label>O agrega manualmente</label>
-      <select id="vProd">
-        ${optgroup('carniceria')}
-        ${optgroup('abarrotes')}
-      </select>
-
-      <div class="cant-row">
-        <div class="cant-input-wrap">
-          <input id="vCant" type="number" step="1" min="1" value="250" autocomplete="off">
-          <span class="cant-suffix" id="vCantUnit">g</span>
+    <div class="field" style="margin-top:14px;margin-bottom:8px">
+      <label>🔍 Buscar producto por nombre</label>
+      <div class="prod-search" id="vSearchWrap">
+        <div class="prod-search-input">
+          ${icon('search')}
+          <input type="text" id="vSearch" placeholder="Escribe nombre, categoría o código…"
+                 autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+          <button type="button" class="ps-clear" id="vSearchClear" aria-label="Limpiar">×</button>
         </div>
-        <button type="button" class="btn-add" id="vAdd">
-          ${icon('plus')} <span>Agregar</span>
-        </button>
+        <div class="prod-search-results" id="vSearchResults"></div>
       </div>
-
-      <div class="quick-cants" id="vQuickCants">
-        <button type="button" data-val="100">100 g</button>
-        <button type="button" data-val="250">250 g (1/4 kg)</button>
-        <button type="button" data-val="500">500 g (1/2 kg)</button>
-        <button type="button" data-val="1000">1 kg (1000 g)</button>
-      </div>
-
-      <div class="cotizacion-box" id="vCotizacion">
-        <span class="cot-icon">${icon('check')}</span>
-        <div class="cot-formula" id="vCotFormula"></div>
-        <div class="cot-total" id="vCotTotal"></div>
-      </div>
-
       <div style="font-size:11.5px;color:var(--muted);margin-top:8px" id="vHint">
-        Escanea o selecciona productos y se irán sumando al carrito.
+        Escribe y toca el producto para agregarlo. Se limpia solo para el siguiente.
       </div>
     </div>
 
@@ -3207,9 +3190,6 @@ window.openVentaModal = (productoIdInicial = null) => {
       const pagoSel = m.querySelector('#vPago');
       const cambioWrap = m.querySelector('#vCambioWrap');
 
-      /* ==============================================
-         💵 BLOQUE DE CAMBIO — el input se preserva
-         ============================================== */
       function renderCambio(){
         if(pagoSel.value !== 'Efectivo'){
           cambioWrap.innerHTML = '';
@@ -3275,35 +3255,29 @@ window.openVentaModal = (productoIdInicial = null) => {
             const cantidad = Number(i.cantidad) || 0;
             return s + (precio * cantidad);
           }, 0);
-
           const raw = String(inp.value || '').replace(',', '.').trim();
           const rec = parseFloat(raw);
-
           if(!inp.value || isNaN(rec)){
             box.className = 'cambio-box';
             label.textContent = 'Cambio a entregar';
             valor.textContent = fmt(0);
             return;
           }
-
           if(Math.abs(rec - t) < 0.005){
             box.className = 'cambio-box exacto';
             label.textContent = '✓ Pago justo — sin cambio';
             valor.textContent = fmt(0);
             return;
           }
-
           if(rec < t){
             box.className = 'cambio-box error';
             label.textContent = `Falta ${fmt(t - rec)}`;
             valor.textContent = '⚠';
             return;
           }
-
-          const cambioCalc = rec - t;
           box.className = 'cambio-box';
           label.textContent = 'Cambio a entregar';
-          valor.textContent = fmt(cambioCalc);
+          valor.textContent = fmt(rec - t);
         }
 
         inp.addEventListener('input', recalcular);
@@ -3338,25 +3312,6 @@ window.openVentaModal = (productoIdInicial = null) => {
       renderCambio();
     },
     onSubmit: () => {
-      if(items.length === 0){
-        const p = STATE.productos.find(x => x.id === prodSel.value);
-        if(p && Number(p.stock) > 0){
-          const cant = parseFloat(cantInput.value) || 0;
-          if(cant > 0){
-            const uEntrada = unidadEntrada(p);
-            const cantBase = aUnidadBase(cant, uEntrada, p.unidad);
-            if(cantBase > 0 && cantBase <= Number(p.stock)){
-              items.push({
-                productoId: p.id, nombre: p.nombre, unidad: p.unidad, area: p.area,
-                cantidad: cantBase, cantidadInput: cant, unidadInput: uEntrada,
-                precio: Number(p.precioVenta)||0, costo: Number(p.precioCosto)||0
-              });
-              renderItems();
-            }
-          }
-        }
-      }
-
       if(items.length===0){
         toast('Agrega al menos un producto al carrito','error');
         return false;
@@ -3480,81 +3435,175 @@ window.openVentaModal = (productoIdInicial = null) => {
   const m = document.getElementById('modal');
   const ul = m.querySelector('#vItems');
   const totalEl = m.querySelector('#vTotal');
-  const prodSel = m.querySelector('#vProd');
-  const cantInput = m.querySelector('#vCant');
-  const cantSuffix = m.querySelector('#vCantUnit');
-  const quickCants = m.querySelector('#vQuickCants');
-  const cotBox = m.querySelector('#vCotizacion');
-  const cotFormula = m.querySelector('#vCotFormula');
-  const cotTotal = m.querySelector('#vCotTotal');
-  const vHint = m.querySelector('#vHint');
   const cartHeader = m.querySelector('#vCartHeader');
   const cartCount = m.querySelector('#vCartCount');
+  const searchWrap = m.querySelector('#vSearchWrap');
+  const searchInput = m.querySelector('#vSearch');
+  const searchResults = m.querySelector('#vSearchResults');
+  const searchClear = m.querySelector('#vSearchClear');
 
-  function productoActual(){ return STATE.productos.find(x => x.id === prodSel.value); }
+  /* ============================================================
+     🔍 BUSCADOR EN VIVO
+     ============================================================ */
+  const norm = s => String(s||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'');
 
-  function actualizarUIProducto(){
-    const p = productoActual();
-    if(!p) return;
-    const uEntrada = unidadEntrada(p);
-    cantSuffix.textContent = uEntrada;
-
-    const esGranel = UNIDADES_GRANEL.includes(p.unidad);
-    if(esGranel){
-      quickCants.classList.remove('hidden');
-      cantInput.step = 1; cantInput.min = 1;
-      if(!cantInput.value || cantInput.value === '1') cantInput.value = 250;
-      vHint.innerHTML = `Este producto se vende por <b>${p.unidad}</b> · ingresa los <b>gramos</b> que marca tu balanza.`;
-    } else {
-      quickCants.classList.add('hidden');
-      cantInput.step = 0.01; cantInput.min = 0.01;
-      if(!cantInput.value || cantInput.value === '250') cantInput.value = 1;
-      vHint.innerHTML = `Este producto se vende por <b>${p.unidad}</b> · ingresa la cantidad y presiona <b>Agregar</b>.`;
+  function buscarProductos(query){
+    const q = String(query||'').trim();
+    if(!q) return [];
+    const qn = norm(q);
+    const qlc = q.toLowerCase();
+    const scored = [];
+    for(let i = 0; i < disponibles.length; i++){
+      const p = disponibles[i];
+      const nombre = norm(p.nombre);
+      const cat = norm(p.categoria||'');
+      const bc = String(p.barcode||'').toLowerCase();
+      let score = 0;
+      if(bc === qlc) score = 100;
+      else if(nombre === qn) score = 95;
+      else if(nombre.startsWith(qn)) score = 85;
+      else if(nombre.indexOf(qn) !== -1) score = 65;
+      else if(cat.indexOf(qn) !== -1) score = 45;
+      else if(bc.indexOf(qlc) !== -1 && qlc.length >= 3) score = 35;
+      if(score > 0) scored.push({p, score});
     }
-    actualizarCotizacion();
-    quickCants.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+    scored.sort((a,b) => b.score - a.score || a.p.nombre.localeCompare(b.p.nombre));
+    return scored.slice(0, 30).map(x => x.p);
   }
 
-  function actualizarCotizacion(){
-    const p = productoActual();
-    if(!p){ cotBox.classList.remove('show'); return; }
-    const cant = parseFloat(cantInput.value)||0;
-    const uEntrada = unidadEntrada(p);
-    const esGranel = UNIDADES_GRANEL.includes(p.unidad);
-    if(cant <= 0){ cotBox.classList.remove('show'); return; }
-    const cantBase = aUnidadBase(cant, uEntrada, p.unidad);
-    const total = cantBase * p.precioVenta;
-    if(esGranel){
-      cotFormula.innerHTML = `${cant} g = <b>${cantBase.toFixed(3)} ${p.unidad}</b> × ${fmt(p.precioVenta)}/${p.unidad}`;
-      cotTotal.textContent = fmt(total);
-      cotBox.classList.add('show');
-    } else {
-      cotFormula.innerHTML = `${cant} ${p.unidad} × ${fmt(p.precioVenta)}/${p.unidad}`;
-      cotTotal.textContent = fmt(total);
-      cotBox.classList.add('show');
+  function renderSearchResults(query){
+    const q = String(query||'').trim();
+
+    if(!q){
+      searchResults.innerHTML = `
+        <div class="search-hint">
+          ${icon('search')}
+          <div><b>${disponibles.length}</b> productos disponibles</div>
+          <div style="font-size:11.5px">Escribe para buscar por nombre o categoría</div>
+        </div>
+      `;
+      searchResults.classList.add('visible');
+      return;
     }
+
+    const lista = buscarProductos(q);
+
+    if(lista.length === 0){
+      searchResults.innerHTML = `
+        <div class="search-empty">
+          <p>Sin resultados para "<b>${esc(q)}</b>"</p>
+          <button type="button" class="btn primary sm" id="vCreateFromSearch">
+            ${icon('plus')} Crear producto nuevo
+          </button>
+        </div>
+      `;
+      searchResults.classList.add('visible');
+      const crearBtn = searchResults.querySelector('#vCreateFromSearch');
+      if(crearBtn){
+        crearBtn.onclick = () => {
+          closeModal();
+          setTimeout(()=>{
+            openProductoModal('abarrotes', null, null);
+            setTimeout(()=>{
+              const nombreInp = document.querySelector('#nombreInput');
+              if(nombreInp){ nombreInp.value = q; nombreInp.focus(); }
+            }, 150);
+          }, 220);
+        };
+      }
+      return;
+    }
+
+    searchResults.innerHTML = `
+      <div class="sr-header">${lista.length} resultado${lista.length!==1?'s':''}</div>
+      ${lista.map(p => {
+        const fotoHTML = p.foto
+          ? `<img src="${p.foto}" class="sr-foto" alt="">`
+          : `<div class="sr-foto-ph">${icon('image')}</div>`;
+        return `
+          <button type="button" class="search-result" data-id="${p.id}">
+            ${fotoHTML}
+            <div class="sr-info">
+              <div class="sr-nombre">${esc(p.nombre)}</div>
+              <div class="sr-meta">
+                <span class="mini-tag ${p.area==='carniceria'?'carn':'abar'}">${sectionOf(p.area).shortLabel}</span>
+                <span class="sr-precio">${fmt(p.precioVenta)}/${esc(p.unidad)}</span>
+                <span class="sr-stock">Stock: ${p.stock} ${esc(p.unidad)}</span>
+              </div>
+            </div>
+            <div class="sr-add">${icon('plus')}</div>
+          </button>
+        `;
+      }).join('')}
+    `;
+    searchResults.classList.add('visible');
+
+    searchResults.querySelectorAll('.search-result').forEach(btn => {
+      btn.addEventListener('mousedown', e => e.preventDefault());
+      btn.onclick = () => {
+        const p = STATE.productos.find(x => x.id === btn.dataset.id);
+        if(!p) return;
+        if(Number(p.stock) <= 0){
+          toast(`${p.nombre} no tiene stock`,'error');
+          return;
+        }
+        const esGranel = UNIDADES_GRANEL.includes(p.unidad);
+        const uEntrada = unidadEntrada(p);
+        const cantIngresada = esGranel ? 250 : 1;
+        const cantBase = aUnidadBase(cantIngresada, uEntrada, p.unidad);
+        if(agregarAlCarrito(p, cantBase, cantIngresada, uEntrada)){
+          renderItems();
+          searchInput.value = '';
+          searchClear.classList.remove('visible');
+          searchInput.focus();
+          renderSearchResults('');
+          toast(`✓ ${p.nombre} agregado`,'success');
+        }
+      };
+    });
   }
 
-  prodSel.addEventListener('change', actualizarUIProducto);
-  cantInput.addEventListener('input', () => {
-    quickCants.querySelectorAll('button').forEach(b=>{
-      b.classList.toggle('active', parseFloat(b.dataset.val) === parseFloat(cantInput.value));
-    });
-    actualizarCotizacion();
-  });
-  cantInput.addEventListener('keydown', e => {
-    if(e.key === 'Enter'){ e.preventDefault(); agregarItem(); }
+  searchInput.addEventListener('input', () => {
+    const v = searchInput.value;
+    searchClear.classList.toggle('visible', v.length > 0);
+    renderSearchResults(v);
   });
 
-  quickCants.querySelectorAll('button').forEach(b => {
-    b.addEventListener('click', () => {
-      cantInput.value = b.dataset.val;
-      quickCants.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
-      b.classList.add('active');
-      actualizarCotizacion();
-    });
+  searchInput.addEventListener('focus', () => {
+    renderSearchResults(searchInput.value);
   });
 
+  searchInput.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      const first = searchResults.querySelector('.search-result');
+      if(first) first.click();
+    }
+    if(e.key === 'Escape'){
+      searchInput.value = '';
+      searchClear.classList.remove('visible');
+      renderSearchResults('');
+    }
+  });
+
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    searchClear.classList.remove('visible');
+    searchInput.focus();
+    renderSearchResults('');
+  });
+
+  /* Cerrar resultados al hacer click fuera */
+  m.addEventListener('mousedown', (e) => {
+    if(!searchWrap.contains(e.target)){
+      searchResults.classList.remove('visible');
+    }
+  });
+
+  /* ============================================================
+     CARRITO
+     ============================================================ */
   function renderItems(){
     ul.innerHTML = items.map((it,idx)=>{
       const prod = STATE.productos.find(x => x.id === it.productoId);
@@ -3661,25 +3710,6 @@ window.openVentaModal = (productoIdInicial = null) => {
     renderItems();
   }
 
-  function agregarItem(){
-    const p = productoActual();
-    if(!p){ toast('Selecciona un producto','error'); return; }
-    const cantIngresada = parseFloat(cantInput.value);
-    if(!cantIngresada || cantIngresada<=0){ toast('Cantidad inválida','error'); return; }
-    const uEntrada = unidadEntrada(p);
-    const cantBase = aUnidadBase(cantIngresada, uEntrada, p.unidad);
-    if(!agregarAlCarrito(p, cantBase, cantIngresada, uEntrada)) return;
-    if(UNIDADES_GRANEL.includes(p.unidad)){
-      cantInput.value = 250;
-      quickCants.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
-    } else {
-      cantInput.value = 1;
-    }
-    actualizarCotizacion();
-    renderItems();
-  }
-
-  /* 🔥 función clave: fuerza Number() para evitar problemas de tipos */
   function agregarAlCarrito(p, cantBase, cantIngresada, uEntrada){
     const yaEnCarrito = items.filter(i=>i.productoId===p.id).reduce((s,i)=>s+(Number(i.cantidad)||0),0);
     if(yaEnCarrito + cantBase > Number(p.stock)){
@@ -3705,8 +3735,6 @@ window.openVentaModal = (productoIdInicial = null) => {
     }
     return true;
   }
-
-  m.querySelector('#vAdd').onclick = agregarItem;
 
   m.querySelector('#vScanBtn').onclick = () => {
     openScanner((code) => {
@@ -3743,14 +3771,13 @@ window.openVentaModal = (productoIdInicial = null) => {
     }
   };
 
-  actualizarUIProducto();
   renderItems();
+  renderSearchResults('');
+  setTimeout(()=> searchInput.focus(), 150);
 
   if(productoIdInicial){
     const p = STATE.productos.find(x => x.id === productoIdInicial);
     if(p && Number(p.stock) > 0){
-      prodSel.value = productoIdInicial;
-      actualizarUIProducto();
       const esGranel = UNIDADES_GRANEL.includes(p.unidad);
       const uEntrada = unidadEntrada(p);
       const cantIngresada = esGranel ? 250 : 1;
