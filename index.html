@@ -1293,7 +1293,6 @@ function _lineasTicket(ventas){
   return lineas;
 }
 
-/* Ticket combinado: TODOS los items en UN SOLO ticket */
 function buildRawBTTicketCombinado(ventas, opts = {}){
   const cfg = STATE.config || {};
   const negocio = cfg.nombreNegocio || 'CARNICERÍA & ABARROTES';
@@ -1324,7 +1323,7 @@ function buildRawBTTicketCombinado(ventas, opts = {}){
   const pago = opts.pago || v0.pago || 'Efectivo';
   const fecha = opts.fecha || v0.fecha || todayISO();
   const hora = opts.hora || v0.hora || nowTime();
-  const totalGlobal = ventas.reduce((s,v)=>s + v.total, 0);
+  const totalGlobal = ventas.reduce((s,v)=>s + (Number(v.total)||0), 0);
   const recibido = (opts.recibido != null) ? opts.recibido : null;
   const cambio = (opts.cambio != null) ? opts.cambio : null;
 
@@ -1353,10 +1352,10 @@ function buildRawBTTicketCombinado(ventas, opts = {}){
       cantTxt = Math.round(it.cantidad * GRAMOS_POR[uBase]) + 'g';
     } else {
       const uAbrev = uBase === 'unidad' ? 'u' : (uBase.length > 3 ? uBase.slice(0,3) : uBase);
-      const q = (it.cantidad % 1 === 0) ? it.cantidad : it.cantidad.toFixed(2);
+      const q = (it.cantidad % 1 === 0) ? it.cantidad : Number(it.cantidad).toFixed(2);
       cantTxt = q + uAbrev;
     }
-    const subtotal = fmt(it.precio * it.cantidad);
+    const subtotal = fmt(Number(it.precio) * Number(it.cantidad));
     const nombre = (it.nombre || '').slice(0, 15);
     t += cantTxt.padEnd(6).slice(0,6) + ' ' + nombre.padEnd(15).slice(0,15) + ' ' + subtotal.padStart(9) + LF;
   });
@@ -1387,7 +1386,6 @@ function buildRawBTTicketCombinado(ventas, opts = {}){
   return t;
 }
 
-/* Mantener compatibilidad: ticket desde una sola venta */
 function buildRawBTTicket(venta){
   return buildRawBTTicketCombinado([venta], {
     recibido: venta.recibido,
@@ -1422,7 +1420,6 @@ function imprimirTicket(venta){
   }
 }
 
-/* Imprime múltiples ventas como UN SOLO ticket (rawbt) */
 function imprimirTicketCombinado(ventas, opts = {}){
   const cfg = STATE.config || {};
   if(cfg.metodoPrint === 'rawbt'){
@@ -1432,7 +1429,6 @@ function imprimirTicketCombinado(ventas, opts = {}){
       toast('No se pudo imprimir. Verifica RawBT instalado.','warn');
     }
   } else {
-    // HTML: un solo ticket también
     const lineas = [];
     ventas.forEach(v => v.items.forEach(it => {
       const uBase = it.unidad || 'unidad';
@@ -1442,9 +1438,9 @@ function imprimirTicketCombinado(ventas, opts = {}){
       } else {
         cantTxt = `${it.cantidad} ${uBase}`;
       }
-      lineas.push({ cant: cantTxt, desc: it.nombre, sub: fmt(it.precio * it.cantidad) });
+      lineas.push({ cant: cantTxt, desc: it.nombre, sub: fmt(Number(it.precio) * Number(it.cantidad)) });
     }));
-    const totalGlobal = ventas.reduce((s,v)=>s+v.total, 0);
+    const totalGlobal = ventas.reduce((s,v)=>s+(Number(v.total)||0), 0);
     const v0 = ventas[0] || {};
     const html = buildTicketHTML(
       `Recibo ${v0.fecha}`, 'Venta',
@@ -1483,7 +1479,7 @@ window.imprimirVenta = function(ventaId){
     } else {
       cantTxt = `${it.cantidad} ${uBase}`;
     }
-    return { cant: cantTxt, desc: it.nombre, sub: fmt(it.precio * it.cantidad) };
+    return { cant: cantTxt, desc: it.nombre, sub: fmt(Number(it.precio) * Number(it.cantidad)) };
   });
   const html = buildTicketHTML(
     `Recibo ${v.fecha}`, sectionOf(v.area).label, lineas,
@@ -2715,7 +2711,6 @@ document.addEventListener('keydown', e => {
    QUICK SCAN — SIEMPRE AL CARRITO
    ========================================================= */
 window.quickScan = function(areaDefault=''){
-  // CASO 1: hay un carrito abierto → agregar directamente
   if(_carritoUI && typeof _carritoUI.agregarPorCodigo === 'function'){
     openScanner((code) => {
       const p = calc.buscarPorBarcode(code);
@@ -2732,7 +2727,6 @@ window.quickScan = function(areaDefault=''){
     return;
   }
 
-  // CASO 2: no hay carrito → abrir venta con ese producto
   openScanner((code) => {
     const p = calc.buscarPorBarcode(code);
     if(p){
@@ -2741,7 +2735,6 @@ window.quickScan = function(areaDefault=''){
         return;
       }
       toast(`✓ ${p.nombre} agregado a la venta`,'success');
-      // Abrimos el modal de venta y le pasamos el producto para que se agregue
       setTimeout(()=> openVentaModal(p.id), 100);
     } else {
       toast(`Código "${code}" no registrado. Créalo ahora.`,'warn');
@@ -3124,7 +3117,7 @@ window.openEntradaModal = id => {
 };
 
 /* =========================================================
-   MODAL VENTA — CARRITO + CAMBIO
+   MODAL VENTA
    ========================================================= */
 window.openVentaModal = (productoIdInicial = null) => {
   const disponibles = STATE.productos.filter(p => Number(p.stock) > 0);
@@ -3214,25 +3207,47 @@ window.openVentaModal = (productoIdInicial = null) => {
       const pagoSel = m.querySelector('#vPago');
       const cambioWrap = m.querySelector('#vCambioWrap');
 
+      /* ==============================================
+         💵 BLOQUE DE CAMBIO — el input se preserva
+         ============================================== */
       function renderCambio(){
         if(pagoSel.value !== 'Efectivo'){
           cambioWrap.innerHTML = '';
           return;
         }
-        const total = items.reduce((s,i)=>s+i.precio*i.cantidad,0);
+
+        const valorPrevio = cambioWrap.querySelector('#vRecibido')?.value || '';
+
+        const total = items.reduce((s,i) => {
+          const precio = Number(i.precio) || 0;
+          const cantidad = Number(i.cantidad) || 0;
+          return s + (precio * cantidad);
+        }, 0);
+
         cambioWrap.innerHTML = `
           <div class="cambio-box" id="vCambioBox">
-            <div class="cambio-title">${icon('cash')} Recibido del cliente</div>
+            <div class="cambio-title">${icon('cash')} Pago en efectivo</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;
+                        padding:10px 12px;margin-bottom:12px;background:#fff;
+                        border:1.5px solid #bbf7d0;border-radius:10px;
+                        font-size:13.5px;font-weight:650;color:#065f46">
+              <span>Total a cobrar:</span>
+              <b style="font-size:17px;letter-spacing:-.5px;font-variant-numeric:tabular-nums">${fmt(total)}</b>
+            </div>
+            <label style="display:block;font-size:12px;font-weight:650;color:#065f46;
+                           margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px">
+              ¿Cuánto te dio el cliente?
+            </label>
             <div class="recibido-input">
               <div class="recibido-wrap">
                 <span class="moneda">Bs</span>
                 <input type="text" id="vRecibido" inputmode="decimal"
-                       placeholder="0.00" value="" autocomplete="off">
+                       placeholder="0.00" value="${valorPrevio}" autocomplete="off">
               </div>
             </div>
             <div class="cambio-hint">
               ${icon('info')}
-              <span>Escribe cualquier monto manualmente o usa los botones rápidos</span>
+              <span>Escribe cualquier monto o usa los botones (se suman)</span>
             </div>
             <div class="billetes-rapidos" id="vBilletes">
               <button type="button" data-val="10">Bs 10</button>
@@ -3255,43 +3270,59 @@ window.openVentaModal = (productoIdInicial = null) => {
         const billetes = cambioWrap.querySelector('#vBilletes');
 
         function recalcular(){
-          const t = items.reduce((s,i)=>s+i.precio*i.cantidad,0);
-          // Normalizar coma → punto por si el usuario escribe 40,50
+          const t = items.reduce((s,i) => {
+            const precio = Number(i.precio) || 0;
+            const cantidad = Number(i.cantidad) || 0;
+            return s + (precio * cantidad);
+          }, 0);
+
           const raw = String(inp.value || '').replace(',', '.').trim();
           const rec = parseFloat(raw);
+
           if(!inp.value || isNaN(rec)){
             box.className = 'cambio-box';
             label.textContent = 'Cambio a entregar';
             valor.textContent = fmt(0);
             return;
           }
+
           if(Math.abs(rec - t) < 0.005){
             box.className = 'cambio-box exacto';
             label.textContent = '✓ Pago justo — sin cambio';
             valor.textContent = fmt(0);
             return;
           }
+
           if(rec < t){
             box.className = 'cambio-box error';
             label.textContent = `Falta ${fmt(t - rec)}`;
             valor.textContent = '⚠';
             return;
           }
+
+          const cambioCalc = rec - t;
           box.className = 'cambio-box';
           label.textContent = 'Cambio a entregar';
-          valor.textContent = fmt(rec - t);
+          valor.textContent = fmt(cambioCalc);
         }
 
         inp.addEventListener('input', recalcular);
+        inp.addEventListener('change', recalcular);
+        inp.addEventListener('keyup', recalcular);
+        inp.addEventListener('paste', () => setTimeout(recalcular, 0));
         inp.addEventListener('focus', () => inp.select());
 
         billetes.querySelectorAll('button').forEach(b => {
           b.onclick = () => {
             if(b.dataset.justo){
-              const t = items.reduce((s,i)=>s+i.precio*i.cantidad,0);
+              const t = items.reduce((s,i) => {
+                const precio = Number(i.precio) || 0;
+                const cantidad = Number(i.cantidad) || 0;
+                return s + (precio * cantidad);
+              }, 0);
               inp.value = t.toFixed(2);
             } else {
-              const actual = parseFloat(String(inp.value||'').replace(',','.')) || 0;
+              const actual = parseFloat(String(inp.value || '').replace(',','.')) || 0;
               inp.value = (actual + parseFloat(b.dataset.val)).toFixed(2);
             }
             recalcular();
@@ -3307,7 +3338,6 @@ window.openVentaModal = (productoIdInicial = null) => {
       renderCambio();
     },
     onSubmit: () => {
-      // Auto-agregar si hay producto seleccionado y el carrito está vacío
       if(items.length === 0){
         const p = STATE.productos.find(x => x.id === prodSel.value);
         if(p && Number(p.stock) > 0){
@@ -3319,7 +3349,7 @@ window.openVentaModal = (productoIdInicial = null) => {
               items.push({
                 productoId: p.id, nombre: p.nombre, unidad: p.unidad, area: p.area,
                 cantidad: cantBase, cantidadInput: cant, unidadInput: uEntrada,
-                precio: p.precioVenta, costo: p.precioCosto
+                precio: Number(p.precioVenta)||0, costo: Number(p.precioCosto)||0
               });
               renderItems();
             }
@@ -3336,10 +3366,14 @@ window.openVentaModal = (productoIdInicial = null) => {
       const cliente = fieldVal(m,'cliente') || 'Consumidor final';
       const pago = fieldVal(m,'pago');
 
-      // Validar cambio si es efectivo
       let recibido = null;
       let cambio = null;
-      const totalGlobal = items.reduce((s,i)=>s+i.precio*i.cantidad,0);
+      const totalGlobal = items.reduce((s,i)=>{
+        const precio = Number(i.precio)||0;
+        const cantidad = Number(i.cantidad)||0;
+        return s + (precio*cantidad);
+      },0);
+
       if(pago === 'Efectivo'){
         const inp = m.querySelector('#vRecibido');
         if(inp && inp.value !== ''){
@@ -3361,17 +3395,16 @@ window.openVentaModal = (productoIdInicial = null) => {
       const ventasCreadas = [];
 
       grupos.forEach((grupo, idx) => {
-        const totalGrupo = grupo.reduce((s,i)=> s + i.precio*i.cantidad, 0);
+        const totalGrupo = grupo.reduce((s,i)=> s + (Number(i.precio)||0)*(Number(i.cantidad)||0), 0);
         const area = grupo[0].area;
         const venta = {
           id: uid(), fecha: todayISO(), hora: nowTime(),
           cliente, pago, area,
           items: grupo.map(i=>({
             productoId: i.productoId, nombre: i.nombre, unidad: i.unidad,
-            cantidad: i.cantidad, precio: i.precio, costo: i.costo
+            cantidad: Number(i.cantidad)||0, precio: Number(i.precio)||0, costo: Number(i.costo)||0
           })),
           total: totalGrupo,
-          // Guardar recibido/cambio solo en el primer grupo para no duplicar
           recibido: (pago === 'Efectivo' && idx === 0) ? recibido : (pago === 'Efectivo' ? 0 : null),
           cambio:   (pago === 'Efectivo' && idx === 0) ? cambio   : (pago === 'Efectivo' ? 0 : null)
         };
@@ -3380,7 +3413,7 @@ window.openVentaModal = (productoIdInicial = null) => {
 
         grupo.forEach(i => {
           const p = STATE.productos.find(x=>x.id===i.productoId);
-          if(p) p.stock = Math.max(0, Number(p.stock) - i.cantidad);
+          if(p) p.stock = Math.max(0, Number(p.stock) - (Number(i.cantidad)||0));
         });
 
         if(pago === 'Efectivo'){
@@ -3415,7 +3448,6 @@ window.openVentaModal = (productoIdInicial = null) => {
       const cfg = STATE.config || {};
       if(ventasCreadas.length > 0){
         const imprimirAhora = () => {
-          // 🔥 UN SOLO TICKET con TODOS los items
           imprimirTicketCombinado(ventasCreadas, {
             cliente, pago,
             fecha: ventasCreadas[0].fecha,
@@ -3532,7 +3564,7 @@ window.openVentaModal = (productoIdInicial = null) => {
       const esGranel = UNIDADES_GRANEL.includes(it.unidad);
       const cantMostrar = esGranel
         ? Math.round(it.cantidadInput)
-        : (it.cantidadInput % 1 === 0 ? it.cantidadInput : it.cantidadInput.toFixed(2));
+        : (it.cantidadInput % 1 === 0 ? it.cantidadInput : Number(it.cantidadInput).toFixed(2));
       const paso = esGranel ? 50 : 1;
       return `
         <li class="v-item" data-idx="${idx}">
@@ -3554,7 +3586,7 @@ window.openVentaModal = (productoIdInicial = null) => {
               <button type="button" class="v-item-btn plus" data-action="mas" data-idx="${idx}">+</button>
             </div>
           </div>
-          <div class="v-item-total">${fmt(it.precio * it.cantidad)}</div>
+          <div class="v-item-total">${fmt((Number(it.precio)||0) * (Number(it.cantidad)||0))}</div>
         </li>`;
     }).join('');
 
@@ -3576,7 +3608,11 @@ window.openVentaModal = (productoIdInicial = null) => {
       });
     });
 
-    const total = items.reduce((s,i)=>s+i.precio*i.cantidad,0);
+    const total = items.reduce((s,i)=>{
+      const precio = Number(i.precio)||0;
+      const cantidad = Number(i.cantidad)||0;
+      return s + (precio*cantidad);
+    },0);
     totalEl.style.display = items.length ? 'flex' : 'none';
     totalEl.querySelector('b').textContent = fmt(total);
     cartHeader.style.display = items.length ? 'flex' : 'none';
@@ -3590,7 +3626,7 @@ window.openVentaModal = (productoIdInicial = null) => {
     if(!it) return;
     const esGranel = UNIDADES_GRANEL.includes(it.unidad);
     const paso = esGranel ? 50 : 1;
-    const nuevaInput = (it.cantidadInput || 0) + (delta * paso);
+    const nuevaInput = (Number(it.cantidadInput) || 0) + (delta * paso);
     setCantidadInput(idx, nuevaInput);
   }
 
@@ -3613,7 +3649,7 @@ window.openVentaModal = (productoIdInicial = null) => {
     const otrosDelMismo = items
       .filter((_, i) => i !== idx)
       .filter(x => x.productoId === it.productoId)
-      .reduce((s, x) => s + x.cantidad, 0);
+      .reduce((s, x) => s + (Number(x.cantidad)||0), 0);
     const disponible = Number(prod.stock) - otrosDelMismo;
     if(nuevaBase > disponible + 0.0001){
       toast(`Stock insuficiente. Disponible: ${disponible.toFixed(2)} ${it.unidad}`,'error');
@@ -3643,21 +3679,28 @@ window.openVentaModal = (productoIdInicial = null) => {
     renderItems();
   }
 
+  /* 🔥 función clave: fuerza Number() para evitar problemas de tipos */
   function agregarAlCarrito(p, cantBase, cantIngresada, uEntrada){
-    const yaEnCarrito = items.filter(i=>i.productoId===p.id).reduce((s,i)=>s+i.cantidad,0);
+    const yaEnCarrito = items.filter(i=>i.productoId===p.id).reduce((s,i)=>s+(Number(i.cantidad)||0),0);
     if(yaEnCarrito + cantBase > Number(p.stock)){
       toast(`Stock insuficiente. Disponible: ${(Number(p.stock) - yaEnCarrito).toFixed(3)} ${p.unidad}`,'error');
       return false;
     }
     const existente = items.find(i=>i.productoId===p.id && i.unidadInput === uEntrada);
     if(existente){
-      existente.cantidad += cantBase;
-      existente.cantidadInput += cantIngresada;
+      existente.cantidad = (Number(existente.cantidad)||0) + (Number(cantBase)||0);
+      existente.cantidadInput = (Number(existente.cantidadInput)||0) + (Number(cantIngresada)||0);
     } else {
       items.push({
-        productoId: p.id, nombre: p.nombre, unidad: p.unidad, area: p.area,
-        cantidad: cantBase, cantidadInput: cantIngresada, unidadInput: uEntrada,
-        precio: p.precioVenta, costo: p.precioCosto
+        productoId: p.id,
+        nombre: p.nombre,
+        unidad: p.unidad,
+        area: p.area,
+        cantidad: Number(cantBase) || 0,
+        cantidadInput: Number(cantIngresada) || 0,
+        unidadInput: uEntrada,
+        precio: Number(p.precioVenta) || 0,
+        costo: Number(p.precioCosto) || 0
       });
     }
     return true;
