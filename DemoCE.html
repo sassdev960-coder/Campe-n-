@@ -676,7 +676,8 @@ footer strong{color:var(--text)}
           <label class="field" style="grid-column:span 2">Buscar por nombre, carnet o código<input id="entBuscarCliente" placeholder="Escribe nombre, carnet, folio o prenda"></label><label class="field" style="grid-column:span 2">Prenda / Empeño<select id="entEmpeno" required><option value="">Selecciona una prenda pendiente</option></select></label>
           <div id="entDetalle" style="grid-column:span 2;padding:12px;border-radius:10px;background:var(--bg-light);font-size:.85rem;color:var(--muted);">Selecciona un empeño para ver el cliente y el importe estimado.</div>
           <label class="field" style="grid-column:span 2;display:flex;align-items:center;gap:9px;flex-direction:row;"><input id="entCobrarAhora" type="checkbox" checked style="width:auto;min-height:auto;"> Registrar el pago ahora (desmárcalo si ya fue registrado)</label>
-          <label class="field" style="grid-column:span 2">Importe cobrado ($)<input id="entMonto" type="number" min="0.01" step="0.01" placeholder="Importe recibido" required></label>
+          <label class="field" style="grid-column:span 2">Importe cobrado (Bs)<input id="entMonto" type="number" min="0.01" step="0.01" placeholder="Importe recibido" required></label>
+          <label class="field" style="grid-column:span 2">Medio de pago<select id="entMedio"><option value="efectivo">Efectivo</option><option value="qr">QR / transferencia</option></select></label>
           <button class="btn success" type="submit" style="grid-column:span 2;">Confirmar entrega de prenda</button>
         </form>
       </div>
@@ -808,14 +809,17 @@ footer strong{color:var(--text)}
             <input id="empMarca" placeholder="Ej. Tiffany">
           </label>
           <div class="grid-3" style="grid-column:span 2">
-            <label class="field">Monto prestado
+            <label class="field">Capital prestado (Bs)
               <input id="empMonto" type="number" step="0.01" min="1" placeholder="0.00" required>
             </label>
-            <label class="field">Tasa mensual %
-              <input id="empTasa" type="number" step="0.1" min="0" value="5" required>
+            <label class="field">Interés por período
+              <select id="empTasa" required><option value="3">3%</option><option value="5" selected>5%</option><option value="10">10%</option><option value="15">15%</option></select>
             </label>
             <label class="field">Plazo (días)
               <input id="empPlazo" type="number" min="1" value="30" required>
+            </label>
+            <label class="field">Entrega del capital
+              <select id="empMedio"><option value="efectivo">Efectivo</option><option value="qr">QR / transferencia</option></select>
             </label>
           </div>
           <label class="field" style="grid-column:span 2">Detalles / Notas
@@ -1146,7 +1150,7 @@ footer strong{color:var(--text)}
   <section id="reportes" class="tab">
     <div class="card no-print">
       <h2><span class="h2-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.09-.03a1.7 1.7 0 0 0-1.82.4l-.07.07h-3.4l-.02-.1a1.7 1.7 0 0 0-1.25-1.4 1.7 1.7 0 0 0-1.77.44l-.07.07-2.94-1.7.03-.09a1.7 1.7 0 0 0-.4-1.82l-.07-.07v-3.4l.1-.02a1.7 1.7 0 0 0 1.4-1.25 1.7 1.7 0 0 0-.44-1.77l-.07-.07 1.7-2.94.09.03a1.7 1.7 0 0 0 1.82-.4l.07-.07h3.4l.02.1a1.7 1.7 0 0 0 1.25 1.4 1.7 1.7 0 0 0 1.77-.44l.07-.07 2.94 1.7-.03.09a1.7 1.7 0 0 0 .4 1.82l.07.07v3.4z"/></svg></span><span class="h2-txt">Configuración de intereses</span></h2>
-      <p class="subtle-note">Configura los porcentajes y los días. La regla guardada se utilizará en los nuevos empeños; los empeños existentes conservan su configuración registrada.</p>
+      <p class="subtle-note">Cada empeño guarda su tasa elegida (3%, 5%, 10% o 15%). Al pagar solo el interés se cobra una vez esa tasa sobre el capital, se registra efectivo/QR y se renueva el plazo sin volver a entregar capital.</p>
       <label class="field" style="margin-top:12px">Forma de cálculo
         <select id="reglasInteresModo"><option value="escalonado">Según el período alcanzado</option><option value="acumulado">Acumular porcentajes de los períodos alcanzados</option></select>
       </label>
@@ -1377,7 +1381,7 @@ function save(){
 }
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-const money = n => '$' + Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+const money = n => 'Bs ' + Number(n||0).toLocaleString('es-BO',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtFecha = iso => new Date(iso).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
 const fmtFechaCorta = iso => new Date(iso).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'});
 const fmtFechaInput = iso => new Date(iso).toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
@@ -1387,6 +1391,17 @@ const addDias = (fecha, dias) => {
   const d = new Date(fecha);
   d.setDate(d.getDate() + dias);
   return d.toISOString();
+};
+// Suma meses de calendario sin saltarse al mes siguiente cuando el día no existe (p. ej. 31/01 + 1 mes).
+const addMeses = (fecha, meses) => {
+  const original = new Date(fecha);
+  const dia = original.getDate();
+  const destino = new Date(original);
+  destino.setDate(1);
+  destino.setMonth(destino.getMonth() + Math.max(1, Number(meses)||1));
+  const ultimoDia = new Date(destino.getFullYear(), destino.getMonth()+1, 0).getDate();
+  destino.setDate(Math.min(dia, ultimoDia));
+  return destino;
 };
 
 function nextFolio(){
@@ -1875,76 +1890,113 @@ window.eliminarProducto = id => {
 
 /* ============ ACCIONES DE EMPEÑOS ============ */
 window.accionRefrendar = id => {
-  const e = DB.empenos.find(x=>x.id===id);
-  if(!e) return;
-  const hoy = new Date();
-  const dias = diasEntre(new Date(e.fechaEmpeno), hoy);
-  const interes = calcInteres(e.montoPrestado, e.tasaMensual, dias, e.reglasInteres);
-  const nuevoVenc = addDias(hoy, e.plazoDias);
-
+  const e = DB.empenos.find(x => x.id === id);
+  if (!e) return;
+  const ahora = new Date();
+  const capital = Number(e.montoPrestado || 0);
+  const tasaInicial = Number(e.tasaMensual || 5);
   const html = `
-    <div class="modal-row"><span>Empeño</span><span><strong>${e.folio}</strong></span></div>
+    <div class="modal-row"><span>Contrato / empeño actual</span><span><strong>${esc(e.folio)}</strong></span></div>
     <div class="modal-row"><span>Prenda</span><span>${esc(e.descripcion)}</span></div>
-    <div class="modal-row"><span>Días transcurridos</span><span>${dias}</span></div>
-    <div class="modal-row"><span>Interés a cobrar</span><span><strong>${money(interes)}</strong></span></div>
-    <div class="modal-row"><span>Nuevo vencimiento</span><span>${fmtFechaInput(nuevoVenc)}</span></div>
-    <div class="modal-row total"><span>Total a cobrar</span><span>${money(interes)}</span></div>
-  `;
-
-  openModal(`${ico('money')} Refrendar empeño`, html, ()=>{
-    e.refrendos = e.refrendos || [];
-    e.refrendos.push({fecha:hoy.toISOString(), dias, interes});
-    e.fechaEmpeno = hoy.toISOString();
-    e.fechaVencimiento = nuevoVenc;
-    if(e.estado==='almoneda' || e.estado==='vencido') e.estado = 'activo';
-    DB.caja.push({
-      id:uid(), fecha:hoy.toISOString(), tipo:'ingreso',
-      concepto:`Refrendo ${e.folio} - ${e.descripcion}`,
-      monto:interes, categoria:'interes'
+    <div class="modal-row"><span>Capital que sigue pendiente</span><span><strong>${money(capital)}</strong></span></div>
+    <p class="subtle-note">Se genera un nuevo contrato de renovación para la misma prenda. No se entrega capital adicional.</p>
+    <label class="field" style="margin-top:12px">Plazo nuevo
+      <select id="refrendoMeses"><option value="1" selected>1 mes</option><option value="2">2 meses</option><option value="3">3 meses</option><option value="6">6 meses</option><option value="12">12 meses</option><option value="custom">Otro plazo (meses)</option></select>
+    </label>
+    <label class="field" id="refrendoCustomWrap" style="display:none;margin-top:10px">Cantidad de meses<input id="refrendoCustomMeses" type="number" min="1" max="120" step="1" value="2"></label>
+    <label class="field" style="margin-top:10px">Modalidad de interés
+      <select id="refrendoModo"><option value="porcentaje">Porcentaje mensual</option><option value="manual" selected>Monto manual acordado para todo el plazo</option></select>
+    </label>
+    <label class="field" id="refrendoTasaWrap" style="margin-top:10px;display:none">Porcentaje mensual
+      <select id="refrendoTasa"><option value="3">3%</option><option value="5" ${tasaInicial===5?'selected':''}>5%</option><option value="10" ${tasaInicial===10?'selected':''}>10%</option><option value="15" ${tasaInicial===15?'selected':''}>15%</option></select>
+    </label>
+    <label class="field" id="refrendoManualWrap" style="margin-top:10px">Interés total acordado (Bs)
+      <input id="refrendoInteresManual" type="number" min="0" step="0.01" value="" placeholder="Escribe el interés total acordado">
+    </label>
+    <div class="modal-row"><span>Fecha del nuevo contrato</span><strong>${fmtFechaInput(ahora)}</strong></div>
+    <div class="modal-row"><span>Nuevo vencimiento</span><strong id="refrendoFechaPreview">${fmtFechaInput(addMeses(ahora,1))}</strong></div>
+    <div class="modal-row"><span>Interés a cobrar</span><strong id="refrendoInteresPreview">${money(capital*tasaInicial/100)}</strong></div>
+    <div class="modal-row total"><span>Total a cobrar ahora</span><span id="refrendoTotalPreview">${money(capital*tasaInicial/100)}</span></div>
+    <label class="field" style="margin-top:12px">Medio de pago del interés<select id="refrendoMedio"><option value="efectivo">Efectivo</option><option value="qr">QR / transferencia</option></select></label>
+    <p class="subtle-note">El monto manual corresponde al interés total del plazo seleccionado, no por mes. El sistema guardará la modalidad, el importe, las fechas y el historial del nuevo contrato.</p>`;
+  openModal(`${ico('money')} Pago de interés y renovación`, html, () => {
+    const modo = document.getElementById('refrendoModo')?.value || 'manual';
+    const mesesSel = document.getElementById('refrendoMeses')?.value || '1';
+    const meses = mesesSel === 'custom' ? Number(document.getElementById('refrendoCustomMeses')?.value) : Number(mesesSel);
+    if (!Number.isInteger(meses) || meses < 1 || meses > 120) return toast('Indica un plazo válido entre 1 y 120 meses','error');
+    const tasa = modo === 'porcentaje' ? Number(document.getElementById('refrendoTasa')?.value || tasaInicial) : null;
+    const interes = modo === 'manual' ? Number(document.getElementById('refrendoInteresManual')?.value) : Math.round(capital * (tasa/100) * meses * 100) / 100;
+    if (!Number.isFinite(interes) || interes < 0) return toast('Ingresa un monto de interés válido','error');
+    const medio = document.getElementById('refrendoMedio')?.value || 'efectivo';
+    const fechaNuevoContrato = new Date();
+    const nuevoVenc = addMeses(fechaNuevoContrato, meses);
+    const historial = e.refrendos || [];
+    const numeroContrato = historial.length + 2;
+    const nuevoContrato = `${e.folio}-R${String(historial.length+1).padStart(2,'0')}`;
+    e.refrendos = historial;
+    e.refrendos.push({
+      id:uid(), contratoAnterior:historial.length ? historial[historial.length-1].nuevoContrato : e.folio,
+      nuevoContrato, fecha:fechaNuevoContrato.toISOString(), plazoMeses:meses,
+      fechaPeriodoAnterior:e.fechaEmpeno, fechaVencimientoAnterior:e.fechaVencimiento,
+      interes, modoInteres:modo, tasaMensual:modo==='porcentaje'?tasa:null,
+      medio, nuevoVencimiento:nuevoVenc.toISOString(), capitalPendiente:capital
     });
+    e.contratoActual = nuevoContrato;
+    e.fechaEmpeno = fechaNuevoContrato.toISOString();
+    e.fechaVencimiento = nuevoVenc.toISOString();
+    e.plazoDias = Math.round((nuevoVenc-fechaNuevoContrato)/(1000*60*60*24));
+    e.estado = 'activo';
+    DB.caja.push({id:uid(), fecha:fechaNuevoContrato.toISOString(), tipo:'ingreso', concepto:`Interés renovación ${nuevoContrato} (${e.folio}) - ${e.descripcion}`, monto:interes, categoria:'interes', medio, oficinaId:e.oficinaId||'', oficina:e.oficina||''});
     save(); renderAll(); closeModal();
-    toast('Refrendo registrado','success');
-  }, 'Confirmar refrendo', 'btn info');
+    toast(`Renovación ${nuevoContrato} registrada`, 'success');
+  }, 'Registrar pago y renovar', 'btn info');
+
+  const updatePreview = () => {
+    const mesesSel = document.getElementById('refrendoMeses')?.value || '1';
+    const meses = mesesSel === 'custom' ? Number(document.getElementById('refrendoCustomMeses')?.value || 1) : Number(mesesSel);
+    const modo = document.getElementById('refrendoModo')?.value || 'manual';
+    const tasa = Number(document.getElementById('refrendoTasa')?.value || tasaInicial);
+    const manual = Number(document.getElementById('refrendoInteresManual')?.value || 0);
+    const interes = modo === 'manual' ? manual : Math.round(capital * tasa/100 * Math.max(1,meses) * 100)/100;
+    const vence = addMeses(new Date(), Math.max(1,meses));
+    const tasaWrap=document.getElementById('refrendoTasaWrap'), manualWrap=document.getElementById('refrendoManualWrap'), customWrap=document.getElementById('refrendoCustomWrap');
+    if(tasaWrap)tasaWrap.style.display=modo==='porcentaje'?'block':'none';
+    if(manualWrap)manualWrap.style.display=modo==='manual'?'block':'none';
+    if(customWrap)customWrap.style.display=mesesSel==='custom'?'block':'none';
+    const fechaEl=document.getElementById('refrendoFechaPreview'), interesEl=document.getElementById('refrendoInteresPreview'), totalEl=document.getElementById('refrendoTotalPreview');
+    if(fechaEl)fechaEl.textContent=fmtFechaInput(vence.toISOString());
+    if(interesEl)interesEl.textContent=money(interes);
+    if(totalEl)totalEl.textContent=money(interes);
+  };
+  ['refrendoMeses','refrendoCustomMeses','refrendoModo','refrendoTasa','refrendoInteresManual'].forEach(id=>document.getElementById(id)?.addEventListener('input',updatePreview));
+  document.getElementById('refrendoMeses')?.addEventListener('change',updatePreview);
+  updatePreview();
 };
 
 window.accionRecuperar = id => {
-  const e = DB.empenos.find(x=>x.id===id);
-  if(!e) return;
+  const e = DB.empenos.find(x => x.id === id);
+  if (!e) return;
   const hoy = new Date();
-  const dias = diasEntre(new Date(e.fechaEmpeno), hoy);
-  const interes = calcInteres(e.montoPrestado, e.tasaMensual, dias, e.reglasInteres);
-  const total = e.montoPrestado + interes;
-
+  const tasa = Number(e.tasaMensual || 5);
+  // Se cobra un único interés por el período vigente; al renovar se inicia un nuevo período.
+  const interes = Math.round(Number(e.montoPrestado || 0) * tasa) / 100;
+  const capital = Number(e.montoPrestado || 0);
+  const total = Math.round((capital + interes) * 100) / 100;
   const html = `
-    <div class="modal-row"><span>Empeño</span><span><strong>${e.folio}</strong></span></div>
+    <div class="modal-row"><span>Empeño</span><span><strong>${esc(e.folio)}</strong></span></div>
     <div class="modal-row"><span>Prenda</span><span>${esc(e.descripcion)}</span></div>
-    <div class="modal-row"><span>Días transcurridos</span><span>${dias}</span></div>
-    <div class="modal-row"><span>Capital</span><span>${money(e.montoPrestado)}</span></div>
-    <div class="modal-row"><span>Intereses</span><span>${money(interes)}</span></div>
-    <div class="modal-row total"><span>Total a cobrar</span><span>${money(total)}</span></div>
-  `;
-
-  openModal(`${ico('check')} Recuperar empeño`, html, ()=>{
-    e.estado = 'recuperado';
-    e.fechaRecuperacion = hoy.toISOString();
-    e.totalCobrado = total;
-    e.interesCobrado = interes;
-
-    DB.caja.push({
-      id:uid(), fecha:hoy.toISOString(), tipo:'ingreso',
-      concepto:`Recuperación ${e.folio} - capital`,
-      monto:e.montoPrestado, categoria:'capital', oficinaId:e.oficinaId || '', oficina:e.oficina || ''
-    });
-    if(interes > 0){
-      DB.caja.push({
-        id:uid(), fecha:hoy.toISOString(), tipo:'ingreso',
-        concepto:`Recuperación ${e.folio} - intereses`,
-        monto:interes, categoria:'interes', oficinaId:e.oficinaId || '', oficina:e.oficina || ''
-      });
-    }
-    save(); renderAll(); closeModal();
-    toast('Empeño recuperado','success');
-  }, 'Confirmar recuperación', 'btn success');
+    <div class="modal-row"><span>Capital</span><span>${money(capital)}</span></div>
+    <div class="modal-row"><span>Interés del período (${tasa}%)</span><span>${money(interes)}</span></div>
+    <div class="modal-row total"><span>Total para retirar la prenda</span><span>${money(total)}</span></div>
+    <label class="field" style="margin-top:12px">Medio de pago<select id="recuperarMedio"><option value="efectivo">Efectivo</option><option value="qr">QR / transferencia</option></select></label>`;
+  openModal(`${ico('check')} Retiro de prenda`, html, () => {
+    const medio = document.getElementById('recuperarMedio')?.value || 'efectivo';
+    e.estado = 'recuperado'; e.fechaRecuperacion = hoy.toISOString(); e.totalCobrado = total; e.interesCobrado = interes;
+    e.retiro = {fecha:hoy.toISOString(), capital, interes, tasa, total, medio};
+    DB.caja.push({id:uid(), fecha:hoy.toISOString(), tipo:'ingreso', concepto:`Retiro ${e.folio} - devolución de capital`, monto:capital, categoria:'capital', medio, oficinaId:e.oficinaId||'', oficina:e.oficina||''});
+    if (interes > 0) DB.caja.push({id:uid(), fecha:hoy.toISOString(), tipo:'ingreso', concepto:`Retiro ${e.folio} - interés`, monto:interes, categoria:'interes', medio, oficinaId:e.oficinaId||'', oficina:e.oficina||''});
+    save(); renderAll(); closeModal(); toast('Prenda retirada y pago registrado', 'success');
+  }, 'Confirmar retiro', 'btn success');
 };
 
 window.accionBaja = id => { const e=DB.empenos.find(x=>x.id===id); if(!e)return; const html=`<p>La prenda se retirará del inventario activo. El registro financiero y el historial se conservarán.</p><label class="field">Motivo de la baja<textarea id="motivoBajaPrenda" placeholder="Ej. No recuperada, deteriorada o retirada por el cliente"></textarea></label>`; openModal('Dar de baja la prenda',html,()=>{e.estado='baja';e.fechaBaja=new Date().toISOString();e.motivoBaja=document.getElementById('motivoBajaPrenda').value.trim();save();renderAll();closeModal();toast('Prenda dada de baja; el historial se conserva','success');},'Confirmar baja','btn danger'); };
@@ -2060,13 +2112,13 @@ document.getElementById('formEmpeno').addEventListener('submit', e=>{
   DB.caja.push({
     id:uid(), fecha:ahora.toISOString(), tipo:'egreso',
     concepto:`Empeño ${empeno.folio} - ${descripcion}`,
-    monto:monto, categoria:'capital', oficinaId:oficinaId || '', oficina:oficinaObj ? oficinaObj.nombre : ''
+    monto:monto, categoria:'capital', medio:document.getElementById('empMedio').value || 'efectivo', oficinaId:oficinaId || '', oficina:oficinaObj ? oficinaObj.nombre : ''
   });
 
   save();
   renderAll();
   e.target.reset();
-  document.getElementById('empTasa').value = CONFIG.tasaMensualDefault;
+  document.getElementById('empTasa').value = String(CONFIG.tasaMensualDefault);
   document.getElementById('empPlazo').value = CONFIG.plazoDefault;
   document.getElementById('formEmpenoWrap').style.display = 'none';
   toast('Empeño registrado: ' + empeno.folio, 'success');
@@ -2510,7 +2562,7 @@ function actualizarDetalleEntrega(){
   if(!e){detalle.textContent='Selecciona un empeño para ver el cliente y el importe estimado.';return;}
   const c=DB.clientes.find(x=>x.id===e.clienteId);
   const dias=Math.max(0,diasEntre(new Date(e.fechaEmpeno),new Date()));
-  const interes=calcInteres(e.montoPrestado,e.tasaMensual,dias,e.reglasInteres);
+  const interes=Math.round(Number(e.montoPrestado||0)*Number(e.tasaMensual||5))/100;
   const total=Number(e.montoPrestado||0)+interes;
   document.getElementById('entMonto').value=total.toFixed(2);
   document.getElementById('entMonto').disabled=!document.getElementById('entCobrarAhora').checked;
@@ -2535,6 +2587,9 @@ document.getElementById('formEntregaEncargado').addEventListener('submit',e=>{
   if(!empeno || !['activo','por_vencer','vencido'].includes(estadoActual(empeno))) return toast('Selecciona una prenda pendiente de entrega','error');
   if(cobrar && monto<=0) return toast('Indica un importe cobrado válido','error');
   const ahora=new Date().toISOString();
+  const capitalValidacion=Number(empeno?.montoPrestado||0);
+  const interesValidacion=Math.round(capitalValidacion*Number(empeno?.tasaMensual||5))/100;
+  if(cobrar && monto + 0.001 < capitalValidacion + interesValidacion) return toast('El importe debe cubrir capital e interés: '+money(capitalValidacion+interesValidacion),'error');
   // Guardar el registro de entrega y el pago por separado evita ingresos duplicados si el pago ya estaba registrado.
   empeno.estado='recuperado';
   empeno.fechaRecuperacion=ahora;
@@ -2543,8 +2598,13 @@ document.getElementById('formEntregaEncargado').addEventListener('submit',e=>{
   empeno.oficinaId=empeno.oficinaId||oficinaId;
   empeno.oficina=empeno.oficina||oficinaObj.nombre;
   if(cobrar){
-    DB.caja.push({id:uid(),fecha:ahora,tipo:'ingreso',concepto:`Recuperación ${empeno.folio} - ${empeno.descripcion} (pago al retirar)`,monto,categoria:'recuperacion',oficinaId,oficina:oficinaObj.nombre,registradoPor:'encargado'});
-    empeno.interesCobrado=Math.max(0,monto-Number(empeno.montoPrestado||0));
+    const capital = Number(empeno.montoPrestado||0);
+    const interes = Math.round(capital*Number(empeno.tasaMensual||5))/100;
+    const medio = document.getElementById('entMedio').value||'efectivo';
+    DB.caja.push({id:uid(),fecha:ahora,tipo:'ingreso',concepto:`Retiro ${empeno.folio} - devolución de capital`,monto:capital,categoria:'capital',medio,oficinaId,oficina:oficinaObj.nombre,registradoPor:'encargado'});
+    if(interes>0) DB.caja.push({id:uid(),fecha:ahora,tipo:'ingreso',concepto:`Retiro ${empeno.folio} - interés`,monto:interes,categoria:'interes',medio,oficinaId,oficina:oficinaObj.nombre,registradoPor:'encargado'});
+    empeno.interesCobrado=interes;
+    empeno.retiro={fecha:ahora,capital,interes,tasa:Number(empeno.tasaMensual||5),total:capital+interes,medio};
   }
   save();
   localStorage.setItem('enc_last_oficina',oficinaId);
