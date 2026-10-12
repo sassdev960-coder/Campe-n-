@@ -159,7 +159,6 @@ tbody tr:hover td{background:var(--surface-soft)}
 .bolsa-row-value.retirada{color:var(--muted);font-size:13px;font-weight:500}
 .bolsa-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:14px}
 
-/* Hero de balance general */
 .balance-hero{background:linear-gradient(135deg,#0f2942,#1c3d5a);color:#fff;border-radius:var(--r-lg);padding:32px;margin-bottom:20px}
 .balance-hero-title{font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:#a5c4ff;margin-bottom:8px}
 .balance-hero-value{font-size:42px;font-weight:600;letter-spacing:-1.4px;font-variant-numeric:tabular-nums}
@@ -244,6 +243,8 @@ tbody tr:hover td{background:var(--surface-soft)}
 .money-input-wrap{position:relative;margin-top:6px}
 .money-input-wrap::before{content:"Bs";position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:600;color:var(--muted);pointer-events:none}
 .money-input-wrap input{padding-left:42px;font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;height:52px}
+.money-input-wrap.sm input{font-size:14px;height:38px;padding-left:34px}
+.money-input-wrap.sm::before{font-size:12px;left:11px}
 .money-input-wrap input.money-ok{border-color:var(--success);background:var(--success-soft)}
 .money-input-wrap input.money-bad{border-color:var(--danger);background:var(--danger-soft)}
 
@@ -299,13 +300,18 @@ tbody tr:hover td{background:var(--surface-soft)}
 .filter-tab{padding:6px 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);font-size:12.5px;font-weight:500;font-family:inherit;cursor:pointer;color:var(--ink-2)}
 .filter-tab.active{background:var(--primary);border-color:var(--primary);color:#fff}
 
-/* Asistente de configuración inicial */
 .setup-step{display:flex;gap:14px;padding:16px 0;border-bottom:1px solid var(--line-soft)}
 .setup-step:last-child{border-bottom:none}
 .setup-step-num{width:32px;height:32px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:600;font-size:13px;flex-shrink:0}
 .setup-step-text{flex:1}
 .setup-step-title{font-size:14px;font-weight:600;color:var(--ink)}
 .setup-step-desc{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.5}
+
+.bolsa-input-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-soft)}
+.bolsa-input-row:last-child{border-bottom:none}
+.bolsa-input-name{flex:1;font-size:13px;font-weight:500;color:var(--ink)}
+.bolsa-input-name small{display:block;font-weight:400;color:var(--muted);font-size:11.5px;margin-top:1px}
+.bolsa-input-field{width:160px}
 
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px -8px rgba(20,18,12,.4);transition:transform .3s cubic-bezier(.2,.9,.3,1.3);z-index:999;max-width:90vw}
 .toast.show{transform:translateX(-50%) translateY(0)}
@@ -321,6 +327,8 @@ tbody tr:hover td{background:var(--surface-soft)}
   .choice-row{grid-template-columns:1fr}
   .mobile-toggle{display:flex!important}
   .balance-hero-row{grid-template-columns:1fr}
+  .bolsa-input-row{flex-wrap:wrap}
+  .bolsa-input-field{width:100%}
 }
 .mobile-toggle{display:none;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border-bottom:1px solid var(--line);margin:-20px -16px 16px;position:sticky;top:0;z-index:40}
 .mobile-toggle button{background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font-family:inherit;font-size:13px;font-weight:500;color:var(--ink);padding:4px}
@@ -367,7 +375,7 @@ tbody tr:hover td{background:var(--surface-soft)}
    ================================================================ */
 const UNIDADES = ['unidad','kg','litro','gramo','ml','caja','paquete','docena','metro'];
 const CATEGORIAS_GASTOS_DEFAULT = ['Alquiler','Servicios (luz/agua/internet)','Transporte','Sueldos','Mantenimiento','Insumos de oficina','Impuestos','Otros'];
-const LS_KEY = 'simgest_v11';
+const LS_KEY = 'simgest_v12';
 const MAX_CAJEROS = 8;
 const MAX_COBRADORES = 8;
 const COLORES_CAJERO = ['#1c3d5a','#2d6a4f','#8a6d3b','#6d28d9','#1e5a8a','#b91c1c','#0369a1','#7c2d12'];
@@ -447,16 +455,17 @@ function initState(){
     ventas: [], abonos: [], compras: [],
     gastos: [], categoriasGastos: [...CATEGORIAS_GASTOS_DEFAULT],
     cuentasPorPagar: [],
-    bancos: [],  // { id, nombre, saldoInicial, movimientos: [] }
+    bancos: [],
     caja: { saldoInicial: 0, movimientos: [] },
     bolsas: {},
     cierres: [],
-    // Configuración inicial de capital
     capital: {
       configurado: false,
       efectivoInicial: 0,
+      efectivoBancosInicial: 0,
       cuentasPorCobrarIniciales: 0,
       inventarioInicial: 0,
+      bolsasIniciales: {},  // { [provId]: monto }
       notas: '',
       fechaConfiguracion: null
     }
@@ -491,6 +500,12 @@ function saldoBanco(banco){
 }
 function saldoBancosTotal(){
   return num2(state.bancos.reduce((a,b) => a + saldoBanco(b), 0));
+}
+function saldoBolsasTotal(){
+  return num2(Object.values(state.bolsas).reduce((a,b) => a + (b.saldo||0), 0));
+}
+function saldoBolsasBonifTotal(){
+  return num2(Object.values(state.bolsas).reduce((a,b) => a + (b.bonificaciones||0), 0));
 }
 function agregarMovimientoCaja(tipo, monto, descripcion, referencia){
   state.caja.movimientos.push({
@@ -551,13 +566,11 @@ function gananciaItem(it){
 }
 function gananciaVenta(v){ return num2(v.items.reduce((a,i) => a + gananciaItem(i), 0)); }
 function gananciaVentas(vs){ return num2(vs.reduce((a,v) => a + gananciaVenta(v), 0)); }
-
 function bonificacionesPeriodo(desde, hasta){
   return num2(state.caja.movimientos
     .filter(m => m.tipo === 'bonificacion' && m.fecha >= desde && m.fecha <= hasta)
     .reduce((a,m) => a + m.monto, 0));
 }
-
 function gananciaPorTipo(vs){
   let fisico = 0, recarga = 0;
   vs.forEach(v => v.items.forEach(it => {
@@ -579,7 +592,6 @@ function valorInventarioCosto(){
   return num2(state.productos.reduce((a,p) => esProductoRecarga(p) ? a : a + p.stock * p.costo, 0));
 }
 function totalCuentasPorCobrar(){
-  // Cuentas por cobrar: deudas de clientes + las iniciales cargadas al configurar
   const deudasActuales = num2(state.clientes.reduce((a,c) => a + deudaCliente(c.id), 0));
   return num2(deudasActuales + (state.capital?.cuentasPorCobrarIniciales || 0));
 }
@@ -587,8 +599,14 @@ function totalCuentasPorPagar(){
   return num2(cuentasPendientes().reduce((a,c) => a + saldoCuenta(c), 0));
 }
 function patrimonioNeto(){
-  // Activos - Pasivos
-  const activos = num2(saldoCaja() + saldoBancosTotal() + valorInventarioCosto() + totalCuentasPorCobrar());
+  // Activos: caja + bancos + inventario físico + por cobrar + bolsas electrónicas (para recargas)
+  const activos = num2(
+    saldoCaja() +
+    saldoBancosTotal() +
+    valorInventarioCosto() +
+    totalCuentasPorCobrar() +
+    saldoBolsasTotal()
+  );
   const pasivos = totalCuentasPorPagar();
   return { activos, pasivos, neto: num2(activos - pasivos) };
 }
@@ -802,7 +820,10 @@ function renderModal(){
   if(tipo === 'nuevoGasto') setTimeout(() => { const el = $('m-gasto-monto'); if(el) el.focus(); }, 50);
   if(tipo === 'nuevaCuentaPagar' || tipo === 'pagarCuenta') setTimeout(() => { const el = $('m-cuenta-monto'); if(el) el.focus(); }, 50);
   if(tipo === 'registrarBonificacion' || tipo === 'retirarBonificacion') setTimeout(() => { const el = $('m-bonif-monto'); if(el) el.focus(); }, 50);
-  if(tipo === 'configurarCapital' || tipo === 'editarCapital') setTimeout(() => { const el = $('m-cap-efectivo'); if(el) el.focus(); }, 50);
+  if(tipo === 'configurarCapital' || tipo === 'editarCapital'){
+    setTimeout(() => { const el = $('m-cap-efectivo'); if(el) el.focus(); }, 50);
+    recalcularCapitalTotal();
+  }
 }
 
 function modalConfirmar(d){
@@ -833,7 +854,48 @@ function modalConfirmar(d){
     </div>`;
 }
 
-/* ---------- MODAL: CAPITAL INICIAL ---------- */
+/* ---------- MODAL: CAPITAL INICIAL (con bolsas electrónicas) ---------- */
+function bolsasInputsHTML(mostrarValoresActuales){
+  if(state.proveedores.length === 0){
+    return `<div style="font-size:12px;color:var(--muted);padding:10px 0">
+      No hay proveedores creados. Ve a <b>Proveedores</b> para agregar Entel, Tigo, Viva u otros.
+    </div>`;
+  }
+  return state.proveedores.map(p => {
+    const bolsa = state.bolsas[p.id] || { saldo:0 };
+    const valActual = bolsa.saldo || 0;
+    return `
+      <div class="bolsa-input-row">
+        <div class="bolsa-input-name">
+          ${esc(p.nombre)}
+          ${mostrarValoresActuales ? `<small>Saldo actual en bolsa: ${money(valActual)}</small>` : ''}
+        </div>
+        <div class="bolsa-input-field money-input-wrap sm">
+          <input type="number" step="0.01" min="0" value="0" placeholder="0.00"
+            id="m-cap-bolsa-${p.id}" class="m-cap-bolsa" data-prov="${p.id}"
+            oninput="recalcularCapitalTotal()">
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function recalcularCapitalTotal(){
+  const ef = Number($('m-cap-efectivo')?.value) || 0;
+  const ba = Number($('m-cap-bancos')?.value) || 0;
+  const pc = Number($('m-cap-porcobrar')?.value) || 0;
+  const inv = Number($('m-cap-inventario')?.value) || 0;
+  let bolsasTot = 0;
+  document.querySelectorAll('.m-cap-bolsa').forEach(el => {
+    bolsasTot += Number(el.value) || 0;
+  });
+  const tot = ef + ba + pc + inv + bolsasTot;
+  const elTot = $('capital-total');
+  if(elTot) elTot.textContent = money(tot);
+  const elBolsas = $('capital-total-bolsas');
+  if(elBolsas) elBolsas.textContent = money(bolsasTot);
+}
+
 function modalConfigurarCapital(){
   return `
     <div class="modal-head">
@@ -844,14 +906,14 @@ function modalConfigurarCapital(){
 
     <div class="alert alert-info">
       <div>
-        <strong>¿Para qué sirve?</strong> Registra con cuánto arranca el negocio: efectivo, bancos, deudas por cobrar y mercadería. Así los reportes reflejan tu patrimonio real desde el día uno.
+        <strong>¿Para qué sirve?</strong> Registra con cuánto arranca el negocio: efectivo, bancos, deudas por cobrar, mercadería y <b>bolsas electrónicas de recargas</b>. Así el patrimonio refleja la realidad desde el día uno.
       </div>
     </div>
 
     <div class="field">
       <label>Efectivo inicial en caja (Bs) *</label>
       <div class="money-input-wrap">
-        <input id="m-cap-efectivo" type="number" step="0.01" min="0" value="0" placeholder="0.00">
+        <input id="m-cap-efectivo" type="number" step="0.01" min="0" value="0" placeholder="0.00" oninput="recalcularCapitalTotal()">
       </div>
       <div class="hint">El dinero físico con el que arranca la caja. Se registra como aporte de capital.</div>
     </div>
@@ -859,25 +921,36 @@ function modalConfigurarCapital(){
     <div class="field">
       <label>Efectivo en bancos (Bs)</label>
       <div class="money-input-wrap">
-        <input id="m-cap-bancos" type="number" step="0.01" min="0" value="0" placeholder="0.00">
+        <input id="m-cap-bancos" type="number" step="0.01" min="0" value="0" placeholder="0.00" oninput="recalcularCapitalTotal()">
       </div>
-      <div class="hint">Dinero en cuentas bancarias. Se guarda como "Banco principal" — puedes agregar más bancos después.</div>
+      <div class="hint">Dinero en cuentas bancarias. Se guarda como "Banco principal".</div>
     </div>
 
     <div class="field">
       <label>Cuentas por cobrar iniciales (Bs)</label>
       <div class="money-input-wrap">
-        <input id="m-cap-porcobrar" type="number" step="0.01" min="0" value="0" placeholder="0.00">
+        <input id="m-cap-porcobrar" type="number" step="0.01" min="0" value="0" placeholder="0.00" oninput="recalcularCapitalTotal()">
       </div>
-      <div class="hint">Deudas de clientes que ya traías antes de usar el sistema. Se suman como activo.</div>
+      <div class="hint">Deudas de clientes que ya traías antes de usar el sistema.</div>
     </div>
 
     <div class="field">
       <label>Valor del inventario inicial (Bs)</label>
       <div class="money-input-wrap">
-        <input id="m-cap-inventario" type="number" step="0.01" min="0" value="0" placeholder="0.00">
+        <input id="m-cap-inventario" type="number" step="0.01" min="0" value="0" placeholder="0.00" oninput="recalcularCapitalTotal()">
       </div>
-      <div class="hint">Valor de la mercadería que ya tenías al empezar. Nota: el inventario "real" del sistema se calcula con los productos y su stock; este valor es solo para el balance inicial.</div>
+      <div class="hint">Valor de la mercadería física que ya tenías (solo para el balance inicial).</div>
+    </div>
+
+    <div class="field" style="margin-top:20px">
+      <label>Bolsas electrónicas para recargas (Bs)</label>
+      <div style="background:var(--warning-soft);border-radius:10px;padding:14px;border:1px solid #ecdcae">
+        <div style="font-size:12px;color:#6d4d13;margin-bottom:12px;line-height:1.5">
+          <strong>Saldo inicial por operador.</strong> Es el saldo que ya tienes cargado con cada operador para vender recargas. Se suma al patrimonio como activo. Cuando vendas recargas, este saldo baja.
+        </div>
+        ${bolsasInputsHTML(false)}
+      </div>
+      <div class="hint" style="margin-top:8px">Total bolsas electrónicas: <b id="capital-total-bolsas">Bs 0.00</b></div>
     </div>
 
     <div class="field">
@@ -895,6 +968,7 @@ function modalConfigurarCapital(){
       <button class="btn btn-primary" onclick="guardarCapitalInicial()">Configurar capital</button>
     </div>`;
 }
+
 function modalEditarCapital(){
   const c = state.capital;
   return `
@@ -904,25 +978,37 @@ function modalEditarCapital(){
       <button class="modal-close" onclick="cerrarModal()">×</button>
     </div>
     <div class="alert alert-warning">
-      <div><strong>Atención:</strong> al guardar, el efectivo inicial se registra como un nuevo movimiento de caja (aporte de capital). Los demás valores se usan para el balance.</div>
+      <div><strong>Atención:</strong> al guardar, el efectivo adicional se registra como aporte a la caja. Las bolsas electrónicas adicionales se suman al saldo actual de cada operador.</div>
     </div>
     <div class="field">
       <label>Efectivo inicial adicional a registrar (Bs)</label>
-      <div class="money-input-wrap"><input id="m-cap-efectivo" type="number" step="0.01" min="0" value="0" placeholder="0.00"></div>
+      <div class="money-input-wrap"><input id="m-cap-efectivo" type="number" step="0.01" min="0" value="0" placeholder="0.00" oninput="recalcularCapitalTotal()"></div>
       <div class="hint">Solo lo que quieras agregar a la caja ahora. Si no quieres mover caja, deja 0.</div>
     </div>
     <div class="field">
       <label>Efectivo en bancos (Bs)</label>
-      <div class="money-input-wrap"><input id="m-cap-bancos" type="number" step="0.01" min="0" value="${c.efectivoBancosInicial||0}"></div>
+      <div class="money-input-wrap"><input id="m-cap-bancos" type="number" step="0.01" min="0" value="${c.efectivoBancosInicial||0}" oninput="recalcularCapitalTotal()"></div>
     </div>
     <div class="field">
       <label>Cuentas por cobrar iniciales (Bs)</label>
-      <div class="money-input-wrap"><input id="m-cap-porcobrar" type="number" step="0.01" min="0" value="${c.cuentasPorCobrarIniciales||0}"></div>
+      <div class="money-input-wrap"><input id="m-cap-porcobrar" type="number" step="0.01" min="0" value="${c.cuentasPorCobrarIniciales||0}" oninput="recalcularCapitalTotal()"></div>
     </div>
     <div class="field">
       <label>Valor del inventario inicial (Bs)</label>
-      <div class="money-input-wrap"><input id="m-cap-inventario" type="number" step="0.01" min="0" value="${c.inventarioInicial||0}"></div>
+      <div class="money-input-wrap"><input id="m-cap-inventario" type="number" step="0.01" min="0" value="${c.inventarioInicial||0}" oninput="recalcularCapitalTotal()"></div>
     </div>
+
+    <div class="field" style="margin-top:20px">
+      <label>Bolsas electrónicas — agregar saldo adicional (Bs)</label>
+      <div style="background:var(--warning-soft);border-radius:10px;padding:14px;border:1px solid #ecdcae">
+        <div style="font-size:12px;color:#6d4d13;margin-bottom:12px;line-height:1.5">
+          <strong>Solo si necesitas sumar saldo inicial a un operador.</strong> Si no, deja 0. El saldo se suma al actual.
+        </div>
+        ${bolsasInputsHTML(true)}
+      </div>
+      <div class="hint" style="margin-top:8px">Adicional a sumar: <b id="capital-total-bolsas">Bs 0.00</b></div>
+    </div>
+
     <div class="field">
       <label>Notas</label>
       <input id="m-cap-notas" value="${esc(c.notas||'')}">
@@ -933,7 +1019,6 @@ function modalEditarCapital(){
     </div>`;
 }
 
-/* ---------- MODAL: BANCO ---------- */
 function modalBanco(id){
   const b = id ? bancoById(id) : null;
   return `
@@ -959,7 +1044,7 @@ function modalMovimientoBanco(bancoId){
     <div class="card-subtitle">${esc(b.nombre)} · Saldo actual: ${money(saldoBanco(b))}</div></div>
     <button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="field">
-      <label>Tipo de movimiento *</label>
+      <label>Tipo *</label>
       <select id="m-bmov-tipo">
         <option value="ingreso">Ingreso (depósito, transferencia recibida)</option>
         <option value="egreso">Egreso (retiro, transferencia enviada)</option>
@@ -968,14 +1053,13 @@ function modalMovimientoBanco(bancoId){
     <div class="field"><label>Monto (Bs) *</label>
       <div class="money-input-wrap"><input id="m-bmov-monto" type="number" step="0.01" min="0.01" placeholder="0.00"></div></div>
     <div class="field"><label>Descripción</label>
-      <input id="m-bmov-desc" placeholder="Ej: Depósito de ventas del día"></div>
+      <input id="m-bmov-desc" placeholder="Ej: Depósito de ventas"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarMovimientoBanco('${bancoId}')">Registrar</button>
     </div>`;
 }
 
-/* ---------- MODAL: PRODUCTO ---------- */
 function modalProducto(id){
   const p = id ? prodById(id) : null;
   const esRec = p ? p.esRecarga === true : false;
@@ -1149,7 +1233,7 @@ function modalGasto(){
       <div class="money-input-wrap"><input id="m-gasto-monto" type="number" step="0.01" min="0.01" placeholder="0.00"></div>
       <div class="hint">Saldo en caja: <b>${money(saldoCaja())}</b></div></div>
     <div class="field"><label>Descripción</label>
-      <input id="m-gasto-desc" placeholder="Ej: Pago de luz de noviembre"></div>
+      <input id="m-gasto-desc" placeholder="Ej: Pago de luz"></div>
     <div class="field"><label>Fecha</label>
       <input id="m-gasto-fecha" type="date" value="${HOY()}"></div>
     <div class="modal-actions">
@@ -1258,7 +1342,7 @@ function modalSaldoInicial(){
   return `
     <div class="modal-head"><div><div class="modal-title">Ajustar saldo inicial de caja</div></div>
     <button class="modal-close" onclick="cerrarModal()">×</button></div>
-    <div class="alert alert-warning"><div>Para configurar el capital completo usa la sección <b>Capital inicial</b>.</div></div>
+    <div class="alert alert-warning"><div>Para configurar el capital completo (incluidas las bolsas electrónicas) usa <b>Capital inicial</b>.</div></div>
     <div class="field"><label>Saldo inicial (Bs)</label>
       <div class="money-input-wrap"><input id="m-saldo-ini" type="number" step="0.01" value="${state.caja.saldoInicial}"></div></div>
     <div class="modal-actions">
@@ -1269,8 +1353,10 @@ function modalSaldoInicial(){
 function modalReponerBolsa(provId){
   const provsRecarga = state.proveedores.filter(p => state.bolsas[p.id] || state.productos.some(x => x.proveedorId === p.id && x.esRecarga));
   return `
-    <div class="modal-head"><div><div class="modal-title">Reponer saldo de bolsa</div></div>
+    <div class="modal-head"><div><div class="modal-title">Reponer saldo de bolsa electrónica</div>
+    <div class="card-subtitle">Mueve dinero de la caja al saldo del operador para vender recargas.</div></div>
     <button class="modal-close" onclick="cerrarModal()">×</button></div>
+    <div class="alert alert-info"><div>Esta operación <strong>no cambia el patrimonio</strong>: es una transferencia de efectivo a saldo electrónico.</div></div>
     <div class="field"><label>Operador *</label>
       <select id="m-rep-prov">
         ${provsRecarga.length === 0 ? '<option value="">No hay operadores</option>'
@@ -1394,11 +1480,22 @@ function modalCerrarTurno(turnoId){
 /* ================================================================
    ACCIONES DE MODALES
    ================================================================ */
+function leerBolsasInputs(){
+  const result = {};
+  document.querySelectorAll('.m-cap-bolsa').forEach(el => {
+    const provId = el.dataset.prov;
+    const monto = Number(el.value) || 0;
+    if(monto > 0) result[provId] = num2(monto);
+  });
+  return result;
+}
+
 function guardarCapitalInicial(){
   const ef = Number($('m-cap-efectivo').value) || 0;
   const bancos = Number($('m-cap-bancos').value) || 0;
   const porCobrar = Number($('m-cap-porcobrar').value) || 0;
   const inventario = Number($('m-cap-inventario').value) || 0;
+  const bolsasInputs = leerBolsasInputs();
   const notas = $('m-cap-notas').value.trim();
 
   state.capital.configurado = true;
@@ -1406,17 +1503,15 @@ function guardarCapitalInicial(){
   state.capital.efectivoBancosInicial = num2(bancos);
   state.capital.cuentasPorCobrarIniciales = num2(porCobrar);
   state.capital.inventarioInicial = num2(inventario);
+  state.capital.bolsasIniciales = { ...bolsasInputs };
   state.capital.notas = notas;
   state.capital.fechaConfiguracion = HOY();
 
-  // Registramos el efectivo inicial como aporte de capital (ingresa a caja)
-  if(ef > 0){
-    state.caja.saldoInicial = num2(state.caja.saldoInicial + ef);
-  }
+  // Efectivo → caja
+  if(ef > 0) state.caja.saldoInicial = num2(state.caja.saldoInicial + ef);
 
-  // Registramos el banco si hay monto
+  // Bancos → banco principal
   if(bancos > 0){
-    // Ver si ya hay un banco principal
     const bancoPrincipal = state.bancos.find(b => b.nombre === 'Banco principal');
     if(bancoPrincipal){
       bancoPrincipal.saldoInicial = num2(bancoPrincipal.saldoInicial + bancos);
@@ -1431,6 +1526,12 @@ function guardarCapitalInicial(){
     }
   }
 
+  // Bolsas electrónicas → saldo de cada operador
+  Object.entries(bolsasInputs).forEach(([provId, monto]) => {
+    const bolsa = bolsaDe(provId);
+    bolsa.saldo = num2((bolsa.saldo||0) + monto);
+  });
+
   toast('Capital inicial configurado correctamente','ok');
   cerrarModal(); render();
 }
@@ -1440,6 +1541,7 @@ function guardarEdicionCapital(){
   const bancos = Number($('m-cap-bancos').value) || 0;
   const porCobrar = Number($('m-cap-porcobrar').value) || 0;
   const inventario = Number($('m-cap-inventario').value) || 0;
+  const bolsasInputs = leerBolsasInputs();
   const notas = $('m-cap-notas').value.trim();
 
   if(efAdicional > 0){
@@ -1464,6 +1566,14 @@ function guardarEdicionCapital(){
       movimientos: []
     });
   }
+
+  // Bolsas: sumar el adicional al saldo actual y al capital registrado
+  if(!state.capital.bolsasIniciales) state.capital.bolsasIniciales = {};
+  Object.entries(bolsasInputs).forEach(([provId, monto]) => {
+    const bolsa = bolsaDe(provId);
+    bolsa.saldo = num2((bolsa.saldo||0) + monto);
+    state.capital.bolsasIniciales[provId] = num2((state.capital.bolsasIniciales[provId]||0) + monto);
+  });
 
   toast('Capital actualizado','ok');
   cerrarModal(); render();
@@ -1517,7 +1627,6 @@ function guardarProducto(id){
   const esRec = $('m-prod-esrecarga').checked;
   if(!nombre) return toast('Nombre obligatorio','err');
   if(!catId) return toast('Selecciona categoría','err');
-
   if(esRec){
     const provId = $('m-prod-prov').value;
     const valor = Number($('m-prod-valor').value);
@@ -1674,7 +1783,7 @@ function confirmarReponerBolsa(){
   const bolsa = bolsaDe(provId);
   bolsa.saldo = num2(bolsa.saldo + monto);
   agregarMovimientoCaja('recarga_reposicion', -monto, concepto, null);
-  toast('Repuesto · ' + money(monto),'ok');
+  toast('Saldo repuesto · ' + money(monto),'ok');
   cerrarModal(); render();
 }
 function confirmarBonificacion(){
@@ -1909,6 +2018,7 @@ function confirmarVenta(){
     usuarioId: usuarioActual?.id || null, usuarioNombre: usuarioActual?.nombre || '—'
   };
   state.ventas.push(venta);
+  // Actualizar bolsas (bajan) y stock
   venta.items.forEach(it => {
     const p = prodById(it.productoId); if(!p) return;
     if(esProductoRecarga(p)){
@@ -2014,7 +2124,7 @@ function accionEliminarVenta(id){
     mensaje: 'Se revierten todos los efectos.',
     detalle: `<div><strong>Cliente:</strong> ${esc(v.clienteNombre)}</div>
       <div><strong>Total:</strong> ${money(v.total)}</div>`,
-    advertencia: 'El stock se devuelve y la caja se ajusta.',
+    advertencia: 'El stock y el saldo de bolsa se devuelven. La caja se ajusta.',
     textoBoton: 'Sí, eliminar',
     onConfirm: () => {
       v.items.forEach(it => {
@@ -2071,9 +2181,18 @@ function accionEliminarProveedor(id){
   const p = provById(id);
   if(state.productos.some(x => x.proveedorId === id) || state.compras.some(x => x.proveedorId === id))
     return toast('No se puede: está en uso','err');
+  const bolsa = state.bolsas[id];
+  const tieneSaldo = bolsa && ((bolsa.saldo||0) > 0.001 || (bolsa.bonificaciones||0) > 0.001);
   pedirConfirmacion({
-    criticidad: 'advertencia', titulo: 'Eliminar proveedor',
-    mensaje: `¿Eliminar "${esc(p.nombre)}"?`, textoBoton: 'Sí, eliminar',
+    criticidad: tieneSaldo ? 'critico' : 'advertencia',
+    titulo: 'Eliminar proveedor',
+    mensaje: `¿Eliminar "${esc(p.nombre)}"?`,
+    detalle: bolsa ? `
+      <div><strong>Saldo en bolsa:</strong> ${money(bolsa.saldo||0)}</div>
+      <div><strong>Bonificación acumulada:</strong> ${money(bolsa.bonificaciones||0)}</div>
+    ` : '',
+    advertencia: tieneSaldo ? 'El saldo de la bolsa y la bonificación se perderán.' : '',
+    textoBoton: 'Sí, eliminar',
     onConfirm: () => {
       state.proveedores = state.proveedores.filter(x => x.id !== id);
       delete state.bolsas[id];
@@ -2186,19 +2305,7 @@ function render(){
     if(el) actualizarAbonoPreview(deudaCliente(ui.modal.id));
   }
   if(ui.modal && (ui.modal.tipo === 'configurarCapital' || ui.modal.tipo === 'editarCapital')){
-    // Bind en vivo del preview del capital
-    ['m-cap-efectivo','m-cap-bancos','m-cap-porcobrar','m-cap-inventario'].forEach(id => {
-      const el = $(id);
-      if(el) el.addEventListener('input', () => {
-        const ef = Number($('m-cap-efectivo').value) || 0;
-        const ba = Number($('m-cap-bancos').value) || 0;
-        const pc = Number($('m-cap-porcobrar').value) || 0;
-        const inv = Number($('m-cap-inventario').value) || 0;
-        const tot = ef + ba + pc + inv;
-        const elTot = $('capital-total');
-        if(elTot) elTot.textContent = money(tot);
-      });
-    });
+    setTimeout(recalcularCapitalTotal, 20);
   }
   window.scrollTo({top:0,behavior:'instant'});
 }
@@ -2256,7 +2363,6 @@ function viewResumenGeneral(){
   const gastosHoy = num2(state.gastos.filter(g => g.fecha === h).reduce((a,g) => a + g.monto, 0));
   const pat = patrimonioNeto();
   const porCobrar = totalCuentasPorCobrar();
-  const porPagar = totalCuentasPorPagar();
   const vencido = num2(state.clientes.reduce((a,c) => a + deudaVencida(c.id), 0));
   const clientesVencidos = state.clientes.filter(c => deudaVencida(c.id) > 0);
   const cuentasVenc = cuentasVencidas();
@@ -2265,18 +2371,17 @@ function viewResumenGeneral(){
   const capitalOk = state.capital?.configurado;
   const configurado = state.productos.length > 0 && state.categorias.length > 0;
 
-  // Asistente inicial si es admin y no está configurado el capital
   if(esAdmin() && !capitalOk){
     return `
     <div class="page-head">
       <div class="page-eyebrow">Bienvenido</div>
       <h1 class="page-title">Configurá el punto de partida del negocio</h1>
-      <p class="page-desc">Antes de empezar necesitas cargar con cuánto arranca el negocio. Esto es clave para que los números no salgan en negativo.</p>
+      <p class="page-desc">Antes de empezar necesitas cargar con cuánto arranca el negocio, incluidas las bolsas electrónicas de recargas.</p>
     </div>
 
     <div class="info-banner warn">
       <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-      <div><strong>¿Por qué sale en negativo?</strong> Porque el sistema solo conocía el saldo inicial de caja (que estaba en Bs 0). Al registrar compras o gastos, la caja se iba a negativo. Al cargar el <b>capital inicial</b> completo (efectivo + bancos + por cobrar + inventario), el sistema refleja el patrimonio real.</div>
+      <div><strong>¿Por qué sale en negativo?</strong> Porque el sistema solo conocía el saldo inicial de caja (que estaba en Bs 0). Al cargar el <b>capital inicial</b> completo (efectivo + bancos + por cobrar + inventario + bolsas electrónicas), el patrimonio refleja la realidad.</div>
     </div>
 
     <div class="card">
@@ -2287,24 +2392,24 @@ function viewResumenGeneral(){
       <div class="setup-step">
         <div class="setup-step-num">1</div>
         <div class="setup-step-text">
-          <div class="setup-step-title">Configurá el capital inicial</div>
-          <div class="setup-step-desc">Carga el efectivo en caja, el dinero en bancos, las cuentas por cobrar de clientes que ya debían y el valor de la mercadería inicial.</div>
-          <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="abrirModal('configurarCapital')">Configurar capital</button>
+          <div class="setup-step-title">Crear proveedores (Entel, Tigo, Viva, etc.)</div>
+          <div class="setup-step-desc">Los proveedores son los operadores cuyas bolsas electrónicas vas a cargar.</div>
         </div>
       </div>
       <div class="setup-step">
         <div class="setup-step-num">2</div>
         <div class="setup-step-text">
-          <div class="setup-step-title">${configurado ? 'Productos cargados' : 'Cargá categorías y productos'}</div>
-          <div class="setup-step-desc">${configurado ? 'Ya tienes productos en el sistema.' : 'Podés cargar una configuración base o crear tus propias categorías y productos.'}</div>
-          ${!configurado ? `<button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="accionCargarBase()">Cargar configuración base</button>` : ''}
+          <div class="setup-step-title">Configurá el capital inicial</div>
+          <div class="setup-step-desc">Carga efectivo en caja, dinero en bancos, cuentas por cobrar, mercadería inicial y el saldo inicial de cada bolsa electrónica.</div>
+          <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="abrirModal('configurarCapital')">Configurar capital</button>
         </div>
       </div>
       <div class="setup-step">
         <div class="setup-step-num">3</div>
         <div class="setup-step-text">
-          <div class="setup-step-title">Empezá a registrar movimientos</div>
-          <div class="setup-step-desc">Ya puedes registrar compras, ventas, gastos, cobros y todo lo demás.</div>
+          <div class="setup-step-title">${configurado ? 'Productos cargados' : 'Cargá categorías y productos'}</div>
+          <div class="setup-step-desc">${configurado ? 'Ya tienes productos en el sistema.' : 'Podés cargar una configuración base o crear tus propias categorías y productos.'}</div>
+          ${!configurado ? `<button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="accionCargarBase()">Cargar configuración base</button>` : ''}
         </div>
       </div>
     </div>`;
@@ -2315,12 +2420,6 @@ function viewResumenGeneral(){
     <div class="page-eyebrow">Hoy · ${fFecha(h)}</div>
     <h1 class="page-title">Resumen ${esAdmin() ? 'general' : 'de tu turno'}</h1>
   </div>
-
-  ${esAdmin() && !capitalOk ? `
-  <div class="alert alert-warning">
-    <div><div class="alert-title">Aún no configuraste el capital inicial</div>
-    Los números pueden aparecer en negativo. <a onclick="abrirModal('configurarCapital')" style="text-decoration:underline;cursor:pointer;font-weight:600">Configurar ahora</a></div>
-  </div>`:''}
 
   ${!esAdmin() && !miTurno ? `<div class="alert alert-warning">
     <div><div class="alert-title">No tienes turno abierto</div>
@@ -2354,8 +2453,8 @@ function viewResumenGeneral(){
         <div class="balance-hero-cell-value ${saldoCaja() >= 0 ? 'pos' : 'neg'}">${money(saldoCaja())}</div>
       </div>
       <div class="balance-hero-cell">
-        <div class="balance-hero-cell-label">En bancos</div>
-        <div class="balance-hero-cell-value pos">${money(saldoBancosTotal())}</div>
+        <div class="balance-hero-cell-label">Bolsas electrónicas</div>
+        <div class="balance-hero-cell-value pos">${money(saldoBolsasTotal())}</div>
       </div>
       <div class="balance-hero-cell">
         <div class="balance-hero-cell-label">Inventario (a costo)</div>
@@ -2373,7 +2472,6 @@ function viewResumenGeneral(){
     <div class="kpi">
       <div class="kpi-label">${esAdmin() ? 'Caja' : 'Efectivo de tu turno'}</div>
       <div class="kpi-value ${esAdmin() && saldoCaja() < 0 ? 'is-danger' : ''}">${money(esAdmin() ? saldoCaja() : (miTurno ? miTurno.saldoInicial : 0))}</div>
-      <div class="kpi-meta">${esAdmin() ? 'Efectivo disponible' : 'Saldo inicial'}</div>
     </div>
     <div class="kpi">
       <div class="kpi-label">${esAdmin() ? 'Ventas hoy' : 'Tus ventas hoy'}</div>
@@ -2381,9 +2479,9 @@ function viewResumenGeneral(){
       <div class="kpi-meta">${money(num2(vHoy.reduce((a,v) => a + v.total, 0)))}</div>
     </div>
     <div class="kpi">
-      <div class="kpi-label">${esAdmin() ? 'Cuentas por cobrar' : 'Gastos hoy'}</div>
-      <div class="kpi-value ${esAdmin() && porCobrar > 0 ? 'is-success' : ''}">${esAdmin() ? money(porCobrar) : money(gastosHoy)}</div>
-      <div class="kpi-meta">${esAdmin() ? (vencido > 0 ? money(vencido) + ' vencido' : 'Sin vencidos') : 'Del día'}</div>
+      <div class="kpi-label">${esAdmin() ? 'Bolsas electrónicas' : 'Gastos hoy'}</div>
+      <div class="kpi-value ${esAdmin() ? '' : ''}">${esAdmin() ? money(saldoBolsasTotal()) : money(gastosHoy)}</div>
+      <div class="kpi-meta">${esAdmin() ? 'Saldo para recargas' : 'Del día'}</div>
     </div>
   </div>
 
@@ -2421,11 +2519,18 @@ function viewResumenGeneral(){
 }
 
 /* ================================================================
-   VISTA: BALANCE
+   VISTA: BALANCE (con bolsas electrónicas)
    ================================================================ */
 function viewBalance(){
   const pat = patrimonioNeto();
-  const patInicial = (state.capital?.efectivoInicial || 0) + (state.capital?.efectivoBancosInicial || 0) + (state.capital?.cuentasPorCobrarIniciales || 0) + (state.capital?.inventarioInicial || 0);
+  const bolsasTot = saldoBolsasTotal();
+  const patInicial = num2(
+    (state.capital?.efectivoInicial || 0) +
+    (state.capital?.efectivoBancosInicial || 0) +
+    (state.capital?.cuentasPorCobrarIniciales || 0) +
+    (state.capital?.inventarioInicial || 0) +
+    num2(Object.values(state.capital?.bolsasIniciales || {}).reduce((a,b) => a + b, 0))
+  );
   const varPat = num2(pat.neto - patInicial);
 
   return `
@@ -2438,9 +2543,9 @@ function viewBalance(){
   <div class="info-banner">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
     <div>
-      <strong>Activos:</strong> efectivo en caja + bancos + inventario a costo + cuentas por cobrar.<br>
+      <strong>Activos:</strong> caja + bancos + inventario físico + cuentas por cobrar + <b>bolsas electrónicas</b>.<br>
       <strong>Pasivos:</strong> cuentas por pagar pendientes.<br>
-      <strong>Patrimonio neto:</strong> activos menos pasivos. Este es el valor real del negocio.
+      <strong>Patrimonio neto:</strong> activos menos pasivos.
     </div>
   </div>
 
@@ -2458,8 +2563,8 @@ function viewBalance(){
         <div class="balance-hero-cell-value ${varPat >= 0 ? 'pos' : 'neg'}">${varPat >= 0 ? '+' : ''}${money(varPat)}</div>
       </div>
       <div class="balance-hero-cell">
-        <div class="balance-hero-cell-label">Creado</div>
-        <div class="balance-hero-cell-value" style="font-size:14px">${state.capital?.fechaConfiguracion ? fFecha(state.capital.fechaConfiguracion) : '—'}</div>
+        <div class="balance-hero-cell-label">Bolsas electrónicas</div>
+        <div class="balance-hero-cell-value pos">${money(bolsasTot)}</div>
       </div>
     </div>
   </div>
@@ -2477,12 +2582,16 @@ function viewBalance(){
         <span class="value pos">${money(saldoBancosTotal())}</span>
       </div>
       <div class="summary-row">
-        <span class="label">Cuentas por cobrar</span>
-        <span class="value pos">${money(totalCuentasPorCobrar())}</span>
+        <span class="label">Bolsas electrónicas (recargas)</span>
+        <span class="value pos">${money(bolsasTot)}</span>
       </div>
       <div class="summary-row">
-        <span class="label">Inventario (a costo)</span>
+        <span class="label">Inventario físico (a costo)</span>
         <span class="value pos">${money(valorInventarioCosto())}</span>
+      </div>
+      <div class="summary-row">
+        <span class="label">Cuentas por cobrar</span>
+        <span class="value pos">${money(totalCuentasPorCobrar())}</span>
       </div>
       <div class="summary-row highlight">
         <span class="label">Total activos</span>
@@ -2510,27 +2619,38 @@ function viewBalance(){
 
   <div class="card">
     <div class="card-head"><div><div class="card-title">Composición de activos</div></div></div>
-    ${pat.activos > 0 ? ['Efectivo en caja','Bancos','Por cobrar','Inventario'].map((nom, ix) => {
-      const valores = [Math.max(0, saldoCaja()), saldoBancosTotal(), totalCuentasPorCobrar(), valorInventarioCosto()];
-      const v = valores[ix];
-      const pct = pat.activos > 0 ? (v / pat.activos) * 100 : 0;
-      return `<div class="rank-item">
-        <div class="rank-head">
-          <div class="rank-name">${nom}</div>
-          <div class="rank-value">${money(v)} · ${pct.toFixed(1)}%</div>
-        </div>
-        <div class="rank-bar"><div class="rank-bar-fill" style="width:${Math.max(2, pct)}%"></div></div>
-      </div>`;
-    }).join('') : '<div class="empty">Sin activos registrados.</div>'}
+    ${pat.activos > 0 ? (() => {
+      const valores = [
+        ['Efectivo en caja', Math.max(0, saldoCaja())],
+        ['Bancos', saldoBancosTotal()],
+        ['Bolsas electrónicas', bolsasTot],
+        ['Inventario físico', valorInventarioCosto()],
+        ['Cuentas por cobrar', totalCuentasPorCobrar()]
+      ].filter(x => x[1] > 0.001);
+      return valores.map(([nom, v]) => {
+        const pct = (v / pat.activos) * 100;
+        return `<div class="rank-item">
+          <div class="rank-head">
+            <div class="rank-name">${nom}</div>
+            <div class="rank-value">${money(v)} · ${pct.toFixed(1)}%</div>
+          </div>
+          <div class="rank-bar"><div class="rank-bar-fill" style="width:${Math.max(2, pct)}%"></div></div>
+        </div>`;
+      }).join('');
+    })() : '<div class="empty">Sin activos registrados.</div>'}
   </div>`;
 }
 
 /* ================================================================
-   VISTA: CAPITAL
+   VISTA: CAPITAL (con bolsas electrónicas iniciales)
    ================================================================ */
 function viewCapital(){
   const c = state.capital || {};
   const pat = patrimonioNeto();
+  const bolsasIniciales = c.bolsasIniciales || {};
+  const totalBolsasInic = num2(Object.values(bolsasIniciales).reduce((a,b) => a + b, 0));
+  const totalInic = num2((c.efectivoInicial||0) + (c.efectivoBancosInicial||0) + (c.cuentasPorCobrarIniciales||0) + (c.inventarioInicial||0) + totalBolsasInic);
+
   return `
   <div class="page-head">
     <div class="page-eyebrow">Configuración</div>
@@ -2541,14 +2661,13 @@ function viewCapital(){
   <div class="info-banner">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
     <div>
-      <strong>Esto define el patrimonio inicial.</strong> El efectivo se registra como aporte de capital a la caja. Los demás valores (bancos, por cobrar, inventario) se usan solo para el cálculo del patrimonio y el balance.
+      <strong>Incluye las bolsas electrónicas de recargas.</strong> El saldo cargado por operador se suma al patrimonio como activo y aumenta el saldo disponible para vender recargas. Cuando vendas, cada bolsa baja automáticamente.
     </div>
   </div>
 
   ${!c.configurado ? `
   <div class="alert alert-warning">
     <div><div class="alert-title">Aún no configuraste el capital inicial</div>
-    Sin esto los números pueden aparecer en negativo.
     <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="abrirModal('configurarCapital')">Configurar ahora</button></div>
   </div>`:''}
 
@@ -2557,8 +2676,8 @@ function viewCapital(){
       <div class="kpi-value">${money(c.efectivoInicial || 0)}</div></div>
     <div class="kpi"><div class="kpi-label">Bancos</div>
       <div class="kpi-value">${money(c.efectivoBancosInicial || 0)}</div></div>
-    <div class="kpi"><div class="kpi-label">Por cobrar iniciales</div>
-      <div class="kpi-value">${money(c.cuentasPorCobrarIniciales || 0)}</div></div>
+    <div class="kpi"><div class="kpi-label">Bolsas electrónicas iniciales</div>
+      <div class="kpi-value">${money(totalBolsasInic)}</div></div>
     <div class="kpi"><div class="kpi-label">Inventario inicial</div>
       <div class="kpi-value">${money(c.inventarioInicial || 0)}</div></div>
   </div>
@@ -2574,19 +2693,52 @@ function viewCapital(){
       <div class="summary-row"><span class="label">Cuentas por cobrar iniciales</span><span class="value">${money(c.cuentasPorCobrarIniciales || 0)}</span></div>
       <div class="summary-row"><span class="label">Inventario inicial</span><span class="value">${money(c.inventarioInicial || 0)}</span></div>
       <div class="summary-row highlight"><span class="label">Total capital inicial</span>
-        <span class="value" style="color:var(--success)">${money(num2((c.efectivoInicial||0) + (c.efectivoBancosInicial||0) + (c.cuentasPorCobrarIniciales||0) + (c.inventarioInicial||0)))}</span></div>
+        <span class="value" style="color:var(--success)">${money(totalInic)}</span></div>
       ${c.notas ? `<div style="margin-top:14px;padding:12px;background:var(--surface-soft);border-radius:8px;font-size:12.5px;color:var(--muted)"><strong>Notas:</strong> ${esc(c.notas)}</div>` : ''}
       ${c.fechaConfiguracion ? `<div style="margin-top:8px;font-size:12px;color:var(--muted)">Configurado: ${fFecha(c.fechaConfiguracion)}</div>` : ''}
     </div>
     <div class="card">
       <div class="card-head"><div><div class="card-title">Comparación con el presente</div></div></div>
       <div class="summary-row"><span class="label">Capital inicial</span>
-        <span class="value">${money(num2((c.efectivoInicial||0) + (c.efectivoBancosInicial||0) + (c.cuentasPorCobrarIniciales||0) + (c.inventarioInicial||0)))}</span></div>
+        <span class="value">${money(totalInic)}</span></div>
       <div class="summary-row"><span class="label">Patrimonio actual</span>
         <span class="value" style="color:${pat.neto >= 0 ? 'var(--success)' : 'var(--danger)'}">${money(pat.neto)}</span></div>
       <div class="summary-row highlight"><span class="label">Variación</span>
-        <span class="value" style="color:${(pat.neto - ((c.efectivoInicial||0) + (c.efectivoBancosInicial||0) + (c.cuentasPorCobrarIniciales||0) + (c.inventarioInicial||0))) >= 0 ? 'var(--success)' : 'var(--danger)'}">${money(num2(pat.neto - ((c.efectivoInicial||0) + (c.efectivoBancosInicial||0) + (c.cuentasPorCobrarIniciales||0) + (c.inventarioInicial||0))))}</span></div>
+        <span class="value" style="color:${(pat.neto - totalInic) >= 0 ? 'var(--success)' : 'var(--danger)'}">${money(num2(pat.neto - totalInic))}</span></div>
     </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <div><div class="card-title">Bolsas electrónicas iniciales</div>
+      <div class="card-subtitle">Saldo cargado por operador al empezar</div></div>
+    </div>
+    ${Object.keys(bolsasIniciales).length === 0 ? `
+      <div class="empty">No se cargó saldo inicial en ninguna bolsa. Podés hacerlo desde Editar Capital.</div>
+    ` : `
+      <div class="table-wrap"><table>
+        <thead><tr>
+          <th>Operador</th>
+          <th class="num">Saldo inicial cargado</th>
+          <th class="num">Saldo actual en bolsa</th>
+          <th class="num">Variación</th>
+        </tr></thead>
+        <tbody>
+        ${Object.entries(bolsasIniciales).map(([provId, monto]) => {
+          const p = provById(provId);
+          const bolsa = state.bolsas[provId] || { saldo:0 };
+          const actual = bolsa.saldo || 0;
+          const var_ = num2(actual - monto);
+          return `<tr>
+            <td class="bold">${esc(p?.nombre || 'Proveedor eliminado')}</td>
+            <td class="num">${money(monto)}</td>
+            <td class="num bold">${money(actual)}</td>
+            <td class="num" style="color:${var_ >= 0 ? 'var(--success)' : 'var(--danger)'};font-weight:600">${var_ >= 0 ? '+' : ''}${money(var_)}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table></div>
+    `}
   </div>`;
 }
 
@@ -2605,7 +2757,7 @@ function viewBancos(){
   <div class="info-banner">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
     <div>
-      <strong>Aquí registras el dinero que tienes en bancos.</strong> No se mezcla con la caja física. Puedes hacer depósitos (ingreso) y retiros (egreso) desde la sección de cada banco. El saldo total bancario aparece en el <b>Balance</b>.
+      <strong>Dinero en bancos.</strong> No se mezcla con la caja física. Se refleja como activo en el Balance.
     </div>
   </div>
 
@@ -2660,7 +2812,7 @@ function viewBancos(){
 }
 
 /* ================================================================
-   VISTA: CAJA
+   VISTA: CAJA (con bolsas rediseñadas)
    ================================================================ */
 function viewCaja(){
   const mov = movimientosVisibles().slice().reverse();
@@ -2671,7 +2823,7 @@ function viewCaja(){
   const provsBolsa = state.proveedores.filter(p =>
     state.bolsas[p.id] || state.productos.some(x => x.proveedorId === p.id && x.esRecarga)
   );
-  const totalSaldoBolsa = num2(provsBolsa.reduce((a,p) => a + (state.bolsas[p.id]?.saldo || 0), 0));
+  const totalSaldoBolsa = saldoBolsasTotal();
   const totalBonif = num2(provsBolsa.reduce((a,p) => a + (state.bolsas[p.id]?.bonificaciones || 0), 0));
   const totalBonifRetiradas = num2(provsBolsa.reduce((a,p) => a + (state.bolsas[p.id]?.bonificacionesRetiradas || 0), 0));
 
@@ -2686,9 +2838,9 @@ function viewCaja(){
 
   <div class="caja-hero">
     <div>
-      <div class="caja-hero-label">${esAdmin() ? 'Saldo en caja' : 'Saldo de tu turno'}</div>
+      <div class="caja-hero-label">${esAdmin() ? 'Saldo en caja (efectivo físico)' : 'Saldo de tu turno'}</div>
       <div class="caja-hero-value" style="color:${saldoMostrar >= 0 ? '#fff' : '#ffb3b3'}">${money(saldoMostrar)}</div>
-      <div class="caja-hero-sub">${esAdmin() ? `Saldo inicial: ${money(state.caja.saldoInicial)}` : (miTurnoAbierto ? `Inicial: ${money(miTurnoAbierto.saldoInicial)}` : 'Sin turno abierto')}</div>
+      <div class="caja-hero-sub">${esAdmin() ? `Saldo inicial: ${money(state.caja.saldoInicial)} · Bolsas electrónicas: ${money(totalSaldoBolsa)}` : (miTurnoAbierto ? `Inicial: ${money(miTurnoAbierto.saldoInicial)}` : 'Sin turno abierto')}</div>
     </div>
     ${esAdmin() ? `
       <div class="btn-row">
@@ -2706,8 +2858,8 @@ function viewCaja(){
   ${esAdmin() ? `
   <div class="card">
     <div class="card-head">
-      <div><div class="card-title">Bolsa de recargas</div>
-      <div class="card-subtitle">Saldo y bonificaciones por operador</div></div>
+      <div><div class="card-title">Bolsas electrónicas (recargas)</div>
+      <div class="card-subtitle">Saldo disponible y bonificaciones por operador</div></div>
       <div class="btn-row">
         <button class="btn btn-primary" onclick="abrirModal('reponerBolsa')">Reponer saldo</button>
         <button class="btn btn-success" onclick="abrirModal('registrarBonificacion')">Registrar bonificación</button>
@@ -2715,23 +2867,30 @@ function viewCaja(){
     </div>
     <div class="info-banner" style="margin-bottom:18px">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-      <div><strong>Cómo funciona:</strong> Reponés saldo al operador (bs 1:1). Al vender recargas, el saldo baja. La ganancia viene por <b>bonificación</b> que el operador te acredita — la registras manualmente aquí.</div>
+      <div>
+        <strong>Cómo funciona:</strong> Reponés saldo al operador (transferencia de caja → bolsa, no cambia el patrimonio). Al vender recargas, el saldo baja. La ganancia viene por <b>bonificación</b>. El saldo inicial de cada bolsa se carga desde <b>Capital inicial</b>.
+      </div>
     </div>
     ${provsBolsa.length === 0 ? '<div class="empty">Sin operadores. Crear en Proveedores.</div>' : `
       <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
         <div class="kpi"><div class="kpi-label">Saldo disponible</div>
-          <div class="kpi-value">${money(totalSaldoBolsa)}</div></div>
+          <div class="kpi-value">${money(totalSaldoBolsa)}</div>
+          <div class="kpi-meta">Para vender recargas</div></div>
         <div class="kpi"><div class="kpi-label">Bonif. acumuladas</div>
-          <div class="kpi-value is-success">${money(totalBonif)}</div></div>
+          <div class="kpi-value is-success">${money(totalBonif)}</div>
+          <div class="kpi-meta">Pendientes de retirar</div></div>
         <div class="kpi"><div class="kpi-label">Bonif. retiradas</div>
-          <div class="kpi-value">${money(totalBonifRetiradas)}</div></div>
+          <div class="kpi-value">${money(totalBonifRetiradas)}</div>
+          <div class="kpi-meta">Histórico</div></div>
       </div>
       <div class="bolsa-grid">
         ${provsBolsa.map(p => {
           const b = state.bolsas[p.id] || { saldo:0, bonificaciones:0, bonificacionesRetiradas:0 };
+          const nRec = state.productos.filter(x => x.proveedorId === p.id && x.esRecarga).length;
           return `<div class="bolsa-card">
-            <div class="bolsa-card-head"><div><div class="bolsa-card-op">${esc(p.nombre)}</div></div></div>
-            <div class="bolsa-row"><span class="bolsa-row-label">Saldo</span>
+            <div class="bolsa-card-head"><div><div class="bolsa-card-op">${esc(p.nombre)}</div>
+            <div class="bolsa-card-com">${nRec} recarga(s) configurada(s)</div></div></div>
+            <div class="bolsa-row"><span class="bolsa-row-label">Saldo disponible</span>
               <span class="bolsa-row-value saldo">${money(b.saldo||0)}</span></div>
             <div class="bolsa-row"><span class="bolsa-row-label">Bonificaciones</span>
               <span class="bolsa-row-value comision">${money(b.bonificaciones||0)}</span></div>
@@ -2796,18 +2955,16 @@ function viewGastos(){
   const totalMes = num2(gastosMes.reduce((a,g) => a + g.monto, 0));
   const totalHoy = num2(gastosHoy.reduce((a,g) => a + g.monto, 0));
   const totalHist = num2(state.gastos.reduce((a,g) => a + g.monto, 0));
-
   const porCategoria = {};
   gastosMes.forEach(g => { porCategoria[g.categoria] = (porCategoria[g.categoria] || 0) + g.monto; });
   const categoriasOrdenadas = Object.entries(porCategoria).sort((a,b) => b[1] - a[1]);
   const maxCat = categoriasOrdenadas.length > 0 ? categoriasOrdenadas[0][1] : 1;
-
   return `
   <div class="page-head"><div class="page-eyebrow">Egresos operativos</div>
     <h1 class="page-title">Gastos</h1></div>
   <div class="info-banner">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <div><strong>Gastos administrativos y operativos.</strong> Cada gasto descuenta automáticamente de la caja. Al eliminar un gasto se devuelve el monto a la caja.</div>
+    <div><strong>Gastos administrativos y operativos.</strong> Cada gasto descuenta de la caja. Al eliminar se devuelve el monto.</div>
   </div>
   <div class="gasto-hero">
     <div><div class="gasto-hero-label">Gastos del mes</div>
@@ -2826,7 +2983,7 @@ function viewGastos(){
   <div class="card">
     <div class="card-head">
       <div><div class="card-title">Gastos registrados</div>
-      <div class="card-subtitle">${gastosMes.length} gasto(s) en ${nombreMes(mes)}</div></div>
+      <div class="card-subtitle">${gastosMes.length} gasto(s)</div></div>
       <div class="btn-row">
         <input type="month" value="${mes}" onchange="ui.filtroGastosMes=this.value; render()" style="width:auto;padding:6px 10px;font-size:12.5px">
         <button class="btn btn-primary" onclick="abrirModal('nuevoGasto')">Registrar gasto</button>
@@ -3089,19 +3246,19 @@ function viewInventario(){
   const valorTotal = valorInventarioCosto();
   const valorVenta = num2(state.productos.reduce((a,p) => esProductoRecarga(p) ? a : a + p.stock * p.precio, 0));
   const bajos = state.productos.filter(p => !esProductoRecarga(p) && p.stock <= 5).length;
-  const totalSaldoBolsa = num2(Object.values(state.bolsas).reduce((a,b) => a + (b.saldo||0), 0));
+  const totalSaldoBolsa = saldoBolsasTotal();
   return `
   <div class="page-head"><div class="page-eyebrow">Existencias</div>
     <h1 class="page-title">Inventario</h1></div>
   <div class="info-banner">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <div><strong>Solo lectura.</strong> El stock se modifica desde <b>Compras</b> o al <b>vender</b>. El saldo de recargas se repone desde <b>Caja → Bolsa</b>.</div>
+    <div><strong>Solo lectura.</strong> El stock se modifica desde <b>Compras</b> o al <b>vender</b>. El saldo de recargas se repone desde <b>Caja → Bolsa</b> o se carga inicialmente desde <b>Capital inicial</b>.</div>
   </div>
   <div class="kpi-grid">
     <div class="kpi"><div class="kpi-label">Valor a costo</div><div class="kpi-value">${money(valorTotal)}</div></div>
     <div class="kpi"><div class="kpi-label">Valor a venta</div><div class="kpi-value is-success">${money(valorVenta)}</div>
       <div class="kpi-meta">Potencial: ${money(num2(valorVenta - valorTotal))}</div></div>
-    <div class="kpi"><div class="kpi-label">Saldo en bolsas</div><div class="kpi-value">${money(totalSaldoBolsa)}</div></div>
+    <div class="kpi"><div class="kpi-label">Bolsas electrónicas</div><div class="kpi-value">${money(totalSaldoBolsa)}</div></div>
     <div class="kpi"><div class="kpi-label">Bajo stock</div><div class="kpi-value ${bajos>0?'is-warning':''}">${bajos}</div></div>
   </div>
   <div class="card">
@@ -3164,7 +3321,7 @@ function viewClientes(){
     <h1 class="page-title">${esCob ? 'Clientes y deudas' : 'Clientes y créditos'}</h1></div>
   <div class="info-banner">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <div><strong>Busca por nombre, teléfono o comunidad.</strong> Registra cobros con el botón verde. ${esAdmin() ? 'Para editar usa el botón <b>Editar</b>.' : esCob ? 'La edición la hace el administrador.' : ''}</div>
+    <div><strong>Busca por nombre, teléfono o comunidad.</strong> Registra cobros con el botón verde.</div>
   </div>
   ${esCob ? `<div class="cob-hero">
     <div><div class="cob-hero-label">Cobrado hoy</div>
@@ -3358,7 +3515,7 @@ function viewCompras(){
     <h1 class="page-title">Compras a proveedores</h1></div>
   <div class="info-banner">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <div><strong>Solo productos físicos.</strong> Las recargas se cargan desde <b>Caja → Bolsa de recargas → Reponer saldo</b>.</div>
+    <div><strong>Solo productos físicos.</strong> Las recargas se cargan desde <b>Caja → Bolsa → Reponer saldo</b> o inicialmente desde <b>Capital inicial</b>.</div>
   </div>
   <div class="grid-2">
     <div class="card">
@@ -3494,6 +3651,10 @@ function viewCategorias(){
 function viewProveedores(){
   return `
   <div class="page-head"><div class="page-eyebrow">Configuración</div><h1 class="page-title">Proveedores</h1></div>
+  <div class="info-banner">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <div><strong>Operadores telefónicos (Entel, Tigo, Viva) o distribuidoras.</strong> Cada proveedor con recargas tiene su propia bolsa electrónica.</div>
+  </div>
   <div class="card">
     <div class="card-head"><div><div class="card-title">Proveedores · ${state.proveedores.length}</div></div>
       <button class="btn btn-primary" onclick="abrirModal('nuevoProveedor')">Nuevo proveedor</button></div>
@@ -3504,7 +3665,7 @@ function viewProveedores(){
         const nRec = state.productos.filter(x => x.proveedorId === p.id && x.esRecarga).length;
         return `<tr><td class="bold">${esc(p.nombre)}</td>
           <td style="color:var(--muted);font-size:12.5px">${esc(p.nota||'—')}</td>
-          <td class="num">${money(b.saldo||0)}</td>
+          <td class="num" style="font-weight:600;color:var(--primary)">${money(b.saldo||0)}</td>
           <td class="num" style="color:var(--success)">${money(b.bonificaciones||0)}</td>
           <td class="num">${nRec}</td>
           <td class="num">
@@ -3642,7 +3803,6 @@ function viewGanancias(){
   const ganTotal = num2(ganFisTotal + bonifTotal);
   const gastosMes = num2(state.gastos.filter(g => mesDe(g.fecha) === mes).reduce((a,g) => a + g.monto, 0));
   const gananciaNeta = num2(ganFisMes + bonifMes - gastosMes);
-
   const ranking = {};
   state.ventas.forEach(v => v.items.forEach(it => {
     if(it.esRecarga) return;
@@ -3654,16 +3814,13 @@ function viewGanancias(){
   }));
   const top = Object.values(ranking).sort((a,b) => b.ganancia - a.ganancia).slice(0, 10);
   const maxGan = top.length > 0 ? Math.max(...top.map(t => t.ganancia)) : 1;
-
   return `
   <div class="page-head"><div class="page-eyebrow">Rentabilidad</div>
     <h1 class="page-title">Ganancias</h1></div>
   <div class="info-banner">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <div>
-      <strong>Ganancia bruta</strong> = margen de productos físicos + bonificaciones de recargas.<br>
-      <strong>Ganancia neta</strong> = bruta − gastos operativos del mes.
-    </div>
+    <div><strong>Ganancia bruta</strong> = margen de productos físicos + bonificaciones de recargas.<br>
+      <strong>Ganancia neta</strong> = bruta − gastos operativos del mes.</div>
   </div>
   <div class="gan-hero">
     <div>
@@ -3686,7 +3843,7 @@ function viewGanancias(){
     <div class="kpi"><div class="kpi-label">Ganancia neta mes</div>
       <div class="kpi-value is-success">${money(gananciaNeta)}</div></div>
     <div class="kpi"><div class="kpi-label">Bonif. acumuladas</div>
-      <div class="kpi-value">${money(num2(Object.values(state.bolsas).reduce((a,b) => a + (b.bonificaciones||0), 0)))}</div></div>
+      <div class="kpi-value">${money(saldoBolsasBonifTotal())}</div></div>
   </div>
   <div class="grid-3">
     <div class="card"><div class="card-head"><div><div class="card-title">Hoy</div></div></div>
@@ -3770,7 +3927,9 @@ function viewCierre(){
         <span class="value ${saldoCaja() >= 0 ? 'pos' : 'neg'}">${money(saldoCaja())}</span></div>
       <div class="summary-row"><span class="label">Bancos</span>
         <span class="value" style="color:var(--success)">${money(saldoBancosTotal())}</span></div>
-      <div class="summary-row"><span class="label">Inventario</span>
+      <div class="summary-row"><span class="label">Bolsas electrónicas</span>
+        <span class="value" style="color:var(--success)">${money(saldoBolsasTotal())}</span></div>
+      <div class="summary-row"><span class="label">Inventario físico</span>
         <span class="value">${money(valorInventarioCosto())}</span></div>
       <div class="summary-row"><span class="label">Por cobrar</span>
         <span class="value">${money(totalCuentasPorCobrar())}</span></div>
@@ -3852,14 +4011,14 @@ function cargarBaseReal(){
 (function init(){
   try{
     if(!load()){ state = initState(); save(); }
-    // Compatibilidad con versiones anteriores
     if(!state.usuarios) state.usuarios = [{ id:'U1', nombre:'Administrador', rol:'admin', color:'#1c3d5a', activo:true, creado:HOY() }];
     if(!state.turnos) state.turnos = [];
     if(!state.gastos) state.gastos = [];
     if(!state.categoriasGastos) state.categoriasGastos = [...CATEGORIAS_GASTOS_DEFAULT];
     if(!state.cuentasPorPagar) state.cuentasPorPagar = [];
     if(!state.bancos) state.bancos = [];
-    if(!state.capital) state.capital = { configurado:false, efectivoInicial:0, efectivoBancosInicial:0, cuentasPorCobrarIniciales:0, inventarioInicial:0, notas:'', fechaConfiguracion:null };
+    if(!state.capital) state.capital = { configurado:false, efectivoInicial:0, efectivoBancosInicial:0, cuentasPorCobrarIniciales:0, inventarioInicial:0, bolsasIniciales:{}, notas:'', fechaConfiguracion:null };
+    if(!state.capital.bolsasIniciales) state.capital.bolsasIniciales = {};
     if(!state.seq.gasto) state.seq.gasto = (state.gastos?.length || 0) + 1;
     if(!state.seq.cuentaPagar) state.seq.cuentaPagar = (state.cuentasPorPagar?.length || 0) + 1;
     if(!state.seq.banco) state.seq.banco = (state.bancos?.length || 0) + 1;
