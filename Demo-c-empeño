@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#7c2d12">
+<title>Casa de Empeño · Sistema</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💎</text></svg>">
+<style>
+:root{
+  --bg-soft:#f8f5f0;
+  --card:#ffffff;
+  --primary:#b45309;
+  --primary-2:#d97706;
+  --primary-soft:#fef3c7;
+  --gold:#c9a227;
+  --success:#10b981;
+  --danger:#ef4444;
+  --warning:#f59e0b;
+  --info:#3b82f6;
+  --text:#0f172a;
+  --muted:#64748b;
+  --border:#e7e1d6;
+  --radius:16px;
+  --shadow:0 4px 16px rgba(120,72,10,.08);
+  --shadow-lg:0 10px 30px rgba(120,72,10,.18);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif;
+  background:var(--bg-soft);color:var(--text);
+  min-height:100vh;
+  padding-bottom:88px;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ========== HEADER ========== */
+header{
+  background:linear-gradient(135deg,#78350f 0%,#b45309 55%,#d97706 100%);
+  color:#fff;padding:22px 18px 26px;
+  border-radius:0 0 24px 24px;
+  box-shadow:var(--shadow-lg);
+  position:relative;overflow:hidden;
+}
+header::before{
+  content:"";position:absolute;top:-60px;right:-60px;
+  width:220px;height:220px;border-radius:50%;
+  background:rgba(255,255,255,.06);
+}
+header::after{
+  content:"";position:absolute;bottom:-90px;left:-40px;
+  width:200px;height:200px;border-radius:50%;
+  background:rgba(255,255,255,.05);
+}
+.header-content{position:relative;z-index:1;max-width:1100px;margin:0 auto}
+.header-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{
+  display:flex;align-items:center;gap:10px;
+  font-weight:700;font-size:1.1rem;letter-spacing:.3px;
+}
+.logo-icon{
+  width:38px;height:38px;border-radius:12px;
+  background:rgba(255,255,255,.18);backdrop-filter:blur(10px);
+  display:grid;place-items:center;font-size:20px;
+}
+.header-sub{font-size:.78rem;opacity:.85;margin-top:2px}
+.header-actions{
+  display:flex;gap:8px;margin-top:16px;position:relative;z-index:1;flex-wrap:wrap;
+}
+.header-actions button{
+  flex:1;min-width:130px;
+  padding:10px 12px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.14);backdrop-filter:blur(10px);
+  color:#fff;font-weight:600;font-size:.78rem;cursor:pointer;
+  transition:all .15s;font-family:inherit;
+}
+.header-actions button:hover{background:rgba(255,255,255,.24)}
+.header-actions button:active{transform:scale(.97)}
+
+/* ========== KPIs ========== */
+.kpis{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+  margin-top:16px;position:relative;z-index:1;
+}
+.kpi{
+  background:rgba(255,255,255,.14);backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.2);
+  border-radius:14px;padding:12px;
+}
+.kpi-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;opacity:.85}
+.kpi-value{font-size:1.1rem;font-weight:700;margin-top:4px;display:block}
+.kpi-value.small{font-size:.95rem}
+
+/* ========== NAV DESKTOP ========== */
+nav{
+  display:none;
+  background:#fff;border-bottom:1px solid var(--border);
+  padding:0 12px;gap:4px;overflow-x:auto;
+  position:sticky;top:0;z-index:20;
+}
+nav::-webkit-scrollbar{display:none}
+nav button{
+  background:none;border:none;padding:14px 14px;font-size:.88rem;
+  color:var(--muted);font-weight:600;cursor:pointer;
+  border-bottom:2px solid transparent;white-space:nowrap;
+  font-family:inherit;
+}
+nav button.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+/* ========== BOTTOM NAV MOBILE ========== */
+.bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:50;
+  background:#fff;border-top:1px solid var(--border);
+  display:flex;justify-content:space-around;
+  padding:6px 2px calc(6px + env(safe-area-inset-bottom));
+  box-shadow:0 -4px 20px rgba(120,72,10,.08);
+}
+.bottom-nav button{
+  background:none;border:none;flex:1;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:6px 2px;color:var(--muted);font-size:.6rem;
+  font-weight:600;cursor:pointer;border-radius:10px;
+  transition:all .2s;font-family:inherit;
+}
+.bottom-nav button .ico{font-size:1.15rem;line-height:1}
+.bottom-nav button.active{color:var(--primary);background:var(--primary-soft)}
+
+/* ========== MAIN ========== */
+main{max-width:1100px;margin:0 auto;padding:16px 14px 24px}
+.tab{display:none;animation:fade .25s ease}
+.tab.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.card{
+  background:var(--card);border-radius:var(--radius);
+  padding:16px;box-shadow:var(--shadow);margin-bottom:14px;
+}
+.card h2{
+  margin:0 0 14px;font-size:1.05rem;font-weight:700;
+  display:flex;align-items:center;gap:8px;
+}
+.card h2 .dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--primary);display:inline-block;
+}
+
+/* ========== FORM ========== */
+form{display:grid;gap:10px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+label.field{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--muted);font-weight:600}
+input,select,textarea{
+  width:100%;padding:12px 14px;font-size:.92rem;
+  border:1.5px solid var(--border);border-radius:12px;
+  background:#fbf9f5;color:var(--text);
+  transition:all .15s;font-family:inherit;
+}
+textarea{resize:vertical;min-height:60px}
+input:focus,select:focus,textarea:focus{
+  outline:none;border-color:var(--primary);
+  background:#fff;box-shadow:0 0 0 4px rgba(180,83,9,.1);
+}
+button.btn{
+  padding:13px 18px;border:none;border-radius:12px;
+  background:linear-gradient(135deg,var(--primary),var(--primary-2));
+  color:#fff;font-weight:600;font-size:.9rem;cursor:pointer;
+  transition:transform .1s,box-shadow .2s;
+  box-shadow:0 4px 12px rgba(180,83,9,.25);
+  font-family:inherit;
+}
+button.btn:active{transform:scale(.97)}
+button.btn.ghost{
+  background:#f5f0e8;color:var(--text);box-shadow:none;
+  border:1.5px solid var(--border);
+}
+button.btn.success{background:linear-gradient(135deg,#10b981,#059669);box-shadow:0 4px 12px rgba(16,185,129,.3)}
+button.btn.danger{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 4px 12px rgba(239,68,68,.3)}
+button.btn.info{background:linear-gradient(135deg,#3b82f6,#2563eb);box-shadow:0 4px 12px rgba(59,130,246,.3)}
+button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
+
+/* ========== FILTROS CHIPS ========== */
+.chips{
+  display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;
+}
+.chip{
+  padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);
+  background:#fff;font-size:.78rem;font-weight:600;cursor:pointer;
+  color:var(--muted);transition:all .15s;font-family:inherit;
+}
+.chip.active{
+  background:linear-gradient(135deg,var(--primary),var(--primary-2));
+  color:#fff;border-color:transparent;
+  box-shadow:0 4px 10px rgba(180,83,9,.25);
+}
+.chip.active.green{background:linear-gradient(135deg,#10b981,#059669);box-shadow:0 4px 10px rgba(16,185,129,.25)}
+.chip.active.red{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 4px 10px rgba(239,68,68,.25)}
+.chip.active.amber{background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 10px rgba(245,158,11,.25)}
+
+/* ========== LIST ITEMS ========== */
+.list{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.item{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  padding:14px;background:#fbf9f5;border-radius:14px;
+  border:1px solid var(--border);
+  transition:all .15s;
+}
+.item:hover{background:#fff;box-shadow:var(--shadow)}
+.item-info{flex:1;min-width:0}
+.item-title{font-weight:700;font-size:.94rem;line-height:1.25}
+.item-sub{font-size:.76rem;color:var(--muted);margin-top:3px;line-height:1.4}
+.item-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
+.item-amount{font-weight:700;font-size:.92rem;color:var(--primary)}
+.item-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-top:6px}
+
+.badge{
+  font-size:.68rem;font-weight:700;padding:4px 9px;border-radius:20px;
+  white-space:nowrap;text-transform:uppercase;letter-spacing:.3px;
+}
+.badge.activo{background:#dcfce7;color:#166534}
+.badge.por_vencer{background:#fef3c7;color:#92400e}
+.badge.vencido{background:#fee2e2;color:#991b1b}
+.badge.almoneda{background:#ffedd5;color:#9a3412}
+.badge.recuperado{background:#dbeafe;color:#1e40af}
+.badge.vendido{background:#e5e7eb;color:#374151}
+.badge.info{background:#dbeafe;color:#1e40af}
+.badge.danger{background:#fee2e2;color:#991b1b}
+.badge.success{background:#dcfce7;color:#166534}
+.badge.stock-ok{background:#dcfce7;color:#166534}
+.badge.stock-low{background:#fef3c7;color:#92400e}
+.badge.stock-out{background:#fee2e2;color:#991b1b}
+.badge.in{background:#dbeafe;color:#1e40af}
+.badge.out{background:#fce7f3;color:#9d174d}
+
+.btn-icon{
+  width:34px;height:34px;border-radius:10px;border:none;
+  background:#fee2e2;color:#dc2626;cursor:pointer;
+  display:grid;place-items:center;font-size:1rem;
+  transition:all .15s;
+}
+.btn-icon:active{transform:scale(.9)}
+.empty{
+  text-align:center;padding:30px 10px;color:var(--muted);font-size:.88rem;
+}
+.empty .ico{font-size:2rem;display:block;margin-bottom:8px;opacity:.4}
+
+/* ========== RESUMEN CAJA ========== */
+.caja-resumen{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;
+}
+.caja-box{
+  padding:12px 10px;border-radius:14px;text-align:center;
+  color:#fff;
+}
+.caja-box.ing{background:linear-gradient(135deg,#10b981,#059669)}
+.caja-box.egr{background:linear-gradient(135deg,#ef4444,#dc2626)}
+.caja-box.sal{background:linear-gradient(135deg,#b45309,#d97706)}
+.caja-box small{font-size:.65rem;opacity:.9;display:block;text-transform:uppercase;letter-spacing:.4px}
+.caja-box b{font-size:.95rem;display:block;margin-top:4px}
+
+/* ========== REPORTES ========== */
+.report-filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.report-box{
+  background:#fbf9f5;border-radius:14px;padding:16px;
+  border:1px solid var(--border);margin-top:12px;
+}
+.report-header{
+  text-align:center;margin-bottom:16px;padding-bottom:12px;
+  border-bottom:2px solid var(--primary);
+}
+.report-header h3{margin:0 0 4px;font-size:1rem}
+.report-header p{margin:0;font-size:.78rem;color:var(--muted)}
+.report-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;
+}
+.report-cell{
+  background:#fff;border-radius:12px;padding:12px;
+  border:1px solid var(--border);
+}
+.report-cell small{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block}
+.report-cell b{font-size:1rem;display:block;margin-top:4px;color:var(--text)}
+.report-cell b.pos{color:#059669}
+.report-cell b.neg{color:#dc2626}
+.report-section-title{
+  font-size:.78rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.5px;color:var(--muted);margin:14px 0 8px;
+}
+
+/* ========== ALERTAS ========== */
+.alert{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:12px 14px;border-radius:12px;margin-bottom:10px;
+  border-left:4px solid;
+}
+.alert.warn{background:#fef3c7;border-color:#f59e0b;color:#78350f}
+.alert.danger{background:#fee2e2;border-color:#ef4444;color:#7f1d1d}
+.alert.info{background:#dbeafe;border-color:#3b82f6;color:#1e3a8a}
+.alert .alert-ico{font-size:1.2rem;line-height:1}
+.alert .alert-txt{flex:1;font-size:.85rem;font-weight:600}
+.alert .alert-sub{font-size:.75rem;opacity:.8;margin-top:2px;font-weight:400}
+
+/* ========== MODAL ========== */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);
+  z-index:300;display:none;align-items:flex-end;justify-content:center;
+  padding:0;
+}
+.modal-bg.active{display:flex}
+@media(min-width:600px){
+  .modal-bg{align-items:center;padding:20px}
+}
+.modal{
+  background:#fff;width:100%;max-width:520px;
+  border-radius:20px 20px 0 0;
+  padding:20px;max-height:90vh;overflow-y:auto;
+  box-shadow:0 -10px 40px rgba(0,0,0,.2);
+  animation:slideUp .25s ease;
+}
+@media(min-width:600px){
+  .modal{border-radius:20px;animation:pop .2s ease}
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
+@keyframes pop{from{transform:scale(.95);opacity:0}to{transform:none;opacity:1}}
+.modal h3{margin:0 0 14px;font-size:1.05rem;display:flex;align-items:center;gap:8px}
+.modal-body{font-size:.9rem;line-height:1.5;margin-bottom:16px}
+.modal-row{
+  display:flex;justify-content:space-between;padding:8px 0;
+  border-bottom:1px dashed var(--border);font-size:.88rem;
+}
+.modal-row:last-child{border-bottom:none}
+.modal-row.total{
+  font-weight:700;font-size:1rem;border-top:2px solid var(--primary);
+  border-bottom:none;padding-top:12px;margin-top:8px;color:var(--primary);
+}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.modal-actions button{flex:1}
+
+/* ========== FOOTER ========== */
+footer{
+  text-align:center;padding:20px 16px 24px;font-size:.75rem;
+  color:var(--muted);max-width:600px;margin:0 auto;line-height:1.5;
+}
+footer strong{color:var(--text)}
+
+/* ========== TOAST ========== */
+.toast{
+  position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:#0f172a;color:#fff;padding:12px 20px;border-radius:30px;
+  font-size:.85rem;font-weight:600;z-index:400;
+  opacity:0;transition:all .3s;pointer-events:none;
+  box-shadow:var(--shadow-lg);max-width:90vw;text-align:center;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.success{background:linear-gradient(135deg,#10b981,#059669)}
+.toast.error{background:linear-gradient(135deg,#ef4444,#dc2626)}
+
+/* ========== DESKTOP ========== */
+@media(min-width:768px){
+  body{padding-bottom:0}
+  header{padding:28px 32px 32px;border-radius:0 0 28px 28px}
+  .kpis{grid-template-columns:repeat(4,1fr);gap:14px}
+  .kpi-value{font-size:1.3rem}
+  nav{display:flex}
+  .bottom-nav{display:none}
+  main{padding:24px 20px 40px}
+  form.grid-form{grid-template-columns:repeat(auto-fit,minmax(170px,1fr));align-items:end}
+  form.grid-form .grid-2,form.grid-form .grid-3{grid-column:span 2}
+  form.grid-form button{grid-column:span 2}
+  .list{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}
+  .card{padding:22px}
+  .caja-resumen{gap:14px}
+  .report-grid{grid-template-columns:repeat(4,1fr)}
+}
+@media(min-width:1024px){
+  .kpis{grid-template-columns:repeat(4,1fr)}
+}
+
+/* ========== IMPRESIÓN ========== */
+@media print{
+  body{background:#fff;padding:0}
+  header,nav,.bottom-nav,.no-print,.toast,footer,.modal-bg{display:none !important}
+  main{padding:0;max-width:100%}
+  .tab{display:none !important}
+  .tab.active{display:block !important}
+  .card{box-shadow:none;padding:0;margin:0}
+  .report-box{background:#fff;border:none;padding:0}
+  .report-header h3{font-size:1.2rem}
+  .report-grid{grid-template-columns:repeat(2,1fr)}
+  .report-cell{border:1px solid #999;break-inside:avoid}
+  .item{border:1px solid #ddd;break-inside:avoid;background:#fff}
+  @page{margin:12mm}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-content">
+    <div class="header-top">
+      <div class="logo">
+        <div class="logo-icon">💎</div>
+        <div>
+          <div id="nombreNegocio">Casa de Empeño</div>
+          <div class="header-sub">Control de prendas, intereses y caja</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button id="btnDemo">✨ Datos de ejemplo</button>
+      <button id="btnReset">🗑️ Reiniciar todo</button>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi">
+        <div class="kpi-label">Capital en calle</div>
+        <span class="kpi-value" id="kpiCapital">$0</span>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Empeños activos</div>
+        <span class="kpi-value" id="kpiActivos">0</span>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Intereses del mes</div>
+        <span class="kpi-value" id="kpiIntereses">$0</span>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Saldo caja</div>
+        <span class="kpi-value" id="kpiSaldo">$0</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<nav>
+  <button data-tab="inicio" class="active">🏠 Inicio</button>
+  <button data-tab="empenos">💎 Empeños</button>
+  <button data-tab="clientes">👥 Clientes</button>
+  <button data-tab="almacen">🏪 Almacén</button>
+  <button data-tab="caja">💰 Caja</button>
+  <button data-tab="reportes">📊 Reportes</button>
+</nav>
+
+<main>
+
+  <!-- ============ INICIO ============ -->
+  <section id="inicio" class="tab active">
+    <div class="card">
+      <h2><span class="dot"></span>Alertas importantes</h2>
+      <div id="alertasCont"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Resumen del negocio</h2>
+      <div class="caja-resumen">
+        <div class="caja-box ing"><small>Intereses cobrados (mes)</small><b id="resIntereses">$0</b></div>
+        <div class="caja-box sal"><small>Capital prestado activo</small><b id="resCapital">$0</b></div>
+        <div class="caja-box egr"><small>Vencidos sin resolver</small><b id="resVencidos">0</b></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Próximos vencimientos (7 días)</h2>
+      <div id="proximosCont" class="list"></div>
+    </div>
+  </section>
+
+  <!-- ============ EMPEÑOS ============ -->
+  <section id="empenos" class="tab">
+    <div class="card no-print">
+      <h2 style="justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:8px"><span class="dot"></span>Empeños</span>
+        <button class="btn small" id="btnNuevoEmpeno">➕ Nuevo empeño</button>
+      </h2>
+
+      <div id="formEmpenoWrap" style="display:none;margin-top:10px">
+        <form id="formEmpeno" class="grid-form">
+          <label class="field" style="grid-column:span 2">Cliente
+            <select id="empCliente" required></select>
+          </label>
+          <label class="field">Descripción de la prenda
+            <input id="empDescripcion" placeholder="Ej. Anillo de oro 14k" required>
+          </label>
+          <label class="field">Marca / Modelo (opcional)
+            <input id="empMarca" placeholder="Ej. Tiffany">
+          </label>
+          <div class="grid-3" style="grid-column:span 2">
+            <label class="field">Monto prestado
+              <input id="empMonto" type="number" step="0.01" min="1" placeholder="0.00" required>
+            </label>
+            <label class="field">Tasa mensual %
+              <input id="empTasa" type="number" step="0.1" min="0" value="5" required>
+            </label>
+            <label class="field">Plazo (días)
+              <input id="empPlazo" type="number" min="1" value="30" required>
+            </label>
+          </div>
+          <label class="field" style="grid-column:span 2">Detalles / Notas
+            <textarea id="empNotas" placeholder="Peso, características, estado de la prenda..."></textarea>
+          </label>
+          <button class="btn" type="submit" style="grid-column:span 2">💾 Registrar empeño</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Listado de empeños</h2>
+      <div class="chips" id="filtrosEmpenos">
+        <button class="chip active" data-filtro="todos">Todos</button>
+        <button class="chip" data-filtro="activo">Activos</button>
+        <button class="chip" data-filtro="por_vencer">Por vencer</button>
+        <button class="chip" data-filtro="vencido">Vencidos</button>
+        <button class="chip" data-filtro="almoneda">Almoneda</button>
+        <button class="chip" data-filtro="recuperado">Recuperados</button>
+        <button class="chip" data-filtro="vendido">Vendidos</button>
+      </div>
+      <div id="listaEmpenos" class="list"></div>
+    </div>
+  </section>
+
+  <!-- ============ CLIENTES ============ -->
+  <section id="clientes" class="tab">
+    <div class="card">
+      <h2><span class="dot"></span>Nuevo cliente</h2>
+      <form id="formCliente" class="grid-form">
+        <label class="field">Nombre completo
+          <input id="cliNombre" placeholder="Ej. María López" required>
+        </label>
+        <div class="grid-2">
+          <label class="field">Teléfono
+            <input id="cliTelefono" type="tel" placeholder="55 1234 5678">
+          </label>
+          <label class="field">INE / Identificación
+            <input id="cliIne" placeholder="Opcional">
+          </label>
+        </div>
+        <label class="field">Dirección
+          <input id="cliDireccion" placeholder="Opcional">
+        </label>
+        <button class="btn" type="submit">➕ Registrar cliente</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Clientes registrados</h2>
+      <div id="listaClientes" class="list"></div>
+    </div>
+  </section>
+
+  <!-- ============ ALMACÉN ============ -->
+  <section id="almacen" class="tab">
+    <div class="card">
+      <h2><span class="dot"></span>Agregar producto al almacén</h2>
+      <form id="formProducto" class="grid-form">
+        <label class="field">Nombre
+          <input id="prodNombre" placeholder="Ej. Reloj Casio" required>
+        </label>
+        <div class="grid-3">
+          <label class="field">Precio venta
+            <input id="prodPrecio" type="number" step="0.01" min="0" placeholder="0.00" required>
+          </label>
+          <label class="field">Costo
+            <input id="prodCosto" type="number" step="0.01" min="0" placeholder="0.00">
+          </label>
+          <label class="field">Stock
+            <input id="prodStock" type="number" min="0" value="1" required>
+          </label>
+        </div>
+        <label class="field" style="grid-column:span 2">
+          <span style="display:flex;align-items:center;gap:8px">
+            <input type="checkbox" id="prodVencido" style="width:auto">
+            Marcar como producto vencido / en oferta
+          </span>
+        </label>
+        <button class="btn" type="submit" style="grid-column:span 2">➕ Agregar</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Productos en almacén</h2>
+      <div id="listaProductos" class="list"></div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Prendas en almoneda (para vender)</h2>
+      <p style="font-size:.82rem;color:var(--muted);margin:-8px 0 8px">
+        Estas son prendas de empeños vencidos que ya pasaron a venta.
+      </p>
+      <div id="listaAlmoneda" class="list"></div>
+    </div>
+  </section>
+
+  <!-- ============ CAJA ============ -->
+  <section id="caja" class="tab">
+    <div class="card">
+      <h2><span class="dot"></span>Resumen de caja</h2>
+      <div class="caja-resumen">
+        <div class="caja-box ing"><small>Ingresos</small><b id="cajaIng">$0</b></div>
+        <div class="caja-box egr"><small>Egresos</small><b id="cajaEgr">$0</b></div>
+        <div class="caja-box sal"><small>Saldo</small><b id="cajaSal">$0</b></div>
+      </div>
+
+      <h2 style="margin-top:20px"><span class="dot"></span>Nuevo movimiento</h2>
+      <form id="formCaja" class="grid-form">
+        <label class="field">Concepto
+          <input id="cajaConcepto" placeholder="Ej. Gastos de oficina" required>
+        </label>
+        <div class="grid-2">
+          <label class="field">Monto
+            <input id="cajaMonto" type="number" step="0.01" min="0.01" placeholder="0.00" required>
+          </label>
+          <label class="field">Tipo
+            <select id="cajaTipo">
+              <option value="ingreso">Ingreso</option>
+              <option value="egreso">Egreso</option>
+            </select>
+          </label>
+        </div>
+        <button class="btn success" type="submit" style="grid-column:span 2">💰 Registrar</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot"></span>Historial de movimientos</h2>
+      <div id="listaCaja" class="list"></div>
+    </div>
+  </section>
+
+  <!-- ============ REPORTES ============ -->
+  <section id="reportes" class="tab">
+    <div class="card no-print">
+      <h2><span class="dot"></span>Generar reporte</h2>
+      <div class="report-filters">
+        <button class="chip active" data-periodo="semanal">📅 Semanal</button>
+        <button class="chip" data-periodo="mensual">🗓️ Mensual</button>
+        <button class="chip" data-periodo="anual">📆 Anual</button>
+      </div>
+      <button class="btn ghost" id="btnImprimir" style="width:100%">🖨️ Imprimir / Guardar PDF</button>
+    </div>
+
+    <div class="card">
+      <div class="report-box">
+        <div class="report-header">
+          <h3>Reporte <span id="repTitulo">Semanal</span></h3>
+          <p id="repPeriodo">—</p>
+        </div>
+
+        <div class="report-section-title">Ganancias del periodo</div>
+        <div class="report-grid">
+          <div class="report-cell"><small>Intereses cobrados</small><b class="pos" id="repIntereses">$0</b></div>
+          <div class="report-cell"><small>Ventas de almoneda</small><b class="pos" id="repVentasAlm">$0</b></div>
+          <div class="report-cell"><small>Otros ingresos</small><b class="pos" id="repOtrosIng">$0</b></div>
+          <div class="report-cell"><small>Gastos</small><b class="neg" id="repGastos">$0</b></div>
+        </div>
+
+        <div class="report-section-title">Actividad de empeños</div>
+        <div class="report-grid">
+          <div class="report-cell"><small>Nuevos empeños</small><b id="repNuevosEmp">0</b></div>
+          <div class="report-cell"><small>Capital prestado</small><b id="repCapitalPrest">$0</b></div>
+          <div class="report-cell"><small>Recuperados</small><b id="repRecuperados">0</b></div>
+          <div class="report-cell"><small>Capital recuperado</small><b id="repCapitalRec">$0</b></div>
+        </div>
+
+        <div class="report-section-title">Estado actual del negocio</div>
+        <div class="report-grid">
+          <div class="report-cell"><small>Empeños activos</small><b id="repActivos">0</b></div>
+          <div class="report-cell"><small>Capital en calle</small><b id="repCapitalCalle">$0</b></div>
+          <div class="report-cell"><small>Vencidos sin resolver</small><b class="neg" id="repVencidos">0</b></div>
+          <div class="report-cell"><small>En almoneda</small><b id="repAlmoneda">0</b></div>
+        </div>
+
+        <div class="report-section-title">Ganancia neta del periodo</div>
+        <div class="report-cell" style="text-align:center">
+          <small>Utilidad</small>
+          <b id="repGanancia" style="font-size:1.4rem">$0</b>
+        </div>
+
+        <p style="text-align:center;margin-top:20px;font-size:.75rem;color:var(--muted)">
+          Generado el <span id="repGenerado">—</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p style="margin:0">
+    <strong>Versión demo</strong> · Los datos se guardan solo en este navegador.<br>
+    Para una versión con base de datos, respaldos y multi-usuario, contáctanos.
+  </p>
+</footer>
+
+<!-- BOTTOM NAV MOBILE -->
+<div class="bottom-nav">
+  <button data-tab="inicio" class="active"><span class="ico">🏠</span>Inicio</button>
+  <button data-tab="empenos"><span class="ico">💎</span>Empeños</button>
+  <button data-tab="clientes"><span class="ico">👥</span>Clientes</button>
+  <button data-tab="almacen"><span class="ico">🏪</span>Almacén</button>
+  <button data-tab="caja"><span class="ico">💰</span>Caja</button>
+  <button data-tab="reportes"><span class="ico">📊</span>Reportes</button>
+</div>
+
+<!-- MODAL -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3 id="modalTitle"></h3>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn" id="modalConfirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ CONFIG ============ */
+const CONFIG = {
+  tasaMensualDefault: 5,
+  plazoDefault: 30,
+  diasAvisoVencimiento: 7,
+  diasGracia: 15
+};
+
+/* ============ ESTADO ============ */
+const DB = {
+  clientes: JSON.parse(localStorage.getItem('emp_clientes') || '[]'),
+  empenos: JSON.parse(localStorage.getItem('emp_empenos') || '[]'),
+  productos: JSON.parse(localStorage.getItem('emp_productos') || '[]'),
+  caja: JSON.parse(localStorage.getItem('emp_caja') || '[]')
+};
+let filtroEmpenos = 'todos';
+let periodoActual = 'semanal';
+let modalCallback = null;
+
+function save(){
+  localStorage.setItem('emp_clientes', JSON.stringify(DB.clientes));
+  localStorage.setItem('emp_empenos', JSON.stringify(DB.empenos));
+  localStorage.setItem('emp_productos', JSON.stringify(DB.productos));
+  localStorage.setItem('emp_caja', JSON.stringify(DB.caja));
+}
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const money = n => '$' + Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtFecha = iso => new Date(iso).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+const fmtFechaCorta = iso => new Date(iso).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'});
+const fmtFechaInput = iso => {
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
+};
+const esc = s => String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const diasEntre = (a,b) => Math.floor((new Date(b) - new Date(a)) / (1000*60*60*24));
+const addDias = (fecha, dias) => {
+  const d = new Date(fecha);
+  d.setDate(d.getDate() + dias);
+  return d.toISOString();
+};
+
+function nextFolio(){
+  const max = DB.empenos.reduce((m,e)=>{
+    const n = parseInt((e.folio||'0').replace(/\D/g,''))||0;
+    return Math.max(m,n);
+  },0);
+  return 'EMP-' + String(max+1).padStart(4,'0');
+}
+
+function calcInteres(monto, tasaMensual, dias){
+  return monto * (tasaMensual/100) * (dias/30);
+}
+
+function estadoActual(e){
+  if(e.estado==='recuperado' || e.estado==='vendido' || e.estado==='almoneda') return e.estado;
+  const hoy = new Date();
+  const venc = new Date(e.fechaVencimiento);
+  const dias = diasEntre(venc, hoy);
+  if(dias > CONFIG.diasGracia) return 'vencido';
+  if(hoy > venc) return 'vencido';
+  const diasRestantes = diasEntre(hoy, venc);
+  if(diasRestantes <= CONFIG.diasAvisoVencimiento) return 'por_vencer';
+  return 'activo';
+}
+
+function etiquetaEstado(est){
+  const map = {
+    'activo':'Activo','por_vencer':'Por vencer','vencido':'Vencido',
+    'almoneda':'Almoneda','recuperado':'Recuperado','vendido':'Vendido'
+  };
+  return map[est] || est;
+}
+
+/* ============ TOAST ============ */
+let toastTimer;
+function toast(msg, type=''){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.className='toast',2400);
+}
+
+/* ============ MODAL ============ */
+function openModal(title, bodyHtml, onConfirm, confirmLabel='Confirmar', confirmClass='btn'){
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = bodyHtml;
+  const btn = document.getElementById('modalConfirm');
+  btn.textContent = confirmLabel;
+  btn.className = confirmClass;
+  modalCallback = onConfirm;
+  document.getElementById('modalBg').classList.add('active');
+}
+function closeModal(){
+  document.getElementById('modalBg').classList.remove('active');
+  modalCallback = null;
+}
+document.getElementById('modalConfirm').addEventListener('click', ()=>{
+  if(modalCallback) modalCallback();
+});
+document.getElementById('modalBg').addEventListener('click', e=>{
+  if(e.target.id === 'modalBg') closeModal();
+});
+
+/* ============ NAVEGACIÓN ============ */
+function showTab(id){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.id===id));
+  document.querySelectorAll('nav button, .bottom-nav button').forEach(b=>{
+    b.classList.toggle('active', b.dataset.tab===id);
+  });
+  if(id==='reportes') renderReporte();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('nav button, .bottom-nav button').forEach(b=>{
+  b.addEventListener('click',()=>showTab(b.dataset.tab));
+});
+
+/* ============ RENDER: KPIs ============ */
+function renderKPIs(){
+  const activos = DB.empenos.filter(e => {
+    const est = estadoActual(e);
+    return est==='activo' || est==='por_vencer' || est==='vencido';
+  });
+  const capital = activos.reduce((s,e)=>s+e.montoPrestado,0);
+  document.getElementById('kpiCapital').textContent = money(capital);
+  document.getElementById('kpiActivos').textContent = activos.length;
+
+  const mes = new Date();
+  const interesesMes = DB.caja
+    .filter(c => c.tipo==='ingreso' && c.categoria==='interes')
+    .filter(c => {
+      const d = new Date(c.fecha);
+      return d.getMonth()===mes.getMonth() && d.getFullYear()===mes.getFullYear();
+    })
+    .reduce((s,c)=>s+c.monto,0);
+  document.getElementById('kpiIntereses').textContent = money(interesesMes);
+
+  const ing = DB.caja.filter(c=>c.tipo==='ingreso').reduce((s,c)=>s+c.monto,0);
+  const egr = DB.caja.filter(c=>c.tipo==='egreso').reduce((s,c)=>s+c.monto,0);
+  document.getElementById('kpiSaldo').textContent = money(ing-egr);
+
+  // Resumen inicio
+  document.getElementById('resIntereses').textContent = money(interesesMes);
+  document.getElementById('resCapital').textContent = money(capital);
+  const vencidos = DB.empenos.filter(e => {
+    const est = estadoActual(e);
+    return est==='vencido';
+  }).length;
+  document.getElementById('resVencidos').textContent = vencidos;
+}
+
+/* ============ RENDER: ALERTAS ============ */
+function renderAlertas(){
+  const cont = document.getElementById('alertasCont');
+  const hoy = new Date();
+  const vencidos = [];
+  const porVencer = [];
+
+  DB.empenos.forEach(e=>{
+    const est = estadoActual(e);
+    if(est==='vencido') vencidos.push(e);
+    else if(est==='por_vencer') porVencer.push(e);
+  });
+
+  let html = '';
+
+  if(vencidos.length){
+    html += `<div class="alert danger">
+      <span class="alert-ico">⚠️</span>
+      <div>
+        <div class="alert-txt">${vencidos.length} empeño${vencidos.length>1?'s':''} vencido${vencidos.length>1?'s':''}</div>
+        <div class="alert-sub">Revisa si pasan a almoneda o esperan recuperación.</div>
+      </div>
+    </div>`;
+  }
+
+  if(porVencer.length){
+    html += `<div class="alert warn">
+      <span class="alert-ico">⏰</span>
+      <div>
+        <div class="alert-txt">${porVencer.length} empeño${porVencer.length>1?'s':''} por vencer (≤7 días)</div>
+        <div class="alert-sub">Puedes avisar al cliente o preparar refrendo.</div>
+      </div>
+    </div>`;
+  }
+
+  if(!vencidos.length && !porVencer.length){
+    html = '<div class="empty"><span class="ico">✅</span>Todo en orden. Sin vencimientos próximos.</div>';
+  }
+
+  cont.innerHTML = html;
+}
+
+/* ============ RENDER: PRÓXIMOS VENCIMIENTOS ============ */
+function renderProximos(){
+  const cont = document.getElementById('proximosCont');
+  const hoy = new Date();
+  const items = DB.empenos
+    .filter(e => {
+      const est = estadoActual(e);
+      return est==='por_vencer' || est==='vencido';
+    })
+    .sort((a,b) => new Date(a.fechaVencimiento) - new Date(b.fechaVencimiento))
+    .slice(0,5);
+
+  if(!items.length){
+    cont.innerHTML = '<div class="empty">Sin vencimientos próximos</div>';
+    return;
+  }
+
+  cont.innerHTML = items.map(e=>{
+    const cli = DB.clientes.find(c=>c.id===e.clienteId);
+    const est = estadoActual(e);
+    const diasRestantes = diasEntre(hoy, new Date(e.fechaVencimiento));
+    const textoDias = diasRestantes < 0
+      ? `Vencido hace ${Math.abs(diasRestantes)} día(s)`
+      : `Vence en ${diasRestantes} día(s)`;
+
+    return `<div class="item">
+      <div class="item-info">
+        <div class="item-title">${esc(e.descripcion)}</div>
+        <div class="item-sub">
+          ${esc(cli?cli.nombre:'Sin cliente')} · ${e.folio}<br>
+          ${fmtFechaCorta(e.fechaVencimiento)} · ${textoDias}
+        </div>
+      </div>
+      <div class="item-right">
+        <span class="badge ${est}">${etiquetaEstado(est)}</span>
+        <div class="item-amount">${money(e.montoPrestado)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ============ RENDER: EMPEÑOS ============ */
+function renderEmpenos(){
+  const cont = document.getElementById('listaEmpenos');
+  let lista = DB.empenos.slice().reverse();
+
+  if(filtroEmpenos !== 'todos'){
+    lista = lista.filter(e => estadoActual(e)===filtroEmpenos);
+  }
+
+  if(!lista.length){
+    cont.innerHTML = '<div class="empty"><span class="ico">💎</span>No hay empeños en esta vista.</div>';
+    return;
+  }
+
+  const hoy = new Date();
+
+  cont.innerHTML = lista.map(e=>{
+    const cli = DB.clientes.find(c=>c.id===e.clienteId);
+    const est = estadoActual(e);
+    const dias = diasEntre(new Date(e.fechaEmpeno), hoy);
+    const interesAcum = calcInteres(e.montoPrestado, e.tasaMensual, dias);
+
+    let acciones = '';
+    if(est==='activo' || est==='por_vencer' || est==='vencido'){
+      acciones = `
+        <button class="btn small info" onclick="accionRefrendar('${e.id}')">💵 Refrendar</button>
+        <button class="btn small success" onclick="accionRecuperar('${e.id}')">✅ Recuperar</button>
+        ${est==='vencido' ? `<button class="btn small ghost" onclick="accionAlmoneda('${e.id}')">🏪 A venta</button>` : ''}
+      `;
+    } else if(est==='almoneda'){
+      acciones = `<button class="btn small success" onclick="accionVender('${e.id}')">💰 Vender</button>`;
+    }
+
+    return `<div class="item" style="flex-direction:column;align-items:stretch">
+      <div style="display:flex;justify-content:space-between;gap:12px">
+        <div class="item-info">
+          <div class="item-title">${esc(e.descripcion)}</div>
+          <div class="item-sub">
+            <strong>${e.folio}</strong> · ${esc(cli?cli.nombre:'Sin cliente')}<br>
+            Empeñado: ${fmtFechaCorta(e.fechaEmpeno)} · Vence: ${fmtFechaCorta(e.fechaVencimiento)}
+            ${e.marca ? '<br>'+esc(e.marca) : ''}
+          </div>
+        </div>
+        <div class="item-right">
+          <span class="badge ${est}">${etiquetaEstado(est)}</span>
+          <div class="item-amount">${money(e.montoPrestado)}</div>
+          <div style="font-size:.72rem;color:var(--muted)">
+            + int. ${money(interesAcum)}
+          </div>
+        </div>
+      </div>
+      ${acciones ? `<div class="item-actions">${acciones}<button class="btn-icon" onclick="eliminarEmpeno('${e.id}')" title="Eliminar">🗑</button></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+/* ============ RENDER: CLIENTES ============ */
+function renderClientes(){
+  const cont = document.getElementById('listaClientes');
+  if(!DB.clientes.length){
+    cont.innerHTML = '<div class="empty"><span class="ico">👥</span>Sin clientes registrados.</div>';
+    return;
+  }
+  cont.innerHTML = DB.clientes.map(c=>{
+    const empenosActivos = DB.empenos.filter(e=>e.clienteId===c.id && ['activo','por_vencer','vencido'].includes(estadoActual(e))).length;
+    return `<div class="item">
+      <div class="item-info">
+        <div class="item-title">${esc(c.nombre)}</div>
+        <div class="item-sub">
+          ${esc(c.telefono||'—')}
+          ${c.ine ? ' · INE: '+esc(c.ine) : ''}
+          ${c.direccion ? '<br>'+esc(c.direccion) : ''}
+          ${empenosActivos ? `<br><strong style="color:var(--primary)">${empenosActivos} empeño(s) activo(s)</strong>` : ''}
+        </div>
+      </div>
+      <div class="item-right">
+        <button class="btn-icon" onclick="eliminarCliente('${c.id}')" title="Eliminar">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ============ RENDER: ALMACÉN ============ */
+function renderProductos(){
+  const cont = document.getElementById('listaProductos');
+  if(!DB.productos.length){
+    cont.innerHTML = '<div class="empty"><span class="ico">📦</span>Sin productos en almacén.</div>';
+    return;
+  }
+  cont.innerHTML = DB.productos.map(p=>{
+    let cls = 'stock-ok', txt = 'Stock ' + p.stock;
+    if(p.stock===0) cls='stock-out';
+    else if(p.stock<=3) cls='stock-low';
+    return `<div class="item">
+      <div class="item-info">
+        <div class="item-title">${esc(p.nombre)} ${p.vencido?'<span class="badge danger" style="margin-left:6px">Vencido</span>':''}</div>
+        <div class="item-sub">
+          Venta: ${money(p.precio)}
+          ${p.costo ? ' · Costo: '+money(p.costo) : ''}
+          ${p.costo ? '<br>Margen: '+money(p.precio-p.costo) : ''}
+        </div>
+      </div>
+      <div class="item-right">
+        <span class="badge ${cls}">${txt}</span>
+        <button class="btn-icon" onclick="eliminarProducto('${p.id}')" title="Eliminar">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAlmoneda(){
+  const cont = document.getElementById('listaAlmoneda');
+  const items = DB.empenos.filter(e => estadoActual(e)==='almoneda');
+  if(!items.length){
+    cont.innerHTML = '<div class="empty"><span class="ico">🏪</span>Sin prendas en almoneda.</div>';
+    return;
+  }
+  cont.innerHTML = items.map(e=>{
+    const cli = DB.clientes.find(c=>c.id===e.clienteId);
+    return `<div class="item">
+      <div class="item-info">
+        <div class="item-title">${esc(e.descripcion)}</div>
+        <div class="item-sub">
+          ${e.folio} · ${esc(cli?cli.nombre:'—')}<br>
+          Prestado: ${money(e.montoPrestado)} · Precio venta: ${money(e.precioVenta||0)}
+        </div>
+      </div>
+      <div class="item-right">
+        <span class="badge almoneda">Almoneda</span>
+        <button class="btn small success" onclick="accionVender('${e.id}')">💰 Vender</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ============ RENDER: CAJA ============ */
+function renderCaja(){
+  const ing = DB.caja.filter(c=>c.tipo==='ingreso').reduce((s,c)=>s+c.monto,0);
+  const egr = DB.caja.filter(c=>c.tipo==='egreso').reduce((s,c)=>s+c.monto,0);
+  document.getElementById('cajaIng').textContent = money(ing);
+  document.getElementById('cajaEgr').textContent = money(egr);
+  document.getElementById('cajaSal').textContent = money(ing-egr);
+
+  const cont = document.getElementById('listaCaja');
+  if(!DB.caja.length){
+    cont.innerHTML = '<div class="empty"><span class="ico">💰</span>Sin movimientos de caja.</div>';
+    return;
+  }
+  cont.innerHTML = DB.caja.slice().reverse().slice(0,60).map(c=>{
+    const esIn = c.tipo==='ingreso';
+    return `<div class="item">
+      <div class="item-info">
+        <div class="item-title">${esc(c.concepto)}</div>
+        <div class="item-sub">${fmtFecha(c.fecha)} ${c.categoria?' · '+esc(c.categoria):''}</div>
+      </div>
+      <div class="item-right">
+        <span class="badge ${esIn?'stock-ok':'stock-out'}">${esIn?'+':'-'}${money(c.monto)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ============ RENDER ALL ============ */
+function renderAll(){
+  renderKPIs();
+  renderAlertas();
+  renderProximos();
+  renderEmpenos();
+  renderClientes();
+  renderProductos();
+  renderAlmoneda();
+  renderCaja();
+  if(document.getElementById('reportes').classList.contains('active')) renderReporte();
+}
+
+/* ============ ELIMINAR ============ */
+window.eliminarEmpeno = id => {
+  if(!confirm('¿Eliminar este empeño? Esta acción no se puede deshacer.')) return;
+  DB.empenos = DB.empenos.filter(e=>e.id!==id);
+  save(); renderAll(); toast('Empeño eliminado');
+};
+window.eliminarCliente = id => {
+  const tieneEmpenos = DB.empenos.some(e=>e.clienteId===id);
+  if(tieneEmpenos){
+    if(!confirm('Este cliente tiene empeños asociados. ¿Eliminar de todas formas?')) return;
+  } else {
+    if(!confirm('¿Eliminar este cliente?')) return;
+  }
+  DB.clientes = DB.clientes.filter(c=>c.id!==id);
+  save(); renderAll(); toast('Cliente eliminado');
+};
+window.eliminarProducto = id => {
+  if(!confirm('¿Eliminar este producto?')) return;
+  DB.productos = DB.productos.filter(p=>p.id!==id);
+  save(); renderAll(); toast('Producto eliminado');
+};
+
+/* ============ ACCIONES DE EMPEÑOS ============ */
+window.accionRefrendar = id => {
+  const e = DB.empenos.find(x=>x.id===id);
+  if(!e) return;
+  const hoy = new Date();
+  const dias = diasEntre(new Date(e.fechaEmpeno), hoy);
+  const interes = calcInteres(e.montoPrestado, e.tasaMensual, dias);
+  const nuevoVenc = addDias(hoy, e.plazoDias);
+
+  const html = `
+    <div class="modal-row"><span>Empeño</span><span><strong>${e.folio}</strong></span></div>
+    <div class="modal-row"><span>Prenda</span><span>${esc(e.descripcion)}</span></div>
+    <div class="modal-row"><span>Días transcurridos</span><span>${dias}</span></div>
+    <div class="modal-row"><span>Interés a cobrar</span><span><strong>${money(interes)}</strong></span></div>
+    <div class="modal-row"><span>Nuevo vencimiento</span><span>${fmtFechaInput(nuevoVenc)}</span></div>
+    <div class="modal-row total"><span>Total a cobrar</span><span>${money(interes)}</span></div>
+  `;
+
+  openModal('💵 Refrendar empeño', html, ()=>{
+    e.refrendos = e.refrendos || [];
+    e.refrendos.push({fecha:hoy.toISOString(), dias, interes});
+    e.fechaEmpeno = hoy.toISOString();
+    e.fechaVencimiento = nuevoVenc;
+    if(e.estado==='almoneda' || e.estado==='vencido') e.estado = 'activo';
+    DB.caja.push({
+      id:uid(), fecha:hoy.toISOString(), tipo:'ingreso',
+      concepto:`Refrendo ${e.folio} - ${e.descripcion}`,
+      monto:interes, categoria:'interes'
+    });
+    save(); renderAll(); closeModal();
+    toast('Refrendo registrado','success');
+  }, 'Confirmar refrendo', 'btn info');
+};
+
+window.accionRecuperar = id => {
+  const e = DB.empenos.find(x=>x.id===id);
+  if(!e) return;
+  const hoy = new Date();
+  const dias = diasEntre(new Date(e.fechaEmpeno), hoy);
+  const interes = calcInteres(e.montoPrestado, e.tasaMensual, dias);
+  const total = e.montoPrestado + interes;
+
+  const html = `
+    <div class="modal-row"><span>Empeño</span><span><strong>${e.folio}</strong></span></div>
+    <div class="modal-row"><span>Prenda</span><span>${esc(e.descripcion)}</span></div>
+    <div class="modal-row"><span>Días transcurridos</span><span>${dias}</span></div>
+    <div class="modal-row"><span>Capital</span><span>${money(e.montoPrestado)}</span></div>
+    <div class="modal-row"><span>Intereses</span><span>${money(interes)}</span></div>
+    <div class="modal-row total"><span>Total a cobrar</span><span>${money(total)}</span></div>
+  `;
+
+  openModal('✅ Recuperar empeño', html, ()=>{
+    e.estado = 'recuperado';
+    e.fechaRecuperacion = hoy.toISOString();
+    e.totalCobrado = total;
+    e.interesCobrado = interes;
+
+    DB.caja.push({
+      id:uid(), fecha:hoy.toISOString(), tipo:'ingreso',
+      concepto:`Recuperación ${e.folio} - capital`,
+      monto:e.montoPrestado, categoria:'capital'
+    });
+    if(interes > 0){
+      DB.caja.push({
+        id:uid(), fecha:hoy.toISOString(), tipo:'ingreso',
+        concepto:`Recuperación ${e.folio} - intereses`,
+        monto:interes, categoria:'interes'
+      });
+    }
+    save(); renderAll(); closeModal();
+    toast('Empeño recuperado','success');
+  }, 'Confirmar recuperación', 'btn success');
+};
+
+window.accionAlmoneda = id => {
+  const e = DB.empenos.find(x=>x.id===id);
+  if(!e) return;
+  const sugerido = Math.round(e.montoPrestado * 1.5);
+
+  const html = `
+    <p style="margin:0 0 12px">Esta prenda pasa a almoneda para su venta. Se recomienda un precio de venta superior al capital prestado para no perder.</p>
+    <label class="field">Precio de venta sugerido
+      <input type="number" id="precioAlm" value="${sugerido}" step="0.01" min="0">
+    </label>
+    <div class="modal-row" style="margin-top:12px"><span>Capital prestado</span><span>${money(e.montoPrestado)}</span></div>
+  `;
+
+  openModal('🏪 Pasar a almoneda', html, ()=>{
+    const precio = Number(document.getElementById('precioAlm').value) || sugerido;
+    e.estado = 'almoneda';
+    e.precioVenta = precio;
+    e.fechaAlmoneda = new Date().toISOString();
+    save(); renderAll(); closeModal();
+    toast('Prenda en almoneda','success');
+  }, 'Mover a almoneda', 'btn');
+};
+
+window.accionVender = id => {
+  const e = DB.empenos.find(x=>x.id===id);
+  if(!e) return;
+  const precio = e.precioVenta || Math.round(e.montoPrestado * 1.5);
+
+  const html = `
+    <label class="field">Precio final de venta
+      <input type="number" id="precioVenta" value="${precio}" step="0.01" min="0" required>
+    </label>
+    <div class="modal-row" style="margin-top:12px"><span>Capital prestado</span><span>${money(e.montoPrestado)}</span></div>
+    <div class="modal-row"><span>Ganancia estimada</span><span id="gananciaEst">${money(precio - e.montoPrestado)}</span></div>
+  `;
+
+  openModal('💰 Vender prenda', html, ()=>{
+    const p = Number(document.getElementById('precioVenta').value);
+    if(p<=0) return toast('Precio inválido','error');
+    e.estado = 'vendido';
+    e.precioVenta = p;
+    e.fechaVenta = new Date().toISOString();
+
+    DB.caja.push({
+      id:uid(), fecha:new Date().toISOString(), tipo:'ingreso',
+      concepto:`Venta almoneda ${e.folio} - ${e.descripcion}`,
+      monto:p, categoria:'venta'
+    });
+    save(); renderAll(); closeModal();
+    toast('Venta registrada','success');
+  }, 'Registrar venta', 'btn success');
+
+  // Actualizar ganancia en vivo
+  setTimeout(()=>{
+    const inp = document.getElementById('precioVenta');
+    if(!inp) return;
+    inp.addEventListener('input', ()=>{
+      const v = Number(inp.value)||0;
+      document.getElementById('gananciaEst').textContent = money(v - e.montoPrestado);
+    });
+  }, 50);
+};
+
+/* ============ FORM: EMPEÑO ============ */
+document.getElementById('btnNuevoEmpeno').addEventListener('click', ()=>{
+  const wrap = document.getElementById('formEmpenoWrap');
+  const visible = wrap.style.display !== 'none';
+  wrap.style.display = visible ? 'none' : 'block';
+  if(!visible) llenarSelectClientes();
+});
+
+function llenarSelectClientes(){
+  const sel = document.getElementById('empCliente');
+  if(!DB.clientes.length){
+    sel.innerHTML = '<option value="">— Registra un cliente primero —</option>';
+    return;
+  }
+  sel.innerHTML = DB.clientes.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
+}
+
+document.getElementById('formEmpeno').addEventListener('submit', e=>{
+  e.preventDefault();
+  const clienteId = document.getElementById('empCliente').value;
+  const descripcion = document.getElementById('empDescripcion').value.trim();
+  const marca = document.getElementById('empMarca').value.trim();
+  const monto = Number(document.getElementById('empMonto').value);
+  const tasa = Number(document.getElementById('empTasa').value);
+  const plazo = Number(document.getElementById('empPlazo').value);
+  const notas = document.getElementById('empNotas').value.trim();
+
+  if(!clienteId) return toast('Registra un cliente primero','error');
+  if(!descripcion || monto<=0) return toast('Datos inválidos','error');
+
+  const ahora = new Date();
+  const venc = addDias(ahora, plazo);
+
+  const empeno = {
+    id:uid(), folio:nextFolio(), clienteId, descripcion, marca, notas,
+    montoPrestado:monto, tasaMensual:tasa, plazoDias:plazo,
+    fechaEmpeno:ahora.toISOString(),
+    fechaVencimiento:venc,
+    estado:'activo',
+    refrendos:[]
+  };
+
+  DB.empenos.push(empeno);
+
+  // Egreso de caja (capital entregado)
+  DB.caja.push({
+    id:uid(), fecha:ahora.toISOString(), tipo:'egreso',
+    concepto:`Empeño ${empeno.folio} - ${descripcion}`,
+    monto:monto, categoria:'capital'
+  });
+
+  save();
+  renderAll();
+  e.target.reset();
+  document.getElementById('empTasa').value = CONFIG.tasaMensualDefault;
+  document.getElementById('empPlazo').value = CONFIG.plazoDefault;
+  document.getElementById('formEmpenoWrap').style.display = 'none';
+  toast('Empeño registrado: ' + empeno.folio, 'success');
+});
+
+/* ============ FORM: CLIENTE ============ */
+document.getElementById('formCliente').addEventListener('submit', e=>{
+  e.preventDefault();
+  const nombre = document.getElementById('cliNombre').value.trim();
+  if(!nombre) return toast('El nombre es obligatorio','error');
+  DB.clientes.push({
+    id:uid(), nombre,
+    telefono: document.getElementById('cliTelefono').value.trim(),
+    ine: document.getElementById('cliIne').value.trim(),
+    direccion: document.getElementById('cliDireccion').value.trim()
+  });
+  save(); renderAll(); e.target.reset();
+  toast('Cliente registrado','success');
+});
+
+/* ============ FORM: PRODUCTO ============ */
+document.getElementById('formProducto').addEventListener('submit', e=>{
+  e.preventDefault();
+  const nombre = document.getElementById('prodNombre').value.trim();
+  const precio = Number(document.getElementById('prodPrecio').value);
+  const costo = Number(document.getElementById('prodCosto').value) || 0;
+  const stock = Number(document.getElementById('prodStock').value);
+  const vencido = document.getElementById('prodVencido').checked;
+  if(!nombre || precio<0) return toast('Datos inválidos','error');
+  DB.productos.push({id:uid(), nombre, precio, costo, stock, vencido});
+  save(); renderAll(); e.target.reset();
+  document.getElementById('prodStock').value = 1;
+  toast('Producto agregado','success');
+});
+
+/* ============ FORM: CAJA ============ */
+document.getElementById('formCaja').addEventListener('submit', e=>{
+  e.preventDefault();
+  const concepto = document.getElementById('cajaConcepto').value.trim();
+  const monto = Number(document.getElementById('cajaMonto').value);
+  const tipo = document.getElementById('cajaTipo').value;
+  if(!concepto || monto<=0) return toast('Datos inválidos','error');
+  DB.caja.push({
+    id:uid(), fecha:new Date().toISOString(), tipo, concepto, monto,
+    categoria: tipo==='egreso' ? 'gasto' : 'otro'
+  });
+  save(); renderAll(); e.target.reset();
+  toast('Movimiento registrado','success');
+});
+
+/* ============ FILTROS EMPEÑOS ============ */
+document.querySelectorAll('#filtrosEmpenos .chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    document.querySelectorAll('#filtrosEmpenos .chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    filtroEmpenos = chip.dataset.filtro;
+    renderEmpenos();
+  });
+});
+
+/* ============ REPORTES ============ */
+document.querySelectorAll('.report-filters .chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    document.querySelectorAll('.report-filters .chip').forEach(c=>c.classList.remove('active'));
+    chip.classList.add('active');
+    periodoActual = chip.dataset.periodo;
+    renderReporte();
+  });
+});
+
+function rangoPeriodo(periodo){
+  const ahora = new Date();
+  const desde = new Date();
+  let titulo = '';
+  if(periodo==='semanal'){
+    const dia = ahora.getDay() || 7;
+    desde.setDate(ahora.getDate() - (dia-1));
+    desde.setHours(0,0,0,0);
+    titulo = 'Semanal';
+  } else if(periodo==='mensual'){
+    desde.setDate(1); desde.setHours(0,0,0,0);
+    titulo = 'Mensual';
+  } else {
+    desde.setMonth(0,1); desde.setHours(0,0,0,0);
+    titulo = 'Anual';
+  }
+  return {desde, hasta: ahora, titulo};
+}
+
+function renderReporte(){
+  const {desde, hasta, titulo} = rangoPeriodo(periodoActual);
+  const enRango = f => {
+    const t = new Date(f).getTime();
+    return t >= desde.getTime() && t <= hasta.getTime();
+  };
+
+  document.getElementById('repTitulo').textContent = titulo;
+  const fmtD = d => d.toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'numeric'});
+  document.getElementById('repPeriodo').textContent = `${fmtD(desde)} — ${fmtD(hasta)}`;
+
+  const cajaP = DB.caja.filter(c=>enRango(c.fecha));
+  const empenosP = DB.empenos.filter(e=>enRango(e.fechaEmpeno));
+
+  const intereses = cajaP.filter(c=>c.categoria==='interes').reduce((s,c)=>s+c.monto,0);
+  const ventasAlm = cajaP.filter(c=>c.categoria==='venta').reduce((s,c)=>s+c.monto,0);
+  const capitalRec = cajaP.filter(c=>c.categoria==='capital' && c.tipo==='ingreso').reduce((s,c)=>s+c.monto,0);
+  const otrosIng = cajaP.filter(c=>c.tipo==='ingreso' && !['interes','venta','capital'].includes(c.categoria)).reduce((s,c)=>s+c.monto,0);
+  const gastos = cajaP.filter(c=>c.tipo==='egreso' && c.categoria!=='capital').reduce((s,c)=>s+c.monto,0);
+
+  document.getElementById('repIntereses').textContent = money(intereses);
+  document.getElementById('repVentasAlm').textContent = money(ventasAlm);
+  document.getElementById('repOtrosIng').textContent = money(otrosIng);
+  document.getElementById('repGastos').textContent = money(gastos);
+
+  document.getElementById('repNuevosEmp').textContent = empenosP.length;
+  document.getElementById('repCapitalPrest').textContent = money(empenosP.reduce((s,e)=>s+e.montoPrestado,0));
+  const recuperadosP = DB.empenos.filter(e=>e.estado==='recuperado' && e.fechaRecuperacion && enRango(e.fechaRecuperacion));
+  document.getElementById('repRecuperados').textContent = recuperadosP.length;
+  document.getElementById('repCapitalRec').textContent = money(recuperadosP.reduce((s,e)=>s+e.montoPrestado,0));
+
+  const activosAhora = DB.empenos.filter(e=>['activo','por_vencer','vencido'].includes(estadoActual(e)));
+  document.getElementById('repActivos').textContent = activosAhora.length;
+  document.getElementById('repCapitalCalle').textContent = money(activosAhora.reduce((s,e)=>s+e.montoPrestado,0));
+  document.getElementById('repVencidos').textContent = DB.empenos.filter(e=>estadoActual(e)==='vencido').length;
+  document.getElementById('repAlmoneda').textContent = DB.empenos.filter(e=>estadoActual(e)==='almoneda').length;
+
+  const ganancia = intereses + ventasAlm + otrosIng - gastos;
+  const ganEl = document.getElementById('repGanancia');
+  ganEl.textContent = money(ganancia);
+  ganEl.className = ganancia >= 0 ? 'pos' : 'neg';
+
+  document.getElementById('repGenerado').textContent = new Date().toLocaleString('es-MX');
+}
+
+document.getElementById('btnImprimir').addEventListener('click', ()=>window.print());
+
+/* ============ DATOS DE EJEMPLO ============ */
+document.getElementById('btnDemo').addEventListener('click', ()=>{
+  if(!confirm('Esto reemplazará los datos actuales con datos de ejemplo. ¿Continuar?')) return;
+
+  const c1 = {id:uid(), nombre:'María López', telefono:'55 1234 5678', ine:'LOMM850312', direccion:'Av. Reforma 123'};
+  const c2 = {id:uid(), nombre:'Juan Pérez', telefono:'55 8765 4321', ine:'', direccion:'Calle Hidalgo 45'};
+  const c3 = {id:uid(), nombre:'Ana Ramírez', telefono:'55 5555 1111', ine:'RAAA920815', direccion:''};
+  DB.clientes = [c1, c2, c3];
+
+  const hoy = new Date();
+  const crearEmpeno = (cli, desc, marca, monto, diasAtras, plazo, estado='activo', extra={}) => {
+    const fechaEmp = new Date(hoy); fechaEmp.setDate(fechaEmp.getDate() - diasAtras);
+    const fechaVenc = new Date(fechaEmp); fechaVenc.setDate(fechaVenc.getDate() + plazo);
+    return {
+      id:uid(), folio:'', clienteId:cli, descripcion:desc, marca, notas:'',
+      montoPrestado:monto, tasaMensual:5, plazoDias:plazo,
+      fechaEmpeno:fechaEmp.toISOString(),
+      fechaVencimiento:fechaVenc.toISOString(),
+      estado, refrendos:[], ...extra
+    };
+  };
+
+  DB.empenos = [
+    crearEmpeno(c1.id,'Anillo de oro 14k','Tiffany', 2500, 10, 30, 'activo'),
+    crearEmpeno(c2.id,'Reloj Rolex Datejust','Rolex', 15000, 20, 30, 'activo'),
+    crearEmpeno(c3.id,'Cadena de plata 30g','', 800, 5, 30, 'activo'),
+    crearEmpeno(c1.id,'Laptop MacBook Air 2020','Apple', 6000, 35, 30, 'activo'),
+    crearEmpeno(c2.id,'Aretes de oro con diamante','', 3500, 50, 30, 'activo'),
+    crearEmpeno(c3.id,'Bolsa Louis Vuitton','Louis Vuitton', 8000, 25, 30, 'activo'),
+    crearEmpeno(c1.id,'Pantalla Samsung 55"','Samsung', 3000, 65, 30, 'almoneda', {precioVenta:4500, fechaAlmoneda:new Date().toISOString()}),
+    crearEmpeno(c2.id,'Xbox Series X','Microsoft', 4000, 80, 30, 'almoneda', {precioVenta:6000, fechaAlmoneda:new Date().toISOString()}),
+    crearEmpeno(c3.id,'Bicicleta de montaña','Trek', 2000, 90, 30, 'recuperado', {
+      fechaRecuperacion:new Date(hoy.getTime() - 30*24*60*60*1000).toISOString(),
+      totalCobrado:2100, interesCobrado:100
+    }),
+    crearEmpeno(c1.id,'Cámara Canon EOS','Canon', 5500, 120, 30, 'recuperado', {
+      fechaRecuperacion:new Date(hoy.getTime() - 60*24*60*60*1000).toISOString(),
+      totalCobrado:5775, interesCobrado:275
+    })
+  ];
+  // Asignar folios
+  DB.empenos.forEach((e,i)=>{ e.folio = 'EMP-' + String(i+1).padStart(4,'0'); });
+
+  DB.productos = [
+    {id:uid(), nombre:'Reloj Casio de mujer', precio:850, costo:400, stock:2, vencido:false},
+    {id:uid(), nombre:'Cadena de acero inoxidable', precio:350, costo:150, stock:5, vencido:false},
+    {id:uid(), nombre:'Audífonos Bluetooth (vencidos)', precio:250, costo:180, stock:3, vencido:true},
+    {id:uid(), nombre:'Cargador portátil 10,000 mAh', precio:300, costo:180, stock:1, vencido:true}
+  ];
+
+  // Historial de caja del último año
+  DB.caja = [];
+  const categorias = ['interes','capital','venta','gasto','otro'];
+  for(let i=0;i<40;i++){
+    const diasAtras = Math.floor(Math.random()*360);
+    const fecha = new Date(hoy);
+    fecha.setDate(fecha.getDate() - diasAtras);
+    const esIngreso = Math.random() > 0.35;
+    const categoria = esIngreso
+      ? ['interes','capital','venta','otro'][Math.floor(Math.random()*4)]
+      : 'gasto';
+    const monto = esIngreso
+      ? Math.round((100 + Math.random()*800)*100)/100
+      : Math.round((80 + Math.random()*400)*100)/100;
+    DB.caja.push({
+      id:uid(), fecha:fecha.toISOString(),
+      tipo: esIngreso ? 'ingreso' : 'egreso',
+      concepto: esIngreso
+        ? (categoria==='interes'?'Cobro de intereses':
+           categoria==='capital'?'Recuperación de capital':
+           categoria==='venta'?'Venta de almoneda':'Ingreso varios')
+        : 'Gasto operativo',
+      monto, categoria
+    });
+  }
+  // Capital de los empeños activos como egresos
+  DB.empenos.filter(e=>['activo','por_vencer','vencido','almoneda'].includes(estadoActual(e))).forEach(e=>{
+    DB.caja.push({
+      id:uid(), fecha:e.fechaEmpeno, tipo:'egreso',
+      concepto:`Empeño ${e.folio} - ${e.descripcion}`,
+      monto:e.montoPrestado, categoria:'capital'
+    });
+  });
+
+  save(); renderAll();
+  toast('Datos de ejemplo cargados ✨','success');
+});
+
+document.getElementById('btnReset').addEventListener('click', ()=>{
+  if(!confirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.')) return;
+  DB.clientes=[]; DB.empenos=[]; DB.productos=[]; DB.caja=[];
+  save(); renderAll();
+  toast('Todo reiniciado','success');
+});
+
+/* ============ INIT ============ */
+renderAll();
+llenarSelectClientes();
+</script>
+
+</body>
+</html>
