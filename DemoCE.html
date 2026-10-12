@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#7c2d12">
 <title>Casa de Empeño · Sistema</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💎</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b45309' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 3h12l4 6-10 13L2 9Z'/><path d='M11 3 8 9l4 13 4-13-3-6'/><path d='M2 9h20'/></svg>">
 <style>
 :root{
   --bg-soft:#f8f5f0;
@@ -34,6 +34,7 @@ body{
   padding-bottom:88px;
   -webkit-font-smoothing:antialiased;
 }
+svg{display:block;flex-shrink:0}
 
 /* ========== HEADER ========== */
 header{
@@ -56,20 +57,22 @@ header::after{
 .header-content{position:relative;z-index:1;max-width:1100px;margin:0 auto}
 .header-top{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .logo{
-  display:flex;align-items:center;gap:10px;
-  font-weight:700;font-size:1.1rem;letter-spacing:.3px;
+  display:flex;align-items:center;gap:12px;
+  font-weight:700;font-size:1.1rem;letter-spacing:.2px;
 }
 .logo-icon{
-  width:38px;height:38px;border-radius:12px;
+  width:42px;height:42px;border-radius:12px;
   background:rgba(255,255,255,.18);backdrop-filter:blur(10px);
-  display:grid;place-items:center;font-size:20px;
+  display:grid;place-items:center;color:#fff;
+  border:1px solid rgba(255,255,255,.15);
 }
-.header-sub{font-size:.78rem;opacity:.85;margin-top:2px}
+.header-sub{font-size:.78rem;opacity:.85;margin-top:2px;font-weight:500;letter-spacing:.2px}
 .header-actions{
   display:flex;gap:8px;margin-top:16px;position:relative;z-index:1;flex-wrap:wrap;
 }
 .header-actions button{
   flex:1;min-width:130px;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
   padding:10px 12px;border-radius:12px;
   border:1px solid rgba(255,255,255,.25);
   background:rgba(255,255,255,.14);backdrop-filter:blur(10px);
@@ -88,25 +91,28 @@ header::after{
   background:rgba(255,255,255,.14);backdrop-filter:blur(12px);
   border:1px solid rgba(255,255,255,.2);
   border-radius:14px;padding:12px;
+  display:flex;flex-direction:column;gap:6px;
 }
-.kpi-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;opacity:.85}
-.kpi-value{font-size:1.1rem;font-weight:700;margin-top:4px;display:block}
-.kpi-value.small{font-size:.95rem}
+.kpi-head{display:flex;align-items:center;gap:6px;opacity:.9}
+.kpi-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.kpi-value{font-size:1.1rem;font-weight:700;letter-spacing:-.2px}
 
 /* ========== NAV DESKTOP ========== */
 nav{
   display:none;
   background:#fff;border-bottom:1px solid var(--border);
-  padding:0 12px;gap:4px;overflow-x:auto;
+  padding:0 12px;gap:2px;overflow-x:auto;
   position:sticky;top:0;z-index:20;
 }
 nav::-webkit-scrollbar{display:none}
 nav button{
+  display:inline-flex;align-items:center;gap:8px;
   background:none;border:none;padding:14px 14px;font-size:.88rem;
   color:var(--muted);font-weight:600;cursor:pointer;
   border-bottom:2px solid transparent;white-space:nowrap;
-  font-family:inherit;
+  font-family:inherit;transition:color .15s;
 }
+nav button:hover{color:var(--text)}
 nav button.active{color:var(--primary);border-bottom-color:var(--primary)}
 
 /* ========== BOTTOM NAV MOBILE ========== */
@@ -119,12 +125,11 @@ nav button.active{color:var(--primary);border-bottom-color:var(--primary)}
 }
 .bottom-nav button{
   background:none;border:none;flex:1;
-  display:flex;flex-direction:column;align-items:center;gap:2px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
   padding:6px 2px;color:var(--muted);font-size:.6rem;
   font-weight:600;cursor:pointer;border-radius:10px;
-  transition:all .2s;font-family:inherit;
+  transition:all .2s;font-family:inherit;letter-spacing:.1px;
 }
-.bottom-nav button .ico{font-size:1.15rem;line-height:1}
 .bottom-nav button.active{color:var(--primary);background:var(--primary-soft)}
 
 /* ========== MAIN ========== */
@@ -139,12 +144,18 @@ main{max-width:1100px;margin:0 auto;padding:16px 14px 24px}
 }
 .card h2{
   margin:0 0 14px;font-size:1.05rem;font-weight:700;
-  display:flex;align-items:center;gap:8px;
+  display:flex;align-items:center;gap:10px;
 }
 .card h2 .dot{
-  width:8px;height:8px;border-radius:50%;
+  width:6px;height:6px;border-radius:50%;
   background:var(--primary);display:inline-block;
 }
+.card h2 .h2-ico{
+  width:30px;height:30px;border-radius:9px;
+  background:var(--primary-soft);color:var(--primary);
+  display:grid;place-items:center;
+}
+.card h2 .h2-txt{flex:1}
 
 /* ========== FORM ========== */
 form{display:grid;gap:10px}
@@ -163,6 +174,7 @@ input:focus,select:focus,textarea:focus{
   background:#fff;box-shadow:0 0 0 4px rgba(180,83,9,.1);
 }
 button.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
   padding:13px 18px;border:none;border-radius:12px;
   background:linear-gradient(135deg,var(--primary),var(--primary-2));
   color:#fff;font-weight:600;font-size:.9rem;cursor:pointer;
@@ -180,10 +192,8 @@ button.btn.danger{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:
 button.btn.info{background:linear-gradient(135deg,#3b82f6,#2563eb);box-shadow:0 4px 12px rgba(59,130,246,.3)}
 button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
 
-/* ========== FILTROS CHIPS ========== */
-.chips{
-  display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;
-}
+/* ========== CHIPS ========== */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .chip{
   padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);
   background:#fff;font-size:.78rem;font-weight:600;cursor:pointer;
@@ -194,9 +204,6 @@ button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
   color:#fff;border-color:transparent;
   box-shadow:0 4px 10px rgba(180,83,9,.25);
 }
-.chip.active.green{background:linear-gradient(135deg,#10b981,#059669);box-shadow:0 4px 10px rgba(16,185,129,.25)}
-.chip.active.red{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 4px 10px rgba(239,68,68,.25)}
-.chip.active.amber{background:linear-gradient(135deg,#f59e0b,#d97706);box-shadow:0 4px 10px rgba(245,158,11,.25)}
 
 /* ========== LIST ITEMS ========== */
 .list{display:flex;flex-direction:column;gap:10px;margin-top:14px}
@@ -211,13 +218,15 @@ button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
 .item-title{font-weight:700;font-size:.94rem;line-height:1.25}
 .item-sub{font-size:.76rem;color:var(--muted);margin-top:3px;line-height:1.4}
 .item-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0}
-.item-amount{font-weight:700;font-size:.92rem;color:var(--primary)}
+.item-amount{font-weight:700;font-size:.92rem;color:var(--primary);letter-spacing:-.2px}
 .item-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;margin-top:6px}
 
 .badge{
+  display:inline-flex;align-items:center;gap:4px;
   font-size:.68rem;font-weight:700;padding:4px 9px;border-radius:20px;
   white-space:nowrap;text-transform:uppercase;letter-spacing:.3px;
 }
+.badge svg{width:11px;height:11px}
 .badge.activo{background:#dcfce7;color:#166534}
 .badge.por_vencer{background:#fef3c7;color:#92400e}
 .badge.vencido{background:#fee2e2;color:#991b1b}
@@ -236,14 +245,18 @@ button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
 .btn-icon{
   width:34px;height:34px;border-radius:10px;border:none;
   background:#fee2e2;color:#dc2626;cursor:pointer;
-  display:grid;place-items:center;font-size:1rem;
+  display:grid;place-items:center;
   transition:all .15s;
 }
 .btn-icon:active{transform:scale(.9)}
 .empty{
   text-align:center;padding:30px 10px;color:var(--muted);font-size:.88rem;
 }
-.empty .ico{font-size:2rem;display:block;margin-bottom:8px;opacity:.4}
+.empty .ico{
+  display:grid;place-items:center;margin:0 auto 10px;
+  width:52px;height:52px;border-radius:14px;
+  background:#f5f0e8;color:#b9ab99;
+}
 
 /* ========== RESUMEN CAJA ========== */
 .caja-resumen{
@@ -252,12 +265,17 @@ button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
 .caja-box{
   padding:12px 10px;border-radius:14px;text-align:center;
   color:#fff;
+  display:flex;flex-direction:column;align-items:center;gap:4px;
 }
 .caja-box.ing{background:linear-gradient(135deg,#10b981,#059669)}
 .caja-box.egr{background:linear-gradient(135deg,#ef4444,#dc2626)}
 .caja-box.sal{background:linear-gradient(135deg,#b45309,#d97706)}
-.caja-box small{font-size:.65rem;opacity:.9;display:block;text-transform:uppercase;letter-spacing:.4px}
-.caja-box b{font-size:.95rem;display:block;margin-top:4px}
+.caja-box .caja-ico{
+  width:26px;height:26px;border-radius:8px;
+  background:rgba(255,255,255,.2);display:grid;place-items:center;
+}
+.caja-box small{font-size:.65rem;opacity:.9;display:block;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.caja-box b{font-size:.95rem;display:block;letter-spacing:-.2px}
 
 /* ========== REPORTES ========== */
 .report-filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
@@ -278,13 +296,14 @@ button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
   background:#fff;border-radius:12px;padding:12px;
   border:1px solid var(--border);
 }
-.report-cell small{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block}
-.report-cell b{font-size:1rem;display:block;margin-top:4px;color:var(--text)}
+.report-cell small{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:block;font-weight:600}
+.report-cell b{font-size:1rem;display:block;margin-top:4px;color:var(--text);letter-spacing:-.2px}
 .report-cell b.pos{color:#059669}
 .report-cell b.neg{color:#dc2626}
 .report-section-title{
   font-size:.78rem;font-weight:700;text-transform:uppercase;
   letter-spacing:.5px;color:var(--muted);margin:14px 0 8px;
+  display:flex;align-items:center;gap:6px;
 }
 
 /* ========== ALERTAS ========== */
@@ -296,7 +315,11 @@ button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
 .alert.warn{background:#fef3c7;border-color:#f59e0b;color:#78350f}
 .alert.danger{background:#fee2e2;border-color:#ef4444;color:#7f1d1d}
 .alert.info{background:#dbeafe;border-color:#3b82f6;color:#1e3a8a}
-.alert .alert-ico{font-size:1.2rem;line-height:1}
+.alert .alert-ico{
+  width:32px;height:32px;border-radius:9px;
+  background:rgba(255,255,255,.6);
+  display:grid;place-items:center;flex-shrink:0;
+}
 .alert .alert-txt{flex:1;font-size:.85rem;font-weight:600}
 .alert .alert-sub{font-size:.75rem;opacity:.8;margin-top:2px;font-weight:400}
 
@@ -307,9 +330,7 @@ button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
   padding:0;
 }
 .modal-bg.active{display:flex}
-@media(min-width:600px){
-  .modal-bg{align-items:center;padding:20px}
-}
+@media(min-width:600px){.modal-bg{align-items:center;padding:20px}}
 .modal{
   background:#fff;width:100%;max-width:520px;
   border-radius:20px 20px 0 0;
@@ -317,16 +338,22 @@ button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
   box-shadow:0 -10px 40px rgba(0,0,0,.2);
   animation:slideUp .25s ease;
 }
-@media(min-width:600px){
-  .modal{border-radius:20px;animation:pop .2s ease}
-}
+@media(min-width:600px){.modal{border-radius:20px;animation:pop .2s ease}}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
 @keyframes pop{from{transform:scale(.95);opacity:0}to{transform:none;opacity:1}}
-.modal h3{margin:0 0 14px;font-size:1.05rem;display:flex;align-items:center;gap:8px}
+.modal h3{
+  margin:0 0 14px;font-size:1.05rem;
+  display:flex;align-items:center;gap:10px;
+}
+.modal h3 .h3-ico{
+  width:34px;height:34px;border-radius:10px;
+  background:var(--primary-soft);color:var(--primary);
+  display:grid;place-items:center;
+}
 .modal-body{font-size:.9rem;line-height:1.5;margin-bottom:16px}
 .modal-row{
   display:flex;justify-content:space-between;padding:8px 0;
-  border-bottom:1px dashed var(--border);font-size:.88rem;
+  border-bottom:1px dashed var(--border);font-size:.88rem;gap:12px;
 }
 .modal-row:last-child{border-bottom:none}
 .modal-row.total{
@@ -346,6 +373,7 @@ footer strong{color:var(--text)}
 /* ========== TOAST ========== */
 .toast{
   position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);
+  display:inline-flex;align-items:center;gap:8px;
   background:#0f172a;color:#fff;padding:12px 20px;border-radius:30px;
   font-size:.85rem;font-weight:600;z-index:400;
   opacity:0;transition:all .3s;pointer-events:none;
@@ -354,6 +382,14 @@ footer strong{color:var(--text)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.success{background:linear-gradient(135deg,#10b981,#059669)}
 .toast.error{background:linear-gradient(135deg,#ef4444,#dc2626)}
+.toast .toast-ico{
+  width:20px;height:20px;border-radius:50%;
+  background:rgba(255,255,255,.2);
+  display:grid;place-items:center;flex-shrink:0;
+}
+.toast .toast-ico svg{width:12px;height:12px}
+.toast .toast-ico{display:none}
+.toast.show .toast-ico{display:grid}
 
 /* ========== DESKTOP ========== */
 @media(min-width:768px){
@@ -399,7 +435,13 @@ footer strong{color:var(--text)}
   <div class="header-content">
     <div class="header-top">
       <div class="logo">
-        <div class="logo-icon">💎</div>
+        <div class="logo-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 3h12l4 6-10 13L2 9Z"/>
+            <path d="M11 3 8 9l4 13 4-13-3-6"/>
+            <path d="M2 9h20"/>
+          </svg>
+        </div>
         <div>
           <div id="nombreNegocio">Casa de Empeño</div>
           <div class="header-sub">Control de prendas, intereses y caja</div>
@@ -408,25 +450,64 @@ footer strong{color:var(--text)}
     </div>
 
     <div class="header-actions">
-      <button id="btnDemo">✨ Datos de ejemplo</button>
-      <button id="btnReset">🗑️ Reiniciar todo</button>
+      <button id="btnDemo">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>
+        </svg>
+        Cargar datos de ejemplo
+      </button>
+      <button id="btnReset">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+          <path d="M21 3v5h-5"/>
+          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/>
+          <path d="M3 21v-5h5"/>
+        </svg>
+        Reiniciar todo
+      </button>
     </div>
 
     <div class="kpis">
       <div class="kpi">
-        <div class="kpi-label">Capital en calle</div>
+        <div class="kpi-head">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="20" height="12" x="2" y="6" rx="2"/>
+            <circle cx="12" cy="12" r="2"/>
+            <path d="M6 12h.01M18 12h.01"/>
+          </svg>
+          <span class="kpi-label">Capital en calle</span>
+        </div>
         <span class="kpi-value" id="kpiCapital">$0</span>
       </div>
       <div class="kpi">
-        <div class="kpi-label">Empeños activos</div>
+        <div class="kpi-head">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 3h12l4 6-10 13L2 9Z"/>
+            <path d="M11 3 8 9l4 13 4-13-3-6"/>
+            <path d="M2 9h20"/>
+          </svg>
+          <span class="kpi-label">Empeños activos</span>
+        </div>
         <span class="kpi-value" id="kpiActivos">0</span>
       </div>
       <div class="kpi">
-        <div class="kpi-label">Intereses del mes</div>
+        <div class="kpi-head">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+            <polyline points="16 7 22 7 22 13"/>
+          </svg>
+          <span class="kpi-label">Intereses del mes</span>
+        </div>
         <span class="kpi-value" id="kpiIntereses">$0</span>
       </div>
       <div class="kpi">
-        <div class="kpi-label">Saldo caja</div>
+        <div class="kpi-head">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/>
+            <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+          </svg>
+          <span class="kpi-label">Saldo caja</span>
+        </div>
         <span class="kpi-value" id="kpiSaldo">$0</span>
       </div>
     </div>
@@ -434,12 +515,54 @@ footer strong{color:var(--text)}
 </header>
 
 <nav>
-  <button data-tab="inicio" class="active">🏠 Inicio</button>
-  <button data-tab="empenos">💎 Empeños</button>
-  <button data-tab="clientes">👥 Clientes</button>
-  <button data-tab="almacen">🏪 Almacén</button>
-  <button data-tab="caja">💰 Caja</button>
-  <button data-tab="reportes">📊 Reportes</button>
+  <button data-tab="inicio" class="active">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+    Inicio
+  </button>
+  <button data-tab="empenos">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 3h12l4 6-10 13L2 9Z"/>
+      <path d="M11 3 8 9l4 13 4-13-3-6"/>
+      <path d="M2 9h20"/>
+    </svg>
+    Empeños
+  </button>
+  <button data-tab="clientes">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+    Clientes
+  </button>
+  <button data-tab="almacen">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/>
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+      <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
+      <path d="M2 7h20"/>
+      <path d="M22 7v3a2 2 0 0 1-2 2"/>
+    </svg>
+    Almacén
+  </button>
+  <button data-tab="caja">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/>
+      <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+    </svg>
+    Caja
+  </button>
+  <button data-tab="reportes">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 3v18h18"/>
+      <path d="m19 9-5 5-4-4-3 3"/>
+    </svg>
+    Reportes
+  </button>
 </nav>
 
 <main>
@@ -447,21 +570,70 @@ footer strong{color:var(--text)}
   <!-- ============ INICIO ============ -->
   <section id="inicio" class="tab active">
     <div class="card">
-      <h2><span class="dot"></span>Alertas importantes</h2>
+      <h2>
+        <span class="h2-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+            <path d="M12 9v4"/>
+            <path d="M12 17h.01"/>
+          </svg>
+        </span>
+        <span class="h2-txt">Alertas importantes</span>
+      </h2>
       <div id="alertasCont"></div>
     </div>
 
     <div class="card">
-      <h2><span class="dot"></span>Resumen del negocio</h2>
+      <h2>
+        <span class="h2-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18"/>
+            <path d="m19 9-5 5-4-4-3 3"/>
+          </svg>
+        </span>
+        <span class="h2-txt">Resumen del negocio</span>
+      </h2>
       <div class="caja-resumen">
-        <div class="caja-box ing"><small>Intereses cobrados (mes)</small><b id="resIntereses">$0</b></div>
-        <div class="caja-box sal"><small>Capital prestado activo</small><b id="resCapital">$0</b></div>
-        <div class="caja-box egr"><small>Vencidos sin resolver</small><b id="resVencidos">0</b></div>
+        <div class="caja-box ing">
+          <div class="caja-ico">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+              <polyline points="16 7 22 7 22 13"/>
+            </svg>
+          </div>
+          <small>Intereses cobrados (mes)</small><b id="resIntereses">$0</b>
+        </div>
+        <div class="caja-box sal">
+          <div class="caja-ico">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="12" x="2" y="6" rx="2"/>
+              <circle cx="12" cy="12" r="2"/>
+            </svg>
+          </div>
+          <small>Capital prestado activo</small><b id="resCapital">$0</b>
+        </div>
+        <div class="caja-box egr">
+          <div class="caja-ico">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <small>Vencidos sin resolver</small><b id="resVencidos">0</b>
+        </div>
       </div>
     </div>
 
     <div class="card">
-      <h2><span class="dot"></span>Próximos vencimientos (7 días)</h2>
+      <h2>
+        <span class="h2-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </span>
+        <span class="h2-txt">Próximos vencimientos (7 días)</span>
+      </h2>
       <div id="proximosCont" class="list"></div>
     </div>
   </section>
@@ -469,9 +641,22 @@ footer strong{color:var(--text)}
   <!-- ============ EMPEÑOS ============ -->
   <section id="empenos" class="tab">
     <div class="card no-print">
-      <h2 style="justify-content:space-between">
-        <span style="display:flex;align-items:center;gap:8px"><span class="dot"></span>Empeños</span>
-        <button class="btn small" id="btnNuevoEmpeno">➕ Nuevo empeño</button>
+      <h2>
+        <span class="h2-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 3h12l4 6-10 13L2 9Z"/>
+            <path d="M11 3 8 9l4 13 4-13-3-6"/>
+            <path d="M2 9h20"/>
+          </svg>
+        </span>
+        <span class="h2-txt">Empeños</span>
+        <button class="btn small" id="btnNuevoEmpeno">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/>
+            <path d="M12 5v14"/>
+          </svg>
+          Nuevo
+        </button>
       </h2>
 
       <div id="formEmpenoWrap" style="display:none;margin-top:10px">
@@ -499,13 +684,32 @@ footer strong{color:var(--text)}
           <label class="field" style="grid-column:span 2">Detalles / Notas
             <textarea id="empNotas" placeholder="Peso, características, estado de la prenda..."></textarea>
           </label>
-          <button class="btn" type="submit" style="grid-column:span 2">💾 Registrar empeño</button>
+          <button class="btn" type="submit" style="grid-column:span 2">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            Registrar empeño
+          </button>
         </form>
       </div>
     </div>
 
     <div class="card">
-      <h2><span class="dot"></span>Listado de empeños</h2>
+      <h2>
+        <span class="h2-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" x2="21" y1="6" y2="6"/>
+            <line x1="8" x2="21" y1="12" y2="12"/>
+            <line x1="8" x2="21" y1="18" y2="18"/>
+            <line x1="3" x2="3.01" y1="6" y2="6"/>
+            <line x1="3" x2="3.01" y1="12" y2="12"/>
+            <line x1="3" x2="3.01" y1="18" y2="18"/>
+          </svg>
+        </span>
+        <span class="h2-txt">Listado de empeños</span>
+      </h2>
       <div class="chips" id="filtrosEmpenos">
         <button class="chip active" data-filtro="todos">Todos</button>
         <button class="chip" data-filtro="activo">Activos</button>
@@ -522,7 +726,17 @@ footer strong{color:var(--text)}
   <!-- ============ CLIENTES ============ -->
   <section id="clientes" class="tab">
     <div class="card">
-      <h2><span class="dot"></span>Nuevo cliente</h2>
+      <h2>
+        <span class="h2-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </span>
+        <span class="h2-txt">Nuevo cliente</span>
+      </h2>
       <form id="formCliente" class="grid-form">
         <label class="field">Nombre completo
           <input id="cliNombre" placeholder="Ej. María López" required>
@@ -538,12 +752,30 @@ footer strong{color:var(--text)}
         <label class="field">Dirección
           <input id="cliDireccion" placeholder="Opcional">
         </label>
-        <button class="btn" type="submit">➕ Registrar cliente</button>
+        <button class="btn" type="submit">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/>
+            <path d="M12 5v14"/>
+          </svg>
+          Registrar cliente
+        </button>
       </form>
     </div>
 
     <div class="card">
-      <h2><span class="dot"></span>Clientes registrados</h2>
+      <h2>
+        <span class="h2-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" x2="21" y1="6" y2="6"/>
+            <line x1="8" x2="21" y1="12" y2="12"/>
+            <line x1="8" x2="21" y1="18" y2="18"/>
+            <line x1="3" x2="3.01" y1="6" y2="6"/>
+            <line x1="3" x2="3.01" y1="12" y2="12"/>
+            <line x1="3" x2="3.01" y1="18" y2="18"/>
+          </svg>
+        </span>
+        <span class="h2-txt">Clientes registrados</span>
+      </h2>
       <div id="listaClientes" class="list"></div>
     </div>
   </section>
@@ -551,7 +783,17 @@ footer strong{color:var(--text)}
   <!-- ============ ALMACÉN ============ -->
   <section id="almacen" class="tab">
     <div class="card">
-      <h2><span class="dot"></span>Agregar producto al almacén</h2>
+      <h2>
+        <span class="h2-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m7.5 4.27 9 5.15"/>
+            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+            <path d="m3.3 7 8.7 5 8.7-5"/>
+            <path d="M12 22V12"/>
+          </svg>
+        </span>
+        <span class="h2-txt">Agregar producto al almacén</span>
+      </h2>
       <form id="formProducto" class="grid-form">
         <label class="field">Nombre
           <input id="prodNombre" placeholder="Ej. Reloj Casio" required>
@@ -567,25 +809,47 @@ footer strong{color:var(--text)}
             <input id="prodStock" type="number" min="0" value="1" required>
           </label>
         </div>
-        <label class="field" style="grid-column:span 2">
-          <span style="display:flex;align-items:center;gap:8px">
-            <input type="checkbox" id="prodVencido" style="width:auto">
-            Marcar como producto vencido / en oferta
-          </span>
+        <label class="field" style="grid-column:span 2;flex-direction:row;align-items:center;gap:8px">
+          <input type="checkbox" id="prodVencido" style="width:auto">
+          Marcar como producto vencido / en oferta
         </label>
-        <button class="btn" type="submit" style="grid-column:span 2">➕ Agregar</button>
+        <button class="btn" type="submit" style="grid-column:span 2">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/>
+            <path d="M12 5v14"/>
+          </svg>
+          Agregar
+        </button>
       </form>
     </div>
 
     <div class="card">
-      <h2><span class="dot"></span>Productos en almacén</h2>
+      <h2>
+        <span class="h2-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m7.5 4.27 9 5.15"/>
+            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/>
+            <path d="m3.3 7 8.7 5 8.7-5"/>
+            <path d="M12 22V12"/>
+          </svg>
+        </span>
+        <span class="h2-txt">Productos en almacén</span>
+      </h2>
       <div id="listaProductos" class="list"></div>
     </div>
 
     <div class="card">
-      <h2><span class="dot"></span>Prendas en almoneda (para vender)</h2>
+      <h2>
+        <span class="h2-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/>
+            <circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>
+          </svg>
+        </span>
+        <span class="h2-txt">Prendas en almoneda</span>
+      </h2>
       <p style="font-size:.82rem;color:var(--muted);margin:-8px 0 8px">
-        Estas son prendas de empeños vencidos que ya pasaron a venta.
+        Prendas de empeños vencidos que ya pasaron a venta.
       </p>
       <div id="listaAlmoneda" class="list"></div>
     </div>
@@ -594,14 +858,54 @@ footer strong{color:var(--text)}
   <!-- ============ CAJA ============ -->
   <section id="caja" class="tab">
     <div class="card">
-      <h2><span class="dot"></span>Resumen de caja</h2>
+      <h2>
+        <span class="h2-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/>
+            <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+          </svg>
+        </span>
+        <span class="h2-txt">Resumen de caja</span>
+      </h2>
       <div class="caja-resumen">
-        <div class="caja-box ing"><small>Ingresos</small><b id="cajaIng">$0</b></div>
-        <div class="caja-box egr"><small>Egresos</small><b id="cajaEgr">$0</b></div>
-        <div class="caja-box sal"><small>Saldo</small><b id="cajaSal">$0</b></div>
+        <div class="caja-box ing">
+          <div class="caja-ico">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+              <polyline points="16 7 22 7 22 13"/>
+            </svg>
+          </div>
+          <small>Ingresos</small><b id="cajaIng">$0</b>
+        </div>
+        <div class="caja-box egr">
+          <div class="caja-ico">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/>
+              <polyline points="16 17 22 17 22 11"/>
+            </svg>
+          </div>
+          <small>Egresos</small><b id="cajaEgr">$0</b>
+        </div>
+        <div class="caja-box sal">
+          <div class="caja-ico">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="12" x="2" y="6" rx="2"/>
+              <circle cx="12" cy="12" r="2"/>
+            </svg>
+          </div>
+          <small>Saldo</small><b id="cajaSal">$0</b>
+        </div>
       </div>
 
-      <h2 style="margin-top:20px"><span class="dot"></span>Nuevo movimiento</h2>
+      <h2 style="margin-top:20px">
+        <span class="h2-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/>
+            <path d="M12 5v14"/>
+          </svg>
+        </span>
+        <span class="h2-txt">Nuevo movimiento</span>
+      </h2>
       <form id="formCaja" class="grid-form">
         <label class="field">Concepto
           <input id="cajaConcepto" placeholder="Ej. Gastos de oficina" required>
@@ -617,12 +921,30 @@ footer strong{color:var(--text)}
             </select>
           </label>
         </div>
-        <button class="btn success" type="submit" style="grid-column:span 2">💰 Registrar</button>
+        <button class="btn success" type="submit" style="grid-column:span 2">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/>
+            <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+          </svg>
+          Registrar
+        </button>
       </form>
     </div>
 
     <div class="card">
-      <h2><span class="dot"></span>Historial de movimientos</h2>
+      <h2>
+        <span class="h2-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="8" x2="21" y1="6" y2="6"/>
+            <line x1="8" x2="21" y1="12" y2="12"/>
+            <line x1="8" x2="21" y1="18" y2="18"/>
+            <line x1="3" x2="3.01" y1="6" y2="6"/>
+            <line x1="3" x2="3.01" y1="12" y2="12"/>
+            <line x1="3" x2="3.01" y1="18" y2="18"/>
+          </svg>
+        </span>
+        <span class="h2-txt">Historial de movimientos</span>
+      </h2>
       <div id="listaCaja" class="list"></div>
     </div>
   </section>
@@ -630,13 +952,28 @@ footer strong{color:var(--text)}
   <!-- ============ REPORTES ============ -->
   <section id="reportes" class="tab">
     <div class="card no-print">
-      <h2><span class="dot"></span>Generar reporte</h2>
+      <h2>
+        <span class="h2-ico">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v18h18"/>
+            <path d="m19 9-5 5-4-4-3 3"/>
+          </svg>
+        </span>
+        <span class="h2-txt">Generar reporte</span>
+      </h2>
       <div class="report-filters">
-        <button class="chip active" data-periodo="semanal">📅 Semanal</button>
-        <button class="chip" data-periodo="mensual">🗓️ Mensual</button>
-        <button class="chip" data-periodo="anual">📆 Anual</button>
+        <button class="chip active" data-periodo="semanal">Semanal</button>
+        <button class="chip" data-periodo="mensual">Mensual</button>
+        <button class="chip" data-periodo="anual">Anual</button>
       </div>
-      <button class="btn ghost" id="btnImprimir" style="width:100%">🖨️ Imprimir / Guardar PDF</button>
+      <button class="btn ghost" id="btnImprimir" style="width:100%">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 6 2 18 2 18 9"/>
+          <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+          <rect width="12" height="8" x="6" y="14"/>
+        </svg>
+        Imprimir / Guardar PDF
+      </button>
     </div>
 
     <div class="card">
@@ -694,12 +1031,53 @@ footer strong{color:var(--text)}
 
 <!-- BOTTOM NAV MOBILE -->
 <div class="bottom-nav">
-  <button data-tab="inicio" class="active"><span class="ico">🏠</span>Inicio</button>
-  <button data-tab="empenos"><span class="ico">💎</span>Empeños</button>
-  <button data-tab="clientes"><span class="ico">👥</span>Clientes</button>
-  <button data-tab="almacen"><span class="ico">🏪</span>Almacén</button>
-  <button data-tab="caja"><span class="ico">💰</span>Caja</button>
-  <button data-tab="reportes"><span class="ico">📊</span>Reportes</button>
+  <button data-tab="inicio" class="active">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+    Inicio
+  </button>
+  <button data-tab="empenos">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 3h12l4 6-10 13L2 9Z"/>
+      <path d="M11 3 8 9l4 13 4-13-3-6"/>
+      <path d="M2 9h20"/>
+    </svg>
+    Empeños
+  </button>
+  <button data-tab="clientes">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+    Clientes
+  </button>
+  <button data-tab="almacen">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/>
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
+      <path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/>
+      <path d="M2 7h20"/>
+    </svg>
+    Almacén
+  </button>
+  <button data-tab="caja">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/>
+      <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>
+    </svg>
+    Caja
+  </button>
+  <button data-tab="reportes">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M3 3v18h18"/>
+      <path d="m19 9-5 5-4-4-3 3"/>
+    </svg>
+    Reportes
+  </button>
 </div>
 
 <!-- MODAL -->
@@ -717,6 +1095,34 @@ footer strong{color:var(--text)}
 <div class="toast" id="toast"></div>
 
 <script>
+/* ============ ICONOS SVG ============ */
+const ICONS = {
+  trash:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  plus:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>',
+  check:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  checkCircle:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+  money:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>',
+  store:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"/><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"/><path d="M2 7h20"/></svg>',
+  alert:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>',
+  clock:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  x:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
+  inbox:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+  gem:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M11 3 8 9l4 13 4-13-3-6"/><path d="M2 9h20"/></svg>',
+  users:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  wallet:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/></svg>',
+  package:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>',
+  chart:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>',
+  refund:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>',
+  tag:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>'
+};
+const ico = (name, size=null) => {
+  let s = ICONS[name] || '';
+  if(size){
+    s = s.replace(/width="[^"]*"/, `width="${size}"`).replace(/height="[^"]*"/, `height="${size}"`);
+  }
+  return s;
+};
+
 /* ============ CONFIG ============ */
 const CONFIG = {
   tasaMensualDefault: 5,
@@ -747,10 +1153,7 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7
 const money = n => '$' + Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtFecha = iso => new Date(iso).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
 const fmtFechaCorta = iso => new Date(iso).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'});
-const fmtFechaInput = iso => {
-  const d = new Date(iso);
-  return d.toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
-};
+const fmtFechaInput = iso => new Date(iso).toLocaleDateString('es-MX',{day:'2-digit',month:'long',year:'numeric'});
 const esc = s => String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const diasEntre = (a,b) => Math.floor((new Date(b) - new Date(a)) / (1000*60*60*24));
 const addDias = (fecha, dias) => {
@@ -795,7 +1198,8 @@ function etiquetaEstado(est){
 let toastTimer;
 function toast(msg, type=''){
   const el = document.getElementById('toast');
-  el.textContent = msg;
+  const icoName = type==='success' ? 'check' : type==='error' ? 'x' : 'check';
+  el.innerHTML = `<span class="toast-ico">${ico(icoName)}</span><span>${esc(msg)}</span>`;
   el.className = 'toast show ' + type;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(()=>el.className='toast',2400);
@@ -803,10 +1207,10 @@ function toast(msg, type=''){
 
 /* ============ MODAL ============ */
 function openModal(title, bodyHtml, onConfirm, confirmLabel='Confirmar', confirmClass='btn'){
-  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalTitle').innerHTML = title;
   document.getElementById('modalBody').innerHTML = bodyHtml;
   const btn = document.getElementById('modalConfirm');
-  btn.textContent = confirmLabel;
+  btn.innerHTML = confirmLabel;
   btn.className = confirmClass;
   modalCallback = onConfirm;
   document.getElementById('modalBg').classList.add('active');
@@ -859,20 +1263,15 @@ function renderKPIs(){
   const egr = DB.caja.filter(c=>c.tipo==='egreso').reduce((s,c)=>s+c.monto,0);
   document.getElementById('kpiSaldo').textContent = money(ing-egr);
 
-  // Resumen inicio
   document.getElementById('resIntereses').textContent = money(interesesMes);
   document.getElementById('resCapital').textContent = money(capital);
-  const vencidos = DB.empenos.filter(e => {
-    const est = estadoActual(e);
-    return est==='vencido';
-  }).length;
+  const vencidos = DB.empenos.filter(e => estadoActual(e)==='vencido').length;
   document.getElementById('resVencidos').textContent = vencidos;
 }
 
 /* ============ RENDER: ALERTAS ============ */
 function renderAlertas(){
   const cont = document.getElementById('alertasCont');
-  const hoy = new Date();
   const vencidos = [];
   const porVencer = [];
 
@@ -886,7 +1285,7 @@ function renderAlertas(){
 
   if(vencidos.length){
     html += `<div class="alert danger">
-      <span class="alert-ico">⚠️</span>
+      <div class="alert-ico">${ico('alert')}</div>
       <div>
         <div class="alert-txt">${vencidos.length} empeño${vencidos.length>1?'s':''} vencido${vencidos.length>1?'s':''}</div>
         <div class="alert-sub">Revisa si pasan a almoneda o esperan recuperación.</div>
@@ -896,7 +1295,7 @@ function renderAlertas(){
 
   if(porVencer.length){
     html += `<div class="alert warn">
-      <span class="alert-ico">⏰</span>
+      <div class="alert-ico">${ico('clock')}</div>
       <div>
         <div class="alert-txt">${porVencer.length} empeño${porVencer.length>1?'s':''} por vencer (≤7 días)</div>
         <div class="alert-sub">Puedes avisar al cliente o preparar refrendo.</div>
@@ -905,7 +1304,7 @@ function renderAlertas(){
   }
 
   if(!vencidos.length && !porVencer.length){
-    html = '<div class="empty"><span class="ico">✅</span>Todo en orden. Sin vencimientos próximos.</div>';
+    html = `<div class="empty"><div class="ico">${ico('checkCircle', 26)}</div>Todo en orden. Sin vencimientos próximos.</div>`;
   }
 
   cont.innerHTML = html;
@@ -916,10 +1315,7 @@ function renderProximos(){
   const cont = document.getElementById('proximosCont');
   const hoy = new Date();
   const items = DB.empenos
-    .filter(e => {
-      const est = estadoActual(e);
-      return est==='por_vencer' || est==='vencido';
-    })
+    .filter(e => ['por_vencer','vencido'].includes(estadoActual(e)))
     .sort((a,b) => new Date(a.fechaVencimiento) - new Date(b.fechaVencimiento))
     .slice(0,5);
 
@@ -962,7 +1358,7 @@ function renderEmpenos(){
   }
 
   if(!lista.length){
-    cont.innerHTML = '<div class="empty"><span class="ico">💎</span>No hay empeños en esta vista.</div>';
+    cont.innerHTML = `<div class="empty"><div class="ico">${ico('gem', 26)}</div>No hay empeños en esta vista.</div>`;
     return;
   }
 
@@ -977,12 +1373,12 @@ function renderEmpenos(){
     let acciones = '';
     if(est==='activo' || est==='por_vencer' || est==='vencido'){
       acciones = `
-        <button class="btn small info" onclick="accionRefrendar('${e.id}')">💵 Refrendar</button>
-        <button class="btn small success" onclick="accionRecuperar('${e.id}')">✅ Recuperar</button>
-        ${est==='vencido' ? `<button class="btn small ghost" onclick="accionAlmoneda('${e.id}')">🏪 A venta</button>` : ''}
+        <button class="btn small info" onclick="accionRefrendar('${e.id}')">${ico('money')} Refrendar</button>
+        <button class="btn small success" onclick="accionRecuperar('${e.id}')">${ico('check')} Recuperar</button>
+        ${est==='vencido' ? `<button class="btn small ghost" onclick="accionAlmoneda('${e.id}')">${ico('store')} A venta</button>` : ''}
       `;
     } else if(est==='almoneda'){
-      acciones = `<button class="btn small success" onclick="accionVender('${e.id}')">💰 Vender</button>`;
+      acciones = `<button class="btn small success" onclick="accionVender('${e.id}')">${ico('money')} Vender</button>`;
     }
 
     return `<div class="item" style="flex-direction:column;align-items:stretch">
@@ -1003,7 +1399,7 @@ function renderEmpenos(){
           </div>
         </div>
       </div>
-      ${acciones ? `<div class="item-actions">${acciones}<button class="btn-icon" onclick="eliminarEmpeno('${e.id}')" title="Eliminar">🗑</button></div>` : ''}
+      ${acciones ? `<div class="item-actions">${acciones}<button class="btn-icon" onclick="eliminarEmpeno('${e.id}')" title="Eliminar">${ico('trash')}</button></div>` : ''}
     </div>`;
   }).join('');
 }
@@ -1012,7 +1408,7 @@ function renderEmpenos(){
 function renderClientes(){
   const cont = document.getElementById('listaClientes');
   if(!DB.clientes.length){
-    cont.innerHTML = '<div class="empty"><span class="ico">👥</span>Sin clientes registrados.</div>';
+    cont.innerHTML = `<div class="empty"><div class="ico">${ico('users', 26)}</div>Sin clientes registrados.</div>`;
     return;
   }
   cont.innerHTML = DB.clientes.map(c=>{
@@ -1028,7 +1424,7 @@ function renderClientes(){
         </div>
       </div>
       <div class="item-right">
-        <button class="btn-icon" onclick="eliminarCliente('${c.id}')" title="Eliminar">🗑</button>
+        <button class="btn-icon" onclick="eliminarCliente('${c.id}')" title="Eliminar">${ico('trash')}</button>
       </div>
     </div>`;
   }).join('');
@@ -1038,7 +1434,7 @@ function renderClientes(){
 function renderProductos(){
   const cont = document.getElementById('listaProductos');
   if(!DB.productos.length){
-    cont.innerHTML = '<div class="empty"><span class="ico">📦</span>Sin productos en almacén.</div>';
+    cont.innerHTML = `<div class="empty"><div class="ico">${ico('package', 26)}</div>Sin productos en almacén.</div>`;
     return;
   }
   cont.innerHTML = DB.productos.map(p=>{
@@ -1047,7 +1443,7 @@ function renderProductos(){
     else if(p.stock<=3) cls='stock-low';
     return `<div class="item">
       <div class="item-info">
-        <div class="item-title">${esc(p.nombre)} ${p.vencido?'<span class="badge danger" style="margin-left:6px">Vencido</span>':''}</div>
+        <div class="item-title">${esc(p.nombre)} ${p.vencido?`<span class="badge danger" style="margin-left:6px">${ico('tag')} Vencido</span>`:''}</div>
         <div class="item-sub">
           Venta: ${money(p.precio)}
           ${p.costo ? ' · Costo: '+money(p.costo) : ''}
@@ -1056,7 +1452,7 @@ function renderProductos(){
       </div>
       <div class="item-right">
         <span class="badge ${cls}">${txt}</span>
-        <button class="btn-icon" onclick="eliminarProducto('${p.id}')" title="Eliminar">🗑</button>
+        <button class="btn-icon" onclick="eliminarProducto('${p.id}')" title="Eliminar">${ico('trash')}</button>
       </div>
     </div>`;
   }).join('');
@@ -1066,7 +1462,7 @@ function renderAlmoneda(){
   const cont = document.getElementById('listaAlmoneda');
   const items = DB.empenos.filter(e => estadoActual(e)==='almoneda');
   if(!items.length){
-    cont.innerHTML = '<div class="empty"><span class="ico">🏪</span>Sin prendas en almoneda.</div>';
+    cont.innerHTML = `<div class="empty"><div class="ico">${ico('store', 26)}</div>Sin prendas en almoneda.</div>`;
     return;
   }
   cont.innerHTML = items.map(e=>{
@@ -1081,7 +1477,7 @@ function renderAlmoneda(){
       </div>
       <div class="item-right">
         <span class="badge almoneda">Almoneda</span>
-        <button class="btn small success" onclick="accionVender('${e.id}')">💰 Vender</button>
+        <button class="btn small success" onclick="accionVender('${e.id}')">${ico('money')} Vender</button>
       </div>
     </div>`;
   }).join('');
@@ -1097,7 +1493,7 @@ function renderCaja(){
 
   const cont = document.getElementById('listaCaja');
   if(!DB.caja.length){
-    cont.innerHTML = '<div class="empty"><span class="ico">💰</span>Sin movimientos de caja.</div>';
+    cont.innerHTML = `<div class="empty"><div class="ico">${ico('wallet', 26)}</div>Sin movimientos de caja.</div>`;
     return;
   }
   cont.innerHTML = DB.caja.slice().reverse().slice(0,60).map(c=>{
@@ -1167,7 +1563,7 @@ window.accionRefrendar = id => {
     <div class="modal-row total"><span>Total a cobrar</span><span>${money(interes)}</span></div>
   `;
 
-  openModal('💵 Refrendar empeño', html, ()=>{
+  openModal(`${ico('money')} Refrendar empeño`, html, ()=>{
     e.refrendos = e.refrendos || [];
     e.refrendos.push({fecha:hoy.toISOString(), dias, interes});
     e.fechaEmpeno = hoy.toISOString();
@@ -1200,7 +1596,7 @@ window.accionRecuperar = id => {
     <div class="modal-row total"><span>Total a cobrar</span><span>${money(total)}</span></div>
   `;
 
-  openModal('✅ Recuperar empeño', html, ()=>{
+  openModal(`${ico('check')} Recuperar empeño`, html, ()=>{
     e.estado = 'recuperado';
     e.fechaRecuperacion = hoy.toISOString();
     e.totalCobrado = total;
@@ -1236,7 +1632,7 @@ window.accionAlmoneda = id => {
     <div class="modal-row" style="margin-top:12px"><span>Capital prestado</span><span>${money(e.montoPrestado)}</span></div>
   `;
 
-  openModal('🏪 Pasar a almoneda', html, ()=>{
+  openModal(`${ico('store')} Pasar a almoneda`, html, ()=>{
     const precio = Number(document.getElementById('precioAlm').value) || sugerido;
     e.estado = 'almoneda';
     e.precioVenta = precio;
@@ -1259,7 +1655,7 @@ window.accionVender = id => {
     <div class="modal-row"><span>Ganancia estimada</span><span id="gananciaEst">${money(precio - e.montoPrestado)}</span></div>
   `;
 
-  openModal('💰 Vender prenda', html, ()=>{
+  openModal(`${ico('money')} Vender prenda`, html, ()=>{
     const p = Number(document.getElementById('precioVenta').value);
     if(p<=0) return toast('Precio inválido','error');
     e.estado = 'vendido';
@@ -1275,7 +1671,6 @@ window.accionVender = id => {
     toast('Venta registrada','success');
   }, 'Registrar venta', 'btn success');
 
-  // Actualizar ganancia en vivo
   setTimeout(()=>{
     const inp = document.getElementById('precioVenta');
     if(!inp) return;
@@ -1330,7 +1725,6 @@ document.getElementById('formEmpeno').addEventListener('submit', e=>{
 
   DB.empenos.push(empeno);
 
-  // Egreso de caja (capital entregado)
   DB.caja.push({
     id:uid(), fecha:ahora.toISOString(), tipo:'egreso',
     concepto:`Empeño ${empeno.folio} - ${descripcion}`,
@@ -1517,7 +1911,6 @@ document.getElementById('btnDemo').addEventListener('click', ()=>{
       totalCobrado:5775, interesCobrado:275
     })
   ];
-  // Asignar folios
   DB.empenos.forEach((e,i)=>{ e.folio = 'EMP-' + String(i+1).padStart(4,'0'); });
 
   DB.productos = [
@@ -1527,9 +1920,7 @@ document.getElementById('btnDemo').addEventListener('click', ()=>{
     {id:uid(), nombre:'Cargador portátil 10,000 mAh', precio:300, costo:180, stock:1, vencido:true}
   ];
 
-  // Historial de caja del último año
   DB.caja = [];
-  const categorias = ['interes','capital','venta','gasto','otro'];
   for(let i=0;i<40;i++){
     const diasAtras = Math.floor(Math.random()*360);
     const fecha = new Date(hoy);
@@ -1552,7 +1943,6 @@ document.getElementById('btnDemo').addEventListener('click', ()=>{
       monto, categoria
     });
   }
-  // Capital de los empeños activos como egresos
   DB.empenos.filter(e=>['activo','por_vencer','vencido','almoneda'].includes(estadoActual(e))).forEach(e=>{
     DB.caja.push({
       id:uid(), fecha:e.fechaEmpeno, tipo:'egreso',
@@ -1562,7 +1952,7 @@ document.getElementById('btnDemo').addEventListener('click', ()=>{
   });
 
   save(); renderAll();
-  toast('Datos de ejemplo cargados ✨','success');
+  toast('Datos de ejemplo cargados','success');
 });
 
 document.getElementById('btnReset').addEventListener('click', ()=>{
