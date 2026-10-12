@@ -28,7 +28,7 @@
   button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
   svg{display:block}
 
-  /* ============ 🔐 LOGIN ============ */
+  /* ============ LOGIN ============ */
   .login-screen{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);
     display:flex;align-items:center;justify-content:center;padding:20px}
   .login-screen.hidden{display:none}
@@ -47,10 +47,8 @@
   .login-input-wrap svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);
     width:18px;height:18px;color:#9aa8bb;pointer-events:none}
   .login-input{width:100%;padding:13px 14px 13px 44px;border:1.5px solid var(--border);
-    border-radius:11px;font-size:15px;font-family:inherit;background:#fafbfd;color:var(--text);outline:none;
-    transition:.15s}
-  .login-input:focus{border-color:var(--primary);background:#fff;
-    box-shadow:0 0 0 3px rgba(225,29,72,.1)}
+    border-radius:11px;font-size:15px;font-family:inherit;background:#fafbfd;color:var(--text);outline:none;transition:.15s}
+  .login-input:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(225,29,72,.1)}
   .login-btn{width:100%;padding:14px;border-radius:11px;
     background:linear-gradient(135deg,#e11d48,#f43f5e);color:#fff;font-weight:650;font-size:15px;
     box-shadow:0 4px 16px rgba(225,29,72,.3);transition:.15s;margin-top:8px}
@@ -58,13 +56,9 @@
   .login-btn:active{transform:translateY(0) scale(.98)}
   .login-btn:disabled{opacity:.6;cursor:wait}
   .login-error{background:var(--primary-soft);color:var(--primary);padding:10px 14px;border-radius:9px;
-    font-size:12.5px;font-weight:550;margin-bottom:14px;display:none;text-align:center;
-    border:1px solid #fecdd3}
+    font-size:12.5px;font-weight:550;margin-bottom:14px;display:none;text-align:center;border:1px solid #fecdd3}
   .login-error.show{display:block;animation:shake .4s}
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-  .login-hint{margin-top:20px;padding:12px 14px;background:#f8fafc;border-radius:10px;
-    font-size:11.5px;color:#6b7a90;text-align:center;line-height:1.5;border:1px dashed #e8ecf2}
-  .login-hint b{color:#0f172a;font-weight:650}
   .login-footer{text-align:center;margin-top:20px;font-size:11px;color:#9aa8bb}
 
   /* ============ APP ============ */
@@ -101,7 +95,7 @@
     padding:9px 12px;border-radius:9px;background:rgba(225,29,72,.12);color:#fda4af;
     font-size:12.5px;font-weight:600;transition:.15s}
   .logout-btn:hover{background:rgba(225,29,72,.2);color:#fecdd3}
-  .logout-btn svg{width:15px;height:15px;stroke-width:2}
+  .logout-btn svg{width:15px;height:15px}
 
   .main{flex:1;margin-left:252px;min-width:0;display:flex;flex-direction:column}
   .topbar{position:sticky;top:0;z-index:30;background:rgba(255,255,255,.85);
@@ -111,8 +105,7 @@
   .page-title h1{font-size:17px;font-weight:650;letter-spacing:-.2px}
   .page-title p{font-size:12.5px;color:var(--muted);margin-top:1px}
   .topbar-actions{margin-left:auto;display:flex;align-items:center;gap:10px}
-  .icon-btn{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--muted);
-    transition:.15s;position:relative}
+  .icon-btn{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--muted);transition:.15s;position:relative}
   .icon-btn:hover{background:#f1f4f8;color:var(--text)}
   .icon-btn svg{width:19px;height:19px;stroke-width:1.8}
   .icon-btn .count-badge{position:absolute;top:4px;right:4px;min-width:18px;height:18px;padding:0 5px;
@@ -142,7 +135,6 @@
   .btn.danger{background:#fff;color:var(--primary);border:1px solid #fdd5df}
   .btn.scan{background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff}
   .btn.blue{background:var(--blue);color:#fff}
-  .btn.print{background:#fff;color:var(--text);border:1px solid var(--border)}
 
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
     box-shadow:var(--shadow);padding:18px}
@@ -469,12 +461,6 @@
   .toggle-row .toggle-label strong{display:block;font-size:13.5px;font-weight:650;margin-bottom:2px}
   .toggle-row .toggle-label span{font-size:11.5px;color:var(--muted)}
 
-  .help-box{background:linear-gradient(135deg,#eff6ff,#dbeafe);border:1px solid #bfdbfe;
-    border-left:4px solid var(--blue);border-radius:11px;padding:12px 14px;font-size:12.5px;
-    color:#1e40af;line-height:1.55;margin-top:10px}
-  .help-box strong{display:block;font-weight:700;margin-bottom:4px}
-  .help-box ol{margin:6px 0 0 18px}
-
   .toast-wrap{position:fixed;bottom:calc(24px + var(--safe-bottom));left:50%;transform:translateX(-50%);
     z-index:300;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
   .toast{background:#0f172a;color:#fff;padding:11px 18px;border-radius:11px;font-size:13.5px;font-weight:550;
@@ -578,17 +564,13 @@
 </head>
 <body>
 
-<!-- =====================================================
-     🔐 PANTALLA DE LOGIN
-     ===================================================== -->
+<!-- LOGIN -->
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <div class="login-logo">CA</div>
     <h1>Carnicería &amp; Abarrotes</h1>
     <p>Ingresa tus credenciales para continuar</p>
-
     <div class="login-error" id="loginError"></div>
-
     <form id="loginForm" autocomplete="off">
       <div class="login-field">
         <label for="loginUser">Usuario</label>
@@ -596,40 +578,31 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>
           </svg>
-          <input class="login-input" type="text" id="loginUser" placeholder="Ingresa el usuario"
-                 autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+          <input class="login-input" type="text" id="loginUser" placeholder="Usuario"
+                 autocapitalize="off" autocorrect="off" spellcheck="false" required>
         </div>
       </div>
-
       <div class="login-field">
         <label for="loginPass">Contraseña</label>
         <div class="login-input-wrap">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
             <rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 1 1 8 0v4"/>
           </svg>
-          <input class="login-input" type="password" id="loginPass" placeholder="Ingresa la contraseña"
-                 autocomplete="current-password" required>
+          <input class="login-input" type="password" id="loginPass" placeholder="Contraseña" required>
         </div>
       </div>
-
       <button class="login-btn" type="submit" id="loginBtn">Ingresar</button>
     </form>
-
     <div class="login-footer">🔒 Sesión protegida localmente</div>
   </div>
 </div>
 
-<!-- =====================================================
-     🏪 APP
-     ===================================================== -->
+<!-- APP -->
 <div class="app hidden" id="appRoot">
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="brand-logo">CA</div>
-      <div>
-        <strong>Carnicería &amp; Abarrotes</strong>
-        <span>Panel administrador</span>
-      </div>
+      <div><strong>Carnicería &amp; Abarrotes</strong><span>Panel administrador</span></div>
     </div>
     <nav class="nav" id="nav"></nav>
     <div class="sidebar-foot">
@@ -760,17 +733,17 @@
 
 <script>
 /* =========================================================
-   🔐 CONFIGURACIÓN DE AUTENTICACIÓN
+   AUTH
    ========================================================= */
 const AUTH = {
   USER: 'Admin',
   PASS: '1234567890',
   SESSION_KEY: 'bc_admin_session_v1',
-  SESSION_HOURS: 24  // duración de la sesión
+  SESSION_HOURS: 24
 };
 
 /* =========================================================
-   🌐 CONFIG SUPABASE
+   SUPABASE
    ========================================================= */
 const SUPABASE_URL = 'https://lxloywphqprayfamxujh.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx4bG95d3BocXByYXlmYW14dWpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MzQwMDEsImV4cCI6MjEwNzMxMDAwMX0.OF_suI_lZxgub6drx6iK7_h6_VRnYrSUuIJVNycQKUw';
@@ -780,9 +753,7 @@ const CFG = { moneda:'es-BO', simbolo:'Bs ' };
 const fmt = n => CFG.simbolo + Number(n||0).toLocaleString(CFG.moneda,{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtK = n => CFG.simbolo + Number(n||0).toLocaleString(CFG.moneda,{minimumFractionDigits:0,maximumFractionDigits:0});
 
-/* =========================================================
-   📋 LOGGER
-   ========================================================= */
+/* LOGGER */
 const LOG = {
   info:  (...a) => console.log('%c[ℹ INFO]',    'color:#3b82f6;font-weight:bold', ...a),
   ok:    (...a) => console.log('%c[✓ OK]',      'color:#10b981;font-weight:bold', ...a),
@@ -794,145 +765,100 @@ const LOG = {
   auth:  (...a) => console.log('%c[🔐 AUTH]',   'color:#a855f7;font-weight:bold', ...a),
 };
 
-/* =========================================================
-   🔐 SISTEMA DE AUTENTICACIÓN
-   ========================================================= */
+/* AUTH */
 function sessionActiva(){
   try {
     const raw = localStorage.getItem(AUTH.SESSION_KEY);
     if(!raw) return false;
-    const session = JSON.parse(raw);
-    if(!session || !session.expira) return false;
-    if(Date.now() > session.expira){
-      LOG.auth('Sesión expirada');
+    const s = JSON.parse(raw);
+    if(!s || !s.expira || Date.now() > s.expira){
       localStorage.removeItem(AUTH.SESSION_KEY);
       return false;
     }
-    LOG.auth('Sesión válida para:', session.user);
     return true;
   } catch(e){ return false; }
 }
-
 function crearSesion(user){
   const expira = Date.now() + (AUTH.SESSION_HOURS * 3600 * 1000);
-  const session = { user, inicio: Date.now(), expira };
-  localStorage.setItem(AUTH.SESSION_KEY, JSON.stringify(session));
+  localStorage.setItem(AUTH.SESSION_KEY, JSON.stringify({ user, inicio: Date.now(), expira }));
   LOG.auth('Sesión creada. Expira:', new Date(expira).toLocaleString());
 }
-
 function cerrarSesion(){
-  LOG.auth('Cerrando sesión…');
   localStorage.removeItem(AUTH.SESSION_KEY);
   mostrarLogin();
 }
-
 function mostrarLogin(){
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('appRoot').classList.add('hidden');
   setTimeout(() => document.getElementById('loginUser').focus(), 200);
 }
-
 function mostrarApp(){
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('appRoot').classList.remove('hidden');
 }
-
-function validarCredenciales(user, pass){
-  const u = String(user||'').trim();
-  const p = String(pass||'').trim();
-  return u === AUTH.USER && p === AUTH.PASS;
-}
-
+function validarCredenciales(u,p){ return String(u||'').trim() === AUTH.USER && String(p||'').trim() === AUTH.PASS; }
 function showLoginError(msg){
   const el = document.getElementById('loginError');
   el.textContent = msg;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 4000);
 }
-
 function initLoginForm(){
   const form = document.getElementById('loginForm');
   const btn  = document.getElementById('loginBtn');
   const user = document.getElementById('loginUser');
   const pass = document.getElementById('loginPass');
-
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const u = user.value.trim();
-    const p = pass.value.trim();
+    const u = user.value.trim(), p = pass.value.trim();
     if(!u || !p){ showLoginError('Completa ambos campos'); return; }
-
-    btn.disabled = true;
-    btn.textContent = 'Verificando…';
-    LOG.auth('Intento de login con usuario:', u);
-
-    // Pequeño delay para dar sensación de "verificación"
+    btn.disabled = true; btn.textContent = 'Verificando…';
+    LOG.auth('Intento de login:', u);
     await new Promise(r => setTimeout(r, 400));
-
-    if(validarCredenciales(u, p)){
+    if(validarCredenciales(u,p)){
       LOG.ok('✓ Credenciales correctas');
       crearSesion(u);
       btn.textContent = '✓ Ingresando…';
       setTimeout(async () => {
         mostrarApp();
-        btn.disabled = false;
-        btn.textContent = 'Ingresar';
+        btn.disabled = false; btn.textContent = 'Ingresar';
         pass.value = '';
-        // Iniciar la app ahora
         await arrancarApp();
       }, 300);
     } else {
       LOG.error('✗ Credenciales incorrectas');
       showLoginError('Usuario o contraseña incorrectos');
-      btn.disabled = false;
-      btn.textContent = 'Ingresar';
-      pass.value = '';
-      pass.focus();
+      btn.disabled = false; btn.textContent = 'Ingresar';
+      pass.value = ''; pass.focus();
     }
   });
 }
 
-/* =========================================================
-   🌐 SUPABASE CLIENT
-   ========================================================= */
-let sb = null;
-let CONNECTED = false;
-
+/* SUPABASE CLIENT */
+let sb = null, CONNECTED = false;
 function initSupabase(){
   try {
-    LOG.net('Inicializando Supabase…');
-    if(!window.supabase || !window.supabase.createClient){
-      throw new Error('Librería @supabase/supabase-js no cargada');
-    }
+    if(!window.supabase || !window.supabase.createClient) throw new Error('Librería supabase-js no cargada');
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
       auth: { persistSession: true, autoRefreshToken: true }
     });
     LOG.ok('Cliente Supabase listo');
     return true;
-  } catch(err){
-    LOG.error('Error init Supabase:', err);
-    return false;
-  }
+  } catch(err){ LOG.error('Error Supabase:', err); return false; }
 }
-
 function setConnState(state, label){
-  const badge = document.getElementById('connBadge');
-  const text = document.getElementById('connText');
+  const b = document.getElementById('connBadge'); if(!b) return;
+  b.classList.remove('online','offline','syncing');
+  b.classList.add(state);
+  document.getElementById('connText').textContent = label;
   const side = document.getElementById('connLabel');
-  if(!badge) return;
-  badge.classList.remove('online','offline','syncing');
-  badge.classList.add(state);
-  text.textContent = label;
   if(side) side.textContent = label;
 }
-
 async function testConnection(){
-  LOG.net('Probando conexión…');
-  setConnState('syncing','Conectando…');
   try {
     const { count, error } = await sb.from('productos').select('*', { count:'exact', head:true });
     if(error) throw error;
-    LOG.ok(`Conexión OK. Productos en nube: ${count ?? 0}`);
+    LOG.ok(`Conexión OK. Productos: ${count ?? 0}`);
     CONNECTED = true;
     setConnState('online','Conectado');
     return true;
@@ -944,9 +870,7 @@ async function testConnection(){
   }
 }
 
-/* =========================================================
-   🗺️ MAPPERS
-   ========================================================= */
+/* MAPPERS */
 const dbToProducto = r => ({
   id: r.id, nombre: r.nombre, barcode: r.barcode||'', area: r.area,
   categoria: r.categoria||'', unidad: r.unidad,
@@ -972,22 +896,15 @@ const dbToCliente = r => ({ id: r.id, nombre: r.nombre, telefono: r.telefono||''
 const dbToProveedor = r => ({ id: r.id, nombre: r.nombre, rubro: r.rubro||'', deuda: Number(r.deuda), vencimiento: r.vencimiento||'' });
 const dbToCompra = r => ({ id: r.id, fecha: r.fecha, proveedor: r.proveedor, detalle: r.detalle||'', total: Number(r.total), estado: r.estado });
 
-/* =========================================================
-   💾 ESTADO
-   ========================================================= */
+/* STATE */
 let STATE = {
   productos: [], ventas: [], ventaItems: [], compras: [], clientes: [], proveedores: [], caja: [],
-  config: {
-    nombreNegocio: 'CARNICERÍA & ABARROTES', direccion: '', telefono: '',
-    autoPrint: true, metodoPrint: 'rawbt'
-  }
+  config: { nombreNegocio:'CARNICERÍA & ABARROTES', direccion:'', telefono:'', autoPrint:true, metodoPrint:'rawbt' }
 };
 
-/* =========================================================
-   📥 CARGA INICIAL
-   ========================================================= */
+/* CARGA INICIAL */
 async function loadAllFromSupabase(){
-  LOG.sync('Cargando datos desde Supabase…');
+  LOG.sync('Cargando datos…');
   setConnState('syncing','Cargando…');
   const tables = ['productos','ventas','venta_items','caja_movimientos','compras','clientes','proveedores','configuracion'];
   const results = {};
@@ -996,9 +913,9 @@ async function loadAllFromSupabase(){
       const { data, error } = await sb.from(t).select('*');
       if(error) throw error;
       results[t] = data || [];
-      LOG.ok(`  → ${t}: ${results[t].length} filas`);
+      LOG.ok(`  → ${t}: ${results[t].length}`);
     } catch(err){
-      LOG.error(`Error cargando ${t}:`, err.message||err);
+      LOG.error(`Error ${t}:`, err.message||err);
       results[t] = [];
     }
   }
@@ -1019,17 +936,9 @@ async function loadAllFromSupabase(){
   }
   setConnState('online','Conectado');
   LOG.ok('🎉 Carga completa');
-  console.table({
-    Productos: STATE.productos.length, Ventas: STATE.ventas.length,
-    Items: STATE.ventaItems.length, Caja: STATE.caja.length,
-    Compras: STATE.compras.length, Clientes: STATE.clientes.length,
-    Proveedores: STATE.proveedores.length
-  });
 }
 
-/* =========================================================
-   🔄 SINCRONIZACIÓN
-   ========================================================= */
+/* SINCRONIZACIÓN */
 async function syncProductoInsert(p){
   const { data, error } = await sb.from('productos').insert(productoToDb(p)).select().single();
   if(error) throw error;
@@ -1115,7 +1024,7 @@ async function rpcEliminarVenta(id){
 async function subirFotoProducto(file){
   const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
   const fileName = `${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
-  const { data, error } = await sb.storage.from(STORAGE_BUCKET).upload(fileName, file, {
+  const { error } = await sb.storage.from(STORAGE_BUCKET).upload(fileName, file, {
     cacheControl: '3600', upsert: false, contentType: file.type
   });
   if(error) throw error;
@@ -1123,14 +1032,12 @@ async function subirFotoProducto(file){
   return urlData.publicUrl;
 }
 
-/* =========================================================
-   📋 CONSTANTES
-   ========================================================= */
+/* CONSTANTES */
 const SECTIONS = {
-  carniceria: { label:'Carnicería', shortLabel:'Carnicería', color:'carn', icon:'carne', placeholder:'Ej: Carne molida, Chuleta' },
-  abarrotes:  { label:'Tienda de Abarrotes', shortLabel:'Abarrotes', color:'abar', icon:'box', placeholder:'Ej: Gaseosa 2L, Arroz' }
+  carniceria: { label:'Carnicería', shortLabel:'Carnicería', color:'carn', icon:'carne', placeholder:'Ej: Carne molida' },
+  abarrotes:  { label:'Tienda de Abarrotes', shortLabel:'Abarrotes', color:'abar', icon:'box', placeholder:'Ej: Gaseosa 2L' }
 };
-const sectionOf = area => SECTIONS[area] || SECTIONS.carniceria;
+const sectionOf = a => SECTIONS[a] || SECTIONS.carniceria;
 const UNIDADES_GRANEL = ['kg','lb'];
 const GRAMOS_POR = { kg:1000, lb:453.592, g:1 };
 const UNIDADES_DISPONIBLES = [
@@ -1145,9 +1052,7 @@ const tipoVentaBadge = p => UNIDADES_GRANEL.includes((p&&p.unidad)||'unidad')
   ? '<span class="tag weight">⚖ Por peso</span>'
   : '<span class="tag unit">📦 Por unidad</span>';
 
-/* =========================================================
-   🎨 ICONOS
-   ========================================================= */
+/* ICONOS */
 const ICONS = {
   dashboard:'<rect x="3" y="3" width="7" height="9" rx="1.8"/><rect x="14" y="3" width="7" height="5.5" rx="1.8"/><rect x="14" y="12.5" width="7" height="8.5" rx="1.8"/><rect x="3" y="16" width="7" height="5" rx="1.8"/>',
   ventas:'<circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h2.6l2.3 11.4a1.6 1.6 0 0 0 1.6 1.3h8.7a1.6 1.6 0 0 0 1.6-1.3L21 7H5.2"/>',
@@ -1185,9 +1090,6 @@ const sectionBadge = (area, large=false) => {
   return `<span class="section-badge ${s.color} ${large?'lg':''}">${icon(s.icon)} ${s.label}</span>`;
 };
 
-/* =========================================================
-   🔔 TOAST + UTIL
-   ========================================================= */
 function toast(msg, tipo=''){
   const w = document.getElementById('toastWrap');
   const t = document.createElement('div');
@@ -1202,9 +1104,7 @@ const todayISO = () => new Date().toISOString().slice(0,10);
 const nowTime = () => new Date().toTimeString().slice(0,5);
 const fmtFecha = iso => { if(!iso) return '—'; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y.slice(2)}`; };
 
-/* =========================================================
-   🪟 MODAL
-   ========================================================= */
+/* MODAL */
 let _modalSubmit = null;
 let _modalOnClose = null;
 function openModal({title, bodyHTML, submitLabel='Guardar', onSubmit, danger=false, onReady, onClose}){
@@ -1241,9 +1141,6 @@ function openModal({title, bodyHTML, submitLabel='Guardar', onSubmit, danger=fal
 function closeModal(){ document.getElementById('modalBg').classList.remove('show'); }
 const fieldVal = (root,name) => { const el = root.querySelector(`[name="${name}"]`); return el ? el.value.trim() : ''; };
 
-/* =========================================================
-   📸 COMPRESIÓN
-   ========================================================= */
 function comprimirImagen(file, maxW=800, quality=0.8){
   return new Promise((res,rej)=>{
     if(!file.type.startsWith('image/')){ rej(new Error('No es imagen')); return; }
@@ -1265,9 +1162,7 @@ function comprimirImagen(file, maxW=800, quality=0.8){
   });
 }
 
-/* =========================================================
-   🖨️ IMPRESIÓN
-   ========================================================= */
+/* IMPRESIÓN */
 function buildRawBTTicketCombinado(ventas, opts={}){
   const cfg = STATE.config || {};
   const negocio = cfg.nombreNegocio || 'CARNICERÍA & ABARROTES';
@@ -1284,8 +1179,8 @@ function buildRawBTTicketCombinado(ventas, opts={}){
   const fecha = opts.fecha || v0.fecha || todayISO();
   const hora = opts.hora || v0.hora || nowTime();
   const totalGlobal = ventas.reduce((s,v)=>s+(Number(v.total)||0),0);
-  const recibido = opts.recibido ?? null;
-  const cambio = opts.cambio ?? null;
+  const recibido = opts.recibido != null ? opts.recibido : null;
+  const cambio = opts.cambio != null ? opts.cambio : null;
   const items = [];
   ventas.forEach(v => v.items.forEach(it => items.push(it)));
   let t = init + alignCent + boldOn + dobleAlto + negocio + LF + normalFont + boldOff;
@@ -1322,13 +1217,10 @@ function imprimirPorRawBT(txt){
   } catch(e){ LOG.error('Error RawBT:', e); return false; }
 }
 function imprimirTicketCombinado(ventas, opts={}){
-  const cfg = STATE.config || {};
-  if(cfg.metodoPrint === 'rawbt') imprimirPorRawBT(buildRawBTTicketCombinado(ventas, opts));
+  if((STATE.config||{}).metodoPrint === 'rawbt') imprimirPorRawBT(buildRawBTTicketCombinado(ventas, opts));
 }
 
-/* =========================================================
-   🧮 CÁLCULOS
-   ========================================================= */
+/* CÁLCULOS */
 const calc = {
   ventasHoy(){ return STATE.ventas.filter(v => v.fecha === todayISO()); },
   totalVentas(v){ return v.reduce((s,x)=>s+x.total,0); },
@@ -1363,9 +1255,7 @@ const calc = {
   cambioHoy(){ return STATE.ventas.filter(v => v.fecha===todayISO() && v.pago==='Efectivo' && v.cambio!=null).reduce((s,v)=>s+v.cambio,0); }
 };
 
-/* =========================================================
-   🧭 NAV
-   ========================================================= */
+/* NAV */
 const NAV = [
   { section:'Principal' },
   { id:'dashboard', label:'Dashboard', icon:'dashboard', sub:'Resumen general' },
@@ -1446,9 +1336,7 @@ function renderProductoCell(p){
   </div>`;
 }
 
-/* =========================================================
-   📺 VISTAS
-   ========================================================= */
+/* VISTAS */
 const VIEWS = {};
 
 VIEWS.dashboard = () => {
@@ -1886,9 +1774,7 @@ VIEWS.config = () => {
   </div>`;
 };
 
-/* =========================================================
-   💾 CONFIG
-   ========================================================= */
+/* CONFIG ACCIONES */
 window.guardarConfigNegocio = async () => {
   const cfg = {
     nombre_negocio: document.getElementById('cfgNombre').value.trim() || 'CARNICERÍA & ABARROTES',
@@ -1939,9 +1825,7 @@ window.borrarTodosLosDatos = async () => {
   } catch(e){ LOG.error(e); toast('Error','error'); }
 };
 
-/* =========================================================
-   🛒 MODAL PRODUCTO
-   ========================================================= */
+/* ✅ MODAL PRODUCTO — CON FIX DEL SCOPE DE fotoData/fotoBlob */
 window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
   const p = id ? STATE.productos.find(x=>x.id===id) : null;
   const barcodeValue = p ? (p.barcode||'') : (barcodePrefill||'');
@@ -1949,6 +1833,10 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
   const s = sectionOf(selectedArea);
   const fotoInicial = p?.foto || '';
   const unidadInicial = p?.unidad || (selectedArea === 'carniceria' ? 'kg' : 'unidad');
+
+  // ✅ Declaradas en el scope externo, accesibles desde onReady y onSubmit
+  let fotoData = fotoInicial;
+  let fotoBlob = null;
 
   const body = `
     <div class="field">
@@ -2053,8 +1941,7 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
       const fotoPreview = m.querySelector('#fotoPreview');
       const fotoBtnSelect = m.querySelector('#fotoBtnSelect');
       const fotoBtnRemove = m.querySelector('#fotoBtnRemove');
-      let fotoData = fotoInicial;
-      let fotoBlob = null;
+      // ⚠️ NO declarar aquí fotoData/fotoBlob → ya existen en el scope externo
 
       const renderFoto = () => {
         if(fotoData){
@@ -2094,17 +1981,17 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
             else if(val === 'abarrotes' && UNIDADES_GRANEL.includes(unidadSel.value)) unidadSel.value = 'unidad';
             unidadSel.dispatchEvent(new Event('change'));
           }
-          const sb = m.querySelector('#mSubmit');
-          if(sb) sb.style.background = val === 'abarrotes' ? 'var(--blue)' : '';
+          const sb2 = m.querySelector('#mSubmit');
+          if(sb2) sb2.style.background = val === 'abarrotes' ? 'var(--blue)' : '';
         });
       });
 
       const updateHints = () => hints.forEach(h => h.textContent = unidadSel.value);
       const updatePreview = () => {
-        const s = parseFloat(stockInp.value)||0;
-        const c = parseFloat(costoInp.value)||0;
-        previewFormula.textContent = `${s} ${unidadSel.value} × ${fmt(c)}`;
-        previewValor.textContent = fmt(s*c);
+        const st = parseFloat(stockInp.value)||0;
+        const co = parseFloat(costoInp.value)||0;
+        previewFormula.textContent = `${st} ${unidadSel.value} × ${fmt(co)}`;
+        previewValor.textContent = fmt(st*co);
       };
       unidadSel.addEventListener('change', () => { updateHints(); updatePreview(); });
       stockInp.addEventListener('input', updatePreview);
@@ -2136,6 +2023,7 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
         stockMin: parseFloat(fieldVal(m,'stockMin'))||0,
         precioCosto: parseFloat(fieldVal(m,'precioCosto'))||0,
         precioVenta: parseFloat(fieldVal(m,'precioVenta'))||0,
+        // ✅ Ahora sí accede a fotoData desde el scope externo
         foto: fotoData && !fotoData.startsWith('blob:') ? fotoData : (p?.foto || '')
       };
       if(!data.nombre){ toast('Falta nombre','error'); return false; }
@@ -2173,9 +2061,7 @@ window.borrarProducto = async (id) => {
   catch(e){ LOG.error(e); toast('Error','error'); }
 };
 
-/* =========================================================
-   🛒 MODAL VENTA
-   ========================================================= */
+/* MODAL VENTA */
 let _carritoUI = null;
 window.openVentaModal = (productoIdInicial = null) => {
   const disponibles = STATE.productos.filter(p => Number(p.stock) > 0);
@@ -2250,12 +2136,11 @@ window.openVentaModal = (productoIdInicial = null) => {
         const billetes = cambioWrap.querySelector('#vBilletes');
         function recalc(){
           const t = items.reduce((s,i)=>s+(Number(i.precio)||0)*(Number(i.cantidad)||0),0);
-          const raw = String(inp.value||'').replace(',','.').trim();
-          const r = parseFloat(raw);
-          if(!inp.value || isNaN(r)){ box.className = 'cambio-box'; label.textContent = 'Cambio'; valor.textContent = fmt(0); return; }
-          if(Math.abs(r-t) < 0.005){ box.className = 'cambio-box exacto'; label.textContent = '✓ Pago justo'; valor.textContent = fmt(0); return; }
-          if(r < t){ box.className = 'cambio-box error'; label.textContent = `Falta ${fmt(t-r)}`; valor.textContent = '⚠'; return; }
-          box.className = 'cambio-box'; label.textContent = 'Cambio a entregar'; valor.textContent = fmt(r-t);
+          const r = parseFloat(String(inp.value||'').replace(',','.').trim());
+          if(!inp.value || isNaN(r)){ box.className='cambio-box'; label.textContent='Cambio'; valor.textContent=fmt(0); return; }
+          if(Math.abs(r-t) < 0.005){ box.className='cambio-box exacto'; label.textContent='✓ Pago justo'; valor.textContent=fmt(0); return; }
+          if(r < t){ box.className='cambio-box error'; label.textContent=`Falta ${fmt(t-r)}`; valor.textContent='⚠'; return; }
+          box.className='cambio-box'; label.textContent='Cambio a entregar'; valor.textContent=fmt(r-t);
         }
         inp.addEventListener('input', recalc);
         inp.addEventListener('focus', () => inp.select());
@@ -2339,8 +2224,7 @@ window.openVentaModal = (productoIdInicial = null) => {
 
   const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   function buscar(q){
-    q = String(q||'').trim();
-    if(!q) return [];
+    q = String(q||'').trim(); if(!q) return [];
     const qn = norm(q), qlc = q.toLowerCase();
     const arr = [];
     for(const p of disponibles){
@@ -2545,9 +2429,7 @@ window.borrarVenta = async (id) => {
   catch(e){ LOG.error(e); toast('Error: '+(e.message||''),'error'); }
 };
 
-/* =========================================================
-   💰 CAJA / COMPRAS / CLIENTES / PROVEEDORES
-   ========================================================= */
+/* CAJA */
 window.openMovCajaModal = () => {
   const body = `
     <div class="field"><label>Tipo *</label>
@@ -2580,6 +2462,8 @@ window.borrarMovCaja = async (id) => {
   try { await syncCajaDelete(id); STATE.caja = STATE.caja.filter(x=>x.id!==id); refresh(); toast('Eliminado','success'); }
   catch(e){ LOG.error(e); toast('Error','error'); }
 };
+
+/* COMPRAS */
 window.openCompraModal = () => {
   const body = `
     <div class="field"><label>Proveedor *</label><input name="proveedor"></div>
@@ -2613,6 +2497,8 @@ window.borrarCompra = async (id) => {
   try { await syncCompraDelete(id); STATE.compras = STATE.compras.filter(x=>x.id!==id); refresh(); toast('Eliminada','success'); }
   catch(e){ LOG.error(e); toast('Error','error'); }
 };
+
+/* CLIENTES */
 window.openClienteModal = (id) => {
   const c = id ? STATE.clientes.find(x=>x.id===id) : null;
   const body = `
@@ -2677,6 +2563,8 @@ window.borrarCliente = async (id) => {
   try { await syncClienteDelete(id); STATE.clientes = STATE.clientes.filter(x=>x.id!==id); refresh(); toast('Eliminado','success'); }
   catch(e){ LOG.error(e); toast('Error','error'); }
 };
+
+/* PROVEEDORES */
 window.openProveedorModal = () => {
   const body = `
     <div class="field"><label>Nombre *</label><input name="nombre"></div>
@@ -2711,9 +2599,6 @@ window.borrarProveedor = async (id) => {
   catch(e){ LOG.error(e); toast('Error','error'); }
 };
 
-/* =========================================================
-   📊 CHART
-   ========================================================= */
 function renderChart(){
   const el = document.getElementById('chart'); if(!el) return;
   const data = calc.ventasSemana();
@@ -2734,9 +2619,7 @@ function renderChart(){
   }).join('');
 }
 
-/* =========================================================
-   📷 SCANNER
-   ========================================================= */
+/* SCANNER */
 let _zxingReader=null, _scannerCallback=null, _scannerStream=null, _torchOn=false, _torchTrack=null, _scanCooldown=false;
 window.openScanner = function(callback){
   if(typeof ZXing === 'undefined'){
@@ -2858,9 +2741,7 @@ window.quickScan = function(){
   });
 };
 
-/* =========================================================
-   🎛️ SIDEBAR + EVENTOS GLOBALES
-   ========================================================= */
+/* SIDEBAR */
 const sidebar = document.getElementById('sidebar');
 const overlay = document.getElementById('overlay');
 function openSidebar(){ sidebar.classList.add('open'); overlay.classList.add('show'); }
@@ -2894,46 +2775,29 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
   if(confirm('¿Cerrar sesión?')) cerrarSesion();
 });
 
-/* =========================================================
-   🚀 ARRANCAR APP
-   ========================================================= */
+/* ARRANCAR */
 let _appStarted = false;
 async function arrancarApp(){
   if(_appStarted){ refresh(); return; }
   _appStarted = true;
   LOG.info('🚀 Iniciando Panel Carnicería & Abarrotes');
-  LOG.info('URL Supabase:', SUPABASE_URL);
-
   renderNav();
   setView('dashboard');
-
-  if(!initSupabase()){
-    toast('No se pudo inicializar Supabase','error');
-    setConnState('offline','Error');
-    return;
-  }
+  if(!initSupabase()){ toast('Error Supabase','error'); return; }
   const ok = await testConnection();
-  if(!ok){
-    toast('Sin conexión a Supabase','error');
-    return;
-  }
+  if(!ok){ toast('Sin conexión a Supabase','error'); return; }
   await loadAllFromSupabase();
   refresh();
   LOG.ok('✅ Sistema listo');
 }
 
-/* =========================================================
-   🎬 INIT
-   ========================================================= */
 async function init(){
   console.clear();
   LOG.info('========================================');
   LOG.info('  CARNICERÍA & ABARROTES · SISTEMA');
   LOG.info('========================================');
   LOG.auth('Verificando sesión…');
-
   initLoginForm();
-
   if(sessionActiva()){
     LOG.ok('Sesión válida, entrando directo');
     mostrarApp();
@@ -2943,7 +2807,6 @@ async function init(){
     mostrarLogin();
   }
 }
-
 init();
 </script>
 </body>
