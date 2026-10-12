@@ -658,6 +658,19 @@ footer strong{color:var(--text)}
         </form>
       </div>
       
+      <div class="card" style="margin-top:20px;">
+        <h2><span class="h2-ico">📦</span><span class="h2-txt">Registrar retiro / entrega de prenda</span></h2>
+        <p style="font-size:.85rem;color:var(--muted);line-height:1.5;margin-bottom:14px;">Cuando el cliente recoge su prenda, selecciona el empeño y confirma la entrega. Si cobra en ese momento, se registra el ingreso; si el pago ya estaba registrado, desmarca la opción para no duplicarlo.</p>
+        <form id="formEntregaEncargado" class="grid-form">
+          <label class="field">Oficina / Sucursal<select id="entOficina" required><option value="">Selecciona tu oficina</option></select></label>
+          <label class="field" style="grid-column:span 2">Prenda / Empeño<select id="entEmpeno" required><option value="">Selecciona una prenda pendiente</option></select></label>
+          <div id="entDetalle" style="grid-column:span 2;padding:12px;border-radius:10px;background:var(--bg-light);font-size:.85rem;color:var(--muted);">Selecciona un empeño para ver el cliente y el importe estimado.</div>
+          <label class="field" style="grid-column:span 2;display:flex;align-items:center;gap:9px;flex-direction:row;"><input id="entCobrarAhora" type="checkbox" checked style="width:auto;min-height:auto;"> Registrar el pago ahora (desmárcalo si ya fue registrado)</label>
+          <label class="field" style="grid-column:span 2">Importe cobrado ($)<input id="entMonto" type="number" min="0.01" step="0.01" placeholder="Importe recibido" required></label>
+          <button class="btn success" type="submit" style="grid-column:span 2;">✓ Confirmar entrega de prenda</button>
+        </form>
+      </div>
+
       <div class="card" style="text-align:center; margin-top:20px;">
         <button class="btn danger" id="btnLogout" style="width:100%;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -671,7 +684,7 @@ footer strong{color:var(--text)}
       
       <footer style="margin-top:32px;">
         <p style="margin:0">
-          <strong>Vista de Encargado</strong> · Solo registro de ingresos.<br>
+          <strong>Vista de Encargado</strong> · Registro de ingresos y entregas de prendas.<br>
           Para consultas o reportes, contacta al administrador.
         </p>
       </footer>
@@ -774,6 +787,9 @@ footer strong{color:var(--text)}
         <form id="formEmpeno" class="grid-form">
           <label class="field" style="grid-column:span 2">Cliente
             <select id="empCliente" required></select>
+          </label>
+          <label class="field" style="grid-column:span 2">Oficina / Sucursal donde queda la prenda
+            <select id="empOficina"><option value="">Sin oficina asignada</option></select>
           </label>
           <label class="field">Descripción de la prenda
             <input id="empDescripcion" placeholder="Ej. Anillo de oro 14k" required>
@@ -1650,12 +1666,13 @@ function nombreOficinaMovimiento(m){
   return oficina ? oficina.nombre : (m.oficina || 'Sin oficina asignada');
 }
 function llenarSelectOficinas(){
-  const selects = [document.getElementById('encOficina'), document.getElementById('cajaOficina'), document.getElementById('filtroOficinaMov')].filter(Boolean);
+  const selects = [document.getElementById('encOficina'), document.getElementById('entOficina'), document.getElementById('empOficina'), document.getElementById('cajaOficina'), document.getElementById('filtroOficinaMov')].filter(Boolean);
   selects.forEach(sel=>{
     const previo = sel.value;
     const esFiltro = sel.id==='filtroOficinaMov';
     const esCaja = sel.id==='cajaOficina';
-    const inicial = esFiltro ? '<option value="todas">Todas las oficinas</option>' : esCaja ? '<option value="">Movimiento general (sin oficina)</option>' : '<option value="">Selecciona tu oficina</option>';
+    const esEmpOficina = sel.id==='empOficina';
+    const inicial = esFiltro ? '<option value="todas">Todas las oficinas</option>' : esCaja || esEmpOficina ? '<option value="">Sin oficina asignada</option>' : '<option value="">Selecciona tu oficina</option>';
     sel.innerHTML = inicial + DB.oficinas.filter(o=>o.estado!=='inactiva').map(o=>`<option value="${esc(o.id)}">${esc(o.nombre)}</option>`).join('');
     if([...sel.options].some(op=>op.value===previo)) sel.value=previo;
   });
@@ -1826,13 +1843,13 @@ window.accionRecuperar = id => {
     DB.caja.push({
       id:uid(), fecha:hoy.toISOString(), tipo:'ingreso',
       concepto:`Recuperación ${e.folio} - capital`,
-      monto:e.montoPrestado, categoria:'capital'
+      monto:e.montoPrestado, categoria:'capital', oficinaId:e.oficinaId || '', oficina:e.oficina || ''
     });
     if(interes > 0){
       DB.caja.push({
         id:uid(), fecha:hoy.toISOString(), tipo:'ingreso',
         concepto:`Recuperación ${e.folio} - intereses`,
-        monto:interes, categoria:'interes'
+        monto:interes, categoria:'interes', oficinaId:e.oficinaId || '', oficina:e.oficina || ''
       });
     }
     save(); renderAll(); closeModal();
@@ -1928,6 +1945,8 @@ document.getElementById('formEmpeno').addEventListener('submit', e=>{
   const tasa = Number(document.getElementById('empTasa').value);
   const plazo = Number(document.getElementById('empPlazo').value);
   const notas = document.getElementById('empNotas').value.trim();
+  const oficinaId = document.getElementById('empOficina').value;
+  const oficinaObj = DB.oficinas.find(o=>o.id===oficinaId);
 
   if(!clienteId) return toast('Registra un cliente primero','error');
   if(!descripcion || monto<=0) return toast('Datos inválidos','error');
@@ -1936,7 +1955,7 @@ document.getElementById('formEmpeno').addEventListener('submit', e=>{
   const venc = addDias(ahora, plazo);
 
   const empeno = {
-    id:uid(), folio:nextFolio(), clienteId, descripcion, marca, notas,
+    id:uid(), folio:nextFolio(), clienteId, descripcion, marca, notas, oficinaId:oficinaId || '', oficina:oficinaObj ? oficinaObj.nombre : '',
     montoPrestado:monto, tasaMensual:tasa, plazoDias:plazo,
     fechaEmpeno:ahora.toISOString(),
     fechaVencimiento:venc,
@@ -1949,7 +1968,7 @@ document.getElementById('formEmpeno').addEventListener('submit', e=>{
   DB.caja.push({
     id:uid(), fecha:ahora.toISOString(), tipo:'egreso',
     concepto:`Empeño ${empeno.folio} - ${descripcion}`,
-    monto:monto, categoria:'capital'
+    monto:monto, categoria:'capital', oficinaId:oficinaId || '', oficina:oficinaObj ? oficinaObj.nombre : ''
   });
 
   save();
@@ -2274,7 +2293,10 @@ function setupEncargadoView() {
   encView.classList.add('active');
   
   llenarSelectOficinas();
-  document.getElementById('encOficina').value = localStorage.getItem('enc_last_oficina') || '';
+  const ultimaOficina=localStorage.getItem('enc_last_oficina') || '';
+  document.getElementById('encOficina').value = ultimaOficina;
+  document.getElementById('entOficina').value = ultimaOficina;
+  llenarSelectEmpenosEntrega();
 }
 
 function setupAdminView() {
@@ -2297,6 +2319,7 @@ function setupAdminView() {
     formCaja.insertBefore(oficinaLabel, formCaja.querySelector('button'));
   }
   llenarSelectClientes();
+  llenarSelectOficinas();
   renderAll();
   renderOficinas();
 }
@@ -2332,6 +2355,74 @@ document.getElementById('formIngresoEncargado').addEventListener('submit', e => 
   toast('Ingreso registrado exitosamente', 'success');
   renderOficinas();
   renderCaja();
+});
+
+/* ============ ENTREGA DE PRENDA DESDE VISTA ENCARGADO ============ */
+function llenarSelectEmpenosEntrega(){
+  const sel = document.getElementById('entEmpeno');
+  if(!sel) return;
+  const previo = sel.value;
+  const disponibles = DB.empenos.filter(e=>['activo','por_vencer','vencido'].includes(estadoActual(e)));
+  sel.innerHTML = '<option value="">Selecciona una prenda pendiente</option>' + disponibles.map(e=>{
+    const c=DB.clientes.find(x=>x.id===e.clienteId);
+    const of=DB.oficinas.find(x=>x.id===e.oficinaId);
+    return `<option value="${esc(e.id)}">${esc(e.folio)} · ${esc(e.descripcion)} · ${esc(c?c.nombre:'Sin cliente')}${of?' · '+esc(of.nombre):''}</option>`;
+  }).join('');
+  if([...sel.options].some(o=>o.value===previo)) sel.value=previo;
+  actualizarDetalleEntrega();
+}
+function actualizarDetalleEntrega(){
+  const id=document.getElementById('entEmpeno')?.value;
+  const e=DB.empenos.find(x=>x.id===id);
+  const detalle=document.getElementById('entDetalle');
+  if(!detalle) return;
+  if(!e){detalle.textContent='Selecciona un empeño para ver el cliente y el importe estimado.';return;}
+  const c=DB.clientes.find(x=>x.id===e.clienteId);
+  const dias=Math.max(0,diasEntre(new Date(e.fechaEmpeno),new Date()));
+  const interes=calcInteres(e.montoPrestado,e.tasaMensual,dias);
+  const total=Number(e.montoPrestado||0)+interes;
+  document.getElementById('entMonto').value=total.toFixed(2);
+  document.getElementById('entMonto').disabled=!document.getElementById('entCobrarAhora').checked;
+  detalle.innerHTML=`<strong>${esc(e.folio)} · ${esc(e.descripcion)}</strong><br>Cliente: ${esc(c?c.nombre:'Sin cliente')}<br>Capital: ${money(e.montoPrestado)} · Interés estimado: ${money(interes)}<br><strong>Total estimado: ${money(total)}</strong>${e.oficina?'<br>Oficina registrada: '+esc(e.oficina):'<br><span style="color:var(--primary)">Esta prenda no tiene oficina asignada; se registrará en la oficina seleccionada.</span>'}`;
+}
+document.getElementById('entEmpeno').addEventListener('change',actualizarDetalleEntrega);
+document.getElementById('entCobrarAhora').addEventListener('change',()=>{
+  const cobrar=document.getElementById('entCobrarAhora').checked;
+  const inp=document.getElementById('entMonto');
+  inp.disabled=!cobrar; inp.required=cobrar;
+  if(cobrar) actualizarDetalleEntrega(); else inp.value='';
+});
+document.getElementById('formEntregaEncargado').addEventListener('submit',e=>{
+  e.preventDefault();
+  const oficinaId=document.getElementById('entOficina').value;
+  const oficinaObj=DB.oficinas.find(o=>o.id===oficinaId && o.estado!=='inactiva');
+  const empeno=DB.empenos.find(x=>x.id===document.getElementById('entEmpeno').value);
+  const cobrar=document.getElementById('entCobrarAhora').checked;
+  const monto=Number(document.getElementById('entMonto').value);
+  if(!oficinaObj) return toast('Selecciona una oficina activa','error');
+  if(!empeno || !['activo','por_vencer','vencido'].includes(estadoActual(empeno))) return toast('Selecciona una prenda pendiente de entrega','error');
+  if(cobrar && monto<=0) return toast('Indica un importe cobrado válido','error');
+  const ahora=new Date().toISOString();
+  // Guardar el registro de entrega y el pago por separado evita ingresos duplicados si el pago ya estaba registrado.
+  empeno.estado='recuperado';
+  empeno.fechaRecuperacion=ahora;
+  empeno.totalCobrado=cobrar?monto:(empeno.totalCobrado||0);
+  empeno.entrega={fecha:ahora, oficinaId, oficina:oficinaObj.nombre, entregadoPor:'encargado', pagoRegistrado:cobrar, montoCobrado:cobrar?monto:0};
+  empeno.oficinaId=empeno.oficinaId||oficinaId;
+  empeno.oficina=empeno.oficina||oficinaObj.nombre;
+  if(cobrar){
+    DB.caja.push({id:uid(),fecha:ahora,tipo:'ingreso',concepto:`Recuperación ${empeno.folio} - ${empeno.descripcion} (pago al retirar)`,monto,categoria:'recuperacion',oficinaId,oficina:oficinaObj.nombre,registradoPor:'encargado'});
+    empeno.interesCobrado=Math.max(0,monto-Number(empeno.montoPrestado||0));
+  }
+  save();
+  localStorage.setItem('enc_last_oficina',oficinaId);
+  e.target.reset();
+  document.getElementById('entOficina').value=oficinaId;
+  document.getElementById('entCobrarAhora').checked=true;
+  document.getElementById('entMonto').disabled=false;
+  llenarSelectEmpenosEntrega();
+  renderOficinas(); renderCaja();
+  toast(cobrar?'Entrega registrada y pago ingresado':'Entrega registrada sin duplicar el pago','success');
 });
 </script>
 
