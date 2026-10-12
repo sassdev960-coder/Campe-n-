@@ -28,7 +28,6 @@
   button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
   svg{display:block}
 
-  /* ============ LOGIN ============ */
   .login-screen{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%);
     display:flex;align-items:center;justify-content:center;padding:20px}
   .login-screen.hidden{display:none}
@@ -61,7 +60,6 @@
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
   .login-footer{text-align:center;margin-top:20px;font-size:11px;color:#9aa8bb}
 
-  /* ============ APP ============ */
   .app{display:flex;min-height:100vh}
   .app.hidden{display:none}
   .sidebar{width:252px;flex-shrink:0;background:var(--sidebar);color:#cbd5e1;display:flex;flex-direction:column;
@@ -876,14 +874,16 @@ const dbToProducto = r => ({
   categoria: r.categoria||'', unidad: r.unidad,
   stock: Number(r.stock), stockMin: Number(r.stock_min),
   precioCosto: Number(r.precio_costo), precioVenta: Number(r.precio_venta),
-  foto: r.foto_url||''
+  foto: r.foto_url||'',
+  fechaVencimiento: r.fecha_vencimiento || ''
 });
 const productoToDb = p => ({
   nombre: p.nombre, barcode: p.barcode||null, area: p.area,
   categoria: p.categoria||'', unidad: p.unidad,
   stock: Number(p.stock)||0, stock_min: Number(p.stockMin)||0,
   precio_costo: Number(p.precioCosto)||0, precio_venta: Number(p.precioVenta)||0,
-  foto_url: p.foto||''
+  foto_url: p.foto||'',
+  fecha_vencimiento: p.fechaVencimiento || null
 });
 const dbToVenta = r => ({
   id: r.id, fecha: r.fecha, hora: r.hora, cliente: r.cliente, pago: r.pago,
@@ -1046,11 +1046,31 @@ const UNIDADES_DISPONIBLES = [
   {v:'lata',l:'Lata'},{v:'frasco',l:'Frasco'},{v:'bolsa',l:'Bolsa'},{v:'paquete',l:'Paquete'},
   {v:'caja',l:'Caja'},{v:'sobre',l:'Sobre'},{v:'rollo',l:'Rollo'},{v:'metro',l:'Metro (m)'}
 ];
-const unidadEntrada = p => UNIDADES_GRANEL.includes((p&&p.unidad)||'unidad') ? 'g' : ((p&&p.unidad)||'unidad');
-const aUnidadBase = (c,uE,uB) => uE===uB ? c : (uE==='g' && GRAMOS_POR[uB] ? c/GRAMOS_POR[uB] : c);
+
+/* ✅ FIX: la unidad de entrada ahora ES la unidad del producto (kg entra como kg) */
+const unidadEntrada = p => (p&&p.unidad)||'unidad';
+/* aUnidadBase: como unidadEntrada == unidadBase, es identidad */
+const aUnidadBase = (c,uE,uB) => (uE===uB || !uB) ? c : c;
 const tipoVentaBadge = p => UNIDADES_GRANEL.includes((p&&p.unidad)||'unidad')
   ? '<span class="tag weight">⚖ Por peso</span>'
   : '<span class="tag unit">📦 Por unidad</span>';
+
+/* VENCIMIENTOS */
+const DIAS_ALERTA_VENCIMIENTO = 7;
+const diasParaVencer = (iso) => {
+  if(!iso) return null;
+  const hoy = new Date(); hoy.setHours(0,0,0,0);
+  const f = new Date(iso + 'T00:00:00');
+  return Math.round((f - hoy) / 86400000);
+};
+const estadoVencimiento = (p) => {
+  const d = diasParaVencer(p && p.fechaVencimiento);
+  if(d === null) return null;
+  if(d < 0) return 'vencido';
+  if(d <= 3) return 'critico';
+  if(d <= DIAS_ALERTA_VENCIMIENTO) return 'proximo';
+  return 'ok';
+};
 
 /* ICONOS */
 const ICONS = {
@@ -1193,7 +1213,8 @@ function buildRawBTTicketCombinado(ventas, opts={}){
   t += line + LF + 'Cant  Descripcion      Subtotal' + LF + dash + LF;
   items.forEach(it => {
     const uB = it.unidad||'unidad';
-    let cTxt = UNIDADES_GRANEL.includes(uB) ? Math.round(it.cantidad*GRAMOS_POR[uB])+'g'
+    /* ✅ FIX: mostrar en kg (unidad base) con 3 decimales */
+    let cTxt = UNIDADES_GRANEL.includes(uB) ? Number(it.cantidad).toFixed(3)+uB
              : ((it.cantidad%1===0?it.cantidad:Number(it.cantidad).toFixed(2)) + (uB==='unidad'?'u':(uB.length>3?uB.slice(0,3):uB)));
     const sub = fmt(Number(it.precio)*Number(it.cantidad));
     const nom = (it.nombre||'').slice(0,15);
@@ -1252,7 +1273,18 @@ const calc = {
     }
     return out;
   },
-  cambioHoy(){ return STATE.ventas.filter(v => v.fecha===todayISO() && v.pago==='Efectivo' && v.cambio!=null).reduce((s,v)=>s+v.cambio,0); }
+  cambioHoy(){ return STATE.ventas.filter(v => v.fecha===todayISO() && v.pago==='Efectivo' && v.cambio!=null).reduce((s,v)=>s+v.cambio,0); },
+  proximosVencer(dias = DIAS_ALERTA_VENCIMIENTO){
+    return STATE.productos
+      .filter(p => {
+        const d = diasParaVencer(p.fechaVencimiento);
+        return d !== null && d <= dias;
+      })
+      .sort((a,b) => diasParaVencer(a.fechaVencimiento) - diasParaVencer(b.fechaVencimiento));
+  },
+  vencidos(){
+    return STATE.productos.filter(p => estadoVencimiento(p) === 'vencido');
+  }
 };
 
 /* NAV */
@@ -1295,12 +1327,13 @@ function setView(id){
   document.getElementById('pageSub').textContent = item.sub || '';
   document.getElementById('content').innerHTML = (VIEWS[id]||VIEWS.dashboard)();
   if(id === 'dashboard') renderChart();
+  if(id === 'inventario') initInventarioView();
   window.scrollTo({top:0,behavior:'smooth'});
   updateNotif();
 }
 function refresh(){ setView(CURRENT_VIEW); }
 function updateNotif(){
-  const n = calc.stockBajo().length;
+  const n = calc.stockBajo().length + calc.proximosVencer(DIAS_ALERTA_VENCIMIENTO).length;
   const b = document.getElementById('notifCount');
   if(n > 0){ b.style.display = 'grid'; b.textContent = n > 9 ? '9+' : n; }
   else b.style.display = 'none';
@@ -1319,6 +1352,28 @@ function alertaStock(){
       <div class="alert-icon">${icon('alert')}</div>
       <div class="alert-content">
         <strong>⚠ ${bajos.length} producto${bajos.length>1?'s':''} con stock bajo</strong>
+        <p>${msg}</p>
+      </div>
+      <button class="btn ${crit?'primary':'ghost'} sm" onclick="setView('inventario')">Ver</button>
+    </div>`;
+}
+function alertaVencimiento(){
+  const prox = calc.proximosVencer(DIAS_ALERTA_VENCIMIENTO);
+  if(prox.length === 0) return '';
+  const venc = prox.filter(p => diasParaVencer(p.fechaVencimiento) < 0);
+  const crit = venc.length > 0;
+  let msg = '';
+  if(venc.length > 0 && venc.length < prox.length)
+    msg = `${venc.length} ya vencido${venc.length>1?'s':''} · ${prox.length-venc.length} por vencer`;
+  else if(venc.length === prox.length)
+    msg = `${venc.length} producto${venc.length>1?'s':''} vencido${venc.length>1?'s':''}, retirar de vitrina`;
+  else
+    msg = `Vencen en los próximos ${DIAS_ALERTA_VENCIMIENTO} días`;
+  return `
+    <div class="alert-banner ${crit?'critical':''}">
+      <div class="alert-icon">${icon('alert')}</div>
+      <div class="alert-content">
+        <strong>📅 ${prox.length} producto${prox.length>1?'s':''} por vencer</strong>
         <p>${msg}</p>
       </div>
       <button class="btn ${crit?'primary':'ghost'} sm" onclick="setView('inventario')">Ver</button>
@@ -1361,6 +1416,7 @@ VIEWS.dashboard = () => {
       </div>
     </div>
     ${alertaStock()}
+    ${alertaVencimiento()}
     ${!hay ? `
       <div class="card"><div class="empty">
         ${icon('dashboard')}
@@ -1518,6 +1574,10 @@ function vistaProductos(areaKey){
   const valor = prods.reduce((sum,p)=>sum+(Number(p.stock)*Number(p.precioCosto||0)),0);
   const stockTotal = prods.reduce((sum,p)=>sum+Number(p.stock||0),0);
   const bajos = prods.filter(p => Number(p.stock) <= Number(p.stockMin||0)).length;
+  const porVencer = prods.filter(p => {
+    const d = diasParaVencer(p.fechaVencimiento);
+    return d !== null && d <= DIAS_ALERTA_VENCIMIENTO;
+  }).length;
   const isCarn = areaKey === 'carniceria';
   return `
     <div class="toolbar">
@@ -1534,6 +1594,8 @@ function vistaProductos(areaKey){
         <div class="kpi-value">${fmtK(valor)}</div></div>
       <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Stock crítico</span><span class="kpi-icon amber">${icon('alert')}</span></div>
         <div class="kpi-value">${bajos}</div></div>
+      <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Por vencer</span><span class="kpi-icon amber">${icon('alert')}</span></div>
+        <div class="kpi-value">${porVencer}</div><div class="kpi-foot">${DIAS_ALERTA_VENCIMIENTO} días</div></div>
     </div>
     ${alertaStock()}
     <div class="card">
@@ -1541,33 +1603,53 @@ function vistaProductos(areaKey){
       ${prods.length===0 ? `<div class="empty">${icon(s.icon)}<h3>Sin productos</h3>
         <button class="btn ${isCarn?'primary':'blue'}" onclick="openProductoModal('${areaKey}')">${icon('plus')} Agregar</button></div>` : `
       <div class="table-wrap"><table>
-        <thead><tr><th>Producto</th><th>Tipo</th><th class="num">Stock</th><th class="num">Costo</th><th class="num">Venta</th><th></th></tr></thead>
-        <tbody>${prods.map(p=>{
-          const stock = Number(p.stock);
-          const min = Number(p.stockMin||0);
-          const sinStock = stock === 0;
-          const critico = stock <= min && stock > 0;
-          const rowCls = sinStock ? 'row-danger' : (critico ? 'row-warn' : '');
-          return `<tr class="${rowCls}">
-            <td data-label="Producto">${renderProductoCell(p)}</td>
-            <td data-label="Tipo">${tipoVentaBadge(p)}</td>
-            <td data-label="Stock" class="num">${stock.toFixed(2)} ${esc(p.unidad)}</td>
-            <td data-label="Costo" class="num">${fmt(p.precioCosto)}</td>
-            <td data-label="Venta" class="num">${fmt(p.precioVenta)}</td>
-            <td data-label="Acciones" style="display:flex;gap:4px">
-              <button class="btn ghost sm" onclick="openProductoModal('${areaKey}','${p.id}')">${icon('edit')}</button>
-              <button class="btn ghost sm" onclick="borrarProducto('${p.id}')">${icon('trash')}</button>
-            </td>
-          </tr>`;
-        }).join('')}</tbody>
+        <thead><tr><th>Producto</th><th>Tipo</th><th class="num">Stock</th><th>Vence</th><th class="num">Costo</th><th class="num">Venta</th><th></th></tr></thead>
+        <tbody>${prods.map(renderInvRowConAcciones).join('')}</tbody>
       </table></div>`}
     </div>`;
+}
+function renderInvRowConAcciones(p){
+  const stock = Number(p.stock);
+  const min = Number(p.stockMin||0);
+  const sinStock = stock === 0;
+  const critico = stock <= min && stock > 0;
+  const est = estadoVencimiento(p);
+  let rowCls = sinStock ? 'row-danger' : (critico ? 'row-warn' : '');
+  if(est === 'vencido') rowCls = 'row-danger';
+  else if((est === 'critico' || est === 'proximo') && !rowCls) rowCls = 'row-warn';
+
+  let vencCell = '—';
+  if(p.fechaVencimiento){
+    const d = diasParaVencer(p.fechaVencimiento);
+    let tag = '';
+    if(d < 0) tag = `<span class="tag bad">Vencido (${Math.abs(d)}d)</span>`;
+    else if(d === 0) tag = `<span class="tag bad">Vence hoy</span>`;
+    else if(d <= 3) tag = `<span class="tag bad">${d}d</span>`;
+    else if(d <= DIAS_ALERTA_VENCIMIENTO) tag = `<span class="tag warn">${d}d</span>`;
+    else tag = `<span class="tag ok">${d}d</span>`;
+    vencCell = `${fmtFecha(p.fechaVencimiento)}<br>${tag}`;
+  }
+
+  return `<tr class="${rowCls}">
+    <td data-label="Producto">${renderProductoCell(p)}</td>
+    <td data-label="Tipo">${tipoVentaBadge(p)}</td>
+    <td data-label="Stock" class="num">${stock.toFixed(2)} ${esc(p.unidad)}</td>
+    <td data-label="Vence">${vencCell}</td>
+    <td data-label="Costo" class="num">${fmt(p.precioCosto)}</td>
+    <td data-label="Venta" class="num">${fmt(p.precioVenta)}</td>
+    <td data-label="Acciones" style="display:flex;gap:4px">
+      <button class="btn ghost sm" onclick="openProductoModal('${p.area}','${p.id}')">${icon('edit')}</button>
+      <button class="btn ghost sm" onclick="borrarProducto('${p.id}')">${icon('trash')}</button>
+    </td>
+  </tr>`;
 }
 
 VIEWS.inventario = () => {
   const prods = STATE.productos;
   const valor = calc.valorInventario();
   const bajos = calc.stockBajo();
+  const porVencer = calc.proximosVencer(DIAS_ALERTA_VENCIMIENTO);
+  const vencidos = calc.vencidos();
   return `
     <div class="kpis">
       <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Total productos</span><span class="kpi-icon blue">${icon('inventario')}</span></div>
@@ -1576,32 +1658,121 @@ VIEWS.inventario = () => {
         <div class="kpi-value">${fmtK(valor)}</div></div>
       <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Stock crítico</span><span class="kpi-icon red">${icon('alert')}</span></div>
         <div class="kpi-value">${bajos.length}</div></div>
+      <div class="card kpi"><div class="kpi-top"><span class="kpi-label">Por vencer (${DIAS_ALERTA_VENCIMIENTO}d)</span><span class="kpi-icon amber">${icon('alert')}</span></div>
+        <div class="kpi-value">${porVencer.length}</div>
+        <div class="kpi-foot">${vencidos.length>0?`<span class="neg">${vencidos.length} vencidos</span>`:'Sin vencidos'}</div></div>
     </div>
-    <div class="toolbar"><div class="toolbar-actions">
-      <button class="btn primary" onclick="openProductoModal()">${icon('plus')} Nuevo</button>
-    </div></div>
+    ${alertaVencimiento()}
+    <div class="toolbar" style="gap:8px">
+      <div class="prod-search-input" style="flex:1;min-width:240px">
+        ${icon('search')}
+        <input type="text" id="invSearch" placeholder="Buscar por nombre, categoría o código de barras…" autocomplete="off">
+        <button type="button" class="bc-btn" id="invScanBtn" aria-label="Escanear" style="width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;display:grid;place-items:center">${icon('barcode')}</button>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn primary" onclick="openProductoModal()">${icon('plus')} Nuevo</button>
+      </div>
+    </div>
     <div class="card">
-      <div class="card-head"><div><h3>Inventario general</h3></div></div>
-      ${prods.length===0 ? `<div class="empty">${icon('inventario')}<h3>Vacío</h3></div>` : `
-      <div class="table-wrap"><table>
-        <thead><tr><th>Producto</th><th>Sección</th><th class="num">Stock</th><th class="num">Costo</th><th class="num">Venta</th></tr></thead>
-        <tbody>${prods.map(p=>{
-          const stock = Number(p.stock);
-          const min = Number(p.stockMin||0);
-          const sin = stock === 0;
-          const crit = stock <= min && stock > 0;
-          const rowCls = sin ? 'row-danger' : (crit ? 'row-warn' : '');
-          return `<tr class="${rowCls}">
-            <td data-label="Producto">${renderProductoCell(p)}</td>
-            <td data-label="Sección">${sectionBadge(p.area)}</td>
-            <td data-label="Stock" class="num">${stock.toFixed(2)} ${esc(p.unidad)}</td>
-            <td data-label="Costo" class="num">${fmt(p.precioCosto)}</td>
-            <td data-label="Venta" class="num">${fmt(p.precioVenta)}</td>
-          </tr>`;
-        }).join('')}</tbody>
-      </table></div>`}
+      <div class="card-head"><div><h3>Inventario general</h3>
+        <p id="invCount">${prods.length} producto${prods.length!==1?'s':''}</p></div></div>
+      <div id="invTableWrap">${renderInvTable(prods)}</div>
     </div>`;
 };
+
+/* ---- helpers de la vista de inventario ---- */
+function filtrarProductos(query){
+  const q = String(query||'').trim();
+  if(!q) return STATE.productos;
+  const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const qn = norm(q), ql = q.toLowerCase();
+  return STATE.productos.filter(p => {
+    if(String(p.barcode||'').toLowerCase().includes(ql)) return true;
+    if(norm(p.nombre).includes(qn)) return true;
+    if(norm(p.categoria).includes(qn)) return true;
+    return false;
+  });
+}
+
+function renderInvTable(prods){
+  if(prods.length === 0){
+    return `<div class="empty">${icon('search')}<h3>Sin resultados</h3><p>Prueba con otro término o código.</p></div>`;
+  }
+  return `<div class="table-wrap"><table>
+    <thead><tr><th>Producto</th><th>Sección</th><th class="num">Stock</th><th>Vence</th><th class="num">Venta</th><th></th></tr></thead>
+    <tbody>${prods.map(renderInvRowCompleta).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderInvRow(p){
+  const stock = Number(p.stock);
+  const min = Number(p.stockMin||0);
+  const sin = stock === 0;
+  const crit = stock <= min && stock > 0;
+  const est = estadoVencimiento(p);
+  let rowCls = sin ? 'row-danger' : (crit ? 'row-warn' : '');
+  if(est === 'vencido') rowCls = 'row-danger';
+  else if((est === 'critico' || est === 'proximo') && !rowCls) rowCls = 'row-warn';
+
+  let vencCell = '—';
+  if(p.fechaVencimiento){
+    const d = diasParaVencer(p.fechaVencimiento);
+    let tag = '';
+    if(d < 0) tag = `<span class="tag bad">Vencido (${Math.abs(d)}d)</span>`;
+    else if(d === 0) tag = `<span class="tag bad">Vence hoy</span>`;
+    else if(d <= 3) tag = `<span class="tag bad">${d}d</span>`;
+    else if(d <= DIAS_ALERTA_VENCIMIENTO) tag = `<span class="tag warn">${d}d</span>`;
+    else tag = `<span class="tag ok">${d}d</span>`;
+    vencCell = `${fmtFecha(p.fechaVencimiento)}<br>${tag}`;
+  }
+
+  return `<tr class="${rowCls}">
+    <td data-label="Producto">${renderProductoCell(p)}</td>
+    <td data-label="Sección">${sectionBadge(p.area)}</td>
+    <td data-label="Stock" class="num">${stock.toFixed(2)} ${esc(p.unidad)}</td>
+    <td data-label="Vence">${vencCell}</td>
+    <td data-label="Venta" class="num">${fmt(p.precioVenta)}</td>
+  </tr>`;
+}
+
+function renderInvRowCompleta(p){
+  const base = renderInvRow(p);
+  /* le inyectamos la columna de acciones antes del cierre </tr> */
+  return base.replace('</tr>', `<td data-label="Acciones" style="display:flex;gap:4px">
+      <button class="btn ghost sm" onclick="openProductoModal('${p.area}','${p.id}')">${icon('edit')}</button>
+      <button class="btn ghost sm" onclick="borrarProducto('${p.id}')">${icon('trash')}</button>
+    </td></tr>`);
+}
+
+function initInventarioView(){
+  const inp = document.getElementById('invSearch');
+  const scanBtn = document.getElementById('invScanBtn');
+  const wrap = document.getElementById('invTableWrap');
+  const cnt = document.getElementById('invCount');
+  if(!inp || !wrap) return;
+
+  const apply = () => {
+    const q = inp.value.trim();
+    const lista = filtrarProductos(q);
+    wrap.innerHTML = renderInvTable(lista);
+    if(cnt) cnt.textContent = q
+      ? `${lista.length} resultado${lista.length!==1?'s':''} de ${STATE.productos.length}`
+      : `${lista.length} producto${lista.length!==1?'s':''}`;
+  };
+
+  inp.addEventListener('input', apply);
+
+  scanBtn.addEventListener('click', () => {
+    openScanner((code) => {
+      const p = calc.buscarPorBarcode(code);
+      inp.value = p ? p.nombre : code;
+      apply();
+      toast(p ? `✓ ${p.nombre}` : `Código "${code}" no registrado`, p ? 'success' : 'warn');
+    });
+  });
+
+  setTimeout(() => inp.focus(), 100);
+}
 
 VIEWS.compras = () => {
   const compras = [...STATE.compras].sort((a,b)=>b.fecha.localeCompare(a.fecha));
@@ -1692,6 +1863,8 @@ VIEWS.reportes = () => {
   const tc = STATE.compras.reduce((s,c)=>s+c.total,0);
   const vC = v.filter(x=>x.area==='carniceria').reduce((s,x)=>s+x.total,0);
   const vA = v.filter(x=>x.area==='abarrotes').reduce((s,x)=>s+x.total,0);
+  const prox = calc.proximosVencer(DIAS_ALERTA_VENCIMIENTO);
+  const venc = calc.vencidos();
   return `
     <div class="grid-eq">
       <div class="card">
@@ -1710,6 +1883,35 @@ VIEWS.reportes = () => {
           <li><span class="lbl">Ganancia bruta</span><span class="val">${fmt(g)}</span></li>
           <li class="total"><span class="lbl">Margen</span><span class="val pos">${tv>0?(g/tv*100).toFixed(1):'0'}%</span></li>
         </ul>
+      </div>
+    </div>
+    <div class="grid-eq">
+      <div class="card">
+        <div class="card-head"><div><h3>📅 Productos por vencer (${DIAS_ALERTA_VENCIMIENTO} días)</h3>
+          <p>${prox.length} producto${prox.length!==1?'s':''}</p></div></div>
+        ${prox.length===0 ? '<p style="color:var(--muted);font-size:13px">Ninguno ✓</p>' : `
+        <ul class="stock-list">${prox.slice(0,10).map(p=>{
+          const d = diasParaVencer(p.fechaVencimiento);
+          const color = d < 0 ? '#e11d48' : (d <= 3 ? '#e11d48' : '#f59e0b');
+          return `<li class="stock-item">
+            <div class="stock-top">
+              <span class="stock-name"><span class="dot ${p.area==='carniceria'?'carn':'abar'}"></span>${esc(p.nombre)}</span>
+              <span class="stock-qty"><b style="color:${color}">${d < 0 ? 'Vencido' : (d===0?'Hoy':d+'d')}</b> · ${fmtFecha(p.fechaVencimiento)}</span>
+            </div>
+          </li>`;
+        }).join('')}</ul>`}
+      </div>
+      <div class="card">
+        <div class="card-head"><div><h3>🚨 Vencidos</h3>
+          <p>${venc.length} producto${venc.length!==1?'s':''}</p></div></div>
+        ${venc.length===0 ? '<p style="color:var(--muted);font-size:13px">Ninguno ✓</p>' : `
+        <ul class="stock-list">${venc.slice(0,10).map(p=>`
+          <li class="stock-item">
+            <div class="stock-top">
+              <span class="stock-name"><span class="dot ${p.area==='carniceria'?'carn':'abar'}"></span>${esc(p.nombre)}</span>
+              <span class="stock-qty"><b style="color:var(--primary)">${Math.abs(diasParaVencer(p.fechaVencimiento))}d vencido</b></span>
+            </div>
+          </li>`).join('')}</ul>`}
       </div>
     </div>`;
 };
@@ -1825,7 +2027,7 @@ window.borrarTodosLosDatos = async () => {
   } catch(e){ LOG.error(e); toast('Error','error'); }
 };
 
-/* ✅ MODAL PRODUCTO — CON FIX DEL SCOPE DE fotoData/fotoBlob */
+/* MODAL PRODUCTO */
 window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
   const p = id ? STATE.productos.find(x=>x.id===id) : null;
   const barcodeValue = p ? (p.barcode||'') : (barcodePrefill||'');
@@ -1834,7 +2036,6 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
   const fotoInicial = p?.foto || '';
   const unidadInicial = p?.unidad || (selectedArea === 'carniceria' ? 'kg' : 'unidad');
 
-  // ✅ Declaradas en el scope externo, accesibles desde onReady y onSubmit
   let fotoData = fotoInicial;
   let fotoBlob = null;
 
@@ -1914,6 +2115,10 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
         <input name="precioVenta" type="number" step="0.01" min="0" value="${p?p.precioVenta:0}">
       </div>
     </div>
+    <div class="field">
+      <label>Fecha de vencimiento <span class="optional">(opcional · útil en abarrotes)</span></label>
+      <input name="fechaVencimiento" type="date" value="${p && p.fechaVencimiento ? p.fechaVencimiento : ''}">
+    </div>
     <div class="preview-box">
       <div>Valor total del stock<small id="previewFormula" style="display:block;font-size:11px;opacity:.7">0 kg × Bs 0</small></div>
       <div class="pb-value" id="previewValor">Bs 0,00</div>
@@ -1941,7 +2146,6 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
       const fotoPreview = m.querySelector('#fotoPreview');
       const fotoBtnSelect = m.querySelector('#fotoBtnSelect');
       const fotoBtnRemove = m.querySelector('#fotoBtnRemove');
-      // ⚠️ NO declarar aquí fotoData/fotoBlob → ya existen en el scope externo
 
       const renderFoto = () => {
         if(fotoData){
@@ -2023,7 +2227,7 @@ window.openProductoModal = (areaDefault='', id=null, barcodePrefill=null) => {
         stockMin: parseFloat(fieldVal(m,'stockMin'))||0,
         precioCosto: parseFloat(fieldVal(m,'precioCosto'))||0,
         precioVenta: parseFloat(fieldVal(m,'precioVenta'))||0,
-        // ✅ Ahora sí accede a fotoData desde el scope externo
+        fechaVencimiento: fieldVal(m,'fechaVencimiento') || '',
         foto: fotoData && !fotoData.startsWith('blob:') ? fotoData : (p?.foto || '')
       };
       if(!data.nombre){ toast('Falta nombre','error'); return false; }
@@ -2277,7 +2481,8 @@ window.openVentaModal = (productoIdInicial = null) => {
         if(!p) return;
         if(Number(p.stock) <= 0){ toast('Sin stock','error'); return; }
         const uE = unidadEntrada(p);
-        const cI = UNIDADES_GRANEL.includes(p.unidad) ? 250 : 1;
+        /* ✅ FIX: cantidad inicial = 1 (kg/unidad) */
+        const cI = 1;
         const cB = aUnidadBase(cI, uE, p.unidad);
         if(agregarAlCarrito(p, cB, cI, uE)){
           renderItems();
@@ -2314,8 +2519,9 @@ window.openVentaModal = (productoIdInicial = null) => {
       const prod = STATE.productos.find(x => x.id === it.productoId);
       const fH = (prod && prod.foto) ? `<img src="${prod.foto}" class="v-item-foto">` : `<div class="v-item-foto-ph">${icon('image')}</div>`;
       const esGranel = UNIDADES_GRANEL.includes(it.unidad);
-      const cantMostrar = esGranel ? Math.round(it.cantidadInput) : it.cantidadInput;
-      const paso = esGranel ? 50 : 1;
+      /* ✅ FIX: mostrar en kg con 3 decimales */
+      const cantMostrar = esGranel ? parseFloat(Number(it.cantidadInput).toFixed(3)) : it.cantidadInput;
+      const paso = esGranel ? 0.1 : 1;
       return `
         <li class="v-item">
           ${fH}
@@ -2359,7 +2565,8 @@ window.openVentaModal = (productoIdInicial = null) => {
 
   function cambiarCantidad(idx, delta){
     const it = items[idx]; if(!it) return;
-    const paso = UNIDADES_GRANEL.includes(it.unidad) ? 50 : 1;
+    /* ✅ FIX: paso 0.1 kg (100g) para granel */
+    const paso = UNIDADES_GRANEL.includes(it.unidad) ? 0.1 : 1;
     setCantidadInput(idx, (Number(it.cantidadInput)||0) + delta*paso);
   }
 
@@ -2395,7 +2602,8 @@ window.openVentaModal = (productoIdInicial = null) => {
       if(!p){ toast(`Código "${code}" no registrado`,'error'); return; }
       if(Number(p.stock) <= 0){ toast('Sin stock','error'); return; }
       const uE = unidadEntrada(p);
-      const cI = UNIDADES_GRANEL.includes(p.unidad) ? 250 : 1;
+      /* ✅ FIX: cantidad inicial 1 */
+      const cI = 1;
       const cB = aUnidadBase(cI, uE, p.unidad);
       if(agregarAlCarrito(p, cB, cI, uE)){ renderItems(); toast(`✓ ${p.nombre}`,'success'); }
     });
@@ -2403,7 +2611,8 @@ window.openVentaModal = (productoIdInicial = null) => {
 
   _carritoUI = { agregarPorCodigo: (p) => {
     const uE = unidadEntrada(p);
-    const cI = UNIDADES_GRANEL.includes(p.unidad) ? 250 : 1;
+    /* ✅ FIX: cantidad inicial 1 */
+    const cI = 1;
     const cB = aUnidadBase(cI, uE, p.unidad);
     if(agregarAlCarrito(p, cB, cI, uE)){ renderItems(); toast(`✓ ${p.nombre}`,'success'); }
   }};
@@ -2416,7 +2625,8 @@ window.openVentaModal = (productoIdInicial = null) => {
     const p = STATE.productos.find(x => x.id === productoIdInicial);
     if(p && Number(p.stock) > 0){
       const uE = unidadEntrada(p);
-      const cI = UNIDADES_GRANEL.includes(p.unidad) ? 250 : 1;
+      /* ✅ FIX: cantidad inicial 1 */
+      const cI = 1;
       const cB = aUnidadBase(cI, uE, p.unidad);
       if(agregarAlCarrito(p, cB, cI, uE)) renderItems();
     }
@@ -2767,8 +2977,12 @@ document.addEventListener('keydown', e => {
 });
 document.getElementById('notifBtn').addEventListener('click', () => {
   const b = calc.stockBajo();
-  if(b.length === 0){ toast('✓ Sin alertas','success'); return; }
-  toast(`${b.length} productos con stock bajo`,'warn');
+  const v = calc.proximosVencer(DIAS_ALERTA_VENCIMIENTO);
+  if(b.length === 0 && v.length === 0){ toast('✓ Sin alertas','success'); return; }
+  const partes = [];
+  if(b.length) partes.push(`${b.length} stock bajo`);
+  if(v.length) partes.push(`${v.length} por vencer`);
+  toast(partes.join(' · '),'warn');
   setTimeout(()=>setView('inventario'), 700);
 });
 document.getElementById('logoutBtn').addEventListener('click', () => {
