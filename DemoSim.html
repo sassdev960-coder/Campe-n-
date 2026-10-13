@@ -1534,6 +1534,58 @@ function guardarCliente(id){
   }
   cerrarModal(); render();
 }
+
+/* ================================================================
+   ELIMINAR CLIENTE
+   Solo se permite si no tiene ventas ni cobros asociados.
+   Si tiene deuda inicial, se descuenta de las cuentas por cobrar del capital.
+   ================================================================ */
+function accionEliminarCliente(id){
+  const c=state.clientes.find(x=>x.id===id);
+  if(!c) return;
+
+  // Verificar dependencias
+  const ventasAsociadas = state.ventas.filter(v=>v.clienteId===id);
+  const abonosAsociados = state.abonos.filter(a=>a.clienteId===id);
+  const deuda = deudaCliente(id);
+  const deudaIni = deudaInicialCliente(id);
+
+  if(ventasAsociadas.length > 0){
+    return toast(`No se puede eliminar: tiene ${ventasAsociadas.length} venta(s) registrada(s).`,'err');
+  }
+  if(abonosAsociados.length > 0){
+    return toast(`No se puede eliminar: tiene ${abonosAsociados.length} cobro(s) registrado(s).`,'err');
+  }
+
+  const advertencia = deudaIni > 0
+    ? `Este cliente tiene una <b>deuda vieja</b> de ${money(deudaIni)} que se va a <b>perder</b>.`
+    : '';
+
+  pedirConfirmacion({
+    criticidad:'critico',
+    titulo:'Eliminar cliente',
+    mensaje:`¿Eliminar permanentemente a <b>${esc(c.nombre)}</b>?`,
+    detalle:`<div><strong>Comunidad:</strong> ${esc(c.comunidad||'—')}</div><div><strong>Teléfono:</strong> ${esc(c.tel||'—')}</div>${deudaIni>0?`<div style="color:var(--danger);margin-top:6px"><strong>Deuda vieja a borrar:</strong> ${money(deudaIni)}</div>`:''}`,
+    advertencia,
+    textoBoton:'Sí, eliminar',
+    onConfirm:()=>{
+      // Quitar deuda inicial del capital
+      if(state.capital?.deudasInicialesPorCliente?.[id]){
+        const monto = num2(state.capital.deudasInicialesPorCliente[id]);
+        delete state.capital.deudasInicialesPorCliente[id];
+        state.capital.cuentasPorCobrarIniciales = num2(Math.max(0,(state.capital.cuentasPorCobrarIniciales||0) - monto));
+      }
+      // Quitar cliente
+      state.clientes = state.clientes.filter(x=>x.id!==id);
+      // Limpiar referencias en UI
+      if(ui.ventaClienteId === id) ui.ventaClienteId = '';
+      if(ui.clienteAbierto === id) ui.clienteAbierto = null;
+      toast('Cliente eliminado','ok');
+      render();
+    }
+  });
+}
+
 function guardarUsuario(id){
   const n=$('m-u-nombre').value.trim();
   if(!n) return toast('Ingresa nombre','err');
@@ -2821,6 +2873,8 @@ function viewClientes(){
         const abierto=ui.clienteAbierto===c.id;
         const pend=ventasPendientesCliente(c.id);
         const abonos=state.abonos.filter(a=>a.clienteId===c.id);
+        const nVentas=state.ventas.filter(v=>v.clienteId===c.id).length;
+        const sePuedeEliminar = nVentas===0 && abonos.length===0;
         return `<div class="card" style="padding:18px 20px;${venc>0?'border-left:3px solid var(--danger)':''}">
           <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start">
             <div style="flex:1;min-width:0">
@@ -2841,6 +2895,7 @@ function viewClientes(){
             ${deuda>0?`<button class="btn btn-success btn-sm" onclick="abrirModal('abono','${c.id}')">Registrar cobro</button>`:''}
             <button class="btn btn-outline btn-sm" onclick="toggleCliente('${c.id}')">${abierto?'Ocultar':'Ver historial'}</button>
             ${esAdmin()?`<button class="btn btn-outline btn-sm" onclick="abrirModal('editarCliente','${c.id}')">Editar / + deuda</button>`:''}
+            ${esAdmin()?`<button class="btn-ghost" style="font-size:12px;color:var(--danger)" onclick="accionEliminarCliente('${c.id}')" title="${sePuedeEliminar?'Eliminar cliente':'No se puede: tiene movimientos'}">Eliminar</button>`:''}
           </div>
           ${abierto?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line-soft)">
             <div style="background:var(--surface-soft);border-radius:8px;padding:12px;margin-bottom:16px;border:1px solid var(--line-soft)">
