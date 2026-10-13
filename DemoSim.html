@@ -1030,9 +1030,10 @@ function modalProveedor(id){
 }
 function modalCliente(id){
   const c=id?state.clientes.find(x=>x.id===id):null;
+  const deudaActual = c ? deudaCliente(c.id) : 0;
   return `
     <div class="modal-head"><div><div class="modal-title">${c?'Editar cliente':'Nuevo cliente'}</div></div>
-      <button class="modal-close" onclick="cerrarModal()">×</button></div>
+    <button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="field"><label>Nombre completo *</label>
       <input id="m-cli-nombre" value="${c?esc(c.nombre):''}" placeholder="Ej: María Quispe"></div>
     <div class="grid-2">
@@ -1047,9 +1048,31 @@ function modalCliente(id){
           <option value="30" ${c&&c.plazo===30?'selected':''}>30 días</option>
           <option value="7" ${c&&c.plazo===7?'selected':''}>7 días</option>
         </select></div>
-      <div class="field"><label>Límite crédito (Bs)</label>
-        <input id="m-cli-limite" type="number" value="${c?c.limite:500}"></div>
+      <div class="field"><label>Límite de crédito (Bs)</label>
+        <input id="m-cli-limite" type="number" value="${c?c.limite:500}">
+        <div class="hint">Máximo que puede deber.</div>
+      </div>
     </div>
+    ${!c ? `
+      <div class="field" style="background:var(--info-soft);padding:14px;border-radius:10px;border:1px solid #d1e0ec;margin-top:8px">
+        <label style="color:#0e2b45">Deuda inicial (Bs) — opcional</label>
+        <div class="money-input-wrap"><input id="m-cli-deuda-inicial" type="number" step="0.01" min="0" value="0" placeholder="0.00"></div>
+        <div class="hint" style="color:#183a56">
+          Si este cliente <b>ya te debía plata antes</b> de usar el sistema, ponlo aquí.
+          Si es un cliente nuevo que nunca te debió nada, deja 0.
+          <br><br>
+          <strong>Ojo:</strong> esto NO es una venta. Es una deuda vieja que ya existía.
+        </div>
+      </div>
+    ` : `
+      <div style="background:var(--surface-soft);border-radius:8px;padding:12px;border:1px solid var(--line-soft);margin-top:8px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Deuda actual</div>
+        <div style="font-size:20px;font-weight:600;color:${deudaActual>0?'var(--danger)':'var(--success)'};font-variant-numeric:tabular-nums">${money(deudaActual)}</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5">
+          Para modificar la deuda usá <b>Registrar cobro</b> (para bajarla) o <b>Capital inicial → Editar</b> (para agregar deuda vieja).
+        </div>
+      </div>
+    `}
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarCliente(${c?`'${c.id}'`:'null'})">${c?'Guardar':'Registrar'}</button>
@@ -1460,8 +1483,18 @@ function guardarCliente(id){
     c.nombre=n; c.tel=tel; c.comunidad=com; c.plazo=plazo; c.limite=limite;
     toast('Actualizado','ok');
   }else{
-    state.clientes.push({id:'C'+(state.seq.cliente++),nombre:n,tel,comunidad:com||'—',plazo,limite,creado:HOY()});
-    toast('Registrado','ok');
+    const nuevoId='C'+(state.seq.cliente++);
+    state.clientes.push({id:nuevoId,nombre:n,tel,comunidad:com||'—',plazo,limite,creado:HOY()});
+    // Si cargó deuda inicial, la registramos en el capital
+    const deudaInic = Number($('m-cli-deuda-inicial')?.value) || 0;
+    if(deudaInic > 0){
+      if(!state.capital.deudasInicialesPorCliente) state.capital.deudasInicialesPorCliente = {};
+      state.capital.deudasInicialesPorCliente[nuevoId] = num2(deudaInic);
+      state.capital.cuentasPorCobrarIniciales = num2((state.capital.cuentasPorCobrarIniciales||0) + deudaInic);
+      toast(`Cliente registrado con deuda inicial de ${money(deudaInic)}`,'ok');
+    } else {
+      toast('Cliente registrado','ok');
+    }
   }
   cerrarModal(); render();
 }
