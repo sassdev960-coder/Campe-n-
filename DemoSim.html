@@ -260,7 +260,7 @@ tbody tr:hover td{background:var(--surface-soft)}
 .bolsa-input-name{flex:1;font-size:13px;font-weight:500;color:var(--ink)}
 .bolsa-input-name small{display:block;font-weight:400;color:var(--muted);font-size:11.5px;margin-top:1px}
 .bolsa-input-field{width:160px}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px -8px rgba(20,18,12,.4);transition:transform .3s cubic-bezier(.2,.9,.3,1.3);z-index:999;max-width:90vw}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px -8px rgba(20,18,12,.4);transition:transform .3s cubic-bezier(.2,.9,.3,1.3);z-index:999;max-width:90vw;text-align:center}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.ok{background:var(--success)}
 .toast.err{background:var(--danger)}
@@ -284,10 +284,7 @@ tbody tr:hover td{background:var(--surface-soft)}
 
 <aside class="sidebar" id="sidebar">
   <div class="brand">
-    <div class="brand-mark">
-      <div class="brand-logo">SG</div>
-      <div class="brand-name">SIMGest</div>
-    </div>
+    <div class="brand-mark"><div class="brand-logo">SG</div><div class="brand-name">SIMGest</div></div>
     <div class="brand-sub">Sistema de gestión comercial</div>
   </div>
   <nav class="nav" id="nav"></nav>
@@ -321,7 +318,7 @@ tbody tr:hover td{background:var(--surface-soft)}
    ================================================================ */
 const UNIDADES = ['unidad','kg','litro','gramo','ml','caja','paquete','docena','metro'];
 const CATEGORIAS_GASTOS_DEFAULT = ['Alquiler','Servicios (luz/agua/internet)','Transporte','Sueldos','Mantenimiento','Insumos de oficina','Impuestos','Otros'];
-const LS_KEY = 'simgest_v14';
+const LS_KEY = 'simgest_v16';
 const MAX_CAJEROS = 8;
 const MAX_COBRADORES = 8;
 const COLORES_CAJERO = ['#1c3d5a','#2d6a4f','#8a6d3b','#6d28d9','#1e5a8a','#b91c1c','#0369a1','#7c2d12'];
@@ -455,7 +452,11 @@ function estadoCliente(cid){
 }
 const esProductoRecarga = p => p&&p.esRecarga===true;
 
-function gananciaItem(it){ if(it.esRecarga) return 0; return num2((Number(it.precioUnit)-Number(it.costoUnit))*Number(it.cantidad)); }
+// Las recargas NO generan ganancia automática. La ganancia es la bonificación manual.
+function gananciaItem(it){
+  if(it.esRecarga) return 0;
+  return num2((Number(it.precioUnit)-Number(it.costoUnit))*Number(it.cantidad));
+}
 function gananciaVenta(v){ return num2(v.items.reduce((a,i)=>a+gananciaItem(i),0)); }
 function gananciaVentas(vs){ return num2(vs.reduce((a,v)=>a+gananciaVenta(v),0)); }
 function bonificacionesPeriodo(desde,hasta){ return num2(state.caja.movimientos.filter(m=>m.tipo==='bonificacion'&&m.fecha>=desde&&m.fecha<=hasta).reduce((a,m)=>a+m.monto,0)); }
@@ -491,10 +492,9 @@ function abonosVisibles(){ return esAdmin()?state.abonos:state.abonos.filter(a=>
 function toast(msg,tipo){
   const t=$('toast'); if(!t) return;
   t.textContent=msg; t.className='toast show '+(tipo||'');
-  clearTimeout(t._t); t._t=setTimeout(()=>t.className='toast '+(tipo||''),2800);
+  clearTimeout(t._t); t._t=setTimeout(()=>t.className='toast '+(tipo||''),3200);
 }
 function rolNombre(){ if(!usuarioActual) return '—'; return {admin:'Administrador',cajero:'Cajero',cobrador:'Cobrador'}[usuarioActual.rol]||'—'; }
-
 function pedirConfirmacion(opts){ ui.modal={tipo:'confirmar',data:opts}; renderModal(); }
 function ejecutarConfirmacion(){
   const d=ui.modal?.data;
@@ -528,48 +528,41 @@ const ICONS = {
   capital:'<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>',
   cierre:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>'
 };
-
 function tabsDisponibles(){
-  if(esAdmin()){
-    return [
-      {id:'resumen',label:'Resumen',grupo:'Operación'},
-      {id:'balance',label:'Balance',grupo:'Operación'},
-      {id:'ganancias',label:'Ganancias',grupo:'Operación'},
-      {id:'caja',label:'Caja',grupo:'Operación'},
-      {id:'bancos',label:'Bancos',grupo:'Operación'},
-      {id:'turnos',label:'Turnos',grupo:'Operación'},
-      {id:'ventas',label:'Punto de venta',grupo:'Operación'},
-      {id:'inventario',label:'Inventario',grupo:'Operación'},
-      {id:'clientes',label:'Clientes y créditos',grupo:'Operación'},
-      {id:'cobranzas',label:'Cobranzas',grupo:'Operación'},
-      {id:'compras',label:'Compras',grupo:'Operación'},
-      {id:'gastos',label:'Gastos',grupo:'Operación'},
-      {id:'cuentas',label:'Cuentas por pagar',grupo:'Operación'},
-      {id:'productos',label:'Productos',grupo:'Configuración'},
-      {id:'categorias',label:'Categorías',grupo:'Configuración'},
-      {id:'proveedores',label:'Proveedores',grupo:'Configuración'},
-      {id:'usuarios',label:'Usuarios',grupo:'Configuración'},
-      {id:'capital',label:'Capital inicial',grupo:'Configuración'},
-      {id:'cierre',label:'Cierre mensual',grupo:'Configuración'}
-    ];
-  }
-  if(esCajero()){
-    return [
-      {id:'resumen',label:'Resumen',grupo:'Operación'},
-      {id:'turnos',label:'Mi turno',grupo:'Operación'},
-      {id:'caja',label:'Mi caja',grupo:'Operación'},
-      {id:'ventas',label:'Punto de venta',grupo:'Operación'},
-      {id:'clientes',label:'Clientes',grupo:'Operación'},
-      {id:'gastos',label:'Gastos',grupo:'Operación'}
-    ];
-  }
-  if(esCobrador()){
-    return [
-      {id:'resumen',label:'Mi resumen',grupo:'Cobranzas'},
-      {id:'clientes',label:'Clientes y deudas',grupo:'Cobranzas'},
-      {id:'cobranzas',label:'Mis cobros',grupo:'Cobranzas'}
-    ];
-  }
+  if(esAdmin()) return [
+    {id:'resumen',label:'Resumen',grupo:'Operación'},
+    {id:'balance',label:'Balance',grupo:'Operación'},
+    {id:'ganancias',label:'Ganancias',grupo:'Operación'},
+    {id:'caja',label:'Caja',grupo:'Operación'},
+    {id:'bancos',label:'Bancos',grupo:'Operación'},
+    {id:'turnos',label:'Turnos',grupo:'Operación'},
+    {id:'ventas',label:'Punto de venta',grupo:'Operación'},
+    {id:'inventario',label:'Inventario',grupo:'Operación'},
+    {id:'clientes',label:'Clientes y créditos',grupo:'Operación'},
+    {id:'cobranzas',label:'Cobranzas',grupo:'Operación'},
+    {id:'compras',label:'Compras',grupo:'Operación'},
+    {id:'gastos',label:'Gastos',grupo:'Operación'},
+    {id:'cuentas',label:'Cuentas por pagar',grupo:'Operación'},
+    {id:'productos',label:'Productos',grupo:'Configuración'},
+    {id:'categorias',label:'Categorías',grupo:'Configuración'},
+    {id:'proveedores',label:'Proveedores',grupo:'Configuración'},
+    {id:'usuarios',label:'Usuarios',grupo:'Configuración'},
+    {id:'capital',label:'Capital inicial',grupo:'Configuración'},
+    {id:'cierre',label:'Cierre mensual',grupo:'Configuración'}
+  ];
+  if(esCajero()) return [
+    {id:'resumen',label:'Resumen',grupo:'Operación'},
+    {id:'turnos',label:'Mi turno',grupo:'Operación'},
+    {id:'caja',label:'Mi caja',grupo:'Operación'},
+    {id:'ventas',label:'Punto de venta',grupo:'Operación'},
+    {id:'clientes',label:'Clientes',grupo:'Operación'},
+    {id:'gastos',label:'Gastos',grupo:'Operación'}
+  ];
+  if(esCobrador()) return [
+    {id:'resumen',label:'Mi resumen',grupo:'Cobranzas'},
+    {id:'clientes',label:'Clientes y deudas',grupo:'Cobranzas'},
+    {id:'cobranzas',label:'Mis cobros',grupo:'Cobranzas'}
+  ];
   return [];
 }
 function renderNav(){
@@ -649,7 +642,6 @@ function renderModal(){
   if(tipo==='registrarBonificacion'||tipo==='retirarBonificacion') setTimeout(()=>{const el=$('m-bonif-monto'); if(el) el.focus();},50);
   if(tipo==='configurarCapital'||tipo==='editarCapital'){ setTimeout(()=>{const el=$('m-cap-efectivo'); if(el) el.focus();},50); recalcularCapitalTotal(); }
 }
-
 function modalConfirmar(d){
   if(!d) return '';
   const critico=d.criticidad==='critico';
@@ -672,10 +664,8 @@ function modalConfirmar(d){
       <button class="btn ${botonCls}" onclick="ejecutarConfirmacion()">${esc(d.textoBoton||'Confirmar')}</button>
     </div>`;
 }
-
-/* ---------- CAPITAL INICIAL ---------- */
 function bolsasInputsHTML(mostrarValoresActuales){
-  if(state.proveedores.length===0) return `<div style="font-size:12px;color:var(--muted);padding:10px 0">No hay proveedores. Crea uno en <b>Proveedores</b>.</div>`;
+  if(state.proveedores.length===0) return `<div style="font-size:12px;color:var(--muted);padding:10px 0">No hay proveedores.</div>`;
   return state.proveedores.map(p=>{
     const bolsa=state.bolsas[p.id]||{saldo:0};
     return `<div class="bolsa-input-row">
@@ -698,28 +688,23 @@ function recalcularCapitalTotal(){
   const elTot=$('capital-total'); if(elTot) elTot.textContent=money(tot);
   const elB=$('capital-total-bolsas'); if(elB) elB.textContent=money(bolsas);
 }
-
 function modalConfigurarCapital(){
   const clientes=state.clientes.filter(c=>c.id);
   return `
     <div class="modal-head">
       <div><div class="modal-title">Configurar capital inicial</div>
-      <div class="card-subtitle">Punto de partida del negocio. Se registra una sola vez al empezar.</div></div>
+      <div class="card-subtitle">Punto de partida del negocio.</div></div>
       <button class="modal-close" onclick="cerrarModal()">×</button>
     </div>
-    <div class="alert alert-info"><div><strong>¿Para qué sirve?</strong> Registra efectivo, bancos, deudas de clientes, mercadería y bolsas electrónicas. Así el patrimonio refleja la realidad.</div></div>
-    <div class="field">
-      <label>Efectivo inicial en caja (Bs) *</label>
-      <div class="money-input-wrap"><input id="m-cap-efectivo" type="number" step="0.01" min="0" value="0" oninput="recalcularCapitalTotal()"></div>
-    </div>
-    <div class="field">
-      <label>Efectivo en bancos (Bs)</label>
-      <div class="money-input-wrap"><input id="m-cap-bancos" type="number" step="0.01" min="0" value="0" oninput="recalcularCapitalTotal()"></div>
-    </div>
+    <div class="alert alert-info"><div><strong>¿Para qué sirve?</strong> Registra efectivo, bancos, deudas de clientes, mercadería y bolsas electrónicas.</div></div>
+    <div class="field"><label>Efectivo inicial en caja (Bs) *</label>
+      <div class="money-input-wrap"><input id="m-cap-efectivo" type="number" step="0.01" min="0" value="0" oninput="recalcularCapitalTotal()"></div></div>
+    <div class="field"><label>Efectivo en bancos (Bs)</label>
+      <div class="money-input-wrap"><input id="m-cap-bancos" type="number" step="0.01" min="0" value="0" oninput="recalcularCapitalTotal()"></div></div>
     <div class="field" style="background:var(--info-soft);padding:14px;border-radius:10px;border:1px solid #d1e0ec">
       <label style="color:#0e2b45">Cuentas por cobrar iniciales</label>
-      <div class="hint" style="color:#183a56;margin-bottom:10px">Deudas que tus clientes ya tenían antes del sistema.</div>
-      ${clientes.length===0?`<div style="padding:6px 0;font-size:12.5px;color:#183a56">Aún no tienes clientes registrados.</div>`
+      <div class="hint" style="color:#183a56;margin-bottom:10px">Deudas que tus clientes ya tenían.</div>
+      ${clientes.length===0?`<div style="padding:6px 0;font-size:12.5px;color:#183a56">Aún no tienes clientes.</div>`
         :clientes.map(c=>`<div class="bolsa-input-row" style="border-bottom:1px solid #d1e0ec">
           <div class="bolsa-input-name" style="color:#0e2b45">${esc(c.nombre)}<small>${esc(c.comunidad||'')}</small></div>
           <div class="bolsa-input-field money-input-wrap sm">
@@ -727,10 +712,8 @@ function modalConfigurarCapital(){
           </div>
         </div>`).join('')}
     </div>
-    <div class="field">
-      <label>Valor del inventario inicial (Bs)</label>
-      <div class="money-input-wrap"><input id="m-cap-inventario" type="number" step="0.01" min="0" value="0" oninput="recalcularCapitalTotal()"></div>
-    </div>
+    <div class="field"><label>Valor del inventario inicial (Bs)</label>
+      <div class="money-input-wrap"><input id="m-cap-inventario" type="number" step="0.01" min="0" value="0" oninput="recalcularCapitalTotal()"></div></div>
     <div class="field" style="margin-top:20px">
       <label>Bolsas electrónicas de recargas (Bs)</label>
       <div style="background:var(--warning-soft);border-radius:10px;padding:14px;border:1px solid #ecdcae">
@@ -758,31 +741,31 @@ function modalEditarCapital(){
       <div class="card-subtitle">Configurado: ${fFecha(c.fechaConfiguracion||HOY())}</div></div>
       <button class="modal-close" onclick="cerrarModal()">×</button>
     </div>
-    <div class="alert alert-warning"><div>Los montos cargados se <b>suman</b> a lo que ya hay. Si no quieres mover nada, deja 0.</div></div>
-    <div class="field"><label>Efectivo adicional a registrar (Bs)</label>
+    <div class="alert alert-warning"><div>Los montos se <b>suman</b> a lo que ya hay. Si no quieres mover nada, deja 0.</div></div>
+    <div class="field"><label>Efectivo adicional (Bs)</label>
       <div class="money-input-wrap"><input id="m-cap-efectivo" type="number" step="0.01" min="0" value="0" oninput="recalcularCapitalTotal()"></div></div>
-    <div class="field"><label>Efectivo en bancos (Bs)</label>
+    <div class="field"><label>Bancos (Bs)</label>
       <div class="money-input-wrap"><input id="m-cap-bancos" type="number" step="0.01" min="0" value="${c.efectivoBancosInicial||0}" oninput="recalcularCapitalTotal()"></div></div>
     <div class="field" style="background:var(--info-soft);padding:14px;border-radius:10px;border:1px solid #d1e0ec">
-      <label style="color:#0e2b45">Agregar deuda inicial a un cliente</label>
-      <div class="hint" style="color:#183a56;margin-bottom:10px">Si un cliente tenía una deuda que no habías registrado, súmala aquí.</div>
+      <label style="color:#0e2b45">Agregar deuda a un cliente</label>
+      <div class="hint" style="color:#183a56;margin-bottom:10px">Se suma a lo que ya debe.</div>
       ${clientes.length===0?`<div style="font-size:12.5px;color:#183a56">No hay clientes.</div>`
         :clientes.map(cl=>`<div class="bolsa-input-row" style="border-bottom:1px solid #d1e0ec">
-          <div class="bolsa-input-name" style="color:#0e2b45">${esc(cl.nombre)}<small>Deuda actual: ${money(deudaCliente(cl.id))}</small></div>
+          <div class="bolsa-input-name" style="color:#0e2b45">${esc(cl.nombre)}<small>Deuda: ${money(deudaCliente(cl.id))}</small></div>
           <div class="bolsa-input-field money-input-wrap sm">
             <input type="number" step="0.01" min="0" value="0" class="m-cap-deuda" data-cliente="${cl.id}" oninput="recalcularCapitalTotal()">
           </div>
         </div>`).join('')}
     </div>
-    <div class="field"><label>Valor del inventario inicial (Bs)</label>
+    <div class="field"><label>Inventario inicial (Bs)</label>
       <div class="money-input-wrap"><input id="m-cap-inventario" type="number" step="0.01" min="0" value="${c.inventarioInicial||0}" oninput="recalcularCapitalTotal()"></div></div>
     <div class="field" style="margin-top:20px">
-      <label>Bolsas electrónicas — agregar saldo adicional (Bs)</label>
+      <label>Bolsas electrónicas — saldo adicional (Bs)</label>
       <div style="background:var(--warning-soft);border-radius:10px;padding:14px;border:1px solid #ecdcae">
-        <div style="font-size:12px;color:#6d4d13;margin-bottom:12px">Solo si necesitas sumar. Si no, deja 0.</div>
+        <div style="font-size:12px;color:#6d4d13;margin-bottom:12px">Si no necesitas sumar, deja 0.</div>
         ${bolsasInputsHTML(true)}
       </div>
-      <div class="hint" style="margin-top:8px">Adicional a sumar: <b id="capital-total-bolsas">Bs 0.00</b></div>
+      <div class="hint" style="margin-top:8px">Adicional: <b id="capital-total-bolsas">Bs 0.00</b></div>
     </div>
     <div class="field"><label>Notas</label><input id="m-cap-notas" value="${esc(c.notas||'')}"></div>
     <div class="modal-actions">
@@ -871,7 +854,7 @@ function guardarEdicionCapital(){
   cerrarModal(); render();
 }
 
-/* ---------- PRODUCTO (RECARGA SIN UNIDAD) ---------- */
+/* ---------- PRODUCTO (RECARGA SIN COMISIÓN AUTOMÁTICA) ---------- */
 function modalProducto(id){
   const p=id?prodById(id):null;
   const esRec=p?p.esRecarga===true:false;
@@ -890,7 +873,7 @@ function modalProducto(id){
       </select></div>
     <div class="check-row" style="margin-bottom:14px">
       <input type="checkbox" id="m-prod-esrecarga" ${esRec?'checked':''} onchange="toggleRecargaBloque(this.checked)">
-      <label for="m-prod-esrecarga">Es un saldo de recarga telefónica</label>
+      <label for="m-prod-esrecarga">Es un saldo de recarga telefónica (crédito o paquete)</label>
     </div>
 
     <div id="m-prod-recarga-block" style="display:${esRec?'block':'none'};background:var(--warning-soft);padding:14px;border-radius:10px;margin-bottom:14px;border:1px solid #ecdcae">
@@ -900,24 +883,32 @@ function modalProducto(id){
           <option value="">Selecciona el operador</option>
           ${state.proveedores.map(pr=>`<option value="${pr.id}" ${p&&p.proveedorId===pr.id?'selected':''}>${esc(pr.nombre)}</option>`).join('')}
         </select>
-        ${p?'<div class="hint">El operador no se puede cambiar. Si necesitas cambiarlo, elimina la recarga y créala de nuevo.</div>':''}
       </div>
-      <div class="field">
-        <label>Valor nominal de la recarga (Bs) *</label>
-        <input id="m-prod-valor" type="number" step="0.01" min="0.01" value="${valorNominal}" placeholder="Ej: 10">
-        <div class="hint">El cliente paga exactamente este valor. <strong>No tiene unidades.</strong> La ganancia viene por bonificación del operador.</div>
+      <div class="field"><label>Tipo de recarga *</label>
+        <select id="m-prod-tipo-rec">
+          <option value="credito" ${p&&p.tipoRecarga==='credito'?'selected':''}>Recarga de crédito (tradicional)</option>
+          <option value="paquete" ${p&&p.tipoRecarga==='paquete'?'selected':''}>Paquete (megas, internet, etc.)</option>
+        </select>
+        <div class="hint">Funciona igual que una recarga. Solo sirve para clasificar.</div>
+      </div>
+      <div class="field"><label>Valor nominal (Bs) *</label>
+        <input id="m-prod-valor" type="number" step="0.01" min="0.01" value="${valorNominal}" placeholder="Ej: 100">
+        <div class="hint">El cliente paga exactamente este valor. <strong>No tiene unidades.</strong></div>
+      </div>
+      <div class="alert alert-info" style="margin-bottom:14px">
+        <div><strong>Sin comisión automática.</strong> La ganancia de las recargas se registra manualmente cuando el operador te avisa cuánto te bonificó. Usa <b>Caja → Bolsa → Registrar bonificación</b>.</div>
       </div>
       ${!p?`
         <div class="field" style="margin-bottom:0">
           <label>Saldo inicial en bolsa (Bs)</label>
           <div class="money-input-wrap sm"><input id="m-prod-saldo-inicial" type="number" step="0.01" min="0" value="0" placeholder="0.00"></div>
-          <div class="hint"><strong>En bolivianos.</strong> Es el saldo que cargas al operador para poder vender. Se suma a la bolsa del operador.</div>
+          <div class="hint"><strong>En bolivianos.</strong> Saldo inicial que cargas al operador (no descuenta de caja).</div>
         </div>
       `:`
         <div style="background:var(--info-soft);border-radius:8px;padding:12px;border:1px solid #d1e0ec;margin-top:6px">
           <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#183a56;margin-bottom:4px">Saldo actual en bolsa</div>
           <div style="font-size:20px;font-weight:600;color:#1c3d5a;font-variant-numeric:tabular-nums">${money(bolsaActual)}</div>
-          <div style="font-size:11.5px;color:#183a56;margin-top:6px;line-height:1.5">El saldo se modifica desde <b>Caja → Bolsa → Reponer saldo</b>, no desde aquí.</div>
+          <div style="font-size:11.5px;color:#183a56;margin-top:6px;line-height:1.5">El saldo se modifica desde <b>Caja → Bolsa → Reponer saldo</b>.</div>
         </div>
       `}
     </div>
@@ -931,14 +922,12 @@ function modalProducto(id){
         </select></div>
       <div class="grid-2">
         <div class="field"><label>Costo (Bs) *</label>
-          <input id="m-prod-costo" type="number" step="0.01" min="0" value="${p&&!p.esRecarga?p.costo:''}" placeholder="0.00"></div>
+          <input id="m-prod-costo" type="number" step="0.01" min="0" value="${p&&!p.esRecarga?p.costo:''}"></div>
         <div class="field"><label>Precio venta (Bs) *</label>
-          <input id="m-prod-precio" type="number" step="0.01" min="0" value="${p&&!p.esRecarga?p.precio:''}" placeholder="0.00"></div>
+          <input id="m-prod-precio" type="number" step="0.01" min="0" value="${p&&!p.esRecarga?p.precio:''}"></div>
       </div>
       ${!p?`<div class="field"><label>Stock inicial (unidades)</label>
-        <input id="m-prod-stock" type="number" step="0.01" min="0" value="0">
-        <div class="hint">En unidades. Ej: 50 cuadernos.</div>
-      </div>`:''}
+        <input id="m-prod-stock" type="number" step="0.01" min="0" value="0"></div>`:''}
     </div>
 
     <div class="modal-actions">
@@ -959,6 +948,7 @@ function guardarProducto(id){
   if(esRec){
     const provId=id?prodById(id).proveedorId:$('m-prod-prov').value;
     const valor=Number($('m-prod-valor').value);
+    const tipoRec=$('m-prod-tipo-rec')?$('m-prod-tipo-rec').value:'credito';
     if(!provId) return toast('Selecciona el operador','err');
     if(!(valor>0)) return toast('Valor nominal inválido','err');
     const saldoInicial=!id?(Number($('m-prod-saldo-inicial').value)||0):0;
@@ -966,15 +956,18 @@ function guardarProducto(id){
       const p=prodById(id);
       p.nombre=nombre; p.categoriaId=catId; p.unidad='unidad';
       p.esRecarga=true; p.valorNominal=num2(valor); p.costo=num2(valor); p.precio=num2(valor);
+      p.tipoRecarga=tipoRec;
+      delete p.comision;
       bolsaDe(provId);
       toast('Recarga actualizada','ok');
     }else{
-      state.productos.push({
+      const nuevo={
         id:'PR'+(state.seq.producto++), nombre, categoriaId:catId, unidad:'unidad',
         esRecarga:true, proveedorId:provId,
         valorNominal:num2(valor), costo:num2(valor), precio:num2(valor),
-        stock:0, stockInicial:0
-      });
+        tipoRecarga:tipoRec, stock:0, stockInicial:0
+      };
+      state.productos.push(nuevo);
       bolsaDe(provId);
       if(saldoInicial>0){
         const b=bolsaDe(provId);
@@ -996,7 +989,7 @@ function guardarProducto(id){
       p.nombre=nombre; p.categoriaId=catId; p.unidad=unidad;
       p.esRecarga=false; p.proveedorId=provId||null;
       p.costo=num2(costo); p.precio=num2(precio);
-      delete p.valorNominal;
+      delete p.valorNominal; delete p.tipoRecarga; delete p.comision;
       toast('Producto actualizado','ok');
     }else{
       const nuevo={id:'PR'+(state.seq.producto++),nombre,categoriaId:catId,unidad,esRecarga:false,proveedorId:provId||null,costo:num2(costo),precio:num2(precio),stock:0,stockInicial:0};
@@ -1014,7 +1007,7 @@ function modalCategoria(id){
     <div class="modal-head"><div><div class="modal-title">${c?'Editar categoría':'Nueva categoría'}</div></div>
     <button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="field"><label>Nombre *</label>
-      <input id="m-cat-nombre" value="${c?esc(c.nombre):''}" placeholder="Ej: Telefonía"></div>
+      <input id="m-cat-nombre" value="${c?esc(c.nombre):''}"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarCategoria(${c?`'${c.id}'`:'null'})">${c?'Guardar':'Crear'}</button>
@@ -1027,8 +1020,9 @@ function modalProveedor(id){
     <button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="field"><label>Nombre *</label>
       <input id="m-prov-nombre" value="${p?esc(p.nombre):''}" placeholder="Ej: Entel"></div>
-    <div class="field"><label>Notas (opcional)</label>
+    <div class="field"><label>Notas</label>
       <input id="m-prov-nota" value="${p?esc(p.nota||''):''}"></div>
+    <div class="alert alert-info"><div>La comisión de recargas se registra manualmente desde <b>Caja → Bolsa → Registrar bonificación</b>. No se calcula por porcentaje.</div></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarProveedor(${p?`'${p.id}'`:'null'})">${p?'Guardar':'Crear'}</button>
@@ -1038,7 +1032,7 @@ function modalCliente(id){
   const c=id?state.clientes.find(x=>x.id===id):null;
   return `
     <div class="modal-head"><div><div class="modal-title">${c?'Editar cliente':'Nuevo cliente'}</div></div>
-    <button class="modal-close" onclick="cerrarModal()">×</button></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="field"><label>Nombre completo *</label>
       <input id="m-cli-nombre" value="${c?esc(c.nombre):''}" placeholder="Ej: María Quispe"></div>
     <div class="grid-2">
@@ -1069,7 +1063,7 @@ function modalUsuario(id){
   return `
     <div class="modal-head"><div><div class="modal-title">${u?'Editar usuario':'Nuevo usuario'}</div>
     <div class="card-subtitle">${u?'Cambia el nombre.':`Cajeros: ${countCajeros}/${MAX_CAJEROS} · Cobradores: ${countCobradores}/${MAX_COBRADORES}`}</div></div>
-    <button class="modal-close" onclick="cerrarModal()">×</button></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="field"><label>Nombre completo *</label>
       <input id="m-u-nombre" value="${u?esc(u.nombre):''}" autofocus></div>
     ${!u?`
@@ -1087,7 +1081,7 @@ function modalUsuario(id){
         <input type="hidden" id="m-u-color" value="${COLORES_CAJERO[0]}">
       </div>
     `:''}
-    ${esAdminU&&id?`<div class="alert alert-info"><div>El usuario <b>${esc(u.nombre)}</b> es administrador.</div></div>`:''}
+    ${esAdminU&&id?`<div class="alert alert-info"><div>El usuario es administrador.</div></div>`:''}
     ${!esAdminU&&id?`<div class="field"><label>Estado</label>
       <select id="m-u-activo">
         <option value="true" ${u.activo!==false?'selected':''}>Activo</option>
@@ -1153,7 +1147,7 @@ function modalPagarCuenta(id){
   return `
     <div class="modal-head"><div><div class="modal-title">Registrar pago</div>
     <div class="card-subtitle">${esc(c.acreedor)}</div></div>
-    <button class="modal-close" onclick="cerrarModal()">×</button></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="deuda-banner">
       <div><div class="deuda-banner-label">Saldo pendiente</div>
         ${c.vencimiento&&c.vencimiento<HOY()?'<div class="deuda-banner-sub">Vencida</div>':`<div class="deuda-banner-sub">Vence ${fFecha(c.vencimiento)}</div>`}</div>
@@ -1172,27 +1166,32 @@ function modalBonificacion(provId){
   const provs=state.proveedores.filter(p=>state.bolsas[p.id]||state.productos.some(x=>x.proveedorId===p.id&&x.esRecarga));
   return `
     <div class="modal-head"><div><div class="modal-title">Registrar bonificación</div>
-    <div class="card-subtitle">Comisión que el operador acredita.</div></div>
-    <button class="modal-close" onclick="cerrarModal()">×</button></div>
+    <div class="card-subtitle">Comisión manual que el operador acredita.</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button></div>
+    <div class="alert alert-info"><div>Registra aquí el monto que el operador te avisó por SMS o mensaje. <b>NO entra a la caja todavía.</b> Se acumula en la bolsa hasta que uses <b>Retirar bonificación</b>.</div></div>
     <div class="field"><label>Operador *</label>
       <select id="m-bonif-prov">
         ${provs.length===0?'<option value="">No hay operadores</option>'
           :provs.map(p=>`<option value="${p.id}" ${provId===p.id?'selected':''}>${esc(p.nombre)}</option>`).join('')}
       </select></div>
-    <div class="field"><label>Monto (Bs) *</label>
-      <div class="money-input-wrap"><input id="m-bonif-monto" type="number" step="0.01" min="0.01"></div></div>
-    <div class="field"><label>Concepto</label><input id="m-bonif-concepto"></div>
+    <div class="field"><label>Monto de la bonificación (Bs) *</label>
+      <div class="money-input-wrap"><input id="m-bonif-monto" type="number" step="0.01" min="0.01"></div>
+      <div class="hint">El monto exacto que el operador te acreditó. Va variando según cada compra.</div></div>
+    <div class="field"><label>Concepto / referencia</label>
+      <input id="m-bonif-concepto" placeholder="Ej: Bonificación compra 15/10"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn btn-success" onclick="confirmarBonificacion()">Registrar</button>
+      <button class="btn btn-success" onclick="confirmarBonificacion()">Registrar bonificación</button>
     </div>`;
 }
 function modalRetirarBonificacion(provId){
   const con=state.proveedores.filter(p=>state.bolsas[p.id]&&(state.bolsas[p.id].bonificaciones||0)>0.001);
   const bolsa=provId?state.bolsas[provId]:null;
   return `
-    <div class="modal-head"><div><div class="modal-title">Retirar bonificación</div></div>
-    <button class="modal-close" onclick="cerrarModal()">×</button></div>
+    <div class="modal-head"><div><div class="modal-title">Retirar bonificación a caja</div>
+    <div class="card-subtitle">Entra como ingreso real a la caja.</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button></div>
+    <div class="alert alert-info"><div>Este movimiento sí ingresa a la caja como ganancia. Solo puedes retirar lo acumulado.</div></div>
     <div class="field"><label>Operador *</label>
       <select id="m-ret-prov">
         ${con.length===0?'<option value="">Sin bonificaciones</option>'
@@ -1203,7 +1202,7 @@ function modalRetirarBonificacion(provId){
       ${bolsa?`<div class="hint">Máximo: <b>${money(bolsa.bonificaciones)}</b></div>`:''}</div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn btn-success" onclick="confirmarRetirarBonificacion()">Retirar</button>
+      <button class="btn btn-success" onclick="confirmarRetirarBonificacion()">Retirar a caja</button>
     </div>`;
 }
 function modalDinero(tipo){
@@ -1234,23 +1233,53 @@ function modalSaldoInicial(){
 }
 function modalReponerBolsa(provId){
   const provs=state.proveedores.filter(p=>state.bolsas[p.id]||state.productos.some(x=>x.proveedorId===p.id&&x.esRecarga));
+  const saldo=saldoCaja();
+  const sinSaldo=saldo<=0;
   return `
-    <div class="modal-head"><div><div class="modal-title">Reponer saldo de bolsa</div>
-    <div class="card-subtitle">Mueve dinero de caja a bolsa. No cambia el patrimonio.</div></div>
-    <button class="modal-close" onclick="cerrarModal()">×</button></div>
-    <div class="field"><label>Operador *</label>
-      <select id="m-rep-prov">
-        ${provs.length===0?'<option value="">No hay operadores</option>'
-          :provs.map(p=>`<option value="${p.id}" ${provId===p.id?'selected':''}>${esc(p.nombre)}</option>`).join('')}
-      </select></div>
-    <div class="field"><label>Monto (Bs) *</label>
-      <div class="money-input-wrap"><input id="m-rep-monto" type="number" step="0.01" min="0.01"></div>
-      <div class="hint">Saldo en caja: <b>${money(saldoCaja())}</b></div></div>
-    <div class="field"><label>Concepto</label><input id="m-rep-concepto"></div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmarReponerBolsa()">Reponer</button>
-    </div>`;
+    <div class="modal-head">
+      <div><div class="modal-title">Reponer saldo de bolsa</div>
+      <div class="card-subtitle">Mueve dinero de la caja al saldo del operador.</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="info-banner" style="margin-bottom:16px">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <div><strong>¿Cómo funciona?</strong><br>
+        • La <b>caja</b> es tu dinero físico.<br>
+        • La <b>bolsa</b> es el saldo que le compras al operador.<br>
+        • Al reponer, sale efectivo de la caja y entra a la bolsa. El patrimonio no cambia.</div>
+    </div>
+    ${sinSaldo?`
+      <div class="alert alert-danger">
+        <div>
+          <div class="alert-title">No tienes efectivo en caja</div>
+          Tu caja está en <b>${money(saldo)}</b>. Para reponer saldo primero necesitas tener dinero en la caja. Puedes:
+          <ul style="margin:8px 0 0 18px;line-height:1.8">
+            <li>Cargar el <b>Capital inicial</b>.</li>
+            <li>Ir a <b>Caja → Agregar dinero</b>.</li>
+            <li>Registrar ventas al contado o cobrar abonos.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn btn-success" onclick="cerrarModal(); setTimeout(()=>abrirModal('agregarDinero'),150)">Agregar dinero a la caja</button>
+      </div>
+    `:`
+      <div class="field"><label>Operador *</label>
+        <select id="m-rep-prov">
+          ${provs.length===0?'<option value="">No hay operadores</option>'
+            :provs.map(p=>`<option value="${p.id}" ${provId===p.id?'selected':''}>${esc(p.nombre)}</option>`).join('')}
+        </select></div>
+      <div class="field"><label>Monto a reponer (Bs) *</label>
+        <div class="money-input-wrap"><input id="m-rep-monto" type="number" step="0.01" min="0.01" autofocus></div>
+        <div class="hint">Disponible en caja: <b style="color:var(--success)">${money(saldo)}</b></div></div>
+      <div class="field"><label>Concepto</label>
+        <input id="m-rep-concepto" placeholder="Ej: Carga de saldo"></div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmarReponerBolsa()">Reponer saldo</button>
+      </div>
+    `}`;
 }
 function modalAbono(clienteId){
   const c=state.clientes.find(x=>x.id===clienteId);
@@ -1268,7 +1297,7 @@ function modalAbono(clienteId){
   return `
     <div class="modal-head"><div><div class="modal-title">Registrar cobro</div>
     <div class="card-subtitle">${esc(c.nombre)} · ${esc(c.comunidad)}</div></div>
-    <button class="modal-close" onclick="cerrarModal()">×</button></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="deuda-banner">
       <div><div class="deuda-banner-label">Deuda total</div>
         ${vencida>0?`<div class="deuda-banner-sub">${money(vencida)} vencido</div>`:`<div class="deuda-banner-sub">Sin vencidos</div>`}</div>
@@ -1332,7 +1361,7 @@ function modalAbrirTurno(){
   return `
     <div class="modal-head"><div><div class="modal-title">Abrir turno</div>
     <div class="card-subtitle">Inicias como <b>${esc(usuarioActual.nombre)}</b>.</div></div>
-    <button class="modal-close" onclick="cerrarModal()">×</button></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="alert alert-info"><div>${ultimo?`Último: <b>${esc(ultimo.usuarioNombre)}</b> con saldo ${money(ultimo.saldoCierre)}.`:`Saldo sugerido: ${money(sugerido)}.`}</div></div>
     <div class="field"><label>Saldo que recibes (Bs) *</label>
       <div class="money-input-wrap"><input id="m-arqueo" type="number" step="0.01" min="0" value="${sugerido}"></div></div>
@@ -1353,7 +1382,7 @@ function modalCerrarTurno(turnoId){
   return `
     <div class="modal-head"><div><div class="modal-title">Cerrar turno</div>
     <div class="card-subtitle">${esc(t.usuarioNombre)}</div></div>
-    <button class="modal-close" onclick="cerrarModal()">×</button></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="alert alert-info"><div>Inicial: <b>${money(t.saldoInicial)}</b><br>Movs: <b>${movs.length}</b><br>Teórico: <b>${money(teorico)}</b></div></div>
     <div class="field"><label>Efectivo contado (Bs) *</label>
       <div class="money-input-wrap"><input id="m-arqueo" type="number" step="0.01" min="0" value="${teorico}"></div></div>
@@ -1384,7 +1413,7 @@ function modalMovimientoBanco(bancoId){
   return `
     <div class="modal-head"><div><div class="modal-title">Movimiento bancario</div>
     <div class="card-subtitle">${esc(b.nombre)} · Saldo: ${money(saldoBanco(b))}</div></div>
-    <button class="modal-close" onclick="cerrarModal()">×</button></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="field"><label>Tipo *</label>
       <select id="m-bmov-tipo">
         <option value="ingreso">Ingreso</option>
@@ -1485,10 +1514,14 @@ function confirmarReponerBolsa(){
   const concepto=$('m-rep-concepto').value.trim()||('Reposición '+(provById(provId)?.nombre||''));
   if(!provId) return toast('Selecciona operador','err');
   if(!(monto>0)) return toast('Monto inválido','err');
-  if(monto>saldoCaja()) return toast(`Saldo insuficiente (${money(saldoCaja())})`,'err');
+  if(monto>saldoCaja()){
+    toast(`Saldo insuficiente en caja. Tienes ${money(saldoCaja())} y quieres reponer ${money(monto)}. Primero agrega dinero a la caja.`,'err');
+    return;
+  }
   const b=bolsaDe(provId); b.saldo=num2(b.saldo+monto);
   agregarMovimientoCaja('recarga_reposicion',-monto,concepto,null);
-  toast('Repuesto '+money(monto),'ok');
+  const prov=provById(provId);
+  toast(`Saldo repuesto a ${prov?.nombre||''} · ${money(monto)}`,'ok');
   cerrarModal(); render();
 }
 function confirmarBonificacion(){
@@ -1497,10 +1530,9 @@ function confirmarBonificacion(){
   const concepto=$('m-bonif-concepto').value.trim()||'Bonificación';
   if(!provId) return toast('Selecciona operador','err');
   if(!(monto>0)) return toast('Monto inválido','err');
-  const b=bolsaDe(provId); b.bonificaciones=num2((b.bonificaciones||0)+monto);
-  const prov=provById(provId);
-  agregarMovimientoCaja('bonificacion',monto,'Bonificación '+(prov?.nombre||'')+' · '+concepto,null);
-  toast('Bonificación '+money(monto),'ok');
+  const b=bolsaDe(provId);
+  b.bonificaciones=num2((b.bonificaciones||0)+monto);
+  toast(`Bonificación acumulada ${money(monto)} · Retírala a caja cuando quieras`,'ok');
   cerrarModal(); render();
 }
 function confirmarRetirarBonificacion(){
@@ -1508,11 +1540,15 @@ function confirmarRetirarBonificacion(){
   const monto=Number($('m-bonif-monto').value);
   if(!provId) return toast('Selecciona operador','err');
   if(!(monto>0)) return toast('Monto inválido','err');
-  const b=state.bolsas[provId]; if(!b) return toast('No hay bolsa','err');
-  if(monto>(b.bonificaciones||0)+0.001) return toast(`Solo tienes ${money(b.bonificaciones||0)}`,'err');
+  const b=state.bolsas[provId];
+  if(!b) return toast('No hay bolsa','err');
+  if(monto>(b.bonificaciones||0)+0.001) return toast(`Solo tienes ${money(b.bonificaciones||0)} acumulados`,'err');
   b.bonificaciones=num2(b.bonificaciones-monto);
   b.bonificacionesRetiradas=num2((b.bonificacionesRetiradas||0)+monto);
-  toast('Marcada retirada','ok'); cerrarModal(); render();
+  const prov=provById(provId);
+  agregarMovimientoCaja('bonificacion',monto,'Bonificación retirada · '+(prov?.nombre||''),null);
+  toast('Bonificación retirada a caja · '+money(monto),'ok');
+  cerrarModal(); render();
 }
 function guardarGasto(){
   const cat=$('m-gasto-cat').value;
@@ -1754,7 +1790,7 @@ function accionEjecutarCierre(){
     mensaje:`Vas a cerrar <b>${nombreMes(mes)}</b>.`,
     detalle:`<div><strong>Ventas:</strong> ${money(num2(vMes.reduce((a,v)=>a+v.total,0)))}</div>
       <div><strong>Ganancia física:</strong> ${money(ganFis)}</div>
-      <div><strong>Bonificaciones:</strong> ${money(bonif)}</div>
+      <div><strong>Bonificaciones retiradas:</strong> ${money(bonif)}</div>
       <div><strong>Gastos:</strong> ${money(num2(gMes.reduce((a,g)=>a+g.monto,0)))}</div>
       <div><strong>Patrimonio:</strong> ${money(pat.neto)}</div>`,
     advertencia:'Se guarda un registro histórico.',
@@ -1775,7 +1811,7 @@ function accionCargarBase(){
 }
 
 /* ================================================================
-   LÓGICA VENTAS
+   VENTAS
    ================================================================ */
 function turnoRequerido(){ if(esAdmin()) return true; return !!turnoAbiertoDe(usuarioActual.id); }
 function agregarAlCarritoVenta(productoId,cantidad){
@@ -1850,8 +1886,8 @@ function confirmarVenta(){
   ui.ventaCarrito=[]; ui.ventaClienteId=''; ui.ventaMontoRecibido='';
   ui.ventaTipoPago='contado'; ui.ventaPlazo=15; ui.ventaPlazoCustom='';
   const gan=gananciaVenta(venta);
-  if(cambio>0.001) toast(`Venta ${money(total)} · Gan ${money(gan)} · Cambio ${money(cambio)}`,'ok');
-  else toast(`Venta ${money(total)} · Gan ${money(gan)}`,'ok');
+  if(gan>0) toast(`Venta ${money(total)} · Ganancia ${money(gan)}${cambio>0.001?' · Cambio '+money(cambio):''}`,'ok');
+  else toast(`Venta ${money(total)}${cambio>0.001?' · Cambio '+money(cambio):''}`,'ok');
   render();
 }
 function buscarProductos(query,excluirRecargas){
@@ -1869,7 +1905,7 @@ function buscarClientesQuery(query){
 function seleccionarClienteVenta(id){ ui.ventaClienteId=id; ui.buscarClienteVenta=''; ui.mostrarBuscadorCliente=false; render(); }
 
 /* ================================================================
-   LÓGICA COMPRAS
+   COMPRAS
    ================================================================ */
 function agregarAlCarritoCompra(productoId,cantidad,costoUnit){
   const p=prodById(productoId); if(!p) return;
@@ -1923,7 +1959,7 @@ function render(){
 }
 
 /* ================================================================
-   VISTA: RESUMEN
+   VISTAS
    ================================================================ */
 function viewResumen(){ if(esCobrador()) return viewResumenCobrador(); return viewResumenGeneral(); }
 function viewResumenCobrador(){
@@ -1972,22 +2008,22 @@ function viewResumenGeneral(){
     <p class="page-desc">Antes de empezar carga con cuánto arranca el negocio, incluidas las bolsas electrónicas.</p></div>
     <div class="info-banner warn">
       <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-      <div><strong>¿Por qué sale en negativo?</strong> Solo se conocía el saldo inicial de caja (Bs 0). Al cargar el <b>capital inicial</b> (efectivo + bancos + por cobrar + inventario + bolsas) el patrimonio refleja la realidad.</div>
+      <div><strong>¿Por qué sale en negativo?</strong> Solo se conocía el saldo inicial de caja (Bs 0). Al cargar el <b>capital inicial</b> el patrimonio refleja la realidad.</div>
     </div>
     <div class="card">
       <div class="card-head"><div><div class="card-title">Configuración inicial</div><div class="card-subtitle">Sigue estos pasos</div></div></div>
       <div class="setup-step"><div class="setup-step-num">1</div><div class="setup-step-text">
-        <div class="setup-step-title">Crea proveedores (Entel, Tigo, Viva, etc.)</div>
+        <div class="setup-step-title">Crea proveedores (Entel, Tigo, Viva)</div>
         <div class="setup-step-desc">Los proveedores son los operadores cuyas bolsas vas a cargar.</div>
       </div></div>
       <div class="setup-step"><div class="setup-step-num">2</div><div class="setup-step-text">
-        <div class="setup-step-title">Crea clientes con deudas y productos</div>
-        <div class="setup-step-desc">Registra tus clientes habituales y crea los productos.</div>
+        <div class="setup-step-title">Crea clientes y productos</div>
+        <div class="setup-step-desc">Registra tus clientes habituales y crea los productos (recargas y físicos).</div>
         ${!configurado?`<button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="accionCargarBase()">Cargar configuración base</button>`:''}
       </div></div>
       <div class="setup-step"><div class="setup-step-num">3</div><div class="setup-step-text">
         <div class="setup-step-title">Configura el capital inicial</div>
-        <div class="setup-step-desc">Efectivo, bancos, deudas por cliente, inventario y saldo inicial de cada bolsa electrónica.</div>
+        <div class="setup-step-desc">Efectivo, bancos, deudas por cliente, inventario y saldo inicial de cada bolsa.</div>
         <button class="btn btn-primary btn-sm" style="margin-top:10px" onclick="abrirModal('configurarCapital')">Configurar capital</button>
       </div></div>
     </div>`;
@@ -2049,10 +2085,6 @@ function viewResumenGeneral(){
     </div>
   </div>`;
 }
-
-/* ================================================================
-   VISTA: BALANCE
-   ================================================================ */
 function viewBalance(){
   const pat=patrimonioNeto();
   const bolsasTot=saldoBolsasTotal();
@@ -2060,12 +2092,10 @@ function viewBalance(){
   const varPat=num2(pat.neto-patIni);
   return `
   <div class="page-head"><div class="page-eyebrow">Contabilidad</div><h1 class="page-title">Balance general</h1>
-  <p class="page-desc">Estado del patrimonio: qué tienes (activos), qué debes (pasivos) y cuánto vale realmente el negocio.</p></div>
+  <p class="page-desc">Estado del patrimonio.</p></div>
   <div class="info-banner">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <div><strong>Activos:</strong> caja + bancos + inventario + por cobrar + bolsas electrónicas.<br>
-    <strong>Pasivos:</strong> cuentas por pagar pendientes.<br>
-    <strong>Patrimonio:</strong> activos − pasivos.</div>
+    <div><strong>Activos:</strong> caja + bancos + inventario + por cobrar + bolsas.<br><strong>Pasivos:</strong> cuentas por pagar.<br><strong>Patrimonio:</strong> activos − pasivos.</div>
   </div>
   <div class="balance-hero">
     <div class="balance-hero-title">Patrimonio neto</div>
@@ -2098,10 +2128,6 @@ function viewBalance(){
     </div>
   </div>`;
 }
-
-/* ================================================================
-   VISTA: CAPITAL
-   ================================================================ */
 function viewCapital(){
   const c=state.capital||{};
   const pat=patrimonioNeto();
@@ -2127,7 +2153,7 @@ function viewCapital(){
   </div>
   <div class="grid-2">
     <div class="card">
-      <div class="card-head"><div><div class="card-title">Detalle del capital inicial</div></div>
+      <div class="card-head"><div><div class="card-title">Detalle</div></div>
         ${c.configurado?`<button class="btn btn-outline btn-sm" onclick="abrirModal('editarCapital')">Editar</button>`:''}
       </div>
       <div class="summary-row"><span class="label">Efectivo inicial</span><span class="value">${money(c.efectivoInicial||0)}</span></div>
@@ -2139,7 +2165,7 @@ function viewCapital(){
       ${c.notas?`<div style="margin-top:14px;padding:12px;background:var(--surface-soft);border-radius:8px;font-size:12.5px;color:var(--muted)"><strong>Notas:</strong> ${esc(c.notas)}</div>`:''}
     </div>
     <div class="card">
-      <div class="card-head"><div><div class="card-title">Comparación con el presente</div></div></div>
+      <div class="card-head"><div><div class="card-title">Comparación</div></div></div>
       <div class="summary-row"><span class="label">Capital inicial</span><span class="value">${money(totInic)}</span></div>
       <div class="summary-row"><span class="label">Patrimonio actual</span><span class="value" style="color:${pat.neto>=0?'var(--success)':'var(--danger)'}">${money(pat.neto)}</span></div>
       <div class="summary-row highlight"><span class="label">Variación</span><span class="value" style="color:${(pat.neto-totInic)>=0?'var(--success)':'var(--danger)'}">${money(num2(pat.neto-totInic))}</span></div>
@@ -2183,10 +2209,6 @@ function viewCapital(){
     </table></div>
   </div>`:''}`;
 }
-
-/* ================================================================
-   VISTA: BANCOS
-   ================================================================ */
 function viewBancos(){
   const total=saldoBancosTotal();
   const q=ui.buscarBanco;
@@ -2194,10 +2216,6 @@ function viewBancos(){
   if(q) bancos=bancos.filter(b=>coincide(b.nombre,q)||coincide(b.nota||'',q));
   return `
   <div class="page-head"><div class="page-eyebrow">Tesorería</div><h1 class="page-title">Bancos</h1></div>
-  <div class="info-banner">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <div>Dinero en bancos. Se refleja como activo en el Balance.</div>
-  </div>
   <div class="kpi-grid" style="grid-template-columns:repeat(2,1fr)">
     <div class="kpi"><div class="kpi-label">Saldo total</div><div class="kpi-value is-success">${money(total)}</div></div>
     <div class="kpi"><div class="kpi-label">Cuentas</div><div class="kpi-value">${state.bancos.length}</div></div>
@@ -2240,10 +2258,6 @@ function viewBancos(){
     }).join('')}
   </div>`;
 }
-
-/* ================================================================
-   VISTA: CAJA
-   ================================================================ */
 function viewCaja(){
   const mov=movimientosVisibles().slice().reverse();
   const movHoy=mov.filter(m=>m.fecha===HOY());
@@ -2257,6 +2271,15 @@ function viewCaja(){
   const saldoMostrar=esAdmin()?saldoCaja():(miTurno?num2(miTurno.saldoInicial+movHoy.reduce((a,m)=>a+m.monto,0)):0);
   return `
   <div class="page-head"><div class="page-eyebrow">Tesorería</div><h1 class="page-title">${esAdmin()?'Caja':'Mi caja'}</h1></div>
+  <div class="info-banner">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    <div><strong>¿Cómo se relacionan caja y bolsas?</strong><br>
+      • La <b>caja</b> guarda tu efectivo físico.<br>
+      • Las <b>bolsas</b> guardan el saldo que compras al operador para vender recargas.<br>
+      • Al <b>reponer saldo</b>, el dinero se mueve de caja a bolsa.<br>
+      • Al <b>vender recarga</b>, la bolsa baja y entra a caja.<br>
+      • Para reponer saldo necesitas tener efectivo en la caja primero.</div>
+  </div>
   <div class="caja-hero">
     <div>
       <div class="caja-hero-label">${esAdmin()?'Saldo en caja':'Saldo de tu turno'}</div>
@@ -2286,14 +2309,14 @@ function viewCaja(){
     </div>
     <div class="info-banner" style="margin-bottom:18px">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-      <div><strong>Reponer saldo:</strong> transferencia caja → bolsa, no cambia patrimonio.<br>
-      <strong>Bonificación:</strong> cuando el operador acredita la comisión.</div>
+      <div><strong>Bonificación manual:</strong> cuando el operador te avisa cuánto te acreditó, lo registras aquí. Se acumula en la bolsa y se retira a la caja cuando quieras.<br>
+      <strong>Reponer saldo:</strong> compras saldo al operador. Sale de la caja.</div>
     </div>
     ${provs.length===0?'<div class="empty">Sin operadores.</div>':`
       <div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
         <div class="kpi"><div class="kpi-label">Saldo disponible</div><div class="kpi-value">${money(totBolsa)}</div></div>
-        <div class="kpi"><div class="kpi-label">Bonif. acumuladas</div><div class="kpi-value is-success">${money(totBonif)}</div></div>
-        <div class="kpi"><div class="kpi-label">Bonif. retiradas</div><div class="kpi-value">${money(totBonifRet)}</div></div>
+        <div class="kpi"><div class="kpi-label">Bonif. acumuladas</div><div class="kpi-value is-success">${money(totBonif)}</div><div class="kpi-meta">Sin entrar a caja</div></div>
+        <div class="kpi"><div class="kpi-label">Bonif. retiradas</div><div class="kpi-value">${money(totBonifRet)}</div><div class="kpi-meta">Ya en caja</div></div>
       </div>
       <div class="bolsa-grid">
         ${provs.map(p=>{
@@ -2308,6 +2331,7 @@ function viewCaja(){
             <div class="bolsa-actions">
               <button class="btn btn-outline btn-sm" onclick="abrirModal('reponerBolsa','${p.id}')">Reponer</button>
               <button class="btn btn-success btn-sm" onclick="abrirModal('registrarBonificacion','${p.id}')">+ Bonif.</button>
+              ${(b.bonificaciones||0)>0.001?`<button class="btn btn-outline btn-sm" onclick="abrirModal('retirarBonificacion','${p.id}')">Retirar</button>`:''}
             </div>
           </div>`;
         }).join('')}
@@ -2340,10 +2364,6 @@ function viewCaja(){
     </table></div>
   </div>`;
 }
-
-/* ================================================================
-   VISTA: GASTOS
-   ================================================================ */
 function viewGastos(){
   const mes=ui.filtroGastosMes;
   const gastosMes=state.gastos.filter(g=>mesDe(g.fecha)===mes);
@@ -2360,10 +2380,6 @@ function viewGastos(){
   if(q) filtrados=filtrados.filter(g=>coincide(g.categoria,q)||coincide(g.descripcion||'',q)||coincide(g.usuarioNombre||'',q));
   return `
   <div class="page-head"><div class="page-eyebrow">Egresos</div><h1 class="page-title">Gastos</h1></div>
-  <div class="info-banner">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <div>Gastos administrativos y operativos. Descuentan de la caja.</div>
-  </div>
   <div class="gasto-hero">
     <div><div class="gasto-hero-label">Gastos del mes</div><div class="gasto-hero-value">${money(totMes)}</div><div class="gasto-hero-sub">${nombreMes(mes)}</div></div>
     <div><div class="gasto-hero-label">Gastos de hoy</div><div class="gasto-hero-value">${money(totHoy)}</div><div class="gasto-hero-sub">${gastosHoy.length} registro(s)</div></div>
@@ -2382,7 +2398,7 @@ function viewGastos(){
         <button class="btn btn-primary" onclick="abrirModal('nuevoGasto')">Registrar gasto</button>
       </div>
     </div>
-    <div class="search-wrap"><input placeholder="Buscar por categoría, descripción o usuario..." value="${esc(ui.buscarGasto)}" oninput="ui.buscarGasto=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarGasto)}" oninput="ui.buscarGasto=this.value; render(); this.focus()"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Usuario</th><th class="num">Monto</th><th></th></tr></thead>
       <tbody>
@@ -2396,21 +2412,8 @@ function viewGastos(){
       </tr>`).join('')||'<tr><td colspan="6" class="empty">Sin resultados.</td></tr>'}
       </tbody>
     </table></div>
-  </div>
-  ${catsOrd.length>0?`
-  <div class="card">
-    <div class="card-head"><div><div class="card-title">Por categoría · ${nombreMes(mes)}</div></div></div>
-    ${catsOrd.map(([cat,monto])=>`
-      <div class="rank-item">
-        <div class="rank-head"><div class="rank-name">${esc(cat)}</div><div class="rank-value" style="color:var(--danger)">${money(monto)}</div></div>
-        <div class="rank-bar"><div class="rank-bar-fill" style="width:${Math.max(2,(monto/maxCat)*100)}%;background:linear-gradient(90deg,#c05252,#8b2b2b)"></div></div>
-      </div>`).join('')}
-  </div>`:''}`;
+  </div>`;
 }
-
-/* ================================================================
-   VISTA: CUENTAS POR PAGAR
-   ================================================================ */
 function viewCuentas(){
   const pend=cuentasPendientes();
   const venc=cuentasVencidas();
@@ -2425,10 +2428,6 @@ function viewCuentas(){
   const totVenc=num2(venc.reduce((a,c)=>a+saldoCuenta(c),0));
   return `
   <div class="page-head"><div class="page-eyebrow">Pasivos</div><h1 class="page-title">Cuentas por pagar</h1></div>
-  <div class="info-banner">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <div>Deudas que tienes con proveedores o terceros.</div>
-  </div>
   <div class="pagar-hero">
     <div><div class="pagar-hero-label">Total por pagar</div><div class="pagar-hero-value">${money(totPend)}</div><div class="pagar-hero-sub">${pend.length} pendientes</div></div>
     <div><div class="pagar-hero-label">Monto vencido</div><div class="pagar-hero-value">${money(totVenc)}</div><div class="pagar-hero-sub">${venc.length} vencidas</div></div>
@@ -2442,7 +2441,7 @@ function viewCuentas(){
       <button class="filter-tab ${filtro==='pagadas'?'active':''}" onclick="ui.filtroCuentasEstado='pagadas'; render()">Pagadas</button>
       <button class="filter-tab ${filtro==='todas'?'active':''}" onclick="ui.filtroCuentasEstado='todas'; render()">Todas</button>
     </div>
-    <div class="search-wrap"><input placeholder="Buscar acreedor o concepto..." value="${esc(q)}" oninput="ui.buscarCuenta=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(q)}" oninput="ui.buscarCuenta=this.value; render(); this.focus()"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Acreedor</th><th>Concepto</th><th>Vence</th><th class="num">Total</th><th class="num">Pagado</th><th class="num">Saldo</th><th></th></tr></thead>
       <tbody>
@@ -2467,10 +2466,6 @@ function viewCuentas(){
     </table></div>
   </div>`;
 }
-
-/* ================================================================
-   VISTA: PUNTO DE VENTA
-   ================================================================ */
 function viewVentas(){
   const ok=turnoRequerido();
   const total=totalCarritoVenta();
@@ -2503,9 +2498,10 @@ function viewVentas(){
         ${prods.length===0?'<div class="empty">Sin resultados.</div>':prods.map(p=>{
           const d=dispDe(p);
           const esRec=esProductoRecarga(p);
+          const tipo=esRec&&p.tipoRecarga==='paquete'?'Paquete':'';
           return `<div class="prod-item ${!d.ok?'stock-0':''}" onclick="${!d.ok?'':`agregarAlCarritoVenta('${p.id}',1)`}">
             <div>
-              <div class="prod-name">${esc(p.nombre)} ${esRec?'<span class="badge badge-accent" style="margin-left:6px">Recarga</span>':''}</div>
+              <div class="prod-name">${esc(p.nombre)} ${esRec?`<span class="badge badge-accent" style="margin-left:6px">${tipo||'Recarga'}</span>`:''}</div>
               <div class="prod-meta">${esRec?(provById(p.proveedorId)?.nombre||'Sin operador'):(unidadAbrev(p.unidad)+' · '+(catById(p.categoriaId)?.nombre||''))}</div>
             </div>
             <div style="text-align:right">
@@ -2534,7 +2530,7 @@ function viewVentas(){
             <button class="btn-ghost" style="padding:2px 8px" onclick="quitarDelCarrito(${ix})">×</button>
           </div>`).join('')}
         <div class="cart-total"><span class="cart-total-label">Total</span><span class="cart-total-value">${money(total)}</span></div>
-        <div style="text-align:right;font-size:12.5px;color:var(--success);font-weight:600;margin-top:4px">Ganancia: ${money(ganCarrito)}</div>
+        ${ganCarrito>0?`<div style="text-align:right;font-size:12.5px;color:var(--success);font-weight:600;margin-top:4px">Ganancia física: ${money(ganCarrito)}</div>`:''}
         <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--line)">
           <div class="field" style="position:relative">
             <label>Cliente</label>
@@ -2599,7 +2595,7 @@ function viewVentas(){
   <div class="card">
     <div class="card-head"><div><div class="card-title">${esAdmin()?'Historial completo':'Mis ventas'}</div>
     <div class="card-subtitle">${histFilt.length} de ${misVentas.length}</div></div></div>
-    <div class="search-wrap"><input placeholder="Buscar por cliente, ID o usuario..." value="${esc(ui.buscarVentaHist)}" oninput="ui.buscarVentaHist=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarVentaHist)}" oninput="ui.buscarVentaHist=this.value; render(); this.focus()"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Pago</th>${esAdmin()?'<th>Usuario</th>':''}<th class="num">Total</th><th class="num">Ganancia</th><th class="num">Estado</th>${esAdmin()?'<th></th>':''}</tr></thead>
       <tbody>
@@ -2618,10 +2614,6 @@ function viewVentas(){
     </table></div>
   </div>`;
 }
-
-/* ================================================================
-   VISTA: INVENTARIO
-   ================================================================ */
 function viewInventario(){
   const filtro=ui.filtroInv;
   const q=ui.buscarProductoInv;
@@ -2651,9 +2643,9 @@ function viewInventario(){
         ${state.categorias.map(c=>`<button class="btn btn-sm ${filtro===c.id?'btn-primary':'btn-outline'}" onclick="ui.filtroInv='${c.id}'; render()">${esc(c.nombre)}</button>`).join('')}
       </div>
     </div>
-    <div class="search-wrap"><input placeholder="Buscar por producto, categoría o proveedor..." value="${esc(ui.buscarProductoInv)}" oninput="ui.buscarProductoInv=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarProductoInv)}" oninput="ui.buscarProductoInv=this.value; render(); this.focus()"></div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Producto</th><th>Categoría</th><th>Proveedor</th><th class="num">Disponible</th>${esAdmin()?'<th class="num">Costo</th>':''}<th class="num">Precio</th><th class="num">Margen</th><th class="num">Estado</th></tr></thead>
+      <thead><tr><th>Producto</th><th>Categoría</th><th>Proveedor</th><th class="num">Saldo actual / inicial</th>${esAdmin()?'<th class="num">Costo</th>':''}<th class="num">Precio</th><th class="num">Margen</th><th class="num">Estado</th></tr></thead>
       <tbody>
       ${prods.map(p=>{
         const cat=catById(p.categoriaId);
@@ -2661,16 +2653,22 @@ function viewInventario(){
         const esRec=esProductoRecarga(p);
         const margen=num2(p.precio-p.costo);
         let stockTxt,estado;
-        if(esRec){ const b=p.proveedorId?state.bolsas[p.proveedorId]:null; const s=b?(b.saldo||0):0; stockTxt=money(s);
+        if(esRec){
+          const b=p.proveedorId?state.bolsas[p.proveedorId]:null;
+          const s=b?(b.saldo||0):0;
+          const inicial=num2(state.capital?.bolsasIniciales?.[p.proveedorId]||0);
+          stockTxt=`<b>${money(s)}</b><br><span style="font-size:11px;color:var(--muted)">Inicial: ${money(inicial)}</span>`;
           estado=s<=0?'<span class="badge badge-danger">Sin saldo</span>':s<=50?'<span class="badge badge-warning">Bajo</span>':'<span class="badge badge-success">OK</span>';
-        }else{ stockTxt=`${p.stock} ${unidadAbrev(p.unidad)}`;
+        }else{
+          stockTxt=`${p.stock} ${unidadAbrev(p.unidad)}`;
           estado=p.stock<=0?'<span class="badge badge-danger">Agotado</span>':p.stock<=5?'<span class="badge badge-warning">Bajo</span>':'<span class="badge badge-success">OK</span>';
         }
+        const tipo=esRec&&p.tipoRecarga==='paquete'?'Paquete':'';
         return `<tr>
-          <td class="bold">${esc(p.nombre)} ${esRec?'<span class="badge badge-accent" style="margin-left:4px">Recarga</span>':''}</td>
+          <td class="bold">${esc(p.nombre)} ${esRec?`<span class="badge badge-accent" style="margin-left:4px">${tipo||'Recarga'}</span>`:''}</td>
           <td>${cat?esc(cat.nombre):'—'}</td>
           <td>${prov?esc(prov.nombre):'—'}</td>
-          <td class="num bold">${stockTxt}</td>
+          <td class="num">${stockTxt}</td>
           ${esAdmin()?`<td class="num">${money(p.costo)}</td>`:''}
           <td class="num" style="color:var(--primary);font-weight:600">${money(p.precio)}</td>
           <td class="num" style="color:${esRec?'var(--muted)':'var(--success)'};font-weight:600">${esRec?'—':money(margen)}</td>
@@ -2681,10 +2679,6 @@ function viewInventario(){
     </table></div>
   </div>`;
 }
-
-/* ================================================================
-   VISTA: CLIENTES
-   ================================================================ */
 function viewClientes(){
   const esCob=esCobrador();
   const totPorCobrar=num2(state.clientes.reduce((a,c)=>a+deudaCliente(c.id),0));
@@ -2702,10 +2696,6 @@ function viewClientes(){
   if(esCob) filtrados.sort((a,b)=>deudaVencida(b.id)-deudaVencida(a.id)||deudaCliente(b.id)-deudaCliente(a.id));
   return `
   <div class="page-head"><div class="page-eyebrow">${esCob?'Cobranzas':'Cartera'}</div><h1 class="page-title">${esCob?'Clientes y deudas':'Clientes y créditos'}</h1></div>
-  <div class="info-banner">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <div>Busca por nombre, teléfono o comunidad. Registra cobros con el botón verde.</div>
-  </div>
   ${esCob?`<div class="cob-hero">
     <div><div class="cob-hero-label">Cobrado hoy</div><div class="cob-hero-value">${money(cobHoy)}</div><div class="cob-hero-sub">${misAbonos.filter(a=>a.fecha===HOY()).length} cobro(s)</div></div>
     <div><div class="cob-hero-label">Cobrado este mes</div><div class="cob-hero-value">${money(cobMes)}</div><div class="cob-hero-sub">${nombreMes(mesActual())}</div></div>
@@ -2769,7 +2759,7 @@ function viewClientes(){
                 <span>Saldo total</span><span style="font-variant-numeric:tabular-nums">${money(deuda)}</span>
               </div>
             </div>
-            <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Ventas pendientes (${pend.length})</div>
+            <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Ventas pendientes</div>
             ${pend.length===0?'<div style="font-size:13px;color:var(--success);font-weight:500;padding:6px 0">Sin pendientes</div>':`
             <div class="table-wrap" style="margin:0;padding:0"><table>
               <thead><tr><th>Fecha</th><th>Vence</th><th class="num">Total</th><th class="num">Saldo</th></tr></thead>
@@ -2810,10 +2800,6 @@ function viewClientes(){
   </div>`;
 }
 function toggleCliente(id){ ui.clienteAbierto=ui.clienteAbierto===id?null:id; render(); }
-
-/* ================================================================
-   VISTA: COBRANZAS
-   ================================================================ */
 function viewCobranzas(){
   const mis=abonosVisibles();
   const h=HOY();
@@ -2859,7 +2845,7 @@ function viewCobranzas(){
   </div>`:''}
   <div class="card">
     <div class="card-head"><div><div class="card-title">Historial de cobros</div><div class="card-subtitle">${lista.length} de ${mis.length} registro(s)</div></div></div>
-    <div class="search-wrap"><input placeholder="Buscar cliente, cobrador o ID..." value="${esc(ui.buscarCobranza)}" oninput="ui.buscarCobranza=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarCobranza)}" oninput="ui.buscarCobranza=this.value; render(); this.focus()"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th>${esAdmin()?'<th>Cobrador</th>':''}<th class="num">Entregado</th><th class="num">Aplicado</th><th class="num">Vuelta</th></tr></thead>
       <tbody>
@@ -2879,10 +2865,6 @@ function viewCobranzas(){
     </table></div>
   </div>`;
 }
-
-/* ================================================================
-   VISTA: COMPRAS
-   ================================================================ */
 function viewCompras(){
   const total=totalCarritoCompra();
   const prods=buscarProductos(ui.buscarProdCompra,true);
@@ -2958,10 +2940,6 @@ function viewCompras(){
     </table></div>
   </div>`;
 }
-
-/* ================================================================
-   VISTA: PRODUCTOS
-   ================================================================ */
 function viewProductos(){
   const q=ui.buscarProductoConfig;
   let prods=state.productos.slice();
@@ -2969,16 +2947,12 @@ function viewProductos(){
   prods=prods.sort((a,b)=>a.nombre.localeCompare(b.nombre));
   return `
   <div class="page-head"><div class="page-eyebrow">Configuración</div><h1 class="page-title">Productos</h1></div>
-  <div class="info-banner">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <div>Aquí se crean y editan los productos. El stock se modifica desde Compras o al vender.</div>
-  </div>
   <div class="card">
     <div class="card-head"><div><div class="card-title">Catálogo · ${prods.length} de ${state.productos.length}</div></div>
       <button class="btn btn-primary" onclick="abrirModal('nuevoProducto')">Nuevo producto</button></div>
-    <div class="search-wrap"><input placeholder="Buscar por producto, categoría o proveedor..." value="${esc(ui.buscarProductoConfig)}" oninput="ui.buscarProductoConfig=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarProductoConfig)}" oninput="ui.buscarProductoConfig=this.value; render(); this.focus()"></div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Nombre</th><th>Tipo</th><th>Categoría</th><th>Proveedor</th><th class="num">Costo</th><th class="num">Precio/Nominal</th><th class="num">Margen</th><th class="num">Stock/Bolsa</th><th></th></tr></thead>
+      <thead><tr><th>Nombre</th><th>Tipo</th><th>Categoría</th><th>Proveedor</th><th class="num">Costo</th><th class="num">Precio/Nominal</th><th class="num">Stock/Bolsa</th><th></th></tr></thead>
       <tbody>
       ${prods.map(p=>{
         const cat=catById(p.categoriaId);
@@ -2987,29 +2961,24 @@ function viewProductos(){
         let stockTxt;
         if(esRec){ const b=p.proveedorId?state.bolsas[p.proveedorId]:null; stockTxt=b?money(b.saldo||0):'—'; }
         else stockTxt=p.stock+' '+unidadAbrev(p.unidad);
-        const margen=esRec?'—':money(num2(p.precio-p.costo));
+        const tipo=esRec?(p.tipoRecarga==='paquete'?'Paquete':'Recarga'):'Físico';
         return `<tr>
           <td class="bold">${esc(p.nombre)}</td>
-          <td>${esRec?'<span class="badge badge-accent">Recarga</span>':'<span class="badge badge-neutral">Físico</span>'}</td>
+          <td><span class="badge ${esRec?'badge-accent':'badge-neutral'}">${tipo}</span></td>
           <td>${cat?esc(cat.nombre):'—'}</td>
           <td>${prov?esc(prov.nombre):'—'}</td>
           <td class="num">${money(p.costo)}</td>
           <td class="num bold" style="color:var(--primary)">${money(p.precio)}</td>
-          <td class="num" style="color:${esRec?'var(--muted)':'var(--success)'};font-weight:600">${margen}</td>
           <td class="num">${stockTxt}</td>
           <td class="num">
             <button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('editarProducto','${p.id}')">Editar</button>
             <button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarProducto('${p.id}')">Eliminar</button>
           </td></tr>`;
-      }).join('')||'<tr><td colspan="9" class="empty">Sin resultados.</td></tr>'}
+      }).join('')||'<tr><td colspan="8" class="empty">Sin resultados.</td></tr>'}
       </tbody>
     </table></div>
   </div>`;
 }
-
-/* ================================================================
-   VISTA: CATEGORÍAS / PROVEEDORES / USUARIOS / TURNOS
-   ================================================================ */
 function viewCategorias(){
   const q=ui.buscarCategoria;
   let cats=state.categorias.slice();
@@ -3019,7 +2988,7 @@ function viewCategorias(){
   <div class="card">
     <div class="card-head"><div><div class="card-title">Categorías · ${cats.length} de ${state.categorias.length}</div></div>
       <button class="btn btn-primary" onclick="abrirModal('nuevaCategoria')">Nueva categoría</button></div>
-    <div class="search-wrap"><input placeholder="Buscar categoría..." value="${esc(ui.buscarCategoria)}" oninput="ui.buscarCategoria=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarCategoria)}" oninput="ui.buscarCategoria=this.value; render(); this.focus()"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Nombre</th><th class="num">Productos</th><th></th></tr></thead>
       <tbody>${cats.map(c=>{
@@ -3046,7 +3015,7 @@ function viewProveedores(){
   <div class="card">
     <div class="card-head"><div><div class="card-title">Proveedores · ${provs.length} de ${state.proveedores.length}</div></div>
       <button class="btn btn-primary" onclick="abrirModal('nuevoProveedor')">Nuevo proveedor</button></div>
-    <div class="search-wrap"><input placeholder="Buscar proveedor..." value="${esc(ui.buscarProveedor)}" oninput="ui.buscarProveedor=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarProveedor)}" oninput="ui.buscarProveedor=this.value; render(); this.focus()"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Nombre</th><th>Notas</th><th class="num">Saldo bolsa</th><th class="num">Bonif.</th><th class="num">Recargas</th><th></th></tr></thead>
       <tbody>${provs.map(p=>{
@@ -3087,7 +3056,7 @@ function viewUsuarios(){
   <div class="card">
     <div class="card-head"><div><div class="card-title">Usuarios · ${usuarios.length} de ${state.usuarios.length}</div></div>
       <button class="btn btn-primary" onclick="abrirModal('nuevoUsuario')">Nuevo usuario</button></div>
-    <div class="search-wrap"><input placeholder="Buscar por nombre o rol..." value="${esc(ui.buscarUsuario)}" oninput="ui.buscarUsuario=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarUsuario)}" oninput="ui.buscarUsuario=this.value; render(); this.focus()"></div>
     ${usuarios.map(u=>{
       const esElActual=u.id===usuarioActual.id;
       const rolLbl=u.rol==='admin'?'Administrador':u.rol==='cajero'?'Cajero':'Cobrador';
@@ -3168,10 +3137,6 @@ function viewTurnos(){
     </table></div>
   </div>`;
 }
-
-/* ================================================================
-   VISTA: GANANCIAS
-   ================================================================ */
 function viewGanancias(){
   const h=HOY();
   const mes=mesActual();
@@ -3189,9 +3154,8 @@ function viewGanancias(){
   const ganNeta=num2(ganFisMes+bonifMes-gastosMes);
   const ranking={};
   state.ventas.forEach(v=>v.items.forEach(it=>{
-    if(it.esRecarga) return;
     const k=it.productoId;
-    if(!ranking[k]) ranking[k]={nombre:it.nombre,ganancia:0,unidades:0,ingresos:0};
+    if(!ranking[k]) ranking[k]={nombre:it.nombre,ganancia:0,unidades:0,ingresos:0,esRec:it.esRecarga};
     ranking[k].ganancia+=gananciaItem(it);
     ranking[k].unidades+=it.cantidad;
     ranking[k].ingresos+=it.subtotal;
@@ -3202,7 +3166,9 @@ function viewGanancias(){
   <div class="page-head"><div class="page-eyebrow">Rentabilidad</div><h1 class="page-title">Ganancias</h1></div>
   <div class="info-banner">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <div><strong>Ganancia bruta</strong> = margen de físicos + bonificaciones.<br><strong>Ganancia neta</strong> = bruta − gastos del mes.</div>
+    <div><strong>Ganancia de físicos:</strong> margen precio − costo.<br>
+    <strong>Ganancia de recargas:</strong> bonificaciones retiradas a la caja (registradas manualmente).<br>
+    <strong>Ganancia neta:</strong> bruta − gastos del mes.</div>
   </div>
   <div class="gan-hero">
     <div><div class="gan-hero-label">Ganancia neta del mes</div><div class="gan-hero-value">${money(ganNeta)}</div>
@@ -3214,40 +3180,36 @@ function viewGanancias(){
     <div class="kpi"><div class="kpi-label">Ganancia bruta total</div><div class="kpi-value is-success">${money(ganTotal)}</div></div>
     <div class="kpi"><div class="kpi-label">Gastos del mes</div><div class="kpi-value is-danger">${money(gastosMes)}</div></div>
     <div class="kpi"><div class="kpi-label">Ganancia neta mes</div><div class="kpi-value is-success">${money(ganNeta)}</div></div>
-    <div class="kpi"><div class="kpi-label">Bonif. acumuladas</div><div class="kpi-value">${money(saldoBolsasBonifTotal())}</div></div>
+    <div class="kpi"><div class="kpi-label">Bonif. acumuladas</div><div class="kpi-value">${money(saldoBolsasBonifTotal())}</div><div class="kpi-meta">Pendientes de retirar</div></div>
   </div>
   <div class="grid-3">
     <div class="card"><div class="card-head"><div><div class="card-title">Hoy</div></div></div>
       <div class="summary-row"><span class="label">Físicos</span><span class="value">${money(ganFisHoy)}</span></div>
-      <div class="summary-row"><span class="label">Bonificaciones</span><span class="value">${money(bonifHoy)}</span></div>
+      <div class="summary-row"><span class="label">Bonificaciones retiradas</span><span class="value">${money(bonifHoy)}</span></div>
       <div class="summary-row highlight"><span class="label">Total</span><span class="value" style="color:var(--success)">${money(num2(ganFisHoy+bonifHoy))}</span></div>
     </div>
     <div class="card"><div class="card-head"><div><div class="card-title">Mes</div></div></div>
       <div class="summary-row"><span class="label">Físicos</span><span class="value">${money(ganFisMes)}</span></div>
-      <div class="summary-row"><span class="label">Bonificaciones</span><span class="value">${money(bonifMes)}</span></div>
+      <div class="summary-row"><span class="label">Bonificaciones retiradas</span><span class="value">${money(bonifMes)}</span></div>
       <div class="summary-row"><span class="label">Gastos</span><span class="value" style="color:var(--danger)">− ${money(gastosMes)}</span></div>
       <div class="summary-row highlight"><span class="label">Neta</span><span class="value" style="color:var(--success)">${money(ganNeta)}</span></div>
     </div>
     <div class="card"><div class="card-head"><div><div class="card-title">Histórico</div></div></div>
       <div class="summary-row"><span class="label">Físicos</span><span class="value">${money(ganFisTotal)}</span></div>
-      <div class="summary-row"><span class="label">Bonificaciones</span><span class="value">${money(bonifTotal)}</span></div>
+      <div class="summary-row"><span class="label">Bonificaciones retiradas</span><span class="value">${money(bonifTotal)}</span></div>
       <div class="summary-row highlight"><span class="label">Bruta</span><span class="value" style="color:var(--success)">${money(ganTotal)}</span></div>
     </div>
   </div>
   <div class="card">
-    <div class="card-head"><div><div class="card-title">Top productos físicos</div></div></div>
+    <div class="card-head"><div><div class="card-title">Top productos por ganancia</div></div></div>
     ${top.length===0?'<div class="empty">Sin datos.</div>':top.map(t=>`
       <div class="rank-item">
-        <div class="rank-head"><div class="rank-name">${esc(t.nombre)}</div><div class="rank-value">${money(t.ganancia)}</div></div>
+        <div class="rank-head"><div class="rank-name">${esc(t.nombre)} ${t.esRec?'<span class="badge badge-accent" style="margin-left:4px">Rec</span>':''}</div><div class="rank-value">${money(t.ganancia)}</div></div>
         <div class="rank-meta">${t.unidades} unidades · ${money(t.ingresos)}</div>
         <div class="rank-bar"><div class="rank-bar-fill" style="width:${Math.max(2,(t.ganancia/maxGan)*100)}%"></div></div>
       </div>`).join('')}
   </div>`;
 }
-
-/* ================================================================
-   VISTA: CIERRE
-   ================================================================ */
 function viewCierre(){
   const mes=ui.cierreMes;
   const vMes=state.ventas.filter(v=>mesDe(v.fecha)===mes);
@@ -3275,7 +3237,7 @@ function viewCierre(){
   <div class="kpi-grid">
     <div class="kpi"><div class="kpi-label">Ventas</div><div class="kpi-value">${money(totVentas)}</div></div>
     <div class="kpi"><div class="kpi-label">Ganancia física</div><div class="kpi-value is-success">${money(ganFis)}</div></div>
-    <div class="kpi"><div class="kpi-label">Bonificaciones</div><div class="kpi-value is-success">${money(bonif)}</div></div>
+    <div class="kpi"><div class="kpi-label">Bonificaciones retiradas</div><div class="kpi-value is-success">${money(bonif)}</div></div>
     <div class="kpi"><div class="kpi-label">Gastos</div><div class="kpi-value is-danger">${money(totGastos)}</div></div>
   </div>
   <div class="grid-2">
@@ -3328,10 +3290,11 @@ function cargarBaseReal(){
   });
   const provPorNombre=n=>provs.find(p=>p.nombre===n).id;
   ['Entel','Tigo','Viva'].forEach(op=>{
-    [10,20,30,50,100].forEach(d=>{
-      state.productos.push({id:'PR'+(state.seq.producto++),nombre:`Recarga ${op} Bs ${d}`,categoriaId:catPorNombre('Telefonía'),proveedorId:provPorNombre(op),unidad:'unidad',esRecarga:true,valorNominal:d,costo:d,precio:d,stock:0,stockInicial:0});
+    [10,20,30,50,100,150,200,300,500].forEach(d=>{
+      state.productos.push({id:'PR'+(state.seq.producto++),nombre:`Recarga ${op} Bs ${d}`,categoriaId:catPorNombre('Telefonía'),proveedorId:provPorNombre(op),unidad:'unidad',esRecarga:true,valorNominal:d,costo:d,precio:d,tipoRecarga:'credito',stock:0,stockInicial:0});
     });
   });
+  state.productos.push({id:'PR'+(state.seq.producto++),nombre:'Paquete Entel 100 Bs',categoriaId:catPorNombre('Telefonía'),proveedorId:provPorNombre('Entel'),unidad:'unidad',esRecarga:true,valorNominal:100,costo:100,precio:100,tipoRecarga:'paquete',stock:0,stockInicial:0});
   ['Entel','Tigo','Viva'].forEach(op=>{
     state.productos.push({id:'PR'+(state.seq.producto++),nombre:`Chip ${op}`,categoriaId:catPorNombre('Telefonía'),proveedorId:provPorNombre(op),unidad:'unidad',esRecarga:false,costo:op==='Viva'?4:5,precio:op==='Viva'?12:15,stock:0,stockInicial:0});
   });
@@ -3348,7 +3311,7 @@ function cargarBaseReal(){
 }
 
 /* ================================================================
-   INICIALIZACIÓN
+   INIT
    ================================================================ */
 (function init(){
   try{
@@ -3378,7 +3341,13 @@ function cargarBaseReal(){
     state.abonos.forEach(a=>{ if(!a.usuarioId){ a.usuarioId='U1'; a.usuarioNombre='Administrador'; } });
     state.usuarios.forEach(u=>{ if(!['admin','cajero','cobrador'].includes(u.rol)) u.rol='cajero'; });
     Object.keys(state.bolsas).forEach(id=>bolsaDe(id));
-    state.productos.forEach(p=>{ if(p.esRecarga&&!p.valorNominal) p.valorNominal=p.precio; });
+    state.productos.forEach(p=>{
+      if(p.esRecarga){
+        if(!p.valorNominal) p.valorNominal=p.precio;
+        if(!p.tipoRecarga) p.tipoRecarga='credito';
+        delete p.comision;
+      }
+    });
     state.bancos.forEach(b=>{ if(!b.movimientos) b.movimientos=[]; });
 
     usuarioActual=userById(state.usuarioActualId)||state.usuarios[0];
