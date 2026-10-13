@@ -135,7 +135,7 @@ tbody tr:hover td{background:var(--surface-soft)}
 .balance-hero-title{font-size:11px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;color:#a5c4ff;margin-bottom:8px}
 .balance-hero-value{font-size:42px;font-weight:600;letter-spacing:-1.4px;font-variant-numeric:tabular-nums}
 .balance-hero-sub{font-size:13px;color:#a5c4ff;margin-top:6px}
-.balance-hero-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:22px;padding-top:22px;border-top:1px solid rgba(255,255,255,.15)}
+.balance-hero-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:22px;padding-top:22px;border-top:1px solid rgba(255,255,255,.15)}
 .balance-hero-cell-label{font-size:10.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#a5c4ff;margin-bottom:6px}
 .balance-hero-cell-value{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
 .balance-hero-cell-value.pos{color:#a8e0c2}
@@ -261,8 +261,6 @@ tbody tr:hover td{background:var(--surface-soft)}
 .bolsa-input-name{flex:1;font-size:13px;font-weight:500;color:var(--ink)}
 .bolsa-input-name small{display:block;font-weight:400;color:var(--muted);font-size:11.5px;margin-top:1px}
 .bolsa-input-field{width:160px}
-
-/* ============ TARJETA DE CLIENTE COMPACTA ============ */
 .cliente-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow-sm)}
 .cliente-card.vencido{border-left:3px solid var(--danger)}
 .cliente-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
@@ -274,7 +272,6 @@ tbody tr:hover td{background:var(--surface-soft)}
 .cliente-vencido-txt{font-size:10.5px;color:var(--danger);font-weight:600;margin-top:1px}
 .cliente-acciones{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
 .cliente-historial{margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft)}
-
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px -8px rgba(20,18,12,.4);transition:transform .3s cubic-bezier(.2,.9,.3,1.3);z-index:999;max-width:90vw;text-align:center}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.ok{background:var(--success)}
@@ -1035,10 +1032,6 @@ function modalProveedor(id){
       <button class="btn btn-primary" onclick="guardarProveedor(${p?`'${p.id}'`:'null'})">${p?'Guardar':'Crear'}</button>
     </div>`;
 }
-
-/* ================================================================
-   MODAL CLIENTE
-   ================================================================ */
 function modalCliente(id){
   const c=id?state.clientes.find(x=>x.id===id):null;
   const deudaActual = c ? deudaCliente(c.id) : 0;
@@ -1216,7 +1209,7 @@ function modalBonificacion(provId){
     <div class="modal-head"><div><div class="modal-title">Registrar bonificación</div>
     <div class="card-subtitle">Comisión manual que el operador acredita.</div></div>
       <button class="modal-close" onclick="cerrarModal()">×</button></div>
-    <div class="alert alert-info"><div>Registra aquí el monto que el operador te avisó por SMS o mensaje. <b>NO entra a la caja todavía.</b></div></div>
+    <div class="alert alert-info"><div>Registra aquí el monto que el operador te avisó. <b>NO entra a la caja todavía.</b></div></div>
     <div class="field"><label>Operador *</label>
       <select id="m-bonif-prov">
         ${provs.length===0?'<option value="">No hay operadores</option>'
@@ -1531,7 +1524,6 @@ function accionEliminarCliente(id){
   if(!c) return;
   const ventasAsociadas = state.ventas.filter(v=>v.clienteId===id);
   const abonosAsociados = state.abonos.filter(a=>a.clienteId===id);
-  const deuda = deudaCliente(id);
   const deudaIni = deudaInicialCliente(id);
   if(ventasAsociadas.length > 0){
     return toast(`No se puede eliminar: tiene ${ventasAsociadas.length} venta(s) registrada(s).`,'err');
@@ -1995,15 +1987,12 @@ function buscarProductos(query,excluirRecargas){
     .filter(p=>!q||coincide(p.nombre,q)||coincide(catById(p.categoriaId)?.nombre||'',q)||coincide(provById(p.proveedorId)?.nombre||'',q))
     .sort((a,b)=>a.nombre.localeCompare(b.nombre));
 }
-/* Busca clientes SIN límite de 20 (antes slice(0,20) cortaba la lista) */
 function buscarClientesQuery(query){
   const q=normalizar(query);
   if(!q) return state.clientes.slice();
   return state.clientes.filter(c=>coincide(c.nombre,q)||coincide(c.tel||'',q)||coincide(c.comunidad||'',q));
 }
 function seleccionarClienteVenta(id){ ui.ventaClienteId=id; ui.buscarClienteVenta=''; ui.mostrarBuscadorCliente=false; render(); }
-
-/* Ver más clientes en la lista (paginación incremental) */
 function verMasClientes(){ ui.clientesMostrar += CLIENTES_POR_PAGINA; renderConservarFoco('inpClienteLista'); }
 
 /* ================================================================
@@ -2119,7 +2108,6 @@ function viewResumenGeneral(){
   const bonifHoy=num2(state.caja.movimientos.filter(m=>m.tipo==='bonificacion'&&m.fecha===h).reduce((a,m)=>a+m.monto,0));
   const gastosHoy=num2(state.gastos.filter(g=>g.fecha===h).reduce((a,g)=>a+g.monto,0));
   const pat=patrimonioNeto();
-  const porCobrar=totalCuentasPorCobrar();
   const vencido=num2(state.clientes.reduce((a,c)=>a+deudaVencida(c.id),0));
   const clientesVencidos=state.clientes.filter(c=>deudaVencida(c.id)>0);
   const cuentasVenc=cuentasVencidas();
@@ -2176,6 +2164,7 @@ function viewResumenGeneral(){
     <div class="balance-hero-row">
       <div class="balance-hero-cell"><div class="balance-hero-cell-label">Efectivo en caja</div><div class="balance-hero-cell-value ${saldoCaja()>=0?'pos':'neg'}">${money(saldoCaja())}</div></div>
       <div class="balance-hero-cell"><div class="balance-hero-cell-label">Bolsas electrónicas</div><div class="balance-hero-cell-value pos">${money(saldoBolsasTotal())}</div></div>
+      <div class="balance-hero-cell"><div class="balance-hero-cell-label">Cuentas por cobrar</div><div class="balance-hero-cell-value pos">${money(totalCuentasPorCobrar())}</div></div>
       <div class="balance-hero-cell"><div class="balance-hero-cell-label">Inventario</div><div class="balance-hero-cell-value pos">${money(valorInventarioCosto())}</div></div>
     </div>
   </div>`:''}
@@ -2228,9 +2217,10 @@ function viewBalance(){
     <div class="balance-hero-value" style="color:${pat.neto>=0?'#a8e0c2':'#ffb3b3'}">${money(pat.neto)}</div>
     <div class="balance-hero-sub">Activos ${money(pat.activos)} − Pasivos ${money(pat.pasivos)}</div>
     <div class="balance-hero-row">
-      <div class="balance-hero-cell"><div class="balance-hero-cell-label">Capital inicial</div><div class="balance-hero-cell-value">${money(patIni)}</div></div>
-      <div class="balance-hero-cell"><div class="balance-hero-cell-label">Variación</div><div class="balance-hero-cell-value ${varPat>=0?'pos':'neg'}">${varPat>=0?'+':''}${money(varPat)}</div></div>
+      <div class="balance-hero-cell"><div class="balance-hero-cell-label">Efectivo en caja</div><div class="balance-hero-cell-value ${saldoCaja()>=0?'pos':'neg'}">${money(saldoCaja())}</div></div>
       <div class="balance-hero-cell"><div class="balance-hero-cell-label">Bolsas electrónicas</div><div class="balance-hero-cell-value pos">${money(bolsasTot)}</div></div>
+      <div class="balance-hero-cell"><div class="balance-hero-cell-label">Cuentas por cobrar</div><div class="balance-hero-cell-value pos">${money(totalCuentasPorCobrar())}</div></div>
+      <div class="balance-hero-cell"><div class="balance-hero-cell-label">Inventario</div><div class="balance-hero-cell-value pos">${money(valorInventarioCosto())}</div></div>
     </div>
   </div>
   <div class="grid-2">
@@ -2239,8 +2229,8 @@ function viewBalance(){
       <div class="summary-row"><span class="label">Efectivo en caja</span><span class="value ${saldoCaja()>=0?'pos':'neg'}">${money(saldoCaja())}</span></div>
       <div class="summary-row"><span class="label">Bancos</span><span class="value pos">${money(saldoBancosTotal())}</span></div>
       <div class="summary-row"><span class="label">Bolsas electrónicas</span><span class="value pos">${money(bolsasTot)}</span></div>
-      <div class="summary-row"><span class="label">Inventario físico</span><span class="value pos">${money(valorInventarioCosto())}</span></div>
       <div class="summary-row"><span class="label">Cuentas por cobrar</span><span class="value pos">${money(totalCuentasPorCobrar())}</span></div>
+      <div class="summary-row"><span class="label">Inventario físico</span><span class="value pos">${money(valorInventarioCosto())}</span></div>
       <div class="summary-row highlight"><span class="label">Total activos</span><span class="value" style="color:var(--success)">${money(pat.activos)}</span></div>
     </div>
     <div class="card">
@@ -2262,7 +2252,6 @@ function viewCapital(){
   const totBolsas=num2(Object.values(bolsasInic).reduce((a,b)=>a+b,0));
   const totDeudas=num2(Object.values(deudasIni).reduce((a,b)=>a+b,0));
   const totInic=num2((c.efectivoInicial||0)+(c.efectivoBancosInicial||0)+totDeudas+(c.inventarioInicial||0)+totBolsas);
-  // NUEVO: deuda actual total (deuda vieja + ventas a crédito pendientes)
   const porCobrarActual = totalCuentasPorCobrar();
   const deudaViejaActual = num2(state.clientes.reduce((a,cl)=>a+deudaInicialCliente(cl.id),0));
   const deudaVentasActual = num2(porCobrarActual - deudaViejaActual);
@@ -2385,8 +2374,7 @@ function viewCapital(){
         </tr>`;
       }).join('')}</tbody>
     </table></div>
-  </div>`:''}
-  `;
+  </div>`:''}`;
 }
 function viewBancos(){
   const total=saldoBancosTotal();
@@ -2550,10 +2538,6 @@ function viewGastos(){
   const totMes=num2(gastosMes.reduce((a,g)=>a+g.monto,0));
   const totHoy=num2(gastosHoy.reduce((a,g)=>a+g.monto,0));
   const totHist=num2(state.gastos.reduce((a,g)=>a+g.monto,0));
-  const porCat={};
-  gastosMes.forEach(g=>{ porCat[g.categoria]=(porCat[g.categoria]||0)+g.monto; });
-  const catsOrd=Object.entries(porCat).sort((a,b)=>b[1]-a[1]);
-  const maxCat=catsOrd.length>0?catsOrd[0][1]:1;
   const q=ui.buscarGasto;
   let filtrados=gastosMes.slice().reverse();
   if(q) filtrados=filtrados.filter(g=>coincide(g.categoria,q)||coincide(g.descripcion||'',q)||coincide(g.usuarioNombre||'',q));
@@ -2860,10 +2844,6 @@ function viewInventario(){
     </table></div>
   </div>`;
 }
-
-/* ================================================================
-   VISTA CLIENTES — con paginación para no saturar
-   ================================================================ */
 function viewClientes(){
   const esCob=esCobrador();
   const totPorCobrar=num2(state.clientes.reduce((a,c)=>a+deudaCliente(c.id),0));
