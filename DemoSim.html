@@ -49,7 +49,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 .kpi-value.is-danger{color:var(--danger)}
 .kpi-value.is-warning{color:var(--warning)}
 .kpi-meta{font-size:11.5px;color:var(--muted);margin-top:4px}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
 .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
 .field{margin-bottom:14px}
@@ -98,6 +98,7 @@ tbody tr:hover td{background:var(--surface-soft)}
 .alert-danger{background:var(--danger-soft);border-color:#ecd1d1;color:#6a2020}
 .alert-success{background:var(--success-soft);border-color:#c7e0cf;color:#22503c}
 .alert-title{font-weight:600;margin-bottom:2px}
+.cart-list{max-height:340px;overflow-y:auto;padding-right:4px;margin-right:-4px}
 .cart-line{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line-soft)}
 .cart-line:last-child{border-bottom:none}
 .cart-info{flex:1;min-width:0}
@@ -109,7 +110,7 @@ tbody tr:hover td{background:var(--surface-soft)}
 .cart-total{display:flex;justify-content:space-between;align-items:baseline;padding-top:14px;margin-top:10px;border-top:1px solid var(--line)}
 .cart-total-label{font-size:11.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
 .cart-total-value{font-size:22px;font-weight:600;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
-.prod-list{max-height:400px;overflow-y:auto;margin:0 -8px}
+.prod-list{max-height:520px;overflow-y:auto;margin:0 -8px;padding:0 8px}
 .prod-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 8px;border-radius:8px;cursor:pointer}
 .prod-item:hover{background:var(--surface-soft)}
 .prod-item.stock-0{opacity:.5;cursor:not-allowed}
@@ -260,6 +261,20 @@ tbody tr:hover td{background:var(--surface-soft)}
 .bolsa-input-name{flex:1;font-size:13px;font-weight:500;color:var(--ink)}
 .bolsa-input-name small{display:block;font-weight:400;color:var(--muted);font-size:11.5px;margin-top:1px}
 .bolsa-input-field{width:160px}
+
+/* ============ TARJETA DE CLIENTE COMPACTA ============ */
+.cliente-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow-sm)}
+.cliente-card.vencido{border-left:3px solid var(--danger)}
+.cliente-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.cliente-nombre{font-size:14px;font-weight:600;line-height:1.3}
+.cliente-meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+.cliente-tags{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.cliente-debe-label{font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+.cliente-debe-value{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:1px;line-height:1.2}
+.cliente-vencido-txt{font-size:10.5px;color:var(--danger);font-weight:600;margin-top:1px}
+.cliente-acciones{margin-top:10px;display:flex;gap:6px;flex-wrap:wrap}
+.cliente-historial{margin-top:14px;padding-top:14px;border-top:1px solid var(--line-soft)}
+
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);background:var(--ink);color:#fff;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 12px 32px -8px rgba(20,18,12,.4);transition:transform .3s cubic-bezier(.2,.9,.3,1.3);z-index:999;max-width:90vw;text-align:center}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.ok{background:var(--success)}
@@ -321,6 +336,7 @@ const CATEGORIAS_GASTOS_DEFAULT = ['Alquiler','Servicios (luz/agua/internet)','T
 const LS_KEY = 'simgest_v16';
 const MAX_CAJEROS = 8;
 const MAX_COBRADORES = 8;
+const CLIENTES_POR_PAGINA = 15;
 const COLORES_CAJERO = ['#1c3d5a','#2d6a4f','#8a6d3b','#6d28d9','#1e5a8a','#b91c1c','#0369a1','#7c2d12'];
 const COLORES_COBRADOR = ['#0f5132','#166534','#14532d','#0d9488','#0f766e','#115e59','#065f46','#047857'];
 
@@ -361,6 +377,7 @@ const ui = {
   compraCarrito:[], compraProveedorId:'', compraNota:'', buscarProdCompra:'',
   modal:null, filtroInv:'Todas', clienteAbierto:null, cierreMes:mesActual(),
   buscarClienteLista:'', filtroClientesCobrador:'con_deuda',
+  clientesMostrar: CLIENTES_POR_PAGINA,
   buscarProdVenta:'', buscarClienteVenta:'',
   filtroGastosMes:mesActual(), buscarGasto:'',
   filtroCuentasEstado:'pendientes', buscarCuenta:'',
@@ -573,7 +590,7 @@ function renderNav(){
     ${items.map(t=>`<button class="nav-item ${vista===t.id?'active':''}" onclick="ir('${t.id}')"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">${ICONS[t.id]}</svg>${t.label}</button>`).join('')}
   `).join('');
 }
-function ir(v){ vista=v; ui.modal=null; $('sidebar').classList.remove('open'); render(); window.scrollTo({top:0,behavior:'instant'}); }
+function ir(v){ vista=v; ui.modal=null; ui.clientesMostrar=CLIENTES_POR_PAGINA; $('sidebar').classList.remove('open'); render(); window.scrollTo({top:0,behavior:'instant'}); }
 function renderUsuarioSelector(){
   const sel=$('usuarioSel'); if(!sel) return;
   sel.innerHTML=state.usuarios.filter(u=>u.activo!==false).map(u=>{
@@ -592,7 +609,7 @@ function cambiarUsuario(id){
   ui.buscarProdVenta=''; ui.buscarClienteVenta='';
   ui.buscarProductoInv=''; ui.buscarProductoConfig=''; ui.buscarProveedor='';
   ui.buscarUsuario=''; ui.buscarGasto=''; ui.buscarCobranza=''; ui.buscarVentaHist='';
-  ui.buscarCategoria=''; ui.buscarBanco='';
+  ui.buscarCategoria=''; ui.buscarBanco=''; ui.clientesMostrar=CLIENTES_POR_PAGINA;
   $('avatarIni').textContent=iniciales(u.nombre);
   $('avatarIni').style.background=u.color||'#8a6d3b';
   $('rolLbl').textContent=u.rol==='admin'?'Administrador':u.rol==='cajero'?'Cajero':'Cobrador';
@@ -853,7 +870,7 @@ function guardarEdicionCapital(){
   cerrarModal(); render();
 }
 
-/* ---------- PRODUCTO (RECARGA SIN COMISIÓN AUTOMÁTICA) ---------- */
+/* ---------- PRODUCTO ---------- */
 function modalProducto(id){
   const p=id?prodById(id):null;
   const esRec=p?p.esRecarga===true:false;
@@ -888,26 +905,22 @@ function modalProducto(id){
           <option value="credito" ${p&&p.tipoRecarga==='credito'?'selected':''}>Recarga de crédito (tradicional)</option>
           <option value="paquete" ${p&&p.tipoRecarga==='paquete'?'selected':''}>Paquete (megas, internet, etc.)</option>
         </select>
-        <div class="hint">Funciona igual que una recarga. Solo sirve para clasificar.</div>
       </div>
       <div class="field"><label>Valor nominal (Bs) *</label>
         <input id="m-prod-valor" type="number" step="0.01" min="0.01" value="${valorNominal}" placeholder="Ej: 100">
-        <div class="hint">El cliente paga exactamente este valor. <strong>No tiene unidades.</strong></div>
       </div>
       <div class="alert alert-info" style="margin-bottom:14px">
-        <div><strong>Sin comisión automática.</strong> La ganancia de las recargas se registra manualmente cuando el operador te avisa cuánto te bonificó. Usa <b>Caja → Bolsa → Registrar bonificación</b>.</div>
+        <div><strong>Sin comisión automática.</strong> La ganancia de las recargas se registra manualmente cuando el operador te avisa cuánto te bonificó.</div>
       </div>
       ${!p?`
         <div class="field" style="margin-bottom:0">
           <label>Saldo inicial en bolsa (Bs)</label>
           <div class="money-input-wrap sm"><input id="m-prod-saldo-inicial" type="number" step="0.01" min="0" value="0" placeholder="0.00"></div>
-          <div class="hint"><strong>En bolivianos.</strong> Saldo inicial que cargas al operador (no descuenta de caja).</div>
         </div>
       `:`
         <div style="background:var(--info-soft);border-radius:8px;padding:12px;border:1px solid #d1e0ec;margin-top:6px">
           <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#183a56;margin-bottom:4px">Saldo actual en bolsa</div>
           <div style="font-size:20px;font-weight:600;color:#1c3d5a;font-variant-numeric:tabular-nums">${money(bolsaActual)}</div>
-          <div style="font-size:11.5px;color:#183a56;margin-top:6px;line-height:1.5">El saldo se modifica desde <b>Caja → Bolsa → Reponer saldo</b>.</div>
         </div>
       `}
     </div>
@@ -960,12 +973,7 @@ function guardarProducto(id){
       bolsaDe(provId);
       toast('Recarga actualizada','ok');
     }else{
-      const nuevo={
-        id:'PR'+(state.seq.producto++), nombre, categoriaId:catId, unidad:'unidad',
-        esRecarga:true, proveedorId:provId,
-        valorNominal:num2(valor), costo:num2(valor), precio:num2(valor),
-        tipoRecarga:tipoRec, stock:0, stockInicial:0
-      };
+      const nuevo={id:'PR'+(state.seq.producto++), nombre, categoriaId:catId, unidad:'unidad',esRecarga:true, proveedorId:provId,valorNominal:num2(valor), costo:num2(valor), precio:num2(valor),tipoRecarga:tipoRec, stock:0, stockInicial:0};
       state.productos.push(nuevo);
       bolsaDe(provId);
       if(saldoInicial>0){
@@ -1021,7 +1029,7 @@ function modalProveedor(id){
       <input id="m-prov-nombre" value="${p?esc(p.nombre):''}" placeholder="Ej: Entel"></div>
     <div class="field"><label>Notas</label>
       <input id="m-prov-nota" value="${p?esc(p.nota||''):''}"></div>
-    <div class="alert alert-info"><div>La comisión de recargas se registra manualmente desde <b>Caja → Bolsa → Registrar bonificación</b>. No se calcula por porcentaje.</div></div>
+    <div class="alert alert-info"><div>La comisión de recargas se registra manualmente desde <b>Caja → Bolsa → Registrar bonificación</b>.</div></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
       <button class="btn btn-primary" onclick="guardarProveedor(${p?`'${p.id}'`:'null'})">${p?'Guardar':'Crear'}</button>
@@ -1029,7 +1037,7 @@ function modalProveedor(id){
 }
 
 /* ================================================================
-   MODAL CLIENTE — con edición de deuda para clientes existentes
+   MODAL CLIENTE
    ================================================================ */
 function modalCliente(id){
   const c=id?state.clientes.find(x=>x.id===id):null;
@@ -1066,8 +1074,6 @@ function modalCliente(id){
         <div class="hint" style="color:#183a56">
           Si este cliente <b>ya te debía plata antes</b> de usar el sistema, ponlo aquí.
           Si es un cliente nuevo que nunca te debió nada, deja 0.
-          <br><br>
-          <strong>Ojo:</strong> esto NO es una venta. Es una deuda vieja que ya existía.
         </div>
       </div>
     ` : `
@@ -1088,9 +1094,7 @@ function modalCliente(id){
         <div class="money-input-wrap"><input id="m-cli-ajuste-deuda" type="number" step="0.01" min="0" value="0" placeholder="0.00"></div>
         <div class="hint" style="color:#6d4d13">
           Cargá aquí deudas anteriores que este cliente tenía contigo y que <b>no</b> están registradas como ventas.
-          Se <b>suma</b> a la deuda actual. Dejá 0 si no querés cambiar nada.
-          <br><br>
-          <strong>Tip:</strong> para bajar la deuda (cuando ya te pagó) usá <b>Registrar cobro</b> desde la lista de clientes.
+          Se <b>suma</b> a la deuda actual.
         </div>
       </div>
     `}
@@ -1212,15 +1216,14 @@ function modalBonificacion(provId){
     <div class="modal-head"><div><div class="modal-title">Registrar bonificación</div>
     <div class="card-subtitle">Comisión manual que el operador acredita.</div></div>
       <button class="modal-close" onclick="cerrarModal()">×</button></div>
-    <div class="alert alert-info"><div>Registra aquí el monto que el operador te avisó por SMS o mensaje. <b>NO entra a la caja todavía.</b> Se acumula en la bolsa hasta que uses <b>Retirar bonificación</b>.</div></div>
+    <div class="alert alert-info"><div>Registra aquí el monto que el operador te avisó por SMS o mensaje. <b>NO entra a la caja todavía.</b></div></div>
     <div class="field"><label>Operador *</label>
       <select id="m-bonif-prov">
         ${provs.length===0?'<option value="">No hay operadores</option>'
           :provs.map(p=>`<option value="${p.id}" ${provId===p.id?'selected':''}>${esc(p.nombre)}</option>`).join('')}
       </select></div>
     <div class="field"><label>Monto de la bonificación (Bs) *</label>
-      <div class="money-input-wrap"><input id="m-bonif-monto" type="number" step="0.01" min="0.01"></div>
-      <div class="hint">El monto exacto que el operador te acreditó. Va variando según cada compra.</div></div>
+      <div class="money-input-wrap"><input id="m-bonif-monto" type="number" step="0.01" min="0.01"></div></div>
     <div class="field"><label>Concepto / referencia</label>
       <input id="m-bonif-concepto" placeholder="Ej: Bonificación compra 15/10"></div>
     <div class="modal-actions">
@@ -1235,7 +1238,7 @@ function modalRetirarBonificacion(provId){
     <div class="modal-head"><div><div class="modal-title">Retirar bonificación a caja</div>
     <div class="card-subtitle">Entra como ingreso real a la caja.</div></div>
       <button class="modal-close" onclick="cerrarModal()">×</button></div>
-    <div class="alert alert-info"><div>Este movimiento sí ingresa a la caja como ganancia. Solo puedes retirar lo acumulado.</div></div>
+    <div class="alert alert-info"><div>Este movimiento sí ingresa a la caja como ganancia.</div></div>
     <div class="field"><label>Operador *</label>
       <select id="m-ret-prov">
         ${con.length===0?'<option value="">Sin bonificaciones</option>'
@@ -1296,12 +1299,7 @@ function modalReponerBolsa(provId){
       <div class="alert alert-danger">
         <div>
           <div class="alert-title">No tienes efectivo en caja</div>
-          Tu caja está en <b>${money(saldo)}</b>. Para reponer saldo primero necesitas tener dinero en la caja. Puedes:
-          <ul style="margin:8px 0 0 18px;line-height:1.8">
-            <li>Cargar el <b>Capital inicial</b>.</li>
-            <li>Ir a <b>Caja → Agregar dinero</b>.</li>
-            <li>Registrar ventas al contado o cobrar abonos.</li>
-          </ul>
+          Tu caja está en <b>${money(saldo)}</b>. Para reponer saldo primero necesitas tener dinero en la caja.
         </div>
       </div>
       <div class="modal-actions">
@@ -1492,10 +1490,6 @@ function guardarProveedor(id){
   else{ const nuevo={id:'PV'+(state.seq.proveedor++),nombre:n,nota}; state.proveedores.push(nuevo); bolsaDe(nuevo.id); toast('Creado','ok'); }
   cerrarModal(); render();
 }
-
-/* ================================================================
-   GUARDAR CLIENTE — incluye ajuste de deuda en clientes existentes
-   ================================================================ */
 function guardarCliente(id){
   const n=$('m-cli-nombre').value.trim();
   const tel=$('m-cli-tel').value.trim();
@@ -1505,7 +1499,6 @@ function guardarCliente(id){
   if(!n) return toast('Ingresa nombre','err');
 
   if(id){
-    // Cliente existente: actualizar datos + posible ajuste de deuda vieja
     const c=state.clientes.find(x=>x.id===id);
     c.nombre=n; c.tel=tel; c.comunidad=com; c.plazo=plazo; c.limite=limite;
 
@@ -1519,7 +1512,6 @@ function guardarCliente(id){
       toast('Cliente actualizado','ok');
     }
   }else{
-    // Cliente nuevo
     const nuevoId='C'+(state.seq.cliente++);
     state.clientes.push({id:nuevoId,nombre:n,tel,comunidad:com||'—',plazo,limite,creado:HOY()});
     const deudaInic = Number($('m-cli-deuda-inicial')?.value) || 0;
@@ -1534,33 +1526,22 @@ function guardarCliente(id){
   }
   cerrarModal(); render();
 }
-
-/* ================================================================
-   ELIMINAR CLIENTE
-   Solo se permite si no tiene ventas ni cobros asociados.
-   Si tiene deuda inicial, se descuenta de las cuentas por cobrar del capital.
-   ================================================================ */
 function accionEliminarCliente(id){
   const c=state.clientes.find(x=>x.id===id);
   if(!c) return;
-
-  // Verificar dependencias
   const ventasAsociadas = state.ventas.filter(v=>v.clienteId===id);
   const abonosAsociados = state.abonos.filter(a=>a.clienteId===id);
   const deuda = deudaCliente(id);
   const deudaIni = deudaInicialCliente(id);
-
   if(ventasAsociadas.length > 0){
     return toast(`No se puede eliminar: tiene ${ventasAsociadas.length} venta(s) registrada(s).`,'err');
   }
   if(abonosAsociados.length > 0){
     return toast(`No se puede eliminar: tiene ${abonosAsociados.length} cobro(s) registrado(s).`,'err');
   }
-
   const advertencia = deudaIni > 0
     ? `Este cliente tiene una <b>deuda vieja</b> de ${money(deudaIni)} que se va a <b>perder</b>.`
     : '';
-
   pedirConfirmacion({
     criticidad:'critico',
     titulo:'Eliminar cliente',
@@ -1569,15 +1550,12 @@ function accionEliminarCliente(id){
     advertencia,
     textoBoton:'Sí, eliminar',
     onConfirm:()=>{
-      // Quitar deuda inicial del capital
       if(state.capital?.deudasInicialesPorCliente?.[id]){
         const monto = num2(state.capital.deudasInicialesPorCliente[id]);
         delete state.capital.deudasInicialesPorCliente[id];
         state.capital.cuentasPorCobrarIniciales = num2(Math.max(0,(state.capital.cuentasPorCobrarIniciales||0) - monto));
       }
-      // Quitar cliente
       state.clientes = state.clientes.filter(x=>x.id!==id);
-      // Limpiar referencias en UI
       if(ui.ventaClienteId === id) ui.ventaClienteId = '';
       if(ui.clienteAbierto === id) ui.clienteAbierto = null;
       toast('Cliente eliminado','ok');
@@ -1585,7 +1563,6 @@ function accionEliminarCliente(id){
     }
   });
 }
-
 function guardarUsuario(id){
   const n=$('m-u-nombre').value.trim();
   if(!n) return toast('Ingresa nombre','err');
@@ -1636,7 +1613,7 @@ function confirmarReponerBolsa(){
   if(!provId) return toast('Selecciona operador','err');
   if(!(monto>0)) return toast('Monto inválido','err');
   if(monto>saldoCaja()){
-    toast(`Saldo insuficiente en caja. Tienes ${money(saldoCaja())} y quieres reponer ${money(monto)}. Primero agrega dinero a la caja.`,'err');
+    toast(`Saldo insuficiente en caja. Tienes ${money(saldoCaja())}.`,'err');
     return;
   }
   const b=bolsaDe(provId); b.saldo=num2(b.saldo+monto);
@@ -1653,7 +1630,7 @@ function confirmarBonificacion(){
   if(!(monto>0)) return toast('Monto inválido','err');
   const b=bolsaDe(provId);
   b.bonificaciones=num2((b.bonificaciones||0)+monto);
-  toast(`Bonificación acumulada ${money(monto)} · Retírala a caja cuando quieras`,'ok');
+  toast(`Bonificación acumulada ${money(monto)}`,'ok');
   cerrarModal(); render();
 }
 function confirmarRetirarBonificacion(){
@@ -2018,12 +1995,16 @@ function buscarProductos(query,excluirRecargas){
     .filter(p=>!q||coincide(p.nombre,q)||coincide(catById(p.categoriaId)?.nombre||'',q)||coincide(provById(p.proveedorId)?.nombre||'',q))
     .sort((a,b)=>a.nombre.localeCompare(b.nombre));
 }
+/* Busca clientes SIN límite de 20 (antes slice(0,20) cortaba la lista) */
 function buscarClientesQuery(query){
   const q=normalizar(query);
-  if(!q) return state.clientes.slice(0,20);
-  return state.clientes.filter(c=>coincide(c.nombre,q)||coincide(c.tel||'',q)||coincide(c.comunidad||'',q)).slice(0,20);
+  if(!q) return state.clientes.slice();
+  return state.clientes.filter(c=>coincide(c.nombre,q)||coincide(c.tel||'',q)||coincide(c.comunidad||'',q));
 }
 function seleccionarClienteVenta(id){ ui.ventaClienteId=id; ui.buscarClienteVenta=''; ui.mostrarBuscadorCliente=false; render(); }
+
+/* Ver más clientes en la lista (paginación incremental) */
+function verMasClientes(){ ui.clientesMostrar += CLIENTES_POR_PAGINA; renderConservarFoco('inpClienteLista'); }
 
 /* ================================================================
    COMPRAS
@@ -2080,7 +2061,6 @@ function render(){
   if(!visibles.includes(vista)) vista=visibles[0];
   const fns={resumen:viewResumen,balance:viewBalance,ganancias:viewGanancias,caja:viewCaja,bancos:viewBancos,turnos:viewTurnos,ventas:viewVentas,inventario:viewInventario,clientes:viewClientes,cobranzas:viewCobranzas,compras:viewCompras,gastos:viewGastos,cuentas:viewCuentas,productos:viewProductos,categorias:viewCategorias,proveedores:viewProveedores,usuarios:viewUsuarios,capital:viewCapital,cierre:viewCierre};
 
-  // Guardar foco, cursor y scroll ANTES de reemplazar el DOM
   const active = document.activeElement;
   const focusId = (active && active.id) ? active.id : null;
   const selStart = (active && typeof active.selectionStart === 'number') ? active.selectionStart : null;
@@ -2091,10 +2071,8 @@ function render(){
   if(ui.modal&&ui.modal.tipo==='abono'){ const el=$('m-abono-monto'); if(el) actualizarAbonoPreview(deudaCliente(ui.modal.id)); }
   if(ui.modal&&(ui.modal.tipo==='configurarCapital'||ui.modal.tipo==='editarCapital')) setTimeout(recalcularCapitalTotal,20);
 
-  // Restaurar scroll
   requestAnimationFrame(()=>{ window.scrollTo({top:scrollY,behavior:'instant'}); });
 
-  // Restaurar foco y posición del cursor
   if(focusId){
     const el = document.getElementById(focusId);
     if(el && typeof el.focus === 'function'){
@@ -2284,32 +2262,41 @@ function viewCapital(){
   const totBolsas=num2(Object.values(bolsasInic).reduce((a,b)=>a+b,0));
   const totDeudas=num2(Object.values(deudasIni).reduce((a,b)=>a+b,0));
   const totInic=num2((c.efectivoInicial||0)+(c.efectivoBancosInicial||0)+totDeudas+(c.inventarioInicial||0)+totBolsas);
+  // NUEVO: deuda actual total (deuda vieja + ventas a crédito pendientes)
+  const porCobrarActual = totalCuentasPorCobrar();
+  const deudaViejaActual = num2(state.clientes.reduce((a,cl)=>a+deudaInicialCliente(cl.id),0));
+  const deudaVentasActual = num2(porCobrarActual - deudaViejaActual);
+
   return `
   <div class="page-head"><div class="page-eyebrow">Configuración</div><h1 class="page-title">Capital inicial</h1>
   <p class="page-desc">Punto de partida del negocio.</p></div>
   <div class="info-banner">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-    <div>Incluye bolsas electrónicas y deudas iniciales por cliente.</div>
+    <div>
+      <strong>¿Qué es el capital inicial?</strong> Es lo que tenías <b>antes</b> de empezar a usar el sistema: efectivo, bancos, mercadería y deudas que tus clientes <b>ya te debían</b>.<br><br>
+      <strong>Ojo:</strong> las ventas a crédito que hiciste <b>dentro del sistema</b> no son capital inicial. Forman parte de las <b>cuentas por cobrar actuales</b>, que aparecen en el KPI "Por cobrar actual" más abajo.
+    </div>
   </div>
   ${!c.configurado?`<div class="alert alert-warning"><div><div class="alert-title">Aún no configuraste el capital inicial</div>
     <button class="btn btn-primary btn-sm" style="margin-top:8px" onclick="abrirModal('configurarCapital')">Configurar ahora</button></div></div>`:''}
-  <div class="kpi-grid">
+  <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
     <div class="kpi"><div class="kpi-label">Efectivo inicial</div><div class="kpi-value">${money(c.efectivoInicial||0)}</div></div>
     <div class="kpi"><div class="kpi-label">Bancos</div><div class="kpi-value">${money(c.efectivoBancosInicial||0)}</div></div>
-    <div class="kpi"><div class="kpi-label">Por cobrar inicial</div><div class="kpi-value">${money(totDeudas)}</div></div>
+    <div class="kpi"><div class="kpi-label">Por cobrar inicial</div><div class="kpi-value">${money(totDeudas)}</div><div class="kpi-meta">Deudas viejas que cargaste</div></div>
+    <div class="kpi"><div class="kpi-label">Por cobrar actual</div><div class="kpi-value" style="color:${porCobrarActual>0?'var(--danger)':''}">${money(porCobrarActual)}</div><div class="kpi-meta">Vieja ${money(deudaViejaActual)} + Ventas ${money(deudaVentasActual)}</div></div>
     <div class="kpi"><div class="kpi-label">Bolsas electrónicas</div><div class="kpi-value">${money(totBolsas)}</div></div>
   </div>
   <div class="grid-2">
     <div class="card">
-      <div class="card-head"><div><div class="card-title">Detalle</div></div>
+      <div class="card-head"><div><div class="card-title">Detalle del capital inicial</div></div>
         ${c.configurado?`<button class="btn btn-outline btn-sm" onclick="abrirModal('editarCapital')">Editar</button>`:''}
       </div>
       <div class="summary-row"><span class="label">Efectivo inicial</span><span class="value">${money(c.efectivoInicial||0)}</span></div>
       <div class="summary-row"><span class="label">Bancos</span><span class="value">${money(c.efectivoBancosInicial||0)}</span></div>
-      <div class="summary-row"><span class="label">Cuentas por cobrar</span><span class="value">${money(totDeudas)}</span></div>
+      <div class="summary-row"><span class="label">Cuentas por cobrar iniciales</span><span class="value">${money(totDeudas)}</span></div>
       <div class="summary-row"><span class="label">Inventario</span><span class="value">${money(c.inventarioInicial||0)}</span></div>
       <div class="summary-row"><span class="label">Bolsas electrónicas</span><span class="value">${money(totBolsas)}</span></div>
-      <div class="summary-row highlight"><span class="label">Total</span><span class="value" style="color:var(--success)">${money(totInic)}</span></div>
+      <div class="summary-row highlight"><span class="label">Total capital inicial</span><span class="value" style="color:var(--success)">${money(totInic)}</span></div>
       ${c.notas?`<div style="margin-top:14px;padding:12px;background:var(--surface-soft);border-radius:8px;font-size:12.5px;color:var(--muted)"><strong>Notas:</strong> ${esc(c.notas)}</div>`:''}
     </div>
     <div class="card">
@@ -2319,9 +2306,11 @@ function viewCapital(){
       <div class="summary-row highlight"><span class="label">Variación</span><span class="value" style="color:${(pat.neto-totInic)>=0?'var(--success)':'var(--danger)'}">${money(num2(pat.neto-totInic))}</span></div>
     </div>
   </div>
+
   ${Object.keys(deudasIni).length>0?`
   <div class="card">
-    <div class="card-head"><div><div class="card-title">Cuentas por cobrar iniciales por cliente</div></div></div>
+    <div class="card-head"><div><div class="card-title">Cuentas por cobrar iniciales por cliente</div>
+    <div class="card-subtitle">Deudas viejas que cargaste al configurar el capital</div></div></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Cliente</th><th class="num">Deuda inicial</th><th class="num">Deuda actual</th><th class="num">Cobrado</th></tr></thead>
       <tbody>${Object.entries(deudasIni).map(([cliId,montoIni])=>{
@@ -2336,7 +2325,48 @@ function viewCapital(){
         </tr>`;
       }).join('')}</tbody>
     </table></div>
+  </div>`:`
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Cuentas por cobrar iniciales</div></div></div>
+    <div class="empty" style="padding:24px 16px">
+      No cargaste deudas viejas cuando configuraste el capital.<br>
+      <span style="font-size:12px;color:var(--muted);display:block;margin-top:8px">
+        Si tenías clientes que ya te debían plata antes de empezar, podés cargarlo desde
+        <b>Editar capital inicial → Agregar deuda a un cliente</b>.
+      </span>
+    </div>
+  </div>`}
+
+  ${porCobrarActual > 0 ? `
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Por cobrar actual (todas las deudas)</div>
+    <div class="card-subtitle">Incluye deuda vieja + ventas a crédito hechas en el sistema</div></div></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Cliente</th><th class="num">Deuda vieja</th><th class="num">Ventas a crédito</th><th class="num">Total actual</th></tr></thead>
+      <tbody>${state.clientes
+        .filter(cl=>deudaCliente(cl.id)>0.001)
+        .sort((a,b)=>deudaCliente(b.id)-deudaCliente(a.id))
+        .map(cl=>{
+          const viej=deudaInicialCliente(cl.id);
+          const vtas=deudaVentasCliente(cl.id);
+          const tot=deudaCliente(cl.id);
+          return `<tr>
+            <td class="bold">${esc(cl.nombre)}</td>
+            <td class="num" style="color:var(--muted)">${money(viej)}</td>
+            <td class="num" style="color:var(--info)">${money(vtas)}</td>
+            <td class="num bold" style="color:var(--danger)">${money(tot)}</td>
+          </tr>`;
+        }).join('')}
+        <tr style="background:var(--surface-soft);font-weight:600">
+          <td>Total</td>
+          <td class="num">${money(deudaViejaActual)}</td>
+          <td class="num">${money(deudaVentasActual)}</td>
+          <td class="num" style="color:var(--danger)">${money(porCobrarActual)}</td>
+        </tr>
+      </tbody>
+    </table></div>
   </div>`:''}
+
   ${Object.keys(bolsasInic).length>0?`
   <div class="card">
     <div class="card-head"><div><div class="card-title">Bolsas electrónicas iniciales</div></div></div>
@@ -2355,7 +2385,8 @@ function viewCapital(){
         </tr>`;
       }).join('')}</tbody>
     </table></div>
-  </div>`:''}`;
+  </div>`:''}
+  `;
 }
 function viewBancos(){
   const total=saldoBancosTotal();
@@ -2623,7 +2654,7 @@ function viewVentas(){
   const cambioOk=recibido>=total;
   const ganCarrito=num2(ui.ventaCarrito.reduce((a,i)=>a+gananciaItem(i),0));
   const prods=buscarProductos(ui.buscarProdVenta,false);
-  const clientesEnc=buscarClientesQuery(ui.buscarClienteVenta);
+  const clientesEnc=buscarClientesQuery(ui.buscarClienteVenta).slice(0,20);
   const dispDe=p=>{
     if(esProductoRecarga(p)){
       const b=p.proveedorId?bolsaDe(p.proveedorId):null;
@@ -2631,7 +2662,7 @@ function viewVentas(){
     }
     return {texto:p.stock<=0?'Agotado':'Stock: '+p.stock,ok:p.stock>0};
   };
-  const misVentas=ventasVisibles().slice().reverse().slice(0,50);
+  const misVentas=ventasVisibles().slice().reverse().slice(0,500);
   const qH=ui.buscarVentaHist;
   let histFilt=misVentas.slice();
   if(qH) histFilt=histFilt.filter(v=>coincide(v.clienteNombre,qH)||coincide(v.id,qH)||coincide(v.usuarioNombre||'',qH));
@@ -2666,17 +2697,19 @@ function viewVentas(){
         ${ui.ventaCarrito.length>0?`<button class="btn-ghost" onclick="ui.ventaCarrito=[]; render()">Vaciar</button>`:''}
       </div>
       ${ui.ventaCarrito.length===0?'<div class="empty" style="padding:30px 16px">Agrega productos.</div>':`
-        ${ui.ventaCarrito.map((i,ix)=>`
-          <div class="cart-line">
-            <div class="cart-info">
-              <div class="cart-name">${esc(i.nombre)} ${i.esRecarga?'<span class="badge badge-accent">Recarga</span>':''}</div>
-              <div class="cart-meta">${money(i.precioUnit)} × ${i.cantidad}${!i.esRecarga?' · <span style="color:var(--success);font-weight:600">Gan '+money(gananciaItem(i))+'</span>':''}</div>
-            </div>
-            <input type="number" step="0.01" class="cart-qty" value="${i.cantidad}" onchange="actualizarLineaCarrito(${ix},'cantidad',this.value)">
-            <input type="number" step="0.01" class="cart-price" value="${i.precioUnit}" onchange="actualizarLineaCarrito(${ix},'precioUnit',this.value)">
-            <div class="cart-sub">${money(i.subtotal)}</div>
-            <button class="btn-ghost" style="padding:2px 8px" onclick="quitarDelCarrito(${ix})">×</button>
-          </div>`).join('')}
+        <div class="cart-list">
+          ${ui.ventaCarrito.map((i,ix)=>`
+            <div class="cart-line">
+              <div class="cart-info">
+                <div class="cart-name">${esc(i.nombre)} ${i.esRecarga?'<span class="badge badge-accent">Recarga</span>':''}</div>
+                <div class="cart-meta">${money(i.precioUnit)} × ${i.cantidad}${!i.esRecarga?' · <span style="color:var(--success);font-weight:600">Gan '+money(gananciaItem(i))+'</span>':''}</div>
+              </div>
+              <input type="number" step="0.01" class="cart-qty" value="${i.cantidad}" onchange="actualizarLineaCarrito(${ix},'cantidad',this.value)">
+              <input type="number" step="0.01" class="cart-price" value="${i.precioUnit}" onchange="actualizarLineaCarrito(${ix},'precioUnit',this.value)">
+              <div class="cart-sub">${money(i.subtotal)}</div>
+              <button class="btn-ghost" style="padding:2px 8px" onclick="quitarDelCarrito(${ix})">×</button>
+            </div>`).join('')}
+        </div>
         <div class="cart-total"><span class="cart-total-label">Total</span><span class="cart-total-value">${money(total)}</span></div>
         ${ganCarrito>0?`<div style="text-align:right;font-size:12.5px;color:var(--success);font-weight:600;margin-top:4px">Ganancia física: ${money(ganCarrito)}</div>`:''}
         <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--line)">
@@ -2827,6 +2860,10 @@ function viewInventario(){
     </table></div>
   </div>`;
 }
+
+/* ================================================================
+   VISTA CLIENTES — con paginación para no saturar
+   ================================================================ */
 function viewClientes(){
   const esCob=esCobrador();
   const totPorCobrar=num2(state.clientes.reduce((a,c)=>a+deudaCliente(c.id),0));
@@ -2836,12 +2873,18 @@ function viewClientes(){
   const misAbonos=abonosVisibles();
   const cobHoy=esCob?num2(misAbonos.filter(a=>a.fecha===HOY()).reduce((a,x)=>a+x.monto,0)):0;
   const cobMes=esCob?num2(misAbonos.filter(a=>mesDe(a.fecha)===mesActual()).reduce((a,x)=>a+x.monto,0)):0;
+
   let filtrados=buscarClientesQuery(ui.buscarClienteLista);
   if(esCob){
     if(ui.filtroClientesCobrador==='con_deuda') filtrados=filtrados.filter(c=>deudaCliente(c.id)>0);
     else if(ui.filtroClientesCobrador==='vencidos') filtrados=filtrados.filter(c=>deudaVencida(c.id)>0);
   }
   if(esCob) filtrados.sort((a,b)=>deudaVencida(b.id)-deudaVencida(a.id)||deudaCliente(b.id)-deudaCliente(a.id));
+
+  const totalFiltrados = filtrados.length;
+  const visibles = filtrados.slice(0, ui.clientesMostrar);
+  const hayMas = totalFiltrados > ui.clientesMostrar;
+
   return `
   <div class="page-head"><div class="page-eyebrow">${esCob?'Cobranzas':'Cartera'}</div><h1 class="page-title">${esCob?'Clientes y deudas':'Clientes y créditos'}</h1></div>
   ${esCob?`<div class="cob-hero">
@@ -2851,22 +2894,22 @@ function viewClientes(){
   <div class="grid-3" style="margin-bottom:20px">
     <div class="kpi"><div class="kpi-label">Por cobrar</div><div class="kpi-value">${money(totPorCobrar)}</div><div class="kpi-meta">${conDeuda} cliente(s)</div></div>
     <div class="kpi"><div class="kpi-label">Monto vencido</div><div class="kpi-value ${totVencido>0?'is-danger':''}">${money(totVencido)}</div><div class="kpi-meta">${vencidos} cliente(s)</div></div>
-    <div class="kpi"><div class="kpi-label">Total clientes</div><div class="kpi-value">${state.clientes.length}</div><div class="kpi-meta">${filtrados.length} mostrados</div></div>
+    <div class="kpi"><div class="kpi-label">Total clientes</div><div class="kpi-value">${state.clientes.length}</div><div class="kpi-meta">${totalFiltrados} filtrados</div></div>
   </div>
   <div class="grid-2">
     <div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">
-        <h3 style="font-size:15px;font-weight:600">${esCob?'Lista de deudores':'Lista de clientes'}</h3>
+        <h3 style="font-size:15px;font-weight:600">${esCob?'Lista de deudores':'Lista de clientes'} <span style="font-weight:400;color:var(--muted);font-size:12.5px">· mostrando ${visibles.length} de ${totalFiltrados}</span></h3>
         ${esAdmin()?`<button class="btn btn-primary btn-sm" onclick="abrirModal('nuevoCliente')">Nuevo cliente</button>`:''}
       </div>
       ${esCob?`<div class="filter-tabs">
-        <button class="filter-tab ${ui.filtroClientesCobrador==='con_deuda'?'active':''}" onclick="ui.filtroClientesCobrador='con_deuda'; render()">Con deuda</button>
-        <button class="filter-tab ${ui.filtroClientesCobrador==='vencidos'?'active':''}" onclick="ui.filtroClientesCobrador='vencidos'; render()">Vencidos</button>
-        <button class="filter-tab ${ui.filtroClientesCobrador==='todos'?'active':''}" onclick="ui.filtroClientesCobrador='todos'; render()">Todos</button>
+        <button class="filter-tab ${ui.filtroClientesCobrador==='con_deuda'?'active':''}" onclick="ui.filtroClientesCobrador='con_deuda'; ui.clientesMostrar=CLIENTES_POR_PAGINA; render()">Con deuda</button>
+        <button class="filter-tab ${ui.filtroClientesCobrador==='vencidos'?'active':''}" onclick="ui.filtroClientesCobrador='vencidos'; ui.clientesMostrar=CLIENTES_POR_PAGINA; render()">Vencidos</button>
+        <button class="filter-tab ${ui.filtroClientesCobrador==='todos'?'active':''}" onclick="ui.filtroClientesCobrador='todos'; ui.clientesMostrar=CLIENTES_POR_PAGINA; render()">Todos</button>
       </div>`:''}
-      <div class="search-wrap"><input id="inpClienteLista" placeholder="Buscar por nombre, teléfono o comunidad..." value="${esc(ui.buscarClienteLista)}" oninput="ui.buscarClienteLista=this.value; renderConservarFoco('inpClienteLista')"></div>
-      ${filtrados.length===0?`<div class="card"><div class="empty">${state.clientes.length===0?'No hay clientes.':'Sin resultados.'}</div></div>`:''}
-      ${filtrados.map(c=>{
+      <div class="search-wrap"><input id="inpClienteLista" placeholder="Buscar por nombre, teléfono o comunidad..." value="${esc(ui.buscarClienteLista)}" oninput="ui.buscarClienteLista=this.value; ui.clientesMostrar=CLIENTES_POR_PAGINA; renderConservarFoco('inpClienteLista')"></div>
+      ${totalFiltrados===0?`<div class="card"><div class="empty">${state.clientes.length===0?'No hay clientes.':'Sin resultados.'}</div></div>`:''}
+      ${visibles.map(c=>{
         const deuda=deudaCliente(c.id);
         const venc=deudaVencida(c.id);
         const est=estadoCliente(c.id);
@@ -2875,30 +2918,30 @@ function viewClientes(){
         const abonos=state.abonos.filter(a=>a.clienteId===c.id);
         const nVentas=state.ventas.filter(v=>v.clienteId===c.id).length;
         const sePuedeEliminar = nVentas===0 && abonos.length===0;
-        return `<div class="card" style="padding:18px 20px;${venc>0?'border-left:3px solid var(--danger)':''}">
-          <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start">
+        return `<div class="cliente-card ${venc>0?'vencido':''}">
+          <div class="cliente-head">
             <div style="flex:1;min-width:0">
-              <div style="font-size:15px;font-weight:600">${esc(c.nombre)}</div>
-              <div style="font-size:12.5px;color:var(--muted);margin-top:2px">${esc(c.comunidad)} · Tel. ${esc(c.tel)||'—'}</div>
-              <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+              <div class="cliente-nombre">${esc(c.nombre)}</div>
+              <div class="cliente-meta">${esc(c.comunidad)} · Tel. ${esc(c.tel)||'—'}</div>
+              <div class="cliente-tags">
                 <span class="badge ${est.cls}">${est.txt}</span>
                 <span class="tag-pill">Plazo ${c.plazo}d</span>
               </div>
             </div>
-            <div style="text-align:right">
-              <div style="font-size:10.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted)">Debe</div>
-              <div style="font-size:20px;font-weight:600;color:${deuda>0?'var(--danger)':'var(--success)'};font-variant-numeric:tabular-nums;margin-top:2px">${money(deuda)}</div>
-              ${venc>0?`<div style="font-size:11px;color:var(--danger);font-weight:600">${money(venc)} vencido</div>`:''}
+            <div style="text-align:right;flex-shrink:0">
+              <div class="cliente-debe-label">Debe</div>
+              <div class="cliente-debe-value" style="color:${deuda>0?'var(--danger)':'var(--success)'}">${money(deuda)}</div>
+              ${venc>0?`<div class="cliente-vencido-txt">${money(venc)} vencido</div>`:''}
             </div>
           </div>
-          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+          <div class="cliente-acciones">
             ${deuda>0?`<button class="btn btn-success btn-sm" onclick="abrirModal('abono','${c.id}')">Registrar cobro</button>`:''}
-            <button class="btn btn-outline btn-sm" onclick="toggleCliente('${c.id}')">${abierto?'Ocultar':'Ver historial'}</button>
-            ${esAdmin()?`<button class="btn btn-outline btn-sm" onclick="abrirModal('editarCliente','${c.id}')">Editar / + deuda</button>`:''}
-            ${esAdmin()?`<button class="btn-ghost" style="font-size:12px;color:var(--danger)" onclick="accionEliminarCliente('${c.id}')" title="${sePuedeEliminar?'Eliminar cliente':'No se puede: tiene movimientos'}">Eliminar</button>`:''}
+            <button class="btn btn-outline btn-sm" onclick="toggleCliente('${c.id}')">${abierto?'Ocultar':'Historial'}</button>
+            ${esAdmin()?`<button class="btn btn-outline btn-sm" onclick="abrirModal('editarCliente','${c.id}')">Editar</button>`:''}
+            ${esAdmin()?`<button class="btn-ghost" style="font-size:12px;color:var(--danger);padding:5px 8px" onclick="accionEliminarCliente('${c.id}')" title="${sePuedeEliminar?'Eliminar cliente':'Tiene movimientos'}">Eliminar</button>`:''}
           </div>
-          ${abierto?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line-soft)">
-            <div style="background:var(--surface-soft);border-radius:8px;padding:12px;margin-bottom:16px;border:1px solid var(--line-soft)">
+          ${abierto?`<div class="cliente-historial">
+            <div style="background:var(--surface-soft);border-radius:8px;padding:12px;margin-bottom:14px;border:1px solid var(--line-soft)">
               <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Detalle de la deuda</div>
               <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0">
                 <span>Ventas a crédito pendientes (${pend.length})</span><b style="font-variant-numeric:tabular-nums">${money(deudaVentasCliente(c.id))}</b>
@@ -2918,7 +2961,7 @@ function viewClientes(){
                 <td class="num">${money(v.total)}</td>
                 <td class="num bold" style="color:var(--danger)">${money(saldoVenta(v))}</td></tr>`).join('')}</tbody>
             </table></div>`}
-            <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:16px 0 10px">Historial de cobros (${abonos.length})</div>
+            <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin:14px 0 10px">Historial de cobros (${abonos.length})</div>
             ${abonos.length===0?'<div style="font-size:12.5px;color:var(--muted)">Sin cobros</div>':`
             <div class="table-wrap" style="margin:0;padding:0"><table>
               <thead><tr><th>Fecha</th><th>Cobrador</th><th class="num">Entregado</th><th class="num">Aplicado</th><th class="num">Vuelta</th></tr></thead>
@@ -2932,14 +2975,20 @@ function viewClientes(){
           </div>`:''}
         </div>`;
       }).join('')}
+      ${hayMas?`
+        <div style="text-align:center;padding:18px 0 4px">
+          <button class="btn btn-outline" onclick="verMasClientes()">Ver más clientes (${totalFiltrados - ui.clientesMostrar} restantes)</button>
+        </div>`:''}
+      ${!hayMas && totalFiltrados > 0 ? `
+        <div style="text-align:center;padding:14px 0 4px;color:var(--muted);font-size:12px">Todos los clientes mostrados</div>`:''}
     </div>
     <div>
       <div class="card">
-        <div class="card-head"><div><div class="card-title">Resumen</div></div></div>
+        <div class="card-head"><div><div class="card-title">Resumen · Top deudores</div><div class="card-subtitle">Los 15 con más deuda</div></div></div>
         <div class="table-wrap" style="margin:0;padding:0"><table>
           <thead><tr><th>Cliente</th><th class="num">Saldo</th><th></th></tr></thead>
           <tbody>
-          ${state.clientes.filter(c=>deudaCliente(c.id)>0).sort((a,b)=>deudaVencida(b.id)-deudaVencida(a.id)||deudaCliente(b.id)-deudaCliente(a.id)).map(c=>`
+          ${state.clientes.filter(c=>deudaCliente(c.id)>0).sort((a,b)=>deudaVencida(b.id)-deudaVencida(a.id)||deudaCliente(b.id)-deudaCliente(a.id)).slice(0,15).map(c=>`
             <tr><td>${esc(c.nombre)}</td>
             <td class="num bold" style="color:${deudaVencida(c.id)>0?'var(--danger)':'var(--ink)'}">${money(deudaCliente(c.id))}</td>
             <td class="num"><button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('abono','${c.id}')">Cobrar</button></td></tr>
@@ -3047,14 +3096,16 @@ function viewCompras(){
         ${ui.compraCarrito.length>0?`<button class="btn-ghost" onclick="ui.compraCarrito=[]; render()">Vaciar</button>`:''}
       </div>
       ${ui.compraCarrito.length===0?'<div class="empty" style="padding:30px 16px">Agrega productos.</div>':`
-        ${ui.compraCarrito.map((i,ix)=>`
-          <div class="cart-line">
-            <div class="cart-info"><div class="cart-name">${esc(i.nombre)}</div><div class="cart-meta">${unidadAbrev(i.unidad)}</div></div>
-            <input type="number" step="0.01" class="cart-qty" value="${i.cantidad}" onchange="actualizarLineaCompra(${ix},'cantidad',this.value)">
-            <input type="number" step="0.01" class="cart-price" value="${i.costoUnit}" onchange="actualizarLineaCompra(${ix},'costoUnit',this.value)">
-            <div class="cart-sub">${money(i.subtotal)}</div>
-            <button class="btn-ghost" style="padding:2px 8px" onclick="quitarDelCarritoCompra(${ix})">×</button>
-          </div>`).join('')}
+        <div class="cart-list">
+          ${ui.compraCarrito.map((i,ix)=>`
+            <div class="cart-line">
+              <div class="cart-info"><div class="cart-name">${esc(i.nombre)}</div><div class="cart-meta">${unidadAbrev(i.unidad)}</div></div>
+              <input type="number" step="0.01" class="cart-qty" value="${i.cantidad}" onchange="actualizarLineaCompra(${ix},'cantidad',this.value)">
+              <input type="number" step="0.01" class="cart-price" value="${i.costoUnit}" onchange="actualizarLineaCompra(${ix},'costoUnit',this.value)">
+              <div class="cart-sub">${money(i.subtotal)}</div>
+              <button class="btn-ghost" style="padding:2px 8px" onclick="quitarDelCarritoCompra(${ix})">×</button>
+            </div>`).join('')}
+        </div>
         <div class="cart-total"><span class="cart-total-label">Total</span><span class="cart-total-value">${money(total)}</span></div>
         <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--line)">
           <div class="field"><label>Proveedor</label>
