@@ -1980,6 +1980,22 @@ function confirmarCompra(){
 /* ================================================================
    RENDER
    ================================================================ */
+// Renderiza conservando el foco y la posición del cursor de un campo.
+ // Evita que la búsqueda pierda el foco después de cada carácter al reconstruir la vista.
+function renderConservarFoco(id){
+  const anterior=$(id);
+  const inicio=anterior && typeof anterior.selectionStart==='number' ? anterior.selectionStart : null;
+  const fin=anterior && typeof anterior.selectionEnd==='number' ? anterior.selectionEnd : null;
+  render();
+  const nuevo=$(id);
+  if(nuevo){
+    nuevo.focus({preventScroll:true});
+    if(inicio!==null && fin!==null && typeof nuevo.setSelectionRange==='function'){
+      try{ nuevo.setSelectionRange(inicio,fin); }catch(e){}
+    }
+  }
+}
+
 function render(){
   save(); renderNav(); renderUsuarioSelector();
   const visibles=tabsDisponibles().map(t=>t.id);
@@ -2526,7 +2542,7 @@ function viewVentas(){
   <div class="grid-2" style="${!ok?'opacity:.5;pointer-events:none':''}">
     <div class="card">
       <div class="card-head"><div><div class="card-title">Catálogo</div><div class="card-subtitle">${prods.length} producto(s)</div></div></div>
-      <div class="search-wrap"><input placeholder="Buscar producto..." value="${esc(ui.buscarProdVenta)}" oninput="ui.buscarProdVenta=this.value; render(); this.focus()"></div>
+      <div class="search-wrap"><input id="buscarProdVenta" placeholder="Buscar producto..." value="${esc(ui.buscarProdVenta)}" oninput="ui.buscarProdVenta=this.value; renderConservarFoco('buscarProdVenta')"></div>
       <div class="prod-list">
         ${prods.length===0?'<div class="empty">Sin resultados.</div>':prods.map(p=>{
           const d=dispDe(p);
@@ -2573,9 +2589,9 @@ function viewVentas(){
                 <button class="btn-ghost" style="font-size:12px" onclick="ui.ventaClienteId=''; render()">Cambiar</button>
               </div>`:`
               <div class="search-wrap" style="margin-bottom:0">
-                <input placeholder="Buscar cliente..." value="${esc(ui.buscarClienteVenta)}"
-                  oninput="ui.buscarClienteVenta=this.value; ui.mostrarBuscadorCliente=true; render(); this.focus()"
-                  onfocus="ui.mostrarBuscadorCliente=true; render(); this.focus()">
+                <input id="buscarClienteVenta" type="search" autocomplete="off" placeholder="Buscar cliente por nombre, comunidad o teléfono..." value="${esc(ui.buscarClienteVenta)}"
+                  oninput="ui.buscarClienteVenta=this.value; ui.mostrarBuscadorCliente=true; renderConservarFoco('buscarClienteVenta')"
+                  onfocus="if(!ui.mostrarBuscadorCliente){ui.mostrarBuscadorCliente=true; renderConservarFoco('buscarClienteVenta')}">
                 ${ui.mostrarBuscadorCliente?`<div class="search-results">
                   ${clientesEnc.map(c=>`<div class="search-item" onclick="seleccionarClienteVenta('${c.id}')">
                     <div class="name">${esc(c.nombre)}</div>
