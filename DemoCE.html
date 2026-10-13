@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#7c2d12">
 <title>Casa de Empeño · Sistema</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b45309' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6 3h12l4 6-10 13L2 9Z'/><path d='M11 3 8 9l4 13 4-13-3-6'/><path d='M2 9h20'/></svg>">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --bg-soft:#f8f5f0;
@@ -44,7 +45,6 @@ svg{display:block;flex-shrink:0}
 .cash-mini small{display:block;color:var(--muted);font-size:.7rem;text-transform:uppercase;font-weight:700;letter-spacing:.3px}
 .cash-mini b{display:block;margin-top:5px;font-size:1rem}
 @media(max-width:460px){.settings-grid{grid-template-columns:1fr}.cash-summary-extra{grid-template-columns:1fr 1fr}}
-/* ========== LOGIN SCREEN ========== */
 #loginScreen {
   position:fixed; inset:0; 
   background:linear-gradient(135deg,#78350f 0%,#b45309 55%,#d97706 100%);
@@ -75,7 +75,6 @@ svg{display:block;flex-shrink:0}
 .login-input:focus { border-color:#fff; background:rgba(255,255,255,0.15); }
 .login-error { color:#fecaca; margin-top:12px; font-size:0.85rem; display:none; font-weight:600; }
 
-/* ========== HEADER ========== */
 header{
   background:linear-gradient(135deg,#78350f 0%,#b45309 55%,#d97706 100%);
   color:#fff;padding:22px 18px 26px;
@@ -121,7 +120,6 @@ header::after{
 .header-actions button:hover{background:rgba(255,255,255,.24)}
 .header-actions button:active{transform:scale(.97)}
 
-/* ========== KPIs ========== */
 .kpis{
   display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
   margin-top:16px;position:relative;z-index:1;
@@ -136,7 +134,6 @@ header::after{
 .kpi-label{font-size:.68rem;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
 .kpi-value{font-size:1.1rem;font-weight:700;letter-spacing:-.2px}
 
-/* ========== NAV DESKTOP ========== */
 nav{
   display:none;
   background:#fff;border-bottom:1px solid var(--border);
@@ -154,7 +151,6 @@ nav button{
 nav button:hover{color:var(--text)}
 nav button.active{color:var(--primary);border-bottom-color:var(--primary)}
 
-/* ========== BOTTOM NAV MOBILE ========== */
 .bottom-nav{
   position:fixed;bottom:0;left:0;right:0;z-index:50;
   background:#fff;border-top:1px solid var(--border);
@@ -171,7 +167,6 @@ nav button.active{color:var(--primary);border-bottom-color:var(--primary)}
 }
 .bottom-nav button.active{color:var(--primary);background:var(--primary-soft)}
 
-/* ========== MAIN ========== */
 main{max-width:1100px;margin:0 auto;padding:16px 14px 24px}
 .tab{display:none;animation:fade .25s ease}
 .tab.active{display:block}
@@ -196,7 +191,6 @@ main{max-width:1100px;margin:0 auto;padding:16px 14px 24px}
 }
 .card h2 .h2-txt{flex:1}
 
-/* ========== FORM ========== */
 form{display:grid;gap:10px}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
@@ -231,7 +225,6 @@ button.btn.danger{background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:
 button.btn.info{background:linear-gradient(135deg,#3b82f6,#2563eb);box-shadow:0 4px 12px rgba(59,130,246,.3)}
 button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
 
-/* ========== CHIPS ========== */
 .chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
 .chip{
   padding:8px 14px;border-radius:20px;border:1.5px solid var(--border);
@@ -244,7 +237,6 @@ button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
   box-shadow:0 4px 10px rgba(180,83,9,.25);
 }
 
-/* ========== LIST ITEMS ========== */
 .list{display:flex;flex-direction:column;gap:10px;margin-top:14px}
 .item{
   display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
@@ -297,7 +289,6 @@ button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
   background:#f5f0e8;color:#b9ab99;
 }
 
-/* ========== RESUMEN CAJA ========== */
 .caja-resumen{
   display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;
 }
@@ -316,7 +307,6 @@ button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
 .caja-box small{font-size:.65rem;opacity:.9;display:block;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
 .caja-box b{font-size:.95rem;display:block;letter-spacing:-.2px}
 
-/* ========== REPORTES ========== */
 .report-filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .report-box{
   background:#fbf9f5;border-radius:14px;padding:16px;
@@ -345,7 +335,6 @@ button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
   display:flex;align-items:center;gap:6px;
 }
 
-/* ========== ALERTAS ========== */
 .alert{
   display:flex;gap:10px;align-items:flex-start;
   padding:12px 14px;border-radius:12px;margin-bottom:10px;
@@ -362,7 +351,6 @@ button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
 .alert .alert-txt{flex:1;font-size:.85rem;font-weight:600}
 .alert .alert-sub{font-size:.75rem;opacity:.8;margin-top:2px;font-weight:400}
 
-/* ========== MODAL ========== */
 .modal-bg{
   position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(4px);
   z-index:300;display:none;align-items:flex-end;justify-content:center;
@@ -402,14 +390,12 @@ button.btn.small{padding:8px 12px;font-size:.78rem;border-radius:10px}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
 .modal-actions button{flex:1}
 
-/* ========== FOOTER ========== */
 footer{
   text-align:center;padding:20px 16px 24px;font-size:.75rem;
   color:var(--muted);max-width:600px;margin:0 auto;line-height:1.5;
 }
 footer strong{color:var(--text)}
 
-/* ========== TOAST ========== */
 .toast{
   position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);
   display:inline-flex;align-items:center;gap:8px;
@@ -430,7 +416,6 @@ footer strong{color:var(--text)}
 .toast .toast-ico{display:none}
 .toast.show .toast-ico{display:grid}
 
-/* ========== DESKTOP ========== */
 @media(min-width:768px){
   body{padding-bottom:0}
   header{padding:28px 32px 32px;border-radius:0 0 28px 28px}
@@ -451,10 +436,8 @@ footer strong{color:var(--text)}
   .kpis{grid-template-columns:repeat(4,1fr)}
 }
 
-/* ========== IMPRESIÓN ========== */
 @media print{
   .no-print,button,.bottom-nav,nav{display:none!important}
-
   body{background:#fff;padding:0}
   header,nav,.bottom-nav,.no-print,.toast,footer,.modal-bg,#loginScreen{display:none !important}
   main{padding:0;max-width:100%}
@@ -472,7 +455,6 @@ footer strong{color:var(--text)}
 </head>
 <body>
 
-<!-- ========== LOGIN SCREEN ========== -->
 <div id="loginScreen">
   <div class="login-box">
     <div style="width:64px;height:64px;background:rgba(255,255,255,0.2);border-radius:18px;display:grid;place-items:center;margin:0 auto 16px; border:1px solid rgba(255,255,255,0.2);">
@@ -489,6 +471,7 @@ footer strong{color:var(--text)}
     <input type="password" id="loginPassword" class="login-input" placeholder="Contraseña de Administrador" autocomplete="off">
     <button id="btnLogin" class="btn" style="width:100%;padding:14px;font-size:1rem;">Ingresar al Sistema</button>
     <p id="loginError" class="login-error">Contraseña incorrecta, intenta de nuevo.</p>
+    <p id="loginStatus" style="color:#fde68a;margin-top:12px;font-size:0.85rem;display:none;">Cargando datos…</p>
   </div>
 </div>
 
@@ -632,7 +615,6 @@ footer strong{color:var(--text)}
 
 <main>
 
-  <!-- ============ VISTA ENCARGADO ============ -->
   <section id="encargadoView" class="tab" style="display:none;">
     <div style="max-width:600px; margin:0 auto; padding:20px;">
       <div class="card">
@@ -702,7 +684,6 @@ footer strong{color:var(--text)}
     </div>
   </section>
 
-  <!-- ============ INICIO ============ -->
   <section id="inicio" class="tab active">
     <div class="card">
       <h2>
@@ -773,7 +754,6 @@ footer strong{color:var(--text)}
     </div>
   </section>
 
-  <!-- ============ EMPEÑOS ============ -->
   <section id="empenos" class="tab">
     <div class="card no-print">
       <h2>
@@ -864,7 +844,6 @@ footer strong{color:var(--text)}
     </div>
   </section>
 
-  <!-- ============ CLIENTES ============ -->
   <section id="clientes" class="tab">
     <div class="card">
       <h2>
@@ -921,7 +900,6 @@ footer strong{color:var(--text)}
     </div>
   </section>
 
-  <!-- ============ ALMACÉN ============ -->
   <section id="almacen" class="tab">
     <div class="card">
       <h2>
@@ -996,7 +974,6 @@ footer strong{color:var(--text)}
     </div>
   </section>
 
-  <!-- ============ OFICINAS ============ -->
   <section id="oficinas" class="tab">
     <div class="card">
       <h2><span class="h2-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 21V9h6v12M3 9h6m6 0h6"/></svg></span><span class="h2-txt">Gestión de oficinas</span></h2>
@@ -1038,7 +1015,6 @@ footer strong{color:var(--text)}
     </div>
   </section>
 
-  <!-- ============ CAJA ============ -->
   <section id="caja" class="tab">
     <div class="card">
       <h2>
@@ -1146,7 +1122,6 @@ footer strong{color:var(--text)}
     </div>
   </section>
 
-  <!-- ============ REPORTES ============ -->
   <section id="reportes" class="tab">
     <div class="card no-print">
       <h2><span class="h2-ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.7 2.94-.09-.03a1.7 1.7 0 0 0-1.82.4l-.07.07h-3.4l-.02-.1a1.7 1.7 0 0 0-1.25-1.4 1.7 1.7 0 0 0-1.77.44l-.07.07-2.94-1.7.03-.09a1.7 1.7 0 0 0-.4-1.82l-.07-.07v-3.4l.1-.02a1.7 1.7 0 0 0 1.4-1.25 1.7 1.7 0 0 0-.44-1.77l-.07-.07 1.7-2.94.09.03a1.7 1.7 0 0 0 1.82-.4l.07-.07h3.4l.02.1a1.7 1.7 0 0 0 1.25 1.4 1.7 1.7 0 0 0 1.77-.44l.07-.07 2.94 1.7-.03.09a1.7 1.7 0 0 0 .4 1.82l.07.07v3.4z"/></svg></span><span class="h2-txt">Configuración de intereses</span></h2>
@@ -1243,12 +1218,11 @@ footer strong{color:var(--text)}
 
 <footer>
   <p style="margin:0">
-    <strong>Versión demo</strong> · Los datos se guardan solo en este navegador.<br>
-    Para una versión con base de datos, respaldos y multi-usuario, contáctanos.
+    <strong>Casa de Empeño</strong> · Datos sincronizados con Supabase.<br>
+    Sistema interno.
   </p>
 </footer>
 
-<!-- BOTTOM NAV MOBILE -->
 <div class="bottom-nav">
   <button data-tab="inicio" class="active">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -1303,7 +1277,6 @@ footer strong{color:var(--text)}
   </button>
 </div>
 
-<!-- MODAL -->
 <div class="modal-bg" id="modalBg">
   <div class="modal">
     <h3 id="modalTitle"></h3>
@@ -1318,6 +1291,11 @@ footer strong{color:var(--text)}
 <div class="toast" id="toast"></div>
 
 <script>
+/* ============ SUPABASE ============ */
+const SUPABASE_URL  = 'https://fegscrhtxueduciregvg.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZlZ3Njcmh0eHVlZHVjaXJlZ3ZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4NDczMDgsImV4cCI6MjEwNzQyMzMwOH0.zlZhyTwSNPNqC-IPlrK9SRybtTPMBGUgqyfTbkWsBxg';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
 /* ============ ICONOS SVG ============ */
 const ICONS = {
   archive:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8M10 12h4"/></svg>',
@@ -1355,32 +1333,149 @@ const CONFIG = {
   diasGracia: 15
 };
 
-/* ============ ESTADO ============ */
+/* ============ ESTADO (en memoria · se llena desde Supabase) ============ */
 const DB = {
-  clientes: JSON.parse(localStorage.getItem('emp_clientes') || '[]'),
-  empenos: JSON.parse(localStorage.getItem('emp_empenos') || '[]'),
-  productos: JSON.parse(localStorage.getItem('emp_productos') || '[]'),
-  caja: JSON.parse(localStorage.getItem('emp_caja') || '[]'),
-  oficinas: JSON.parse(localStorage.getItem('emp_oficinas') || '[]'),
-  reglasInteres: JSON.parse(localStorage.getItem('emp_reglas_interes') || 'null') || {modo:'escalonado', periodos:[{nombre:'Primeros 2 días',dias:2,tasa:3},{nombre:'Una semana',dias:7,tasa:5},{nombre:'Dos semanas',dias:14,tasa:10},{nombre:'Mensual',dias:30,tasa:15}]},
-  cierresCaja: JSON.parse(localStorage.getItem('emp_cierres_caja') || '[]')
+  clientes: [],
+  empenos: [],
+  productos: [],
+  caja: [],
+  oficinas: [],
+  reglasInteres: {modo:'escalonado', periodos:[{nombre:'Primeros 2 días',dias:2,tasa:3},{nombre:'Una semana',dias:7,tasa:5},{nombre:'Dos semanas',dias:14,tasa:10},{nombre:'Mensual',dias:30,tasa:15}]},
+  cierresCaja: []
 };
 let filtroEmpenos = 'todos';
 let periodoActual = 'semanal';
 let modalCallback = null;
-let currentRole = null; // 'admin' o 'encargado'
+let currentRole = null;
 
-function save(){
-  localStorage.setItem('emp_clientes', JSON.stringify(DB.clientes));
-  localStorage.setItem('emp_empenos', JSON.stringify(DB.empenos));
-  localStorage.setItem('emp_productos', JSON.stringify(DB.productos));
-  localStorage.setItem('emp_caja', JSON.stringify(DB.caja));
-  localStorage.setItem('emp_oficinas', JSON.stringify(DB.oficinas));
-  localStorage.setItem('emp_reglas_interes', JSON.stringify(DB.reglasInteres));
-  localStorage.setItem('emp_cierres_caja', JSON.stringify(DB.cierresCaja));
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : (Date.now().toString(36)+Math.random().toString(36).slice(2,10)));
+
+/* ============ MAPPERS snake_case <-> camelCase ============ */
+const mapOficinaFromDB = r => ({
+  id:r.id, nombre:r.nombre, encargado:r.encargado, ubicacion:r.ubicacion, estado:r.estado
+});
+const mapOficinaToDB = o => ({
+  id:o.id, nombre:o.nombre, encargado:o.encargado||null,
+  ubicacion:o.ubicacion||null, estado:o.estado||'activa'
+});
+
+const mapClienteFromDB = r => ({
+  id:r.id, nombre:r.nombre, telefono:r.telefono, ine:r.ine, direccion:r.direccion
+});
+const mapClienteToDB = c => ({
+  id:c.id, nombre:c.nombre, telefono:c.telefono||null,
+  ine:c.ine||null, direccion:c.direccion||null
+});
+
+const mapEmpFromDB = r => ({
+  id:r.id, folio:r.folio, contratoActual:r.contrato_actual,
+  clienteId:r.cliente_id, oficinaId:r.oficina_id, oficina:r.oficina,
+  descripcion:r.descripcion, marca:r.marca, notas:r.notas,
+  montoPrestado:Number(r.monto_prestado), tasaMensual:Number(r.tasa_mensual),
+  plazoDias:r.plazo_dias, reglasInteres:r.reglas_interes,
+  fechaEmpeno:r.fecha_empeno, fechaVencimiento:r.fecha_vencimiento,
+  estado:r.estado, precioVenta:r.precio_venta!=null?Number(r.precio_venta):null,
+  fechaAlmoneda:r.fecha_almoneda, fechaVenta:r.fecha_venta,
+  fechaRecuperacion:r.fecha_recuperacion, fechaBaja:r.fecha_baja,
+  motivoBaja:r.motivo_baja,
+  totalCobrado:r.total_cobrado!=null?Number(r.total_cobrado):null,
+  interesCobrado:r.interes_cobrado!=null?Number(r.interes_cobrado):null,
+  refrendos:r.refrendos||[], retiro:r.retiro, entrega:r.entrega
+});
+const mapEmpToDB = e => ({
+  id:e.id, folio:e.folio, contrato_actual:e.contratoActual||null,
+  cliente_id:e.clienteId, oficina_id:e.oficinaId||null, oficina:e.oficina||null,
+  descripcion:e.descripcion, marca:e.marca||null, notas:e.notas||null,
+  monto_prestado:e.montoPrestado, tasa_mensual:e.tasaMensual,
+  plazo_dias:e.plazoDias, reglas_interes:e.reglasInteres||null,
+  fecha_empeno:e.fechaEmpeno, fecha_vencimiento:e.fechaVencimiento,
+  estado:e.estado, precio_venta:e.precioVenta||null,
+  fecha_almoneda:e.fechaAlmoneda||null, fecha_venta:e.fechaVenta||null,
+  fecha_recuperacion:e.fechaRecuperacion||null, fecha_baja:e.fechaBaja||null,
+  motivo_baja:e.motivoBaja||null,
+  total_cobrado:e.totalCobrado||null, interes_cobrado:e.interesCobrado||null,
+  refrendos:e.refrendos||[], retiro:e.retiro||null, entrega:e.entrega||null
+});
+
+const mapProductoFromDB = r => ({
+  id:r.id, nombre:r.nombre, precio:Number(r.precio),
+  costo:Number(r.costo||0), stock:r.stock, vencido:r.vencido
+});
+const mapProductoToDB = p => ({
+  id:p.id, nombre:p.nombre, precio:p.precio,
+  costo:p.costo||0, stock:p.stock||0, vencido:!!p.vencido
+});
+
+const mapCajaFromDB = r => ({
+  id:r.id, fecha:r.fecha, tipo:r.tipo, concepto:r.concepto,
+  monto:Number(r.monto), categoria:r.categoria, medio:r.medio,
+  oficinaId:r.oficina_id, oficina:r.oficina, registradoPor:r.registrado_por
+});
+const mapCajaToDB = c => ({
+  id:c.id, fecha:c.fecha||new Date().toISOString(), tipo:c.tipo,
+  concepto:c.concepto, monto:c.monto, categoria:c.categoria||'otro',
+  medio:c.medio||'efectivo', oficina_id:c.oficinaId||null,
+  oficina:c.oficina||null, registrado_por:c.registradoPor||'admin'
+});
+
+const mapCierreFromDB = r => ({
+  id:r.id, fecha:r.fecha, tipo:r.tipo,
+  efectivoEsperado:Number(r.efectivo_esperado), qrEsperado:Number(r.qr_esperado),
+  efectivoContado:Number(r.efectivo_contado), qrVerificado:Number(r.qr_verificado),
+  diferenciaEfectivo:Number(r.diferencia_efectivo), diferenciaQR:Number(r.diferencia_qr),
+  notas:r.notas
+});
+const mapCierreToDB = x => ({
+  id:x.id, fecha:x.fecha||new Date().toISOString(), tipo:x.tipo,
+  efectivo_esperado:x.efectivoEsperado||0, qr_esperado:x.qrEsperado||0,
+  efectivo_contado:x.efectivoContado||0, qr_verificado:x.qrVerificado||0,
+  diferencia_efectivo:x.diferenciaEfectivo||0, diferencia_qr:x.diferenciaQR||0,
+  notas:x.notas||null
+});
+
+/* ============ CARGA DESDE SUPABASE ============ */
+async function loadFromSupabase(){
+  const [of, cl, em, pr, ca, ci, re] = await Promise.all([
+    sb.from('oficinas').select('*').order('created_at'),
+    sb.from('clientes').select('*').order('created_at'),
+    sb.from('empenos').select('*').order('created_at'),
+    sb.from('productos').select('*').order('created_at'),
+    sb.from('caja').select('*').order('fecha'),
+    sb.from('cierres_caja').select('*').order('fecha'),
+    sb.from('reglas_interes').select('*').eq('id',1).maybeSingle()
+  ]);
+  const errs = [of,cl,em,pr,ca,ci,re].filter(r=>r.error);
+  if (errs.length){ console.error('Supabase load errors:', errs.map(e=>e.error)); throw errs[0].error; }
+
+  DB.oficinas = (of.data||[]).map(mapOficinaFromDB);
+  DB.clientes = (cl.data||[]).map(mapClienteFromDB);
+  DB.empenos = (em.data||[]).map(mapEmpFromDB);
+  DB.productos = (pr.data||[]).map(mapProductoFromDB);
+  DB.caja = (ca.data||[]).map(mapCajaFromDB);
+  DB.cierresCaja = (ci.data||[]).map(mapCierreFromDB);
+  if (re.data) DB.reglasInteres = { modo:re.data.modo, periodos:re.data.periodos };
 }
 
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+/* ============ GUARDAR EN SUPABASE ============ */
+async function save(){
+  try {
+    const ops = [];
+    if (DB.oficinas.length)  ops.push(sb.from('oficinas').upsert(DB.oficinas.map(mapOficinaToDB)));
+    if (DB.clientes.length)  ops.push(sb.from('clientes').upsert(DB.clientes.map(mapClienteToDB)));
+    if (DB.empenos.length)   ops.push(sb.from('empenos').upsert(DB.empenos.map(mapEmpToDB)));
+    if (DB.productos.length) ops.push(sb.from('productos').upsert(DB.productos.map(mapProductoToDB)));
+    if (DB.caja.length)      ops.push(sb.from('caja').upsert(DB.caja.map(mapCajaToDB)));
+    if (DB.cierresCaja.length) ops.push(sb.from('cierres_caja').upsert(DB.cierresCaja.map(mapCierreToDB)));
+    ops.push(sb.from('reglas_interes').upsert({id:1, modo:DB.reglasInteres.modo, periodos:DB.reglasInteres.periodos}));
+
+    const results = await Promise.all(ops);
+    results.forEach(r=>{ if (r.error) console.error('Supabase save error:', r.error); });
+  } catch(err){
+    console.error('save() error:', err);
+  }
+}
+
+/* ============ HELPERS ============ */
 const money = n => 'Bs ' + Number(n||0).toLocaleString('es-BO',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtFecha = iso => new Date(iso).toLocaleString('es-MX',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
 const fmtFechaCorta = iso => new Date(iso).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'});
@@ -1392,7 +1487,6 @@ const addDias = (fecha, dias) => {
   d.setDate(d.getDate() + dias);
   return d.toISOString();
 };
-// Suma meses de calendario sin saltarse al mes siguiente cuando el día no existe (p. ej. 31/01 + 1 mes).
 const addMeses = (fecha, meses) => {
   const original = new Date(fecha);
   const dia = original.getDate();
@@ -1486,8 +1580,8 @@ function closeModal(){
   document.getElementById('modalBg').classList.remove('active');
   modalCallback = null;
 }
-document.getElementById('modalConfirm').addEventListener('click', ()=>{
-  if(modalCallback) modalCallback();
+document.getElementById('modalConfirm').addEventListener('click', async ()=>{
+  if(modalCallback) await modalCallback();
 });
 document.getElementById('modalBg').addEventListener('click', e=>{
   if(e.target.id === 'modalBg') closeModal();
@@ -1810,8 +1904,8 @@ function renderMovimientosOficina(){
 }
 window.verMovimientosOficina=id=>{const sel=document.getElementById('filtroOficinaMov');sel.value=id;renderMovimientosOficina();document.getElementById('detalleOficinaCard').scrollIntoView({behavior:'smooth',block:'start'});};
 window.editarOficina=id=>{const o=DB.oficinas.find(x=>x.id===id);if(!o)return;document.getElementById('oficinaEditId').value=o.id;document.getElementById('oficinaNombre').value=o.nombre;document.getElementById('oficinaEncargado').value=o.encargado||'';document.getElementById('oficinaUbicacion').value=o.ubicacion||'';document.getElementById('oficinaEstado').value=o.estado||'activa';document.getElementById('btnGuardarOficina').textContent='Guardar cambios';document.getElementById('btnCancelarOficina').style.display='';document.getElementById('formOficina').scrollIntoView({behavior:'smooth',block:'start'});};
-window.cambiarEstadoOficina=id=>{const o=DB.oficinas.find(x=>x.id===id);if(!o)return;o.estado=o.estado==='inactiva'?'activa':'inactiva';save();renderOficinas();toast(o.estado==='activa'?'Oficina activada':'Oficina desactivada','success');};
-document.getElementById('formOficina').addEventListener('submit',e=>{e.preventDefault();const id=document.getElementById('oficinaEditId').value,nombre=document.getElementById('oficinaNombre').value.trim();if(!nombre)return toast('Escribe el nombre de la oficina','error');if(DB.oficinas.some(o=>o.nombre.toLowerCase()===nombre.toLowerCase()&&o.id!==id))return toast('Ya existe una oficina con ese nombre','error');const datos={nombre,encargado:document.getElementById('oficinaEncargado').value.trim(),ubicacion:document.getElementById('oficinaUbicacion').value.trim(),estado:document.getElementById('oficinaEstado').value};if(id){const i=DB.oficinas.findIndex(o=>o.id===id);if(i>=0)DB.oficinas[i]={...DB.oficinas[i],...datos};}else DB.oficinas.push({id:uid(),...datos});save();e.target.reset();document.getElementById('oficinaEditId').value='';document.getElementById('btnGuardarOficina').textContent='Guardar oficina';document.getElementById('btnCancelarOficina').style.display='none';renderOficinas();toast(id?'Oficina actualizada':'Oficina creada','success');});
+window.cambiarEstadoOficina=async id=>{const o=DB.oficinas.find(x=>x.id===id);if(!o)return;o.estado=o.estado==='inactiva'?'activa':'inactiva';await save();renderOficinas();toast(o.estado==='activa'?'Oficina activada':'Oficina desactivada','success');};
+document.getElementById('formOficina').addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('oficinaEditId').value,nombre=document.getElementById('oficinaNombre').value.trim();if(!nombre)return toast('Escribe el nombre de la oficina','error');if(DB.oficinas.some(o=>o.nombre.toLowerCase()===nombre.toLowerCase()&&o.id!==id))return toast('Ya existe una oficina con ese nombre','error');const datos={nombre,encargado:document.getElementById('oficinaEncargado').value.trim(),ubicacion:document.getElementById('oficinaUbicacion').value.trim(),estado:document.getElementById('oficinaEstado').value};if(id){const i=DB.oficinas.findIndex(o=>o.id===id);if(i>=0)DB.oficinas[i]={...DB.oficinas[i],...datos};}else DB.oficinas.push({id:uid(),...datos});await save();e.target.reset();document.getElementById('oficinaEditId').value='';document.getElementById('btnGuardarOficina').textContent='Guardar oficina';document.getElementById('btnCancelarOficina').style.display='none';renderOficinas();toast(id?'Oficina actualizada':'Oficina creada','success');});
 document.getElementById('btnCancelarOficina').addEventListener('click',()=>{document.getElementById('formOficina').reset();document.getElementById('oficinaEditId').value='';document.getElementById('btnGuardarOficina').textContent='Guardar oficina';document.getElementById('btnCancelarOficina').style.display='none';});
 ['filtroOficinaMov','oficinaDesde','oficinaHasta'].forEach(id=>document.getElementById(id).addEventListener('change',renderMovimientosOficina));
 document.getElementById('btnLimpiarFiltroOficina').addEventListener('click',()=>{document.getElementById('filtroOficinaMov').value='todas';document.getElementById('oficinaDesde').value='';document.getElementById('oficinaHasta').value='';renderMovimientosOficina();});
@@ -1867,12 +1961,14 @@ function renderAll(){
 }
 
 /* ============ ELIMINAR ============ */
-window.eliminarEmpeno = id => {
+window.eliminarEmpeno = async id => {
   if(!confirm('¿Eliminar este empeño? Esta acción no se puede deshacer.')) return;
   DB.empenos = DB.empenos.filter(e=>e.id!==id);
-  save(); renderAll(); toast('Empeño eliminado');
+  const {error} = await sb.from('empenos').delete().eq('id', id);
+  if(error){ console.error(error); return toast('Error al eliminar','error'); }
+  renderAll(); toast('Empeño eliminado');
 };
-window.eliminarCliente = id => {
+window.eliminarCliente = async id => {
   const tieneEmpenos = DB.empenos.some(e=>e.clienteId===id);
   if(tieneEmpenos){
     if(!confirm('Este cliente tiene empeños asociados. ¿Eliminar de todas formas?')) return;
@@ -1880,12 +1976,16 @@ window.eliminarCliente = id => {
     if(!confirm('¿Eliminar este cliente?')) return;
   }
   DB.clientes = DB.clientes.filter(c=>c.id!==id);
-  save(); renderAll(); toast('Cliente eliminado');
+  const {error} = await sb.from('clientes').delete().eq('id', id);
+  if(error){ console.error(error); return toast('Error al eliminar','error'); }
+  renderAll(); toast('Cliente eliminado');
 };
-window.eliminarProducto = id => {
+window.eliminarProducto = async id => {
   if(!confirm('¿Eliminar este producto?')) return;
   DB.productos = DB.productos.filter(p=>p.id!==id);
-  save(); renderAll(); toast('Producto eliminado');
+  const {error} = await sb.from('productos').delete().eq('id', id);
+  if(error){ console.error(error); return toast('Error al eliminar','error'); }
+  renderAll(); toast('Producto eliminado');
 };
 
 /* ============ ACCIONES DE EMPEÑOS ============ */
@@ -1919,7 +2019,7 @@ window.accionRefrendar = id => {
     <div class="modal-row total"><span>Total a cobrar ahora</span><span id="refrendoTotalPreview">${money(capital*tasaInicial/100)}</span></div>
     <label class="field" style="margin-top:12px">Medio de pago del interés<select id="refrendoMedio"><option value="efectivo">Efectivo</option><option value="qr">QR / transferencia</option></select></label>
     <p class="subtle-note">El monto manual corresponde al interés total del plazo seleccionado, no por mes. El sistema guardará la modalidad, el importe, las fechas y el historial del nuevo contrato.</p>`;
-  openModal(`${ico('money')} Pago de interés y renovación`, html, () => {
+  openModal(`${ico('money')} Pago de interés y renovación`, html, async () => {
     const modo = document.getElementById('refrendoModo')?.value || 'manual';
     const mesesSel = document.getElementById('refrendoMeses')?.value || '1';
     const meses = mesesSel === 'custom' ? Number(document.getElementById('refrendoCustomMeses')?.value) : Number(mesesSel);
@@ -1931,7 +2031,6 @@ window.accionRefrendar = id => {
     const fechaNuevoContrato = new Date();
     const nuevoVenc = addMeses(fechaNuevoContrato, meses);
     const historial = e.refrendos || [];
-    const numeroContrato = historial.length + 2;
     const nuevoContrato = `${e.folio}-R${String(historial.length+1).padStart(2,'0')}`;
     e.refrendos = historial;
     e.refrendos.push({
@@ -1947,7 +2046,7 @@ window.accionRefrendar = id => {
     e.plazoDias = Math.round((nuevoVenc-fechaNuevoContrato)/(1000*60*60*24));
     e.estado = 'activo';
     DB.caja.push({id:uid(), fecha:fechaNuevoContrato.toISOString(), tipo:'ingreso', concepto:`Interés renovación ${nuevoContrato} (${e.folio}) - ${e.descripcion}`, monto:interes, categoria:'interes', medio, oficinaId:e.oficinaId||'', oficina:e.oficina||''});
-    save(); renderAll(); closeModal();
+    await save(); renderAll(); closeModal();
     toast(`Renovación ${nuevoContrato} registrada`, 'success');
   }, 'Registrar pago y renovar', 'btn info');
 
@@ -1978,7 +2077,6 @@ window.accionRecuperar = id => {
   if (!e) return;
   const hoy = new Date();
   const tasa = Number(e.tasaMensual || 5);
-  // Se cobra un único interés por el período vigente; al renovar se inicia un nuevo período.
   const interes = Math.round(Number(e.montoPrestado || 0) * tasa) / 100;
   const capital = Number(e.montoPrestado || 0);
   const total = Math.round((capital + interes) * 100) / 100;
@@ -1989,17 +2087,17 @@ window.accionRecuperar = id => {
     <div class="modal-row"><span>Interés del período (${tasa}%)</span><span>${money(interes)}</span></div>
     <div class="modal-row total"><span>Total para retirar la prenda</span><span>${money(total)}</span></div>
     <label class="field" style="margin-top:12px">Medio de pago<select id="recuperarMedio"><option value="efectivo">Efectivo</option><option value="qr">QR / transferencia</option></select></label>`;
-  openModal(`${ico('check')} Retiro de prenda`, html, () => {
+  openModal(`${ico('check')} Retiro de prenda`, html, async () => {
     const medio = document.getElementById('recuperarMedio')?.value || 'efectivo';
     e.estado = 'recuperado'; e.fechaRecuperacion = hoy.toISOString(); e.totalCobrado = total; e.interesCobrado = interes;
     e.retiro = {fecha:hoy.toISOString(), capital, interes, tasa, total, medio};
     DB.caja.push({id:uid(), fecha:hoy.toISOString(), tipo:'ingreso', concepto:`Retiro ${e.folio} - devolución de capital`, monto:capital, categoria:'capital', medio, oficinaId:e.oficinaId||'', oficina:e.oficina||''});
     if (interes > 0) DB.caja.push({id:uid(), fecha:hoy.toISOString(), tipo:'ingreso', concepto:`Retiro ${e.folio} - interés`, monto:interes, categoria:'interes', medio, oficinaId:e.oficinaId||'', oficina:e.oficina||''});
-    save(); renderAll(); closeModal(); toast('Prenda retirada y pago registrado', 'success');
+    await save(); renderAll(); closeModal(); toast('Prenda retirada y pago registrado', 'success');
   }, 'Confirmar retiro', 'btn success');
 };
 
-window.accionBaja = id => { const e=DB.empenos.find(x=>x.id===id); if(!e)return; const html=`<p>La prenda se retirará del inventario activo. El registro financiero y el historial se conservarán.</p><label class="field">Motivo de la baja<textarea id="motivoBajaPrenda" placeholder="Ej. No recuperada, deteriorada o retirada por el cliente"></textarea></label>`; openModal('Dar de baja la prenda',html,()=>{e.estado='baja';e.fechaBaja=new Date().toISOString();e.motivoBaja=document.getElementById('motivoBajaPrenda').value.trim();save();renderAll();closeModal();toast('Prenda dada de baja; el historial se conserva','success');},'Confirmar baja','btn danger'); };
+window.accionBaja = id => { const e=DB.empenos.find(x=>x.id===id); if(!e)return; const html=`<p>La prenda se retirará del inventario activo. El registro financiero y el historial se conservarán.</p><label class="field">Motivo de la baja<textarea id="motivoBajaPrenda" placeholder="Ej. No recuperada, deteriorada o retirada por el cliente"></textarea></label>`; openModal('Dar de baja la prenda',html,async()=>{e.estado='baja';e.fechaBaja=new Date().toISOString();e.motivoBaja=document.getElementById('motivoBajaPrenda').value.trim();await save();renderAll();closeModal();toast('Prenda dada de baja; el historial se conserva','success');},'Confirmar baja','btn danger'); };
 
 window.accionAlmoneda = id => {
   const e = DB.empenos.find(x=>x.id===id);
@@ -2014,12 +2112,12 @@ window.accionAlmoneda = id => {
     <div class="modal-row" style="margin-top:12px"><span>Capital prestado</span><span>${money(e.montoPrestado)}</span></div>
   `;
 
-  openModal(`${ico('store')} Pasar a almoneda`, html, ()=>{
+  openModal(`${ico('store')} Pasar a almoneda`, html, async ()=>{
     const precio = Number(document.getElementById('precioAlm').value) || sugerido;
     e.estado = 'almoneda';
     e.precioVenta = precio;
     e.fechaAlmoneda = new Date().toISOString();
-    save(); renderAll(); closeModal();
+    await save(); renderAll(); closeModal();
     toast('Prenda en almoneda','success');
   }, 'Mover a almoneda', 'btn');
 };
@@ -2037,7 +2135,7 @@ window.accionVender = id => {
     <div class="modal-row"><span>Ganancia estimada</span><span id="gananciaEst">${money(precio - e.montoPrestado)}</span></div>
   `;
 
-  openModal(`${ico('money')} Vender prenda`, html, ()=>{
+  openModal(`${ico('money')} Vender prenda`, html, async ()=>{
     const p = Number(document.getElementById('precioVenta').value);
     if(p<=0) return toast('Precio inválido','error');
     e.estado = 'vendido';
@@ -2049,7 +2147,7 @@ window.accionVender = id => {
       concepto:`Venta almoneda ${e.folio} - ${e.descripcion}`,
       monto:p, categoria:'venta', medio:'efectivo', oficinaId:e.oficinaId||'', oficina:e.oficina||''
     });
-    save(); renderAll(); closeModal();
+    await save(); renderAll(); closeModal();
     toast('Venta registrada','success');
   }, 'Registrar venta', 'btn success');
 
@@ -2080,7 +2178,7 @@ function llenarSelectClientes(){
   sel.innerHTML = DB.clientes.map(c=>`<option value="${c.id}">${esc(c.nombre)}</option>`).join('');
 }
 
-document.getElementById('formEmpeno').addEventListener('submit', e=>{
+document.getElementById('formEmpeno').addEventListener('submit', async e=>{
   e.preventDefault();
   const clienteId = document.getElementById('empCliente').value;
   const descripcion = document.getElementById('empDescripcion').value.trim();
@@ -2115,7 +2213,7 @@ document.getElementById('formEmpeno').addEventListener('submit', e=>{
     monto:monto, categoria:'capital', medio:document.getElementById('empMedio').value || 'efectivo', oficinaId:oficinaId || '', oficina:oficinaObj ? oficinaObj.nombre : ''
   });
 
-  save();
+  await save();
   renderAll();
   e.target.reset();
   document.getElementById('empTasa').value = String(CONFIG.tasaMensualDefault);
@@ -2125,7 +2223,7 @@ document.getElementById('formEmpeno').addEventListener('submit', e=>{
 });
 
 /* ============ FORM: CLIENTE ============ */
-document.getElementById('formCliente').addEventListener('submit', e=>{
+document.getElementById('formCliente').addEventListener('submit', async e=>{
   e.preventDefault();
   const nombre = document.getElementById('cliNombre').value.trim();
   if(!nombre) return toast('El nombre es obligatorio','error');
@@ -2135,12 +2233,12 @@ document.getElementById('formCliente').addEventListener('submit', e=>{
     ine: document.getElementById('cliIne').value.trim(),
     direccion: document.getElementById('cliDireccion').value.trim()
   });
-  save(); renderAll(); e.target.reset();
+  await save(); renderAll(); e.target.reset();
   toast('Cliente registrado','success');
 });
 
 /* ============ FORM: PRODUCTO ============ */
-document.getElementById('formProducto').addEventListener('submit', e=>{
+document.getElementById('formProducto').addEventListener('submit', async e=>{
   e.preventDefault();
   const nombre = document.getElementById('prodNombre').value.trim();
   const precio = Number(document.getElementById('prodPrecio').value);
@@ -2149,13 +2247,13 @@ document.getElementById('formProducto').addEventListener('submit', e=>{
   const vencido = document.getElementById('prodVencido').checked;
   if(!nombre || precio<0) return toast('Datos inválidos','error');
   DB.productos.push({id:uid(), nombre, precio, costo, stock, vencido});
-  save(); renderAll(); e.target.reset();
+  await save(); renderAll(); e.target.reset();
   document.getElementById('prodStock').value = 1;
   toast('Producto agregado','success');
 });
 
 /* ============ FORM: CAJA ============ */
-document.getElementById('formCaja').addEventListener('submit', e=>{
+document.getElementById('formCaja').addEventListener('submit', async e=>{
   e.preventDefault();
   const concepto = document.getElementById('cajaConcepto').value.trim();
   const monto = Number(document.getElementById('cajaMonto').value);
@@ -2169,13 +2267,13 @@ document.getElementById('formCaja').addEventListener('submit', e=>{
   DB.caja.push({
     id:uid(), fecha:new Date().toISOString(), tipo, 
     concepto,
-    oficina: oficina || undefined,
-    oficinaId: oficinaId || undefined,
+    oficina: oficina || '',
+    oficinaId: oficinaId || '',
     monto,
     categoria: (tipo==='egreso' && document.getElementById('cajaCategoria').value==='otro') ? 'gasto' : (document.getElementById('cajaCategoria').value || (tipo==='egreso' ? 'gasto' : 'otro')),
     medio: document.getElementById('cajaMedio').value || 'efectivo'
   });
-  save(); renderAll(); e.target.reset();
+  await save(); renderAll(); e.target.reset();
   toast('Movimiento registrado','success');
 });
 
@@ -2188,22 +2286,22 @@ document.getElementById('reglasInteresRows')?.addEventListener('click',e=>{
   const b=e.target.closest('[data-rule-remove]'); if(!b)return;
   const i=Number(b.dataset.ruleRemove); DB.reglasInteres.periodos.splice(i,1); aplicarReglasInteresUI();
 });
-document.getElementById('btnGuardarReglas')?.addEventListener('click',()=>{
+document.getElementById('btnGuardarReglas')?.addEventListener('click',async()=>{
   const rows=[...document.querySelectorAll('#reglasInteresRows [data-rule-days]')];
   const rules=rows.map(el=>{const i=Number(el.dataset.ruleDays);return {nombre:document.querySelector(`[data-rule-name="${i}"]`)?.value.trim()||`Período ${i+1}`,dias:Number(el.value),tasa:Number(document.querySelector(`[data-rule-rate="${i}"]`)?.value)};});
   if(!rules.length||rules.some(r=>!Number.isFinite(r.dias)||r.dias<1||!Number.isFinite(r.tasa)||r.tasa<0))return toast('Revisa los días y porcentajes de cada período','error');
   if(new Set(rules.map(r=>r.dias)).size!==rules.length)return toast('Cada período debe tener una cantidad de días diferente','error');
   rules.sort((a,b)=>a.dias-b.dias); DB.reglasInteres={modo:document.getElementById('reglasInteresModo').value,periodos:rules};
-  save(); aplicarReglasInteresUI(); toast('Reglas de interés guardadas','success');
+  await save(); aplicarReglasInteresUI(); toast('Reglas de interés guardadas','success');
 });
 document.getElementById('btnIngresarCapital')?.addEventListener('click',()=>{
   const html=`<label class="field">Monto de capital<input id="capitalMonto" type="number" min="0.01" step="0.01" required placeholder="0.00"></label><label class="field" style="margin-top:10px">Medio de ingreso<select id="capitalMedio"><option value="efectivo">Efectivo</option><option value="qr">QR / transferencia</option></select></label><label class="field" style="margin-top:10px">Concepto<input id="capitalConcepto" value="Aporte de capital" required></label><label class="field" style="margin-top:10px">Oficina<select id="capitalOficina"><option value="">Sin oficina asignada</option>${DB.oficinas.filter(o=>o.estado!=='inactiva').map(o=>`<option value="${esc(o.id)}">${esc(o.nombre)}</option>`).join('')}</select></label>`;
-  openModal('Ingresar capital al negocio',html,()=>{const monto=Number(document.getElementById('capitalMonto').value);if(monto<=0)return toast('Ingresa un monto válido','error');const oid=document.getElementById('capitalOficina').value,of=DB.oficinas.find(o=>o.id===oid);DB.caja.push({id:uid(),fecha:new Date().toISOString(),tipo:'ingreso',concepto:document.getElementById('capitalConcepto').value.trim()||'Aporte de capital',monto,categoria:'aporte_capital',medio:document.getElementById('capitalMedio').value,oficinaId:oid,oficina:of?.nombre||''});save();renderAll();closeModal();toast('Aporte de capital registrado','success');},'Registrar capital','btn success');
+  openModal('Ingresar capital al negocio',html,async()=>{const monto=Number(document.getElementById('capitalMonto').value);if(monto<=0)return toast('Ingresa un monto válido','error');const oid=document.getElementById('capitalOficina').value,of=DB.oficinas.find(o=>o.id===oid);DB.caja.push({id:uid(),fecha:new Date().toISOString(),tipo:'ingreso',concepto:document.getElementById('capitalConcepto').value.trim()||'Aporte de capital',monto,categoria:'aporte_capital',medio:document.getElementById('capitalMedio').value,oficinaId:oid,oficina:of?.nombre||''});await save();renderAll();closeModal();toast('Aporte de capital registrado','success');},'Registrar capital','btn success');
 });
 document.getElementById('btnCierreCaja')?.addEventListener('click',()=>{
   const cashIn=DB.caja.filter(c=>c.tipo==='ingreso'&&(c.medio||'efectivo')==='efectivo').reduce((s,c)=>s+Number(c.monto||0),0),cashOut=DB.caja.filter(c=>c.tipo==='egreso'&&(c.medio||'efectivo')==='efectivo').reduce((s,c)=>s+Number(c.monto||0),0),qrIn=DB.caja.filter(c=>c.tipo==='ingreso'&&c.medio==='qr').reduce((s,c)=>s+Number(c.monto||0),0),qrOut=DB.caja.filter(c=>c.tipo==='egreso'&&c.medio==='qr').reduce((s,c)=>s+Number(c.monto||0),0);
   const html=`<div class="modal-row"><span>Saldo efectivo esperado</span><strong>${money(cashIn-cashOut)}</strong></div><div class="modal-row"><span>Saldo QR esperado</span><strong>${money(qrIn-qrOut)}</strong></div><label class="field" style="margin-top:12px">Tipo de registro<select id="cierreTipo"><option value="apertura">Apertura</option><option value="cierre">Cierre</option></select></label><label class="field" style="margin-top:10px">Efectivo contado<input id="cierreEfectivo" type="number" min="0" step="0.01" value="${(cashIn-cashOut).toFixed(2)}" required></label><label class="field" style="margin-top:10px">Saldo QR verificado<input id="cierreQR" type="number" min="0" step="0.01" value="${(qrIn-qrOut).toFixed(2)}" required></label><label class="field" style="margin-top:10px">Observaciones<input id="cierreNotas" placeholder="Diferencias o comentarios"></label>`;
-  openModal('Apertura / cierre de caja',html,()=>{const efectivo=Number(document.getElementById('cierreEfectivo').value),qr=Number(document.getElementById('cierreQR').value);if(efectivo<0||qr<0)return toast('Los saldos no pueden ser negativos','error');DB.cierresCaja.push({id:uid(),fecha:new Date().toISOString(),tipo:document.getElementById('cierreTipo').value,efectivoEsperado:cashIn-cashOut,qrEsperado:qrIn-qrOut,efectivoContado:efectivo,qrVerificado:qr,diferenciaEfectivo:efectivo-(cashIn-cashOut),diferenciaQR:qr-(qrIn-qrOut),notas:document.getElementById('cierreNotas').value.trim()});save();closeModal();toast('Control de caja guardado','success');},'Guardar control','btn success');
+  openModal('Apertura / cierre de caja',html,async()=>{const efectivo=Number(document.getElementById('cierreEfectivo').value),qr=Number(document.getElementById('cierreQR').value);if(efectivo<0||qr<0)return toast('Los saldos no pueden ser negativos','error');DB.cierresCaja.push({id:uid(),fecha:new Date().toISOString(),tipo:document.getElementById('cierreTipo').value,efectivoEsperado:cashIn-cashOut,qrEsperado:qrIn-qrOut,efectivoContado:efectivo,qrVerificado:qr,diferenciaEfectivo:efectivo-(cashIn-cashOut),diferenciaQR:qr-(qrIn-qrOut),notas:document.getElementById('cierreNotas').value.trim()});await save();closeModal();renderCaja();toast('Control de caja guardado','success');},'Guardar control','btn success');
 });
 
 /* ============ FILTROS EMPEÑOS ============ */
@@ -2301,8 +2399,17 @@ function renderReporte(){
 document.getElementById('btnImprimir').addEventListener('click', ()=>window.print());
 
 /* ============ DATOS DE EJEMPLO ============ */
-document.getElementById('btnDemo').addEventListener('click', ()=>{
+document.getElementById('btnDemo').addEventListener('click', async ()=>{
   if(!confirm('Esto reemplazará los datos actuales con datos de ejemplo. ¿Continuar?')) return;
+
+  await Promise.all([
+    sb.from('empenos').delete().neq('id','00000000-0000-0000-0000-000000000000'),
+    sb.from('clientes').delete().neq('id','00000000-0000-0000-0000-000000000000'),
+    sb.from('productos').delete().neq('id','00000000-0000-0000-0000-000000000000'),
+    sb.from('caja').delete().neq('id','00000000-0000-0000-0000-000000000000'),
+    sb.from('cierres_caja').delete().neq('id','00000000-0000-0000-0000-000000000000'),
+    sb.from('oficinas').delete().neq('id','00000000-0000-0000-0000-000000000000')
+  ]);
 
   const c1 = {id:uid(), nombre:'María López', telefono:'55 1234 5678', ine:'LOMM850312', direccion:'Av. Reforma 123'};
   const c2 = {id:uid(), nombre:'Juan Pérez', telefono:'55 8765 4321', ine:'', direccion:'Calle Hidalgo 45'};
@@ -2376,25 +2483,33 @@ document.getElementById('btnDemo').addEventListener('click', ()=>{
         : 'Gasto operativo',
       oficinaId: DB.oficinas[i % DB.oficinas.length].id,
       oficina: DB.oficinas[i % DB.oficinas.length].nombre,
-      monto, categoria
+      monto, categoria, medio:'efectivo'
     });
   }
   DB.empenos.filter(e=>['activo','por_vencer','vencido','almoneda'].includes(estadoActual(e))).forEach(e=>{
     DB.caja.push({
       id:uid(), fecha:e.fechaEmpeno, tipo:'egreso',
       concepto:`Empeño ${e.folio} - ${e.descripcion}`,
-      monto:e.montoPrestado, categoria:'capital'
+      monto:e.montoPrestado, categoria:'capital', medio:'efectivo'
     });
   });
 
-  save(); renderAll(); renderOficinas();
+  await save(); renderAll(); renderOficinas();
   toast('Datos de ejemplo cargados','success');
 });
 
-document.getElementById('btnReset').addEventListener('click', ()=>{
+document.getElementById('btnReset').addEventListener('click', async ()=>{
   if(!confirm('¿Borrar TODOS los datos? Esta acción no se puede deshacer.')) return;
+  await Promise.all([
+    sb.from('empenos').delete().neq('id','00000000-0000-0000-0000-000000000000'),
+    sb.from('clientes').delete().neq('id','00000000-0000-0000-0000-000000000000'),
+    sb.from('productos').delete().neq('id','00000000-0000-0000-0000-000000000000'),
+    sb.from('caja').delete().neq('id','00000000-0000-0000-0000-000000000000'),
+    sb.from('cierres_caja').delete().neq('id','00000000-0000-0000-0000-000000000000'),
+    sb.from('oficinas').delete().neq('id','00000000-0000-0000-0000-000000000000')
+  ]);
   DB.clientes=[]; DB.empenos=[]; DB.productos=[]; DB.caja=[]; DB.cierresCaja=[]; DB.oficinas=[];
-  save(); renderAll();
+  renderAll();
   toast('Todo reiniciado','success');
 });
 
@@ -2417,21 +2532,37 @@ document.getElementById('btnRoleEncargado').addEventListener('click', () => {
   document.getElementById('loginError').style.display = 'none';
 });
 
-document.getElementById('btnLogin').addEventListener('click', () => {
+document.getElementById('btnLogin').addEventListener('click', async () => {
   const pwd = document.getElementById('loginPassword').value;
-  if (selectedRole === 'admin' && pwd === 'admin1234') {
-    currentRole = 'admin';
-    document.getElementById('loginScreen').style.display = 'none';
-    initApp();
-  } else if (selectedRole === 'encargado' && pwd === 'encar1234') {
-    currentRole = 'encargado';
-    document.getElementById('loginScreen').style.display = 'none';
-    initApp();
-  } else {
-    document.getElementById('loginError').style.display = 'block';
+  const statusEl = document.getElementById('loginStatus');
+  const errEl = document.getElementById('loginError');
+
+  const okAdmin = selectedRole === 'admin' && pwd === 'admin1234';
+  const okEnc   = selectedRole === 'encargado' && pwd === 'encar1234';
+
+  if (!okAdmin && !okEnc) {
+    errEl.style.display = 'block';
     document.getElementById('loginPassword').value = '';
     document.getElementById('loginPassword').focus();
+    return;
   }
+
+  currentRole = selectedRole;
+  errEl.style.display = 'none';
+  statusEl.style.display = 'block';
+  statusEl.textContent = 'Cargando datos…';
+
+  try {
+    await loadFromSupabase();
+  } catch(err){
+    statusEl.textContent = 'Error cargando datos. Revisa la consola.';
+    console.error(err);
+    return;
+  }
+
+  statusEl.style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'none';
+  initApp();
 });
 
 document.getElementById('loginPassword').addEventListener('keypress', (e) => {
@@ -2443,7 +2574,6 @@ document.getElementById('btnLogout').addEventListener('click', () => {
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('loginPassword').value = '';
   document.getElementById('loginError').style.display = 'none';
-  // Reset vistas por defecto
   document.querySelector('header').style.display = '';
   document.querySelector('nav').style.display = '';
   document.querySelector('.bottom-nav').style.display = '';
@@ -2506,7 +2636,7 @@ function setupAdminView() {
 }
 
 /* ============ FORM: INGRESO ENCARGADO ============ */
-document.getElementById('formIngresoEncargado').addEventListener('submit', e => {
+document.getElementById('formIngresoEncargado').addEventListener('submit', async e => {
   e.preventDefault();
   const oficinaId = document.getElementById('encOficina').value;
   const oficinaObj = DB.oficinas.find(o=>o.id===oficinaId && o.estado!=='inactiva');
@@ -2529,13 +2659,12 @@ document.getElementById('formIngresoEncargado').addEventListener('submit', e => 
     registradoPor: 'encargado'
   });
   
-  save();
+  await save();
   localStorage.setItem('enc_last_oficina', oficinaId);
   
   e.target.reset();
-  document.getElementById('encOficina').value = oficinaId; // Mantener la oficina seleccionada para agilizar
+  document.getElementById('encOficina').value = oficinaId;
   toast('Ingreso registrado exitosamente', 'success');
-  renderOficinas();
   renderCaja();
 });
 
@@ -2545,7 +2674,12 @@ function llenarSelectEmpenosEntrega(){
   if(!sel) return;
   const previo = sel.value;
   const q=(document.getElementById('entBuscarCliente')?.value||'').trim().toLocaleLowerCase('es');
-  const disponibles = DB.empenos.filter(e=>{if(!['activo','por_vencer','vencido'].includes(estadoActual(e)))return false;const c=DB.clientes.find(x=>x.id===e.clienteId);const hay=[e.folio,e.descripcion,c?.nombre,c?.ine,c?.telefono].join(' ').toLocaleLowerCase('es');return !q||hay.includes(q);});
+  const disponibles = DB.empenos.filter(e=>{
+    if(!['activo','por_vencer','vencido'].includes(estadoActual(e)))return false;
+    const c=DB.clientes.find(x=>x.id===e.clienteId);
+    const hay=[e.folio,e.descripcion,c?.nombre,c?.ine,c?.telefono].join(' ').toLocaleLowerCase('es');
+    return !q||hay.includes(q);
+  });
   sel.innerHTML = '<option value="">Selecciona una prenda pendiente</option>' + disponibles.map(e=>{
     const c=DB.clientes.find(x=>x.id===e.clienteId);
     const of=DB.oficinas.find(x=>x.id===e.oficinaId);
@@ -2561,7 +2695,6 @@ function actualizarDetalleEntrega(){
   if(!detalle) return;
   if(!e){detalle.textContent='Selecciona un empeño para ver el cliente y el importe estimado.';return;}
   const c=DB.clientes.find(x=>x.id===e.clienteId);
-  const dias=Math.max(0,diasEntre(new Date(e.fechaEmpeno),new Date()));
   const interes=Math.round(Number(e.montoPrestado||0)*Number(e.tasaMensual||5))/100;
   const total=Number(e.montoPrestado||0)+interes;
   document.getElementById('entMonto').value=total.toFixed(2);
@@ -2576,7 +2709,7 @@ document.getElementById('entCobrarAhora').addEventListener('change',()=>{
   inp.disabled=!cobrar; inp.required=cobrar;
   if(cobrar) actualizarDetalleEntrega(); else inp.value='';
 });
-document.getElementById('formEntregaEncargado').addEventListener('submit',e=>{
+document.getElementById('formEntregaEncargado').addEventListener('submit',async e=>{
   e.preventDefault();
   const oficinaId=document.getElementById('entOficina').value;
   const oficinaObj=DB.oficinas.find(o=>o.id===oficinaId && o.estado!=='inactiva');
@@ -2590,7 +2723,6 @@ document.getElementById('formEntregaEncargado').addEventListener('submit',e=>{
   const capitalValidacion=Number(empeno?.montoPrestado||0);
   const interesValidacion=Math.round(capitalValidacion*Number(empeno?.tasaMensual||5))/100;
   if(cobrar && monto + 0.001 < capitalValidacion + interesValidacion) return toast('El importe debe cubrir capital e interés: '+money(capitalValidacion+interesValidacion),'error');
-  // Guardar el registro de entrega y el pago por separado evita ingresos duplicados si el pago ya estaba registrado.
   empeno.estado='recuperado';
   empeno.fechaRecuperacion=ahora;
   empeno.totalCobrado=cobrar?monto:(empeno.totalCobrado||0);
@@ -2606,14 +2738,14 @@ document.getElementById('formEntregaEncargado').addEventListener('submit',e=>{
     empeno.interesCobrado=interes;
     empeno.retiro={fecha:ahora,capital,interes,tasa:Number(empeno.tasaMensual||5),total:capital+interes,medio};
   }
-  save();
+  await save();
   localStorage.setItem('enc_last_oficina',oficinaId);
   e.target.reset();
   document.getElementById('entOficina').value=oficinaId;
   document.getElementById('entCobrarAhora').checked=true;
   document.getElementById('entMonto').disabled=false;
   llenarSelectEmpenosEntrega();
-  renderOficinas(); renderCaja();
+  renderCaja();
   toast(cobrar?'Entrega registrada y pago ingresado':'Entrega registrada sin duplicar el pago','success');
 });
 </script>
