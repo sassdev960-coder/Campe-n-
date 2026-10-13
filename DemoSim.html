@@ -452,7 +452,6 @@ function estadoCliente(cid){
 }
 const esProductoRecarga = p => p&&p.esRecarga===true;
 
-// Las recargas NO generan ganancia automática. La ganancia es la bonificación manual.
 function gananciaItem(it){
   if(it.esRecarga) return 0;
   return num2((Number(it.precioUnit)-Number(it.costoUnit))*Number(it.cantidad));
@@ -574,7 +573,7 @@ function renderNav(){
     ${items.map(t=>`<button class="nav-item ${vista===t.id?'active':''}" onclick="ir('${t.id}')"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">${ICONS[t.id]}</svg>${t.label}</button>`).join('')}
   `).join('');
 }
-function ir(v){ vista=v; ui.modal=null; $('sidebar').classList.remove('open'); render(); }
+function ir(v){ vista=v; ui.modal=null; $('sidebar').classList.remove('open'); render(); window.scrollTo({top:0,behavior:'instant'}); }
 function renderUsuarioSelector(){
   const sel=$('usuarioSel'); if(!sel) return;
   sel.innerHTML=state.usuarios.filter(u=>u.activo!==false).map(u=>{
@@ -1028,12 +1027,18 @@ function modalProveedor(id){
       <button class="btn btn-primary" onclick="guardarProveedor(${p?`'${p.id}'`:'null'})">${p?'Guardar':'Crear'}</button>
     </div>`;
 }
+
+/* ================================================================
+   MODAL CLIENTE — con edición de deuda para clientes existentes
+   ================================================================ */
 function modalCliente(id){
   const c=id?state.clientes.find(x=>x.id===id):null;
   const deudaActual = c ? deudaCliente(c.id) : 0;
+  const deudaVtas = c ? deudaVentasCliente(c.id) : 0;
+  const deudaIni = c ? deudaInicialCliente(c.id) : 0;
   return `
     <div class="modal-head"><div><div class="modal-title">${c?'Editar cliente':'Nuevo cliente'}</div></div>
-    <button class="modal-close" onclick="cerrarModal()">×</button></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="field"><label>Nombre completo *</label>
       <input id="m-cli-nombre" value="${c?esc(c.nombre):''}" placeholder="Ej: María Quispe"></div>
     <div class="grid-2">
@@ -1053,6 +1058,7 @@ function modalCliente(id){
         <div class="hint">Máximo que puede deber.</div>
       </div>
     </div>
+
     ${!c ? `
       <div class="field" style="background:var(--info-soft);padding:14px;border-radius:10px;border:1px solid #d1e0ec;margin-top:8px">
         <label style="color:#0e2b45">Deuda inicial (Bs) — opcional</label>
@@ -1065,11 +1071,26 @@ function modalCliente(id){
         </div>
       </div>
     ` : `
-      <div style="background:var(--surface-soft);border-radius:8px;padding:12px;border:1px solid var(--line-soft);margin-top:8px">
-        <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:4px">Deuda actual</div>
-        <div style="font-size:20px;font-weight:600;color:${deudaActual>0?'var(--danger)':'var(--success)'};font-variant-numeric:tabular-nums">${money(deudaActual)}</div>
-        <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5">
-          Para modificar la deuda usá <b>Registrar cobro</b> (para bajarla) o <b>Capital inicial → Editar</b> (para agregar deuda vieja).
+      <div style="background:var(--surface-soft);border-radius:10px;padding:14px;border:1px solid var(--line-soft);margin-top:8px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Deuda actual del cliente</div>
+        <div style="font-size:26px;font-weight:600;color:${deudaActual>0?'var(--danger)':'var(--success)'};font-variant-numeric:tabular-nums">${money(deudaActual)}</div>
+        <div style="font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.6">
+          <div style="display:flex;justify-content:space-between;padding:2px 0">
+            <span>Ventas a crédito pendientes</span><b style="font-variant-numeric:tabular-nums;color:var(--ink-2)">${money(deudaVtas)}</b>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:2px 0">
+            <span>Deuda vieja registrada</span><b style="font-variant-numeric:tabular-nums;color:var(--ink-2)">${money(deudaIni)}</b>
+          </div>
+        </div>
+      </div>
+      <div class="field" style="background:var(--warning-soft);padding:14px;border-radius:10px;border:1px solid #ecdcae;margin-top:14px">
+        <label style="color:#6d4d13">Agregar deuda vieja (Bs) — opcional</label>
+        <div class="money-input-wrap"><input id="m-cli-ajuste-deuda" type="number" step="0.01" min="0" value="0" placeholder="0.00"></div>
+        <div class="hint" style="color:#6d4d13">
+          Cargá aquí deudas anteriores que este cliente tenía contigo y que <b>no</b> están registradas como ventas.
+          Se <b>suma</b> a la deuda actual. Dejá 0 si no querés cambiar nada.
+          <br><br>
+          <strong>Tip:</strong> para bajar la deuda (cuando ya te pagó) usá <b>Registrar cobro</b> desde la lista de clientes.
         </div>
       </div>
     `}
@@ -1471,6 +1492,10 @@ function guardarProveedor(id){
   else{ const nuevo={id:'PV'+(state.seq.proveedor++),nombre:n,nota}; state.proveedores.push(nuevo); bolsaDe(nuevo.id); toast('Creado','ok'); }
   cerrarModal(); render();
 }
+
+/* ================================================================
+   GUARDAR CLIENTE — incluye ajuste de deuda en clientes existentes
+   ================================================================ */
 function guardarCliente(id){
   const n=$('m-cli-nombre').value.trim();
   const tel=$('m-cli-tel').value.trim();
@@ -1478,14 +1503,25 @@ function guardarCliente(id){
   const plazo=Number($('m-cli-plazo').value);
   const limite=Number($('m-cli-limite').value)||0;
   if(!n) return toast('Ingresa nombre','err');
+
   if(id){
+    // Cliente existente: actualizar datos + posible ajuste de deuda vieja
     const c=state.clientes.find(x=>x.id===id);
     c.nombre=n; c.tel=tel; c.comunidad=com; c.plazo=plazo; c.limite=limite;
-    toast('Actualizado','ok');
+
+    const ajuste = Number($('m-cli-ajuste-deuda')?.value) || 0;
+    if(ajuste > 0){
+      if(!state.capital.deudasInicialesPorCliente) state.capital.deudasInicialesPorCliente = {};
+      state.capital.deudasInicialesPorCliente[id] = num2((state.capital.deudasInicialesPorCliente[id]||0) + ajuste);
+      state.capital.cuentasPorCobrarIniciales = num2((state.capital.cuentasPorCobrarIniciales||0) + ajuste);
+      toast(`Cliente actualizado · +${money(ajuste)} a la deuda`,'ok');
+    } else {
+      toast('Cliente actualizado','ok');
+    }
   }else{
+    // Cliente nuevo
     const nuevoId='C'+(state.seq.cliente++);
     state.clientes.push({id:nuevoId,nombre:n,tel,comunidad:com||'—',plazo,limite,creado:HOY()});
-    // Si cargó deuda inicial, la registramos en el capital
     const deudaInic = Number($('m-cli-deuda-inicial')?.value) || 0;
     if(deudaInic > 0){
       if(!state.capital.deudasInicialesPorCliente) state.capital.deudasInicialesPorCliente = {};
@@ -1978,33 +2014,44 @@ function confirmarCompra(){
 }
 
 /* ================================================================
-   RENDER
+   RENDER — preserva foco, cursor y scroll
    ================================================================ */
-// Renderiza conservando el foco y la posición del cursor de un campo.
- // Evita que la búsqueda pierda el foco después de cada carácter al reconstruir la vista.
 function renderConservarFoco(id){
-  const anterior=$(id);
-  const inicio=anterior && typeof anterior.selectionStart==='number' ? anterior.selectionStart : null;
-  const fin=anterior && typeof anterior.selectionEnd==='number' ? anterior.selectionEnd : null;
   render();
   const nuevo=$(id);
-  if(nuevo){
-    nuevo.focus({preventScroll:true});
-    if(inicio!==null && fin!==null && typeof nuevo.setSelectionRange==='function'){
-      try{ nuevo.setSelectionRange(inicio,fin); }catch(e){}
-    }
-  }
+  if(!nuevo) return;
+  nuevo.focus({preventScroll:true});
 }
-
 function render(){
   save(); renderNav(); renderUsuarioSelector();
   const visibles=tabsDisponibles().map(t=>t.id);
   if(!visibles.includes(vista)) vista=visibles[0];
   const fns={resumen:viewResumen,balance:viewBalance,ganancias:viewGanancias,caja:viewCaja,bancos:viewBancos,turnos:viewTurnos,ventas:viewVentas,inventario:viewInventario,clientes:viewClientes,cobranzas:viewCobranzas,compras:viewCompras,gastos:viewGastos,cuentas:viewCuentas,productos:viewProductos,categorias:viewCategorias,proveedores:viewProveedores,usuarios:viewUsuarios,capital:viewCapital,cierre:viewCierre};
+
+  // Guardar foco, cursor y scroll ANTES de reemplazar el DOM
+  const active = document.activeElement;
+  const focusId = (active && active.id) ? active.id : null;
+  const selStart = (active && typeof active.selectionStart === 'number') ? active.selectionStart : null;
+  const selEnd = (active && typeof active.selectionEnd === 'number') ? active.selectionEnd : null;
+  const scrollY = window.scrollY;
+
   $('app').innerHTML=fns[vista]?fns[vista]():'<div class="empty">Vista no encontrada</div>';
   if(ui.modal&&ui.modal.tipo==='abono'){ const el=$('m-abono-monto'); if(el) actualizarAbonoPreview(deudaCliente(ui.modal.id)); }
   if(ui.modal&&(ui.modal.tipo==='configurarCapital'||ui.modal.tipo==='editarCapital')) setTimeout(recalcularCapitalTotal,20);
-  window.scrollTo({top:0,behavior:'instant'});
+
+  // Restaurar scroll
+  requestAnimationFrame(()=>{ window.scrollTo({top:scrollY,behavior:'instant'}); });
+
+  // Restaurar foco y posición del cursor
+  if(focusId){
+    const el = document.getElementById(focusId);
+    if(el && typeof el.focus === 'function'){
+      try { el.focus({preventScroll:true}); } catch(e){ el.focus(); }
+      if(selStart !== null && typeof el.setSelectionRange === 'function'){
+        try { el.setSelectionRange(selStart, selEnd); } catch(e){}
+      }
+    }
+  }
 }
 
 /* ================================================================
@@ -2272,7 +2319,7 @@ function viewBancos(){
   <div class="card">
     <div class="card-head"><div><div class="card-title">Cuentas · ${bancos.length} de ${state.bancos.length}</div></div>
       <button class="btn btn-primary" onclick="abrirModal('nuevoBanco')">Nuevo banco</button></div>
-    <div class="search-wrap"><input placeholder="Buscar banco..." value="${esc(ui.buscarBanco)}" oninput="ui.buscarBanco=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input id="inpBanco" placeholder="Buscar banco..." value="${esc(ui.buscarBanco)}" oninput="ui.buscarBanco=this.value; renderConservarFoco('inpBanco')"></div>
     ${bancos.length===0?'<div class="empty">'+(state.bancos.length===0?'Aún no hay bancos.':'Sin resultados.')+'</div>':''}
     ${bancos.map(b=>{
       const saldo=saldoBanco(b);
@@ -2447,7 +2494,7 @@ function viewGastos(){
         <button class="btn btn-primary" onclick="abrirModal('nuevoGasto')">Registrar gasto</button>
       </div>
     </div>
-    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarGasto)}" oninput="ui.buscarGasto=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input id="inpGasto" placeholder="Buscar..." value="${esc(ui.buscarGasto)}" oninput="ui.buscarGasto=this.value; renderConservarFoco('inpGasto')"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Usuario</th><th class="num">Monto</th><th></th></tr></thead>
       <tbody>
@@ -2490,7 +2537,7 @@ function viewCuentas(){
       <button class="filter-tab ${filtro==='pagadas'?'active':''}" onclick="ui.filtroCuentasEstado='pagadas'; render()">Pagadas</button>
       <button class="filter-tab ${filtro==='todas'?'active':''}" onclick="ui.filtroCuentasEstado='todas'; render()">Todas</button>
     </div>
-    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(q)}" oninput="ui.buscarCuenta=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input id="inpCuenta" placeholder="Buscar..." value="${esc(q)}" oninput="ui.buscarCuenta=this.value; renderConservarFoco('inpCuenta')"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Acreedor</th><th>Concepto</th><th>Vence</th><th class="num">Total</th><th class="num">Pagado</th><th class="num">Saldo</th><th></th></tr></thead>
       <tbody>
@@ -2644,7 +2691,7 @@ function viewVentas(){
   <div class="card">
     <div class="card-head"><div><div class="card-title">${esAdmin()?'Historial completo':'Mis ventas'}</div>
     <div class="card-subtitle">${histFilt.length} de ${misVentas.length}</div></div></div>
-    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarVentaHist)}" oninput="ui.buscarVentaHist=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input id="inpVentaHist" placeholder="Buscar..." value="${esc(ui.buscarVentaHist)}" oninput="ui.buscarVentaHist=this.value; renderConservarFoco('inpVentaHist')"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Pago</th>${esAdmin()?'<th>Usuario</th>':''}<th class="num">Total</th><th class="num">Ganancia</th><th class="num">Estado</th>${esAdmin()?'<th></th>':''}</tr></thead>
       <tbody>
@@ -2692,7 +2739,7 @@ function viewInventario(){
         ${state.categorias.map(c=>`<button class="btn btn-sm ${filtro===c.id?'btn-primary':'btn-outline'}" onclick="ui.filtroInv='${c.id}'; render()">${esc(c.nombre)}</button>`).join('')}
       </div>
     </div>
-    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarProductoInv)}" oninput="ui.buscarProductoInv=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input id="inpProdInv" placeholder="Buscar..." value="${esc(ui.buscarProductoInv)}" oninput="ui.buscarProductoInv=this.value; renderConservarFoco('inpProdInv')"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Producto</th><th>Categoría</th><th>Proveedor</th><th class="num">Saldo actual / inicial</th>${esAdmin()?'<th class="num">Costo</th>':''}<th class="num">Precio</th><th class="num">Margen</th><th class="num">Estado</th></tr></thead>
       <tbody>
@@ -2765,7 +2812,7 @@ function viewClientes(){
         <button class="filter-tab ${ui.filtroClientesCobrador==='vencidos'?'active':''}" onclick="ui.filtroClientesCobrador='vencidos'; render()">Vencidos</button>
         <button class="filter-tab ${ui.filtroClientesCobrador==='todos'?'active':''}" onclick="ui.filtroClientesCobrador='todos'; render()">Todos</button>
       </div>`:''}
-      <div class="search-wrap"><input placeholder="Buscar por nombre, teléfono o comunidad..." value="${esc(ui.buscarClienteLista)}" oninput="ui.buscarClienteLista=this.value; render(); this.focus()"></div>
+      <div class="search-wrap"><input id="inpClienteLista" placeholder="Buscar por nombre, teléfono o comunidad..." value="${esc(ui.buscarClienteLista)}" oninput="ui.buscarClienteLista=this.value; renderConservarFoco('inpClienteLista')"></div>
       ${filtrados.length===0?`<div class="card"><div class="empty">${state.clientes.length===0?'No hay clientes.':'Sin resultados.'}</div></div>`:''}
       ${filtrados.map(c=>{
         const deuda=deudaCliente(c.id);
@@ -2793,7 +2840,7 @@ function viewClientes(){
           <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
             ${deuda>0?`<button class="btn btn-success btn-sm" onclick="abrirModal('abono','${c.id}')">Registrar cobro</button>`:''}
             <button class="btn btn-outline btn-sm" onclick="toggleCliente('${c.id}')">${abierto?'Ocultar':'Ver historial'}</button>
-            ${esAdmin()?`<button class="btn-ghost" style="font-size:12px" onclick="abrirModal('editarCliente','${c.id}')">Editar</button>`:''}
+            ${esAdmin()?`<button class="btn btn-outline btn-sm" onclick="abrirModal('editarCliente','${c.id}')">Editar / + deuda</button>`:''}
           </div>
           ${abierto?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line-soft)">
             <div style="background:var(--surface-soft);border-radius:8px;padding:12px;margin-bottom:16px;border:1px solid var(--line-soft)">
@@ -2802,7 +2849,7 @@ function viewClientes(){
                 <span>Ventas a crédito pendientes (${pend.length})</span><b style="font-variant-numeric:tabular-nums">${money(deudaVentasCliente(c.id))}</b>
               </div>
               <div style="display:flex;justify-content:space-between;font-size:13px;padding:3px 0">
-                <span>Deuda inicial</span><b style="font-variant-numeric:tabular-nums">${money(deudaInicialCliente(c.id))}</b>
+                <span>Deuda vieja registrada</span><b style="font-variant-numeric:tabular-nums">${money(deudaInicialCliente(c.id))}</b>
               </div>
               <div style="display:flex;justify-content:space-between;font-size:14px;padding:8px 0 0;border-top:1px solid var(--line);margin-top:8px;color:var(--danger);font-weight:600">
                 <span>Saldo total</span><span style="font-variant-numeric:tabular-nums">${money(deuda)}</span>
@@ -2894,7 +2941,7 @@ function viewCobranzas(){
   </div>`:''}
   <div class="card">
     <div class="card-head"><div><div class="card-title">Historial de cobros</div><div class="card-subtitle">${lista.length} de ${mis.length} registro(s)</div></div></div>
-    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarCobranza)}" oninput="ui.buscarCobranza=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input id="inpCobranza" placeholder="Buscar..." value="${esc(ui.buscarCobranza)}" oninput="ui.buscarCobranza=this.value; renderConservarFoco('inpCobranza')"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th>${esAdmin()?'<th>Cobrador</th>':''}<th class="num">Entregado</th><th class="num">Aplicado</th><th class="num">Vuelta</th></tr></thead>
       <tbody>
@@ -2929,7 +2976,7 @@ function viewCompras(){
   <div class="grid-2">
     <div class="card">
       <div class="card-head"><div><div class="card-title">Productos</div><div class="card-subtitle">${prods.length} producto(s)</div></div></div>
-      <div class="search-wrap"><input placeholder="Buscar producto..." value="${esc(ui.buscarProdCompra)}" oninput="ui.buscarProdCompra=this.value; render(); this.focus()"></div>
+      <div class="search-wrap"><input id="inpProdCompra" placeholder="Buscar producto..." value="${esc(ui.buscarProdCompra)}" oninput="ui.buscarProdCompra=this.value; renderConservarFoco('inpProdCompra')"></div>
       <div class="prod-list">
         ${prods.length===0?'<div class="empty">Sin resultados.</div>':prods.map(p=>`
           <div class="prod-item" onclick="agregarAlCarritoCompra('${p.id}',1,${p.costo})">
@@ -2999,7 +3046,7 @@ function viewProductos(){
   <div class="card">
     <div class="card-head"><div><div class="card-title">Catálogo · ${prods.length} de ${state.productos.length}</div></div>
       <button class="btn btn-primary" onclick="abrirModal('nuevoProducto')">Nuevo producto</button></div>
-    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarProductoConfig)}" oninput="ui.buscarProductoConfig=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input id="inpProdConfig" placeholder="Buscar..." value="${esc(ui.buscarProductoConfig)}" oninput="ui.buscarProductoConfig=this.value; renderConservarFoco('inpProdConfig')"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Nombre</th><th>Tipo</th><th>Categoría</th><th>Proveedor</th><th class="num">Costo</th><th class="num">Precio/Nominal</th><th class="num">Stock/Bolsa</th><th></th></tr></thead>
       <tbody>
@@ -3037,7 +3084,7 @@ function viewCategorias(){
   <div class="card">
     <div class="card-head"><div><div class="card-title">Categorías · ${cats.length} de ${state.categorias.length}</div></div>
       <button class="btn btn-primary" onclick="abrirModal('nuevaCategoria')">Nueva categoría</button></div>
-    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarCategoria)}" oninput="ui.buscarCategoria=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input id="inpCategoria" placeholder="Buscar..." value="${esc(ui.buscarCategoria)}" oninput="ui.buscarCategoria=this.value; renderConservarFoco('inpCategoria')"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Nombre</th><th class="num">Productos</th><th></th></tr></thead>
       <tbody>${cats.map(c=>{
@@ -3064,7 +3111,7 @@ function viewProveedores(){
   <div class="card">
     <div class="card-head"><div><div class="card-title">Proveedores · ${provs.length} de ${state.proveedores.length}</div></div>
       <button class="btn btn-primary" onclick="abrirModal('nuevoProveedor')">Nuevo proveedor</button></div>
-    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarProveedor)}" oninput="ui.buscarProveedor=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input id="inpProveedor" placeholder="Buscar..." value="${esc(ui.buscarProveedor)}" oninput="ui.buscarProveedor=this.value; renderConservarFoco('inpProveedor')"></div>
     <div class="table-wrap"><table>
       <thead><tr><th>Nombre</th><th>Notas</th><th class="num">Saldo bolsa</th><th class="num">Bonif.</th><th class="num">Recargas</th><th></th></tr></thead>
       <tbody>${provs.map(p=>{
@@ -3105,7 +3152,7 @@ function viewUsuarios(){
   <div class="card">
     <div class="card-head"><div><div class="card-title">Usuarios · ${usuarios.length} de ${state.usuarios.length}</div></div>
       <button class="btn btn-primary" onclick="abrirModal('nuevoUsuario')">Nuevo usuario</button></div>
-    <div class="search-wrap"><input placeholder="Buscar..." value="${esc(ui.buscarUsuario)}" oninput="ui.buscarUsuario=this.value; render(); this.focus()"></div>
+    <div class="search-wrap"><input id="inpUsuario" placeholder="Buscar..." value="${esc(ui.buscarUsuario)}" oninput="ui.buscarUsuario=this.value; renderConservarFoco('inpUsuario')"></div>
     ${usuarios.map(u=>{
       const esElActual=u.id===usuarioActual.id;
       const rolLbl=u.rol==='admin'?'Administrador':u.rol==='cajero'?'Cajero':'Cobrador';
