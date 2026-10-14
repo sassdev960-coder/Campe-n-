@@ -6,40 +6,28 @@
 <meta name="theme-color" content="#000000">
 <title>Motel</title>
 <style>
-/* =========================================================
-   TOKENS iOS
-   ========================================================= */
 :root{
-  --accent: #C8963E;
-  --accent-deep: #A87830;
-  --green: #34C759;
-  --red: #FF3B30;
-  --blue: #0A84FF;
-  --r-lg: 20px;
-  --r-md: 14px;
-  --r-sm: 10px;
-  --ease: cubic-bezier(.32,.72,0,1);
-  --safe-b: env(safe-area-inset-bottom, 0px);
-  --safe-t: env(safe-area-inset-top, 0px);
+  --accent:#C8963E; --accent-deep:#A87830;
+  --green:#34C759; --red:#FF3B30; --blue:#0A84FF;
+  --r-lg:20px; --r-md:14px; --r-sm:10px;
+  --ease:cubic-bezier(.32,.72,0,1);
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
 }
 html[data-theme="dark"]{
   --bg:#000; --bg-elev:#1C1C1E; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
-  --sep: rgba(84,84,88,.5);
-  --text:#fff; --text-2: rgba(235,235,245,.62); --text-3: rgba(235,235,245,.32);
-  --fill: rgba(120,120,128,.24);
-  --header-bg: rgba(0,0,0,.72);
-  --nav-bg: rgba(22,22,24,.78);
-  --overlay: rgba(0,0,0,.55);
+  --sep:rgba(84,84,88,.5);
+  --text:#fff; --text-2:rgba(235,235,245,.62); --text-3:rgba(235,235,245,.32);
+  --fill:rgba(120,120,128,.24);
+  --header-bg:rgba(0,0,0,.72); --nav-bg:rgba(22,22,24,.78); --overlay:rgba(0,0,0,.55);
   --accent-text:#151515;
 }
 html[data-theme="light"]{
   --bg:#F2F2F7; --bg-elev:#fff; --surface:#fff; --surface-2:#F2F2F7; --surface-3:#E5E5EA;
-  --sep: rgba(60,60,67,.13);
-  --text:#000; --text-2: rgba(60,60,67,.6); --text-3: rgba(60,60,67,.3);
-  --fill: rgba(120,120,128,.12);
-  --header-bg: rgba(242,242,247,.8);
-  --nav-bg: rgba(255,255,255,.78);
-  --overlay: rgba(0,0,0,.32);
+  --sep:rgba(60,60,67,.13);
+  --text:#000; --text-2:rgba(60,60,67,.6); --text-3:rgba(60,60,67,.3);
+  --fill:rgba(120,120,128,.12);
+  --header-bg:rgba(242,242,247,.8); --nav-bg:rgba(255,255,255,.78); --overlay:rgba(0,0,0,.32);
   --accent:#B8860B; --accent-deep:#8F6A08; --accent-text:#fff;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -47,18 +35,15 @@ html,body{height:100%}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   background:var(--bg); color:var(--text); font-size:16px; line-height:1.4;
-  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+  -webkit-font-smoothing:antialiased;
   overscroll-behavior-y:none;
-  transition:background .3s var(--ease), color .3s var(--ease);
+  transition:background .3s var(--ease),color .3s var(--ease);
 }
 button,input,select{font-family:inherit;font-size:inherit;color:inherit}
 button{border:none;background:none;cursor:pointer;padding:0}
 input,select{outline:none}
 input,select,button{-webkit-appearance:none;appearance:none}
 
-/* =========================================================
-   APP SHELL
-   ========================================================= */
 .app{max-width:520px;margin:0 auto;min-height:100vh;position:relative;padding-bottom:calc(84px + var(--safe-b))}
 .app-header{
   position:sticky;top:0;z-index:50;
@@ -92,9 +77,6 @@ input,select,button{-webkit-appearance:none;appearance:none}
 .page-title h1{font-size:32px;font-weight:700;letter-spacing:-.028em;line-height:1.1}
 .page-title p{font-size:13.5px;color:var(--text-2);margin-top:3px}
 
-/* =========================================================
-   TAB BAR
-   ========================================================= */
 .tabbar{
   position:fixed;bottom:0;left:50%;transform:translateX(-50%);
   width:100%;max-width:520px;z-index:60;
@@ -103,7 +85,6 @@ input,select,button{-webkit-appearance:none;appearance:none}
   backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);
   border-top:.5px solid var(--sep);
   display:grid;grid-template-columns:repeat(4,1fr);gap:2px;
-  transition:background .3s var(--ease);
 }
 .tab{
   display:flex;flex-direction:column;align-items:center;gap:2px;
@@ -116,15 +97,8 @@ input,select,button{-webkit-appearance:none;appearance:none}
 .tab.active svg{transform:translateY(-1px) scale(1.05)}
 .tab:active svg{transform:scale(.88)}
 
-/* =========================================================
-   STATS
-   ========================================================= */
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
-.stat{
-  background:var(--surface);border-radius:var(--r-lg);padding:15px 16px;
-  position:relative;overflow:hidden;
-  transition:background .3s var(--ease);
-}
+.stat{background:var(--surface);border-radius:var(--r-lg);padding:15px 16px;position:relative;overflow:hidden}
 .stat::after{content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--accent)}
 .stat .lbl{font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;font-weight:600;margin-bottom:6px}
 .stat .val{font-size:24px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
@@ -134,9 +108,7 @@ input,select,button{-webkit-appearance:none;appearance:none}
 .stat .val.c-blue{color:var(--blue)}
 .stat .val.c-muted{color:var(--text-2)}
 
-/* =========================================================
-   HABITACIONES
-   ========================================================= */
+/* ---------- HABITACIONES ---------- */
 .rooms-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .room{
   background:var(--surface);border-radius:var(--r-lg);padding:14px;
@@ -157,19 +129,33 @@ input,select,button{-webkit-appearance:none;appearance:none}
 .room-foot{margin-top:auto;padding-top:8px;font-size:14px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}
 .room-foot span{font-size:11px;color:var(--text-2);font-weight:500}
 
-/* Timer block en tarjeta */
+/* ---------- TIMER BLOCK ---------- */
 .timer-block{margin-top:8px;padding-top:9px;border-top:.5px solid var(--sep)}
-.timer-main{display:flex;align-items:baseline;gap:5px;margin-bottom:6px}
-.timer-val{font-size:18px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1}
-.timer-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-2)}
-.progress{width:100%;height:3px;background:var(--fill);border-radius:2px;overflow:hidden;margin-bottom:5px}
-.progress-fill{height:100%;border-radius:2px;transition:width 1s linear,background .4s;background:var(--green)}
+.timer-main{display:flex;align-items:baseline;gap:5px;margin-bottom:8px}
+.timer-val{font-size:19px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1;transition:color .3s}
+.timer-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;transition:color .3s}
+
+/* Barra que se vacía */
+.progress{
+  position:relative;
+  width:100%;height:6px;background:var(--fill);border-radius:3px;overflow:hidden;
+  margin-bottom:6px;
+}
+.progress-fill{
+  position:absolute; right:0; top:0; bottom:0;
+  border-radius:3px;
+  transition:width .6s linear,background .5s;
+  background:var(--green);
+}
+.progress-fill.warn{background:var(--accent)}
+.progress-fill.crit{background:var(--red)}
+.progress-fill.blink{animation:blinkBar .9s ease-in-out infinite}
+@keyframes blinkBar{0%,100%{opacity:1}50%{opacity:.35}}
+
 .timer-sub{font-size:10.5px;color:var(--text-2);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* =========================================================
-   LISTS / TABLES
-   ========================================================= */
-.group{background:var(--surface);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px;transition:background .3s var(--ease)}
+/* ---------- LISTS ---------- */
+.group{background:var(--surface);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px}
 .group-title{font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;padding:0 8px 8px}
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
@@ -182,18 +168,14 @@ td{padding:12px 14px;border-bottom:.5px solid var(--sep);vertical-align:middle}
 tbody tr:last-child td{border-bottom:none}
 .num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
 .empty{padding:40px 20px;text-align:center;color:var(--text-2);font-size:13.5px}
-
 .row-btn{
   font-size:12px;font-weight:600;padding:7px 12px;border-radius:9px;
   background:var(--fill);color:var(--accent);
   transition:transform .15s var(--ease);white-space:nowrap;
 }
 .row-btn:active{transform:scale(.93)}
-.row-btn.danger{color:var(--red)}
 
-/* =========================================================
-   BUTTONS
-   ========================================================= */
+/* ---------- BUTTONS ---------- */
 .btn{
   display:inline-flex;align-items:center;justify-content:center;gap:6px;
   padding:14px 20px;border-radius:var(--r-md);
@@ -204,15 +186,12 @@ tbody tr:last-child td{border-bottom:none}
 html[data-theme="light"] .btn{background:var(--fill)}
 .btn:active{transform:scale(.96);opacity:.85}
 .btn.primary{background:var(--accent);color:var(--accent-text)}
-.btn.ghost{background:transparent;color:var(--blue)}
 .btn.danger{background:rgba(255,59,48,.14);color:var(--red)}
 .btn.sm{padding:9px 14px;font-size:14px;border-radius:11px}
 .btn.block{width:100%}
 .fab-row{display:flex;justify-content:flex-end;margin-bottom:14px}
 
-/* =========================================================
-   FIELDS
-   ========================================================= */
+/* ---------- FIELDS ---------- */
 .field{margin-bottom:16px}
 .field > label{
   display:block;font-size:12px;font-weight:600;color:var(--text-2);
@@ -231,43 +210,53 @@ html[data-theme="light"] .field select{background:var(--bg-elev)}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .hint{font-size:13px;color:var(--text-2);padding:0 4px}
 
-/* =========================================================
-   TIME CAPTURE
-   ========================================================= */
+/* ---------- RELOJ VIVO ---------- */
 .time-capture{
   background:var(--surface);border-radius:var(--r-md);
-  padding:18px 16px;margin-bottom:18px;text-align:center;
+  padding:20px 16px;margin-bottom:18px;text-align:center;
   border:.5px solid var(--sep);
 }
 html[data-theme="light"] .time-capture{background:var(--bg)}
 .time-lbl-sm{
-  font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+  font-size:11px;text-transform:uppercase;letter-spacing:.08em;
   color:var(--text-2);font-weight:600;margin-bottom:6px;
 }
+/* Reloj vivo */
 .time-display{
-  font-size:40px;font-weight:700;letter-spacing:-.04em;
-  font-variant-numeric:tabular-nums;line-height:1;color:var(--text);
-  margin-bottom:14px;transition:color .3s;
+  font-size:48px;font-weight:700;letter-spacing:-.05em;
+  font-variant-numeric:tabular-nums;line-height:1;
+  color:var(--text);margin-bottom:4px;
+  font-feature-settings:"tnum";
 }
-.time-display.pulse{animation:pulseTime .55s var(--ease)}
-@keyframes pulseTime{
-  0%{transform:scale(1);color:var(--accent)}
-  40%{transform:scale(1.08);color:var(--accent)}
-  100%{transform:scale(1);color:var(--text)}
+.time-display .sec{
+  color:var(--accent);font-size:38px;
+  transition:transform .2s var(--ease);
+  display:inline-block;
 }
+.time-display .sec.tick{transform:translateY(-1px) scale(1.05)}
+.time-display.captured{color:var(--green)}
+
+.captured-info{
+  min-height:20px;font-size:12.5px;color:var(--text-2);
+  margin-bottom:12px;font-variant-numeric:tabular-nums;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  opacity:0;transition:opacity .3s;
+}
+.captured-info.show{opacity:1}
+.captured-info b{color:var(--green);font-weight:700}
+
 .time-btn{
-  width:100%;padding:12px 16px;
+  width:100%;padding:13px 16px;
   background:var(--accent);color:var(--accent-text);
-  border-radius:12px;font-size:14px;font-weight:600;
+  border-radius:12px;font-size:14.5px;font-weight:600;
   display:inline-flex;align-items:center;justify-content:center;gap:7px;
   transition:transform .12s var(--ease);
 }
 .time-btn:active{transform:scale(.96)}
 .time-btn svg{width:16px;height:16px}
+.time-btn.captured{background:rgba(52,199,89,.16);color:var(--green)}
 
-/* =========================================================
-   CHIPS (Tiempo pagado)
-   ========================================================= */
+/* ---------- CHIPS ---------- */
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
 .chip{
   padding:9px 16px;background:var(--surface);border-radius:20px;
@@ -279,13 +268,8 @@ html[data-theme="light"] .chip{background:var(--bg)}
 .chip.active{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
 .chip:active{transform:scale(.94)}
 
-/* =========================================================
-   BREAKDOWN (Desglose de cobro)
-   ========================================================= */
-.breakdown{
-  background:var(--surface);border-radius:var(--r-md);
-  padding:2px 14px;margin-bottom:16px;
-}
+/* ---------- BREAKDOWN ---------- */
+.breakdown{background:var(--surface);border-radius:var(--r-md);padding:2px 14px;margin-bottom:16px}
 html[data-theme="light"] .breakdown{background:var(--bg)}
 .bd-row{
   display:flex;justify-content:space-between;align-items:baseline;
@@ -297,9 +281,7 @@ html[data-theme="light"] .breakdown{background:var(--bg)}
 .bd-row.extra span:last-child{color:var(--accent)}
 .bd-row.extra span:first-child{color:var(--accent)}
 
-/* =========================================================
-   MODAL / SHEET
-   ========================================================= */
+/* ---------- SHEET ---------- */
 #modalRoot{position:fixed;inset:0;z-index:100;display:none}
 #modalRoot.open{display:block}
 .overlay{
@@ -337,14 +319,12 @@ html[data-theme="light"] .breakdown{background:var(--bg)}
 }
 .sheet-foot .btn{flex:1}
 
-/* Info grid */
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px}
 .info-grid > div{background:var(--surface);border-radius:var(--r-md);padding:11px 13px}
 html[data-theme="light"] .info-grid > div{background:var(--bg)}
 .info-grid span{display:block;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2);margin-bottom:3px}
 .info-grid b{font-size:14.5px;font-weight:600;font-variant-numeric:tabular-nums;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-/* Consumos */
 .cons-list{background:var(--surface);border-radius:var(--r-md);overflow:hidden;margin-bottom:14px}
 html[data-theme="light"] .cons-list{background:var(--bg)}
 .cons-item{
@@ -357,7 +337,6 @@ html[data-theme="light"] .cons-list{background:var(--bg)}
 .cons-item button{color:var(--text-3);font-size:14px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center}
 .cons-item button:active{background:var(--fill);color:var(--red)}
 
-/* Inline add */
 .inline-add{display:flex;gap:8px;margin-bottom:16px}
 .inline-add select{
   flex:1;padding:12px 14px;background:var(--surface);
@@ -371,7 +350,6 @@ html[data-theme="light"] .inline-add select{background:var(--bg)}
 }
 html[data-theme="light"] .inline-add input{background:var(--bg)}
 
-/* Total box */
 .total-box{
   display:flex;align-items:baseline;justify-content:space-between;
   padding:16px 18px;background:var(--surface);border-radius:var(--r-md);margin-top:6px;
@@ -380,20 +358,18 @@ html[data-theme="light"] .total-box{background:var(--bg)}
 .total-box span{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2)}
 .total-box b{font-size:26px;font-weight:700;letter-spacing:-.03em;color:var(--accent);font-variant-numeric:tabular-nums}
 
-/* Reports */
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .filters .field{margin-bottom:0}
 .quick-row{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
 .quick-row::-webkit-scrollbar{display:none}
 .quick-row .btn{flex-shrink:0}
 
-/* Toast */
 #toast{
   position:fixed;bottom:calc(100px + var(--safe-b));left:50%;
   transform:translateX(-50%) translateY(14px) scale(.96);
   background:var(--surface-3);color:var(--text);
   padding:11px 20px;border-radius:24px;
-  font-size:14px;font-weight:600;letter-spacing:-.01em;
+  font-size:14px;font-weight:600;
   z-index:200;opacity:0;pointer-events:none;
   transition:all .32s var(--ease);
   box-shadow:0 12px 40px rgba(0,0,0,.35);
@@ -402,7 +378,6 @@ html[data-theme="light"] .total-box{background:var(--bg)}
 html[data-theme="light"] #toast{background:rgba(30,30,32,.92);color:#fff}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
 
-/* Print */
 @media print{
   .no-print{display:none!important}
   .app{max-width:none;padding-bottom:0}
@@ -432,7 +407,6 @@ html[data-theme="light"] #toast{background:rgba(30,30,32,.92);color:#fff}
     <button class="icon-btn" id="themeToggle" aria-label="Cambiar tema"></button>
   </header>
 
-  <!-- PANEL -->
   <section id="panel" class="view active">
     <div class="page-title">
       <h1>Panel</h1>
@@ -450,7 +424,6 @@ html[data-theme="light"] #toast{background:rgba(30,30,32,.92);color:#fff}
     </div>
   </section>
 
-  <!-- HABITACIONES -->
   <section id="habitaciones" class="view">
     <div class="page-title">
       <h1>Habitaciones</h1>
@@ -459,7 +432,6 @@ html[data-theme="light"] #toast{background:rgba(30,30,32,.92);color:#fff}
     <div class="rooms-grid" id="roomGrid"></div>
   </section>
 
-  <!-- PRODUCTOS -->
   <section id="productos" class="view">
     <div class="page-title">
       <h1>Productos</h1>
@@ -478,7 +450,6 @@ html[data-theme="light"] #toast{background:rgba(30,30,32,.92);color:#fff}
     </div>
   </section>
 
-  <!-- REPORTES -->
   <section id="reportes" class="view">
     <div class="page-title no-print">
       <h1>Reportes</h1>
@@ -638,7 +609,6 @@ function load(){
 function save(){ localStorage.setItem(KEY, JSON.stringify(db)); }
 let db = load();
 
-// Migración suave
 (function migrate(){
   db.rooms.forEach(r => {
     if(!('credential' in r)) r.credential = '';
@@ -676,6 +646,7 @@ function openSheet(title, body, foot){
     </div>`;
   root.classList.add('open');
   document.body.style.overflow = 'hidden';
+  tickLiveClocks(); // refrescar de inmediato
 }
 function closeModal(){
   $('#modalRoot').classList.remove('open');
@@ -683,6 +654,61 @@ function closeModal(){
   document.body.style.overflow = '';
   ci = null; co = null;
 }
+
+/* =========================================================
+   RELOJ VIVO (dentro de los sheets)
+   Se actualiza cada segundo: HH:MM:SS con segundos destacados
+   ========================================================= */
+function renderLiveClock(ts){
+  const d = new Date(ts);
+  const hms = pad(d.getHours())+':'+pad(d.getMinutes());
+  const sec = pad(d.getSeconds());
+  return `${hms}:<span class="sec">${sec}</span>`;
+}
+
+function tickLiveClocks(){
+  const now = Date.now();
+
+  // Check-in: si NO se ha capturado, el reloj sigue vivo
+  const ciLive = document.getElementById('ciLiveClock');
+  if(ciLive){
+    if(ci && ci.captured){
+      // ya capturado → mostrar hora capturada congelada
+      const d = new Date(ci.entryTs);
+      ciLive.innerHTML = `${pad(d.getHours())}:${pad(d.getMinutes())}:<span class="sec">${pad(d.getSeconds())}</span>`;
+    } else {
+      ciLive.innerHTML = renderLiveClock(now);
+      // animar el segundero
+      const secEl = ciLive.querySelector('.sec');
+      if(secEl){
+        secEl.classList.remove('tick');
+        void secEl.offsetWidth;
+        secEl.classList.add('tick');
+      }
+    }
+  }
+
+  // Check-out: reloj vivo siempre (hasta que se capture)
+  const coLive = document.getElementById('coLiveClock');
+  if(coLive){
+    if(co && co.captured){
+      const d = new Date(co.exitTs);
+      coLive.innerHTML = `${pad(d.getHours())}:${pad(d.getMinutes())}:<span class="sec">${pad(d.getSeconds())}</span>`;
+    } else {
+      coLive.innerHTML = renderLiveClock(now);
+      const secEl = coLive.querySelector('.sec');
+      if(secEl){
+        secEl.classList.remove('tick');
+        void secEl.offsetWidth;
+        secEl.classList.add('tick');
+      }
+    }
+  }
+
+  // También actualiza los cronómetros de las tarjetas
+  updateTimers();
+}
+setInterval(tickLiveClocks, 1000);
 
 /* =========================================================
    HABITACIONES — RENDER
@@ -695,17 +721,21 @@ function timerHTML(r){
   const remaining = paidMs - elapsedMs;
   const pct = Math.min(100, Math.max(0, (elapsedMs / paidMs) * 100));
 
-  let display, label, color;
+  // La barra se VACÍA: empieza llena (100%) y va bajando
+  const barWidth = Math.max(0, 100 - pct);
+
+  let display, label, color, cls;
   if(remaining >= 0){
     display = fmtDur(remaining);
     label = 'restantes';
-    if(pct < 60) color = 'var(--green)';
-    else if(pct < 90) color = 'var(--accent)';
-    else color = 'var(--red)';
+    if(pct < 50){ color = 'var(--green)'; cls = ''; }
+    else if(pct < 80){ color = 'var(--accent)'; cls = 'warn'; }
+    else if(pct < 95){ color = 'var(--red)'; cls = 'crit'; }
+    else { color = 'var(--red)'; cls = 'crit blink'; }
   } else {
     display = '+' + fmtDur(-remaining);
     label = 'excedido';
-    color = 'var(--red)';
+    color = 'var(--red)'; cls = 'crit blink';
   }
 
   return `
@@ -714,7 +744,9 @@ function timerHTML(r){
         <span class="timer-val" style="color:${color}">${display}</span>
         <span class="timer-lbl" style="color:${color}">${label}</span>
       </div>
-      <div class="progress"><div class="progress-fill" data-timer-bar="${r.id}" style="width:${pct}%;background:${color}"></div></div>
+      <div class="progress">
+        <div class="progress-fill ${cls}" data-timer-bar="${r.id}" style="width:${barWidth}%"></div>
+      </div>
       <div class="timer-sub" data-timer-sub="${r.id}">${r.paidHours}h pagadas · ${money(r.rate)}/h</div>
     </div>`;
 }
@@ -752,13 +784,13 @@ function clickRoom(id){
 }
 
 /* =========================================================
-   CHECK-IN  (con captura de hora + tiempo pagado)
+   CHECK-IN
    ========================================================= */
 let ci = null;
 
 function openCheckIn(id){
   const r = db.rooms.find(x => x.id === id);
-  ci = { roomId: id, entryTs: Date.now(), paidHours: 2, rate: r.price };
+  ci = { roomId: id, entryTs: Date.now(), paidHours: 2, rate: r.price, captured: false };
   renderCheckInSheet();
 }
 
@@ -770,13 +802,17 @@ function renderCheckInSheet(){
 
   openSheet(`Habitación ${r.num}`, `
     <div class="time-capture">
-      <div class="time-lbl-sm">Hora de ingreso</div>
-      <div class="time-display" id="ciTimeDisplay">${timeStr(ci.entryTs)}</div>
-      <button class="time-btn" onclick="captureEntryTime()">
+      <div class="time-lbl-sm">Hora actual del dispositivo</div>
+      <div class="time-display" id="ciLiveClock">${renderLiveClock(ci.entryTs)}</div>
+      <div class="captured-info ${ci.captured?'show':''}" id="ciCapturedInfo">
+        <span>✓ Hora capturada:</span>
+        <b id="ciCapturedTime">${ci.captured ? timeStr(ci.entryTs) : '—'}</b>
+      </div>
+      <button class="time-btn ${ci.captured?'captured':''}" id="ciCaptureBtn" onclick="captureEntryTime()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/>
         </svg>
-        Capturar hora del dispositivo
+        <span id="ciCaptureLabel">${ci.captured ? 'Hora capturada' : 'Capturar esta hora'}</span>
       </button>
     </div>
 
@@ -842,13 +878,25 @@ function updateCiTotal(){
 
 function captureEntryTime(){
   ci.entryTs = Date.now();
-  const el = $('#ciTimeDisplay');
-  if(el){
-    el.textContent = timeStr(ci.entryTs);
-    el.classList.remove('pulse');
-    void el.offsetWidth;
-    el.classList.add('pulse');
+  ci.captured = true;
+
+  const infoEl = $('#ciCapturedInfo');
+  const timeEl = $('#ciCapturedTime');
+  const btn = $('#ciCaptureBtn');
+  const lbl = $('#ciCaptureLabel');
+
+  if(timeEl) timeEl.textContent = timeStr(ci.entryTs);
+  if(infoEl) infoEl.classList.add('show');
+  if(btn) btn.classList.add('captured');
+  if(lbl) lbl.textContent = 'Hora capturada';
+
+  // pulso visual en el reloj
+  const liveEl = $('#ciLiveClock');
+  if(liveEl){
+    liveEl.classList.add('captured');
+    setTimeout(()=>liveEl.classList.remove('captured'), 700);
   }
+  tickLiveClocks();
 }
 
 function doCheckIn(){
@@ -868,13 +916,13 @@ function doCheckIn(){
 }
 
 /* =========================================================
-   CHECK-OUT (con captura de hora + desglose)
+   CHECK-OUT
    ========================================================= */
 let co = null;
 
 function openCheckOut(id){
   const r = db.rooms.find(x => x.id === id);
-  co = { id, exitTs: Date.now(), charge: 0 };
+  co = { id, exitTs: Date.now(), charge: 0, captured: false };
   renderCheckOutSheet();
 }
 
@@ -883,7 +931,7 @@ function calcBill(r, exitTs){
   const elapsedMs = Math.max(0, exitTs - entryMs);
   const paidMs = (r.paidHours || 1) * 3600000;
   const extraMs = Math.max(0, elapsedMs - paidMs);
-  const extraBlocks = Math.ceil(extraMs / (30 * 60000)); // bloques de 30 min
+  const extraBlocks = Math.ceil(extraMs / (30 * 60000));
   const baseCharge = (r.paidHours || 1) * r.rate;
   const extraCharge = extraBlocks * (r.rate / 2);
   return { elapsedMs, paidMs, extraMs, extraBlocks, baseCharge, extraCharge, total: baseCharge + extraCharge };
@@ -921,13 +969,17 @@ function renderCheckOutSheet(){
 
   openSheet(`Salida · Hab. ${r.num}`, `
     <div class="time-capture">
-      <div class="time-lbl-sm">Hora de salida</div>
-      <div class="time-display" id="coTimeDisplay">${timeStr(co.exitTs)}</div>
-      <button class="time-btn" onclick="captureExitTime()">
+      <div class="time-lbl-sm">Hora actual del dispositivo</div>
+      <div class="time-display" id="coLiveClock">${renderLiveClock(co.exitTs)}</div>
+      <div class="captured-info ${co.captured?'show':''}" id="coCapturedInfo">
+        <span>✓ Hora capturada:</span>
+        <b id="coCapturedTime">${co.captured ? timeStr(co.exitTs) : '—'}</b>
+      </div>
+      <button class="time-btn ${co.captured?'captured':''}" id="coCaptureBtn" onclick="captureExitTime()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/>
         </svg>
-        Capturar hora del dispositivo
+        <span id="coCaptureLabel">${co.captured ? 'Hora capturada' : 'Capturar esta hora'}</span>
       </button>
     </div>
 
@@ -984,20 +1036,32 @@ function updateCoTotal(){
 
 function captureExitTime(){
   co.exitTs = Date.now();
-  const el = $('#coTimeDisplay');
-  if(el){
-    el.textContent = timeStr(co.exitTs);
-    el.classList.remove('pulse');
-    void el.offsetWidth;
-    el.classList.add('pulse');
+  co.captured = true;
+
+  const infoEl = $('#coCapturedInfo');
+  const timeEl = $('#coCapturedTime');
+  const btn = $('#coCaptureBtn');
+  const lbl = $('#coCaptureLabel');
+
+  if(timeEl) timeEl.textContent = timeStr(co.exitTs);
+  if(infoEl) infoEl.classList.add('show');
+  if(btn) btn.classList.add('captured');
+  if(lbl) lbl.textContent = 'Hora capturada';
+
+  const liveEl = $('#coLiveClock');
+  if(liveEl){
+    liveEl.classList.add('captured');
+    setTimeout(()=>liveEl.classList.remove('captured'), 700);
   }
-  // Recalcular desglose
+
+  // Recalcular desglose y actualizar importe
   const r = db.rooms.find(x => x.id === co.id);
   const bill = calcBill(r, co.exitTs);
   co.charge = bill.total;
   const inp = $('#coCharge');
   if(inp) inp.value = bill.total.toFixed(2);
   updateCoTotal();
+  tickLiveClocks();
 }
 
 function addConsumo(){
@@ -1024,7 +1088,6 @@ function doCheckOut(){
   const entryMs = new Date(r.checkIn).getTime();
   const durationStr = elapsed(co.exitTs - entryMs);
 
-  // Venta habitación
   const detailParts = [`Hab. ${r.num}`, durationStr];
   if(r.client) detailParts.push(r.client);
   if(r.credential) detailParts.push(r.credential);
@@ -1034,7 +1097,6 @@ function doCheckOut(){
     amount: co.charge, cost: 0
   });
 
-  // Consumos
   r.consumos.forEach(c => {
     db.sales.push({
       id: uid(), ts: iso, day: dayKey(iso), type: 'producto',
@@ -1047,7 +1109,6 @@ function doCheckOut(){
     });
   });
 
-  // Liberar
   Object.assign(r, {
     status:'libre', client:'', credential:'', notes:'',
     checkIn:null, paidHours:null, consumos:[], rate: r.price
@@ -1058,7 +1119,7 @@ function doCheckOut(){
 }
 
 /* =========================================================
-   TIMERS EN VIVO
+   TIMERS EN VIVO (barra que se vacía)
    ========================================================= */
 function updateTimers(){
   const now = Date.now();
@@ -1074,14 +1135,19 @@ function updateTimers(){
     const remaining = paidMs - elapsedMs;
     const pct = Math.min(100, Math.max(0, (elapsedMs / paidMs) * 100));
 
-    let display, label, color;
+    // La barra se VACÍA
+    const barWidth = Math.max(0, 100 - pct);
+
+    let display, label, color, cls;
     if(remaining >= 0){
       display = fmtDur(remaining); label = 'restantes';
-      if(pct < 60) color = 'var(--green)';
-      else if(pct < 90) color = 'var(--accent)';
-      else color = 'var(--red)';
+      if(pct < 50){ color = 'var(--green)'; cls = ''; }
+      else if(pct < 80){ color = 'var(--accent)'; cls = 'warn'; }
+      else if(pct < 95){ color = 'var(--red)'; cls = 'crit'; }
+      else { color = 'var(--red)'; cls = 'crit blink'; }
     } else {
-      display = '+' + fmtDur(-remaining); label = 'excedido'; color = 'var(--red)';
+      display = '+' + fmtDur(-remaining); label = 'excedido';
+      color = 'var(--red)'; cls = 'crit blink';
     }
 
     const vEl = main.querySelector('.timer-val');
@@ -1089,11 +1155,10 @@ function updateTimers(){
     if(vEl){ vEl.textContent = display; vEl.style.color = color; }
     if(lEl){ lEl.textContent = label; lEl.style.color = color; }
 
-    bar.style.width = pct + '%';
-    bar.style.background = color;
+    bar.style.width = barWidth + '%';
+    bar.className = 'progress-fill ' + cls;
   });
 }
-setInterval(updateTimers, 1000);
 
 /* =========================================================
    PRODUCTOS & KARDEX
@@ -1347,7 +1412,7 @@ function renderReports(){
 }
 
 /* =========================================================
-   RESPALDO (doble clic / long-press en logo)
+   RESPALDO
    ========================================================= */
 (function backupBind(){
   const brand = $('#brandLogo');
