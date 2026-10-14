@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motel · Gestión</title>
+<style>
+  :root{
+    --bg:#0e0e10; --surface:#16161a; --surface2:#1c1c21;
+    --border:#2a2a31; --text:#ededf0; --muted:#8b8b95;
+    --accent:#d4a24e; --accent-dim:#8b6a2a;
+    --green:#4ea87a; --red:#d4614e; --blue:#5b8fd4;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg); color:var(--text); font-size:14px; line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+  input,select{font-family:inherit}
+
+  /* ---------- Layout ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    display:flex; align-items:center; gap:24px;
+    padding:0 28px; height:66px;
+    background:rgba(14,14,16,.85); backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--border);
+  }
+  .brand{display:flex; align-items:baseline; gap:10px}
+  .brand h1{
+    font-size:17px; font-weight:600; letter-spacing:.32em;
+    color:var(--accent);
+  }
+  .brand .sub{font-size:11px; color:var(--muted); letter-spacing:.12em; text-transform:uppercase}
+  .tabs{display:flex; gap:4px; margin-left:auto}
+  .tabs button{
+    padding:8px 16px; border-radius:9px; font-size:13px; font-weight:500;
+    color:var(--muted); transition:.18s;
+  }
+  .tabs button:hover{color:var(--text); background:var(--surface2)}
+  .tabs button.active{color:var(--bg); background:var(--accent); font-weight:600}
+  .top-actions{display:flex; gap:6px}
+  .icon-btn{
+    width:34px; height:34px; border-radius:9px; border:1px solid var(--border);
+    display:grid; place-items:center; color:var(--muted); font-size:15px; transition:.18s;
+  }
+  .icon-btn:hover{color:var(--accent); border-color:var(--accent-dim)}
+
+  main{padding:28px; max-width:1360px; margin:0 auto}
+  .view{display:none; animation:fade .25s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+  .page-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; gap:16px; flex-wrap:wrap}
+  .page-head h2{font-size:20px; font-weight:600; letter-spacing:-.01em}
+  .page-head p{font-size:12.5px; color:var(--muted)}
+
+  /* ---------- Cards / Stats ---------- */
+  .stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; margin-bottom:26px}
+  .stat{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px 20px; position:relative; overflow:hidden;
+  }
+  .stat::before{
+    content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent); opacity:.85;
+  }
+  .stat .lbl{font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin-bottom:8px}
+  .stat .val{font-size:24px; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+  .stat .val.green{color:var(--green)}
+  .stat .val.accent{color:var(--accent)}
+  .stat .val.blue{color:var(--blue)}
+
+  /* ---------- Rooms ---------- */
+  .room-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:14px}
+  .room{
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    padding:16px; cursor:pointer; transition:.2s; position:relative; overflow:hidden;
+    min-height:132px; display:flex; flex-direction:column;
+  }
+  .room:hover{transform:translateY(-2px); border-color:var(--accent-dim); box-shadow:0 10px 30px -12px rgba(0,0,0,.7)}
+  .room.busy{border-color:rgba(212,97,78,.42); background:linear-gradient(160deg,#1d1518,var(--surface))}
+  .room.busy::after{content:''; position:absolute; inset:0; background:radial-gradient(circle at 100% 0%,rgba(212,97,78,.1),transparent 60%); pointer-events:none}
+  .room-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px}
+  .room-num{font-size:19px; font-weight:600; letter-spacing:.02em; font-variant-numeric:tabular-nums}
+  .badge{font-size:10px; text-transform:uppercase; letter-spacing:.08em; padding:3px 8px; border-radius:20px; font-weight:600}
+  .b-free{background:rgba(78,168,122,.13); color:var(--green)}
+  .b-busy{background:rgba(212,97,78,.15); color:var(--red)}
+  .room-cli{font-size:13.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .room-meta{font-size:11.5px; color:var(--muted); font-variant-numeric:tabular-nums}
+  .room-foot{margin-top:auto; padding-top:10px; font-size:12.5px; color:var(--accent); font-variant-numeric:tabular-nums}
+  .room-foot span{color:var(--muted); font-size:11px}
+
+  /* ---------- Tables / Lists ---------- */
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden}
+  table{width:100%; border-collapse:collapse; font-size:13.5px}
+  th{
+    text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.09em;
+    color:var(--muted); font-weight:600; padding:12px 16px; border-bottom:1px solid var(--border);
+    background:var(--surface2); white-space:nowrap;
+  }
+  td{padding:12px 16px; border-bottom:1px solid rgba(42,42,49,.6); vertical-align:middle}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:rgba(255,255,255,.017)}
+  .num{font-variant-numeric:tabular-nums; text-align:right}
+  .empty{padding:52px 20px; text-align:center; color:var(--muted); font-size:13px}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    padding:9px 17px; border-radius:9px; font-size:13px; font-weight:500;
+    border:1px solid var(--border); color:var(--text); transition:.18s; white-space:nowrap;
+  }
+  .btn:hover{background:var(--surface2); border-color:#3a3a44}
+  .btn.primary{background:var(--accent); color:#141414; border-color:var(--accent); font-weight:600}
+  .btn.primary:hover{background:#e0b25e}
+  .btn.danger{color:var(--red); border-color:rgba(212,97,78,.3)}
+  .btn.danger:hover{background:rgba(212,97,78,.1)}
+  .btn.mini{padding:5px 11px; font-size:11.5px; border-radius:7px}
+  .btn.ghost{border-color:transparent; color:var(--muted)}
+  .btn.ghost:hover{color:var(--text); background:var(--surface2)}
+
+  /* ---------- Forms ---------- */
+  label{display:block; font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:16px}
+  label input,label select{
+    display:block; width:100%; margin-top:7px; padding:10px 13px;
+    background:var(--surface2); border:1px solid var(--border); border-radius:9px;
+    color:var(--text); font-size:14px; text-transform:none; letter-spacing:normal;
+    transition:.18s; outline:none;
+  }
+  label input:focus,label select:focus{border-color:var(--accent-dim); background:#202027}
+  .hint{font-size:12px; color:var(--muted); margin-top:-4px}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+
+  /* ---------- Modal ---------- */
+  #modalRoot{position:fixed; inset:0; z-index:100; display:none}
+  #modalRoot.open{display:block}
+  .overlay{
+    position:absolute; inset:0; background:rgba(6,6,8,.78); backdrop-filter:blur(4px);
+    display:grid; place-items:center; padding:20px; animation:fade .18s;
+  }
+  .modal{
+    background:var(--surface); border:1px solid var(--border); border-radius:18px;
+    width:100%; max-width:480px; max-height:90vh; display:flex; flex-direction:column;
+    box-shadow:0 30px 80px -20px rgba(0,0,0,.9); animation:pop .22s cubic-bezier(.2,.9,.3,1.2);
+  }
+  @keyframes pop{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+  .modal-head{display:flex; align-items:center; justify-content:space-between; padding:20px 24px 0}
+  .modal-head h3{font-size:16px; font-weight:600; letter-spacing:-.01em}
+  .modal-head .x{color:var(--muted); font-size:16px; padding:4px 8px; border-radius:7px}
+  .modal-head .x:hover{color:var(--text); background:var(--surface2)}
+  .modal-body{padding:22px 24px; overflow-y:auto}
+  .modal-foot{display:flex; justify-content:flex-end; gap:10px; padding:0 24px 22px}
+
+  .info-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:20px}
+  .info-grid > div{background:var(--surface2); border-radius:10px; padding:11px 13px}
+  .info-grid span{display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:3px}
+  .info-grid b{font-size:13.5px; font-weight:600; font-variant-numeric:tabular-nums}
+
+  .cons-list{margin:6px 0 16px; border:1px solid var(--border); border-radius:11px; overflow:hidden}
+  .cons-item{display:flex; align-items:center; gap:10px; padding:9px 13px; font-size:13px; border-bottom:1px solid rgba(42,42,49,.6)}
+  .cons-item:last-child{border-bottom:none}
+  .cons-item .q{color:var(--muted); font-size:12px}
+  .cons-item .p{margin-left:auto; font-variant-numeric:tabular-nums; color:var(--accent)}
+  .cons-item button{color:var(--muted); font-size:14px; padding:0 4px}
+  .cons-item button:hover{color:var(--red)}
+
+  .total-box{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:15px 18px; background:var(--surface2); border-radius:11px; margin-top:6px;
+  }
+  .total-box span{font-size:12px; text-transform:uppercase; letter-spacing:.09em; color:var(--muted)}
+  .total-box b{font-size:24px; font-weight:600; color:var(--accent); font-variant-numeric:tabular-nums}
+
+  .inline-add{display:flex; gap:8px; margin-top:14px}
+  .inline-add select{flex:1; padding:9px 11px; background:var(--surface2); border:1px solid var(--border); border-radius:9px; color:var(--text); font-size:13px; outline:none}
+  .inline-add input{width:66px; padding:9px 10px; background:var(--surface2); border:1px solid var(--border); border-radius:9px; color:var(--text); font-size:13px; outline:none; text-align:center}
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(70px);
+    background:var(--accent); color:#141414; padding:11px 22px; border-radius:11px;
+    font-size:13px; font-weight:600; z-index:200; opacity:0; transition:.3s cubic-bezier(.2,.9,.3,1.2);
+    pointer-events:none; box-shadow:0 12px 34px -10px rgba(0,0,0,.7);
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  /* ---------- Report filters ---------- */
+  .filters{display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; margin-bottom:22px}
+  .filters label{margin-bottom:0; min-width:150px}
+  .filters label input{margin-top:6px; padding:9px 12px}
+
+  /* ---------- Print ---------- */
+  @media print{
+    .no-print{display:none !important}
+    body{background:#fff; color:#000; font-size:11.5px}
+    .view:not(.active){display:none !important}
+    main{padding:0; max-width:none}
+    .card{border:1px solid #d5d5d5; border-radius:6px; background:#fff}
+    .stat{background:#fff; border:1px solid #d5d5d5; break-inside:avoid}
+    .stat .lbl{color:#666}
+    .stat .val{color:#000 !important}
+    .stat::before{background:#b8860b}
+    th{background:#f2f2f2; color:#333; border-bottom:1px solid #ccc}
+    td{border-bottom:1px solid #e5e5e5; color:#000}
+    .page-head h2{font-size:16px}
+    .page-head p{color:#666}
+    .print-title{display:block !important; margin-bottom:14px}
+  }
+  .print-title{display:none}
+</style>
+</head>
+<body>
+
+<header class="topbar no-print">
+  <div class="brand">
+    <h1>MOTEL</h1>
+    <span class="sub">Gestión</span>
+  </div>
+  <nav class="tabs">
+    <button data-tab="panel" class="active">Panel</button>
+    <button data-tab="habitaciones">Habitaciones</button>
+    <button data-tab="productos">Productos</button>
+    <button data-tab="reportes">Reportes</button>
+  </nav>
+  <div class="top-actions">
+    <button class="icon-btn" id="btnBackup" title="Descargar respaldo">⇩</button>
+    <button class="icon-btn" id="btnRestore" title="Restaurar respaldo">⇧</button>
+  </div>
+</header>
+
+<main>
+  <!-- ============ PANEL ============ -->
+  <section id="panel" class="view active">
+    <div class="page-head">
+      <div>
+        <h2>Panel general</h2>
+        <p id="panelDate"></p>
+      </div>
+    </div>
+    <div class="stats" id="panelStats"></div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Hora</th><th>Tipo</th><th>Detalle</th><th class="num">Monto</th><th class="num">Utilidad</th></tr>
+        </thead>
+        <tbody id="panelRecent"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ HABITACIONES ============ -->
+  <section id="habitaciones" class="view">
+    <div class="page-head">
+      <div>
+        <h2>Habitaciones</h2>
+        <p>Toca una habitación para registrar ingreso o salida</p>
+      </div>
+      <div id="roomSummary" style="font-size:13px;color:var(--muted)"></div>
+    </div>
+    <div class="room-grid" id="roomGrid"></div>
+  </section>
+
+  <!-- ============ PRODUCTOS ============ -->
+  <section id="productos" class="view">
+    <div class="page-head">
+      <div>
+        <h2>Productos &amp; Kardex</h2>
+        <p>Control de inventario por producto</p>
+      </div>
+      <button class="btn primary" onclick="openNewProduct()">+ Nuevo producto</button>
+    </div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Producto</th><th class="num">Costo</th><th class="num">Precio</th><th class="num">Stock</th><th class="num">Margen</th><th style="text-align:right">Acciones</th></tr>
+        </thead>
+        <tbody id="prodBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ REPORTES ============ -->
+  <section id="reportes" class="view">
+    <div class="page-head no-print">
+      <div>
+        <h2>Reportes</h2>
+        <p>Registro diario, utilidad y movimientos por fecha</p>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn" onclick="setRange('hoy')">Hoy</button>
+        <button class="btn" onclick="setRange('semana')">7 días</button>
+        <button class="btn" onclick="setRange('mes')">Este mes</button>
+        <button class="btn primary" onclick="window.print()">🖨 Imprimir</button>
+      </div>
+    </div>
+
+    <div class="filters no-print">
+      <label>Desde<input type="date" id="repFrom"></label>
+      <label>Hasta<input type="date" id="repTo"></label>
+    </div>
+
+    <div class="print-title">
+      <h2 style="font-size:17px;letter-spacing:.2em;color:#b8860b">MOTEL · REPORTE</h2>
+      <p id="printRange" style="font-size:12px;color:#666;margin-bottom:14px"></p>
+    </div>
+
+    <div class="stats" id="repStats"></div>
+
+    <div class="card" style="margin-bottom:22px">
+      <table>
+        <thead>
+          <tr><th>Fecha</th><th class="num">Servicios</th><th class="num">Habitaciones</th><th class="num">Productos</th><th class="num">Ingreso total</th><th class="num">Utilidad</th></tr>
+        </thead>
+        <tbody id="repDaily"></tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size:14px;font-weight:600;margin-bottom:12px;letter-spacing:.02em">Detalle de movimientos</h3>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>Fecha / Hora</th><th>Tipo</th><th>Detalle</th><th class="num">Monto</th><th class="num">Costo</th><th class="num">Utilidad</th></tr>
+        </thead>
+        <tbody id="repDetail"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<div id="modalRoot"></div>
+<div id="toast"></div>
+
+<script>
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const pad = n => String(n).padStart(2,'0');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => 'Bs ' + (Number(n)||0).toFixed(2);
+
+const dayKey = d => { const x = new Date(d); return x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(x.getDate()); };
+const todayKey = () => dayKey(new Date());
+const fmtDate = k => { const [y,m,d] = k.split('-'); return `${d}/${m}/${y}`; };
+const fmtTime = iso => { const d = new Date(iso); return pad(d.getHours())+':'+pad(d.getMinutes()); };
+const fmtDateTime = iso => { const d = new Date(iso); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+
+function elapsed(ms){
+  if(ms < 0) ms = 0;
+  const totalMin = Math.floor(ms/60000);
+  const h = Math.floor(totalMin/60);
+  const m = totalMin % 60;
+  if(h === 0) return m + ' min';
+  return h + 'h ' + pad(m) + 'm';
+}
+
+function toast(msg){
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* =========================================================
+   BASE DE DATOS (localStorage)
+   ========================================================= */
+const KEY = 'motel_db_v1';
+
+function seed(){
+  return {
+    rooms: Array.from({length:10}, (_,i) => ({
+      id: 'r'+(i+1),
+      num: pad(i+1),
+      price: 60,          // tarifa por hora por defecto
+      rate: 60,           // tarifa aplicada en el ingreso actual
+      status: 'libre',
+      client: '',
+      notes: '',
+      checkIn: null,
+      consumos: []
+    })),
+    products: [],   // {id, name, price, cost}
+    movements: [],  // kardex: {id, productId, type, qty, unitCost, date, note}
+    sales: []       // {id, ts, day, type, detail, amount, cost}
+  };
+}
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ console.warn('Error al leer datos', e); }
+  return seed();
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(db)); }
+
+let db = load();
+
+/* =========================================================
+   NAVEGACIÓN
+   ========================================================= */
+$$('.tabs button').forEach(b => b.addEventListener('click', () => {
+  $$('.tabs button').forEach(x => x.classList.remove('active'));
+  $$('.view').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  $('#' + b.dataset.tab).classList.add('active');
+  if(b.dataset.tab === 'reportes') renderReports();
+}));
+
+/* =========================================================
+   MODAL GENÉRICO
+   ========================================================= */
+function openModal(title, body, foot){
+  const root = $('#modalRoot');
+  root.innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-head">
+          <h3>${title}</h3>
+          <button class="x" onclick="closeModal()">✕</button>
+        </div>
+        <div class="modal-body">${body}</div>
+        ${foot ? `<div class="modal-foot">${foot}</div>` : ''}
+      </div>
+    </div>`;
+  root.classList.add('open');
+}
+function closeModal(){
+  const root = $('#modalRoot');
+  root.classList.remove('open');
+  root.innerHTML = '';
+  co = null;
+}
+
+/* =========================================================
+   HABITACIONES
+   ========================================================= */
+function renderRooms(){
+  const grid = $('#roomGrid');
+  grid.innerHTML = db.rooms.map(r => {
+    const busy = r.status === 'ocupada';
+    return `
+      <div class="room ${busy?'busy':''}" onclick="clickRoom('${r.id}')">
+        <div class="room-top">
+          <span class="room-num">${r.num}</span>
+          <span class="badge ${busy?'b-busy':'b-free'}">${busy?'Ocupada':'Libre'}</span>
+        </div>
+        ${ busy ? `
+          <div class="room-cli">${esc(r.client || 'Sin nombre')}</div>
+          <div class="room-meta">Ingreso ${fmtTime(r.checkIn)}</div>
+          <div class="room-meta" data-since="${r.checkIn}">${elapsed(Date.now() - new Date(r.checkIn).getTime())}</div>
+          <div class="room-foot">${money(r.rate)} <span>/ hora</span></div>
+        ` : `
+          <div class="room-meta" style="margin-top:4px">Disponible</div>
+          <div class="room-foot">${money(r.price)} <span>/ hora</span></div>
+        `}
+      </div>`;
+  }).join('');
+
+  const libres = db.rooms.filter(r => r.status === 'libre').length;
+  const ocupadas = db.rooms.length - libres;
+  $('#roomSummary').innerHTML =
+    `<b style="color:var(--green)">${libres}</b> libres · <b style="color:var(--red)">${ocupadas}</b> ocupadas · ${db.rooms.length} total`;
+}
+
+function clickRoom(id){
+  const r = db.rooms.find(x => x.id === id);
+  if(!r) return;
+  r.status === 'ocupada' ? openCheckOut(id) : openCheckIn(id);
+}
+
+/* ---------- CHECK-IN ---------- */
+function openCheckIn(id){
+  const r = db.rooms.find(x => x.id === id);
+  openModal(`Ingreso · Habitación ${r.num}`, `
+    <label>Nombre del cliente (opcional)
+      <input id="ciClient" placeholder="Ej: Juan Pérez" autocomplete="off">
+    </label>
+    <label>Tarifa por hora (Bs)
+      <input id="ciRate" type="number" min="0" step="1" value="${r.price}">
+    </label>
+    <label>Notas
+      <input id="ciNotes" placeholder="Ej: placa, acompañante..." autocomplete="off">
+    </label>
+    <p class="hint">Hora de ingreso: <b style="color:var(--accent)">${fmtTime(new Date())}</b></p>
+  `, `
+    <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="doCheckIn('${id}')">Registrar ingreso</button>
+  `);
+  setTimeout(()=>{ const el = $('#ciClient'); if(el) el.focus(); }, 60);
+}
+
+function doCheckIn(id){
+  const r = db.rooms.find(x => x.id === id);
+  if(!r) return;
+  r.client  = $('#ciClient').value.trim();
+  r.rate    = Number($('#ciRate').value) || r.price;
+  r.notes   = $('#ciNotes').value.trim();
+  r.checkIn = new Date().toISOString();
+  r.status  = 'ocupada';
+  r.consumos = [];
+  save(); closeModal(); renderAll();
+  toast(`Habitación ${r.num} ocupada`);
+}
+
+/* ---------- CHECK-OUT ---------- */
+let co = null; // estado temporal del checkout
+
+function openCheckOut(id){
+  const r = db.rooms.find(x => x.id === id);
+  const ms = Date.now() - new Date(r.checkIn).getTime();
+  const hrs = Math.max(1, Math.ceil(ms / 3600000));
+  co = { id, hrs, charge: hrs * r.rate };
+  renderCheckout();
+}
+
+function renderCheckout(){
+  const r = db.rooms.find(x => x.id === co.id);
+  const ms = Date.now() - new Date(r.checkIn).getTime();
+  const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+  const total = co.charge + consTotal;
+
+  const prodOpts = db.products
+    .filter(p => stockOf(p.id) > 0)
+    .map(p => `<option value="${p.id}">${esc(p.name)} — ${money(p.price)}</option>`).join('');
+
+  const consHTML = r.consumos.length
+    ? `<div class="cons-list">${r.consumos.map((c,i) => `
+        <div class="cons-item">
+          <span>${esc(c.name)}</span>
+          <span class="q">x${c.qty}</span>
+          <span class="p">${money(c.price*c.qty)}</span>
+          <button onclick="delConsumo(${i})" title="Quitar">✕</button>
+        </div>`).join('')}</div>`
+    : `<p class="hint" style="margin:0 0 16px">Sin consumos cargados.</p>`;
+
+  openModal(`Salida · Habitación ${r.num}`, `
+    <div class="info-grid">
+      <div><span>Cliente</span><b>${esc(r.client || '—')}</b></div>
+      <div><span>Tiempo</span><b>${elapsed(ms)}</b></div>
+      <div><span>Ingreso</span><b>${fmtTime(r.checkIn)}</b></div>
+      <div><span>Tarifa</span><b>${money(r.rate)}/h</b></div>
+    </div>
+
+    <label>Importe de habitación (Bs · ${co.hrs} h)
+      <input id="coCharge" type="number" min="0" step="1" value="${co.charge}"
+             oninput="co.charge = Number(this.value)||0; updateCoTotal()">
+    </label>
+
+    <div style="font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Consumos</div>
+    ${consHTML}
+
+    ${ prodOpts ? `
+      <div class="inline-add">
+        <select id="coProd">${prodOpts}</select>
+        <input id="coQty" type="number" min="1" value="1">
+        <button class="btn" onclick="addConsumo()">+ Añadir</button>
+      </div>` : `<p class="hint">No hay productos con stock disponible.</p>` }
+
+    <div class="total-box">
+      <span>Total a cobrar</span>
+      <b id="coTotal">${money(total)}</b>
+    </div>
+  `, `
+    <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="doCheckOut()">Registrar salida</button>
+  `);
+}
+
+function updateCoTotal(){
+  const r = db.rooms.find(x => x.id === co.id);
+  const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+  const el = $('#coTotal');
+  if(el) el.textContent = money(co.charge + consTotal);
+}
+
+function addConsumo(){
+  const r = db.rooms.find(x => x.id === co.id);
+  const pid = $('#coProd').value;
+  const qty = Math.max(1, Number($('#coQty').value) || 1);
+  const p = db.products.find(x => x.id === pid);
+  if(!p) return;
+  if(qty > stockOf(pid)){ toast('Stock insuficiente'); return; }
+
+  const exist = r.consumos.find(c => c.productId === pid);
+  if(exist) exist.qty += qty;
+  else r.consumos.push({ productId: pid, name: p.name, qty, price: p.price, cost: p.cost });
+
+  renderCheckout();
+}
+
+function delConsumo(i){
+  const r = db.rooms.find(x => x.id === co.id);
+  r.consumos.splice(i,1);
+  renderCheckout();
+}
+
+function doCheckOut(){
+  const r = db.rooms.find(x => x.id === co.id);
+  const ms = Date.now() - new Date(r.checkIn).getTime();
+  const now = new Date().toISOString();
+
+  // Venta de habitación
+  db.sales.push({
+    id: uid(), ts: now, day: dayKey(now), type: 'habitacion',
+    detail: `Hab. ${r.num} · ${elapsed(ms)}${r.client ? ' · ' + r.client : ''}`,
+    amount: co.charge, cost: 0
+  });
+
+  // Consumos → ventas + kardex
+  r.consumos.forEach(c => {
+    db.sales.push({
+      id: uid(), ts: now, day: dayKey(now), type: 'producto',
+      detail: `${c.name} x${c.qty} · Hab. ${r.num}`,
+      amount: c.price * c.qty, cost: c.cost * c.qty
+    });
+    db.movements.push({
+      id: uid(), productId: c.productId, type: 'venta', qty: c.qty,
+      unitCost: c.cost, date: now, note: `Venta · Hab. ${r.num}`
+    });
+  });
+
+  // Liberar habitación
+  r.status = 'libre';
+  r.client = '';
+  r.notes = '';
+  r.checkIn = null;
+  r.consumos = [];
+  r.rate = r.price;
+
+  save(); closeModal(); renderAll();
+  toast(`Habitación ${r.num} liberada`);
+}
+
+/* =========================================================
+   PRODUCTOS Y KARDEX
+   ========================================================= */
+function stockOf(pid){
+  return db.movements
+    .filter(m => m.productId === pid)
+    .reduce((a,m) => m.type === 'entrada' ? a + m.qty : a - m.qty, 0);
+}
+
+function renderProducts(){
+  const body = $('#prodBody');
+  if(!db.products.length){
+    body.innerHTML = `<tr><td colspan="6" class="empty">Sin productos registrados. Agrega el primero para comenzar el kardex.</td></tr>`;
+    return;
+  }
+  body.innerHTML = db.products.map(p => {
+    const st = stockOf(p.id);
+    const margen = p.price - p.cost;
+    const bajo = st <= 3;
+    return `
+      <tr>
+        <td><b style="font-weight:500">${esc(p.name)}</b></td>
+        <td class="num" style="color:var(--muted)">${money(p.cost)}</td>
+        <td class="num">${money(p.price)}</td>
+        <td class="num" style="color:${bajo?'var(--red)':'var(--green)'};font-weight:600">${st}</td>
+        <td class="num" style="color:var(--accent)">${money(margen)}</td>
+        <td style="text-align:right;white-space:nowrap">
+          <button class="btn mini" onclick="openEntrada('${p.id}')">Entrada</button>
+          <button class="btn mini" onclick="openSalida('${p.id}')">Salida</button>
+          <button class="btn mini" onclick="openKardex('${p.id}')">Kardex</button>
+          <button class="btn mini danger" onclick="delProduct('${p.id}')">✕</button>
+        </td>
+      </tr>`;
+  }).join('');
+}
+
+function openNewProduct(){
+  openModal('Nuevo producto', `
+    <label>Nombre
+      <input id="npName" placeholder="Ej: Cerveza Paceña" autocomplete="off">
+    </label>
+    <div class="row2">
+      <label>Costo (Bs)
+        <input id="npCost" type="number" min="0" step="0.5" value="0">
+      </label>
+      <label>Precio venta (Bs)
+        <input id="npPrice" type="number" min="0" step="0.5" value="0">
+      </label>
+    </div>
+    <label>Stock inicial
+      <input id="npStock" type="number" min="0" step="1" value="0">
+    </label>
+  `, `
+    <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="saveNewProduct()">Guardar</button>
+  `);
+  setTimeout(()=>$('#npName').focus(), 60);
+}
+
+function saveNewProduct(){
+  const name = $('#npName').value.trim();
+  if(!name){ toast('Ingresa un nombre'); return; }
+  const p = {
+    id: uid(), name,
+    cost: Number($('#npCost').value) || 0,
+    price: Number($('#npPrice').value) || 0
+  };
+  db.products.push(p);
+  const st = Number($('#npStock').value) || 0;
+  if(st > 0){
+    db.movements.push({
+      id: uid(), productId: p.id, type: 'entrada', qty: st,
+      unitCost: p.cost, date: new Date().toISOString(), note: 'Stock inicial'
+    });
+  }
+  save(); closeModal(); renderAll();
+  toast('Producto creado');
+}
+
+function delProduct(id){
+  const p = db.products.find(x => x.id === id);
+  if(!confirm(`¿Eliminar "${p.name}" y todo su kardex?`)) return;
+  db.products = db.products.filter(x => x.id !== id);
+  db.movements = db.movements.filter(m => m.productId !== id);
+  save(); renderAll();
+  toast('Producto eliminado');
+}
+
+function openEntrada(id){
+  const p = db.products.find(x => x.id === id);
+  openModal(`Entrada · ${esc(p.name)}`, `
+    <label>Cantidad
+      <input id="enQty" type="number" min="1" step="1" value="1">
+    </label>
+    <label>Costo unitario (Bs)
+      <input id="enCost" type="number" min="0" step="0.5" value="${p.cost}">
+    </label>
+    <label>Nota
+      <input id="enNote" placeholder="Ej: Compra proveedor" autocomplete="off">
+    </label>
+    <p class="hint">Stock actual: <b style="color:var(--accent)">${stockOf(id)}</b></p>
+  `, `
+    <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="doEntrada('${id}')">Registrar entrada</button>
+  `);
+  setTimeout(()=>$('#enQty').select(), 60);
+}
+
+function doEntrada(id){
+  const qty = Math.max(1, Number($('#enQty').value) || 1);
+  const cost = Number($('#enCost').value) || 0;
+  const note = $('#enNote').value.trim() || 'Entrada';
+  db.movements.push({
+    id: uid(), productId: id, type: 'entrada', qty,
+    unitCost: cost, date: new Date().toISOString(), note
+  });
+  const p = db.products.find(x => x.id === id);
+  if(cost > 0) p.cost = cost;
+  save(); closeModal(); renderAll();
+  toast(`+${qty} en stock`);
+}
+
+function openSalida(id){
+  const p = db.products.find(x => x.id === id);
+  openModal(`Salida · ${esc(p.name)}`, `
+    <label>Cantidad
+      <input id="saQty" type="number" min="1" step="1" value="1">
+    </label>
+    <label>Motivo
+      <input id="saNote" placeholder="Ej: Merma, consumo interno" autocomplete="off">
+    </label>
+    <p class="hint">Stock disponible: <b style="color:var(--accent)">${stockOf(id)}</b></p>
+  `, `
+    <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+    <button class="btn primary" onclick="doSalida('${id}')">Registrar salida</button>
+  `);
+  setTimeout(()=>$('#saQty').select(), 60);
+}
+
+function doSalida(id){
+  const qty = Math.max(1, Number($('#saQty').value) || 1);
+  if(qty > stockOf(id)){ toast('Stock insuficiente'); return; }
+  const note = $('#saNote').value.trim() || 'Salida';
+  const p = db.products.find(x => x.id === id);
+  db.movements.push({
+    id: uid(), productId: id, type: 'salida', qty,
+    unitCost: p.cost, date: new Date().toISOString(), note
+  });
+  save(); closeModal(); renderAll();
+  toast(`-${qty} del stock`);
+}
+
+function openKardex(id){
+  const p = db.products.find(x => x.id === id);
+  const movs = db.movements
+    .filter(m => m.productId === id)
+    .sort((a,b) => new Date(a.date) - new Date(b.date));
+
+  let balance = 0;
+  const rows = movs.map(m => {
+    balance += m.type === 'entrada' ? m.qty : -m.qty;
+    const label = { entrada:'Entrada', salida:'Salida', venta:'Venta' }[m.type];
+    const color = m.type === 'entrada' ? 'var(--green)' : 'var(--red)';
+    const sign = m.type === 'entrada' ? '+' : '−';
+    return `<tr>
+      <td style="white-space:nowrap;color:var(--muted);font-size:12px">${fmtDateTime(m.date)}</td>
+      <td><span style="color:${color};font-weight:600">${label}</span></td>
+      <td class="num" style="color:${color}">${sign}${m.qty}</td>
+      <td class="num" style="font-weight:600">${balance}</td>
+      <td style="color:var(--muted);font-size:12px">${esc(m.note||'')}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="5" class="empty">Sin movimientos</td></tr>`;
+
+  openModal(`Kardex · ${esc(p.name)}`, `
+    <div class="info-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div><span>Stock</span><b>${stockOf(id)}</b></div>
+      <div><span>Costo</span><b>${money(p.cost)}</b></div>
+      <div><span>Precio</span><b>${money(p.price)}</b></div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:11px;overflow:hidden">
+      <table style="font-size:12.5px">
+        <thead><tr><th>Fecha</th><th>Tipo</th><th class="num">Cant.</th><th class="num">Saldo</th><th>Nota</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `, `<button class="btn" onclick="closeModal()">Cerrar</button>`);
+}
+
+/* =========================================================
+   PANEL
+   ========================================================= */
+function renderPanel(){
+  const hoy = todayKey();
+  const ventasHoy = db.sales.filter(s => s.day === hoy);
+  const ingresoHoy = ventasHoy.reduce((a,s) => a + s.amount, 0);
+  const utilidadHoy = ventasHoy.reduce((a,s) => a + (s.amount - s.cost), 0);
+
+  const libres = db.rooms.filter(r => r.status === 'libre').length;
+  const ocupadas = db.rooms.length - libres;
+
+  const d = new Date();
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  $('#panelDate').textContent = `${dias[d.getDay()]}, ${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
+
+  $('#panelStats').innerHTML = `
+    <div class="stat"><div class="lbl">Habitaciones libres</div><div class="val green">${libres}</div></div>
+    <div class="stat"><div class="lbl">Habitaciones ocupadas</div><div class="val" style="color:var(--red)">${ocupadas}</div></div>
+    <div class="stat"><div class="lbl">Ingresos de hoy</div><div class="val accent">${money(ingresoHoy)}</div></div>
+    <div class="stat"><div class="lbl">Utilidad de hoy</div><div class="val blue">${money(utilidadHoy)}</div></div>
+  `;
+
+  const recent = [...db.sales].sort((a,b) => new Date(b.ts) - new Date(a.ts)).slice(0,8);
+  $('#panelRecent').innerHTML = recent.length
+    ? recent.map(s => `
+        <tr>
+          <td style="color:var(--muted);font-size:12.5px">${fmtTime(s.ts)}</td>
+          <td><span class="badge ${s.type==='habitacion'?'b-free':'b-busy'}" style="background:rgba(212,162,78,.13);color:var(--accent)">${s.type}</span></td>
+          <td>${esc(s.detail)}</td>
+          <td class="num">${money(s.amount)}</td>
+          <td class="num" style="color:var(--green)">${money(s.amount - s.cost)}</td>
+        </tr>`).join('')
+    : `<tr><td colspan="5" class="empty">Aún no hay movimientos registrados.</td></tr>`;
+}
+
+/* =========================================================
+   REPORTES
+   ========================================================= */
+function initReportDates(){
+  if(!$('#repFrom').value){
+    const d = new Date();
+    d.setDate(1);
+    $('#repFrom').value = dayKey(d);
+    $('#repTo').value = todayKey();
+  }
+  $('#repFrom').onchange = renderReports;
+  $('#repTo').onchange = renderReports;
+}
+
+function setRange(kind){
+  const to = new Date();
+  const from = new Date();
+  if(kind === 'semana') from.setDate(to.getDate() - 6);
+  if(kind === 'mes'){ from.setDate(1); }
+  $('#repFrom').value = dayKey(from);
+  $('#repTo').value = dayKey(to);
+  renderReports();
+}
+
+function renderReports(){
+  initReportDates();
+  const from = $('#repFrom').value;
+  const to = $('#repTo').value;
+
+  const list = db.sales
+    .filter(s => s.day >= from && s.day <= to)
+    .sort((a,b) => new Date(b.ts) - new Date(a.ts));
+
+  const ingresos = list.reduce((a,s) => a + s.amount, 0);
+  const costos   = list.reduce((a,s) => a + s.cost, 0);
+  const utilidad = ingresos - costos;
+  const hab = list.filter(s => s.type === 'habitacion').reduce((a,s) => a + s.amount, 0);
+  const prod = list.filter(s => s.type === 'producto').reduce((a,s) => a + s.amount, 0);
+
+  $('#printRange').textContent = `Del ${fmtDate(from)} al ${fmtDate(to)}`;
+
+  $('#repStats').innerHTML = `
+    <div class="stat"><div class="lbl">Ingresos totales</div><div class="val accent">${money(ingresos)}</div></div>
+    <div class="stat"><div class="lbl">Habitaciones</div><div class="val">${money(hab)}</div></div>
+    <div class="stat"><div class="lbl">Productos</div><div class="val">${money(prod)}</div></div>
+    <div class="stat"><div class="lbl">Costo de productos</div><div class="val" style="color:var(--muted)">${money(costos)}</div></div>
+    <div class="stat"><div class="lbl">Utilidad neta</div><div class="val green">${money(utilidad)}</div></div>
+  `;
+
+  // Agrupar por día
+  const byDay = {};
+  list.forEach(s => {
+    if(!byDay[s.day]) byDay[s.day] = { n:0, hab:0, prod:0, total:0, util:0 };
+    const d = byDay[s.day];
+    d.n++;
+    if(s.type === 'habitacion') d.hab += s.amount; else d.prod += s.amount;
+    d.total += s.amount;
+    d.util  += s.amount - s.cost;
+  });
+
+  const days = Object.keys(byDay).sort().reverse();
+  $('#repDaily').innerHTML = days.length
+    ? days.map(k => {
+        const d = byDay[k];
+        return `<tr>
+          <td><b style="font-weight:500">${fmtDate(k)}</b></td>
+          <td class="num">${d.n}</td>
+          <td class="num">${money(d.hab)}</td>
+          <td class="num">${money(d.prod)}</td>
+          <td class="num" style="font-weight:600">${money(d.total)}</td>
+          <td class="num" style="color:var(--green);font-weight:600">${money(d.util)}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="6" class="empty">Sin registros en este rango de fechas.</td></tr>`;
+
+  $('#repDetail').innerHTML = list.length
+    ? list.slice(0,300).map(s => `
+        <tr>
+          <td style="white-space:nowrap;color:var(--muted);font-size:12.5px">${fmtDateTime(s.ts)}</td>
+          <td><span style="color:var(--accent);font-size:12px;text-transform:capitalize">${s.type}</span></td>
+          <td>${esc(s.detail)}</td>
+          <td class="num">${money(s.amount)}</td>
+          <td class="num" style="color:var(--muted)">${money(s.cost)}</td>
+          <td class="num" style="color:var(--green)">${money(s.amount - s.cost)}</td>
+        </tr>`).join('')
+    : `<tr><td colspan="6" class="empty">Sin movimientos.</td></tr>`;
+}
+
+/* =========================================================
+   RESPALDO
+   ========================================================= */
+$('#btnBackup').onclick = () => {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `motel-respaldo-${todayKey()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Respaldo descargado');
+};
+
+$('#btnRestore').onclick = () => {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.json';
+  inp.onchange = e => {
+    const f = e.target.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try{
+        const data = JSON.parse(ev.target.result);
+        if(!data.rooms || !data.sales) throw new Error('formato');
+        if(!confirm('Esto reemplazará todos los datos actuales. ¿Continuar?')) return;
+        db = data;
+        save(); renderAll();
+        toast('Datos restaurados');
+      }catch(err){ toast('Archivo inválido'); }
+    };
+    reader.readAsText(f);
+  };
+  inp.click();
+};
+
+/* =========================================================
+   RENDER GLOBAL
+   ========================================================= */
+function renderAll(){
+  renderRooms();
+  renderProducts();
+  renderPanel();
+  renderReports();
+}
+
+// Actualiza cronómetros en vivo
+setInterval(() => {
+  $$('[data-since]').forEach(el => {
+    el.textContent = elapsed(Date.now() - new Date(el.dataset.since).getTime());
+  });
+}, 30000);
+
+// Atajos de teclado
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') closeModal();
+});
+
+// Arranque
+renderAll();
+</script>
+</body>
+</html>
