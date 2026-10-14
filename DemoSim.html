@@ -1062,12 +1062,9 @@ function modalCliente(id){
 
     ${!c ? `
       <div class="field" style="background:var(--info-soft);padding:14px;border-radius:10px;border:1px solid #d1e0ec;margin-top:8px">
-        <label style="color:#0e2b45">Deuda inicial (Bs) — opcional</label>
+        <label style="color:#0e2b45">Deuda inicial (Bs)</label>
         <div class="money-input-wrap"><input id="m-cli-deuda-inicial" type="number" step="0.01" min="0" value="0" placeholder="0.00"></div>
-        <div class="hint" style="color:#183a56">
-          Si este cliente <b>ya te debía plata antes</b> de usar el sistema, ponlo aquí.
-          Si es un cliente nuevo que nunca te debió nada, deja 0.
-        </div>
+        
       </div>
     ` : `
       <div style="background:var(--surface-soft);border-radius:10px;padding:14px;border:1px solid var(--line-soft);margin-top:8px">
