@@ -14,10 +14,6 @@
   --safe-b:env(safe-area-inset-bottom,0px);
   --safe-t:env(safe-area-inset-top,0px);
 }
-
-/* =========================================================
-   TEMA OSCURO
-   ========================================================= */
 html[data-theme="dark"]{
   --bg:#000; --bg-elev:#1C1C1E; --surface:#1C1C1E; --surface-2:#2C2C2E; --surface-3:#3A3A3C;
   --sep:rgba(84,84,88,.5);
@@ -34,11 +30,9 @@ html[data-theme="dark"]{
   --shadow-header: 0 1px 0 rgba(84,84,88,.5);
   --amount-bg: rgba(120,120,128,.22);
   --input-bg: #2C2C2E;
+  --prod-btn-glow: 0 8px 24px rgba(200,150,62,.45);
+  --prod-btn-bg: linear-gradient(140deg, #D4A24E, #A87830);
 }
-
-/* =========================================================
-   TEMA CLARO — con contraste real
-   ========================================================= */
 html[data-theme="light"]{
   --bg:#F2F2F7; --bg-elev:#FFFFFF; --surface:#FFFFFF; --surface-2:#E8E8ED; --surface-3:#D8D8DD;
   --sep:rgba(60,60,67,.15);
@@ -57,123 +51,44 @@ html[data-theme="light"]{
   --shadow-header: 0 1px 0 rgba(60,60,67,.12);
   --amount-bg: rgba(120,120,128,.09);
   --input-bg: #FFFFFF;
+  --prod-btn-glow: 0 8px 22px rgba(184,134,11,.35);
+  --prod-btn-bg: linear-gradient(140deg, #D4A24E, #B8860B);
 }
-
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{
-  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  background:var(--bg); color:var(--text); font-size:16px; line-height:1.4;
-  -webkit-font-smoothing:antialiased; overscroll-behavior-y:none;
-  transition:background .3s var(--ease),color .3s var(--ease);
-}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:16px;line-height:1.4;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;transition:background .3s var(--ease),color .3s var(--ease)}
 button,input,select{font-family:inherit;font-size:inherit;color:inherit}
 button{border:none;background:none;cursor:pointer;padding:0}
 input,select{outline:none}
 input,select,button{-webkit-appearance:none;appearance:none}
 .hidden{display:none!important}
-
 .app{max-width:520px;margin:0 auto;min-height:100vh;position:relative;padding-bottom:calc(84px + var(--safe-b))}
-
-/* =========================================================
-   HEADER
-   ========================================================= */
-.app-header{
-  position:sticky;top:0;z-index:50;
-  display:flex;align-items:center;justify-content:space-between;
-  padding:calc(var(--safe-t) + 8px) 18px 10px;
-  background:var(--header-bg);
-  backdrop-filter:saturate(180%) blur(22px);
-  -webkit-backdrop-filter:saturate(180%) blur(22px);
-  border-bottom:1px solid var(--sep);
-}
+.app-header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:calc(var(--safe-t) + 8px) 18px 10px;background:var(--header-bg);backdrop-filter:saturate(180%) blur(22px);-webkit-backdrop-filter:saturate(180%) blur(22px);border-bottom:1px solid var(--sep)}
 .brand{display:flex;align-items:center;gap:9px;cursor:pointer;user-select:none}
-.brand-mark{
-  width:30px;height:30px;border-radius:9px;
-  background:linear-gradient(140deg,var(--accent),var(--accent-deep));
-  color:#fff;display:grid;place-items:center;
-  font-size:14px;font-weight:700;
-  box-shadow:0 4px 12px rgba(184,134,11,.35);
-}
+.brand-mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(140deg,var(--accent),var(--accent-deep));color:#fff;display:grid;place-items:center;font-size:14px;font-weight:700;box-shadow:0 4px 12px rgba(184,134,11,.35)}
 .brand-name{font-size:14px;font-weight:700;letter-spacing:.24em;color:var(--text-2)}
 .header-actions{display:flex;gap:6px;align-items:center}
-
-.icon-btn{
-  width:38px;height:38px;border-radius:50%;
-  display:grid;place-items:center;
-  color:var(--text);
-  background:var(--btn-bg);
-  border:1px solid var(--border-btn);
-  box-shadow:var(--shadow-btn);
-  transition:transform .15s var(--ease);
-}
+.icon-btn{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--text);background:var(--btn-bg);border:1px solid var(--border-btn);box-shadow:var(--shadow-btn);transition:transform .15s var(--ease)}
 .icon-btn:active{transform:scale(.9)}
 .icon-btn svg{width:18px;height:18px}
-.icon-btn.avatar{
-  background:linear-gradient(140deg,var(--accent),var(--accent-deep));
-  color:#fff;font-size:14px;font-weight:700;
-  border-color:transparent;
-  box-shadow:0 4px 12px rgba(184,134,11,.35);
-}
-
-/* =========================================================
-   VIEWS
-   ========================================================= */
+.icon-btn.avatar{background:linear-gradient(140deg,var(--accent),var(--accent-deep));color:#fff;font-size:14px;font-weight:700;border-color:transparent;box-shadow:0 4px 12px rgba(184,134,11,.35)}
 .view{display:none;padding:0 14px 24px}
 .view.active{display:block;animation:viewIn .35s var(--ease)}
 @keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-
 .page-title{padding:4px 4px 18px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px}
 .page-title > div{flex:1;min-width:0}
 .page-title h1{font-size:32px;font-weight:800;letter-spacing:-.03em;line-height:1.1}
 .page-title p{font-size:13.5px;color:var(--text-2);margin-top:3px}
-.page-title .add-btn{
-  padding:10px 16px;border-radius:11px;
-  background:var(--accent);color:#fff;
-  font-size:13px;font-weight:700;white-space:nowrap;
-  border:1px solid var(--accent);
-  box-shadow:0 2px 8px rgba(184,134,11,.35);
-  transition:transform .12s var(--ease);
-}
+.page-title .add-btn{padding:10px 16px;border-radius:11px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;white-space:nowrap;border:1px solid var(--accent);box-shadow:0 2px 8px rgba(184,134,11,.35);transition:transform .12s var(--ease)}
 .page-title .add-btn:active{transform:scale(.94)}
-
-/* =========================================================
-   TABBAR (móvil abajo / PC dock flotante)
-   ========================================================= */
-.tabbar{
-  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
-  width:100%;max-width:520px;z-index:60;
-  padding:6px 10px calc(var(--safe-b) + 6px);
-  background:var(--nav-bg);
-  backdrop-filter:saturate(180%) blur(24px);
-  -webkit-backdrop-filter:saturate(180%) blur(24px);
-  border-top:1px solid var(--sep);
-  display:grid;grid-template-columns:repeat(4,1fr);gap:2px;
-}
-.tab{
-  display:flex;flex-direction:column;align-items:center;gap:2px;
-  padding:6px 0 5px;border-radius:10px;
-  font-size:10.5px;font-weight:600;
-  color:var(--text-3);
-  transition:color .18s var(--ease),transform .18s var(--ease);
-}
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;z-index:60;padding:6px 10px calc(var(--safe-b) + 6px);background:var(--nav-bg);backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);border-top:1px solid var(--sep);display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
+.tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 5px;border-radius:10px;font-size:10.5px;font-weight:600;color:var(--text-3);transition:color .18s var(--ease),transform .18s var(--ease)}
 .tab svg{width:25px;height:25px;transition:transform .25s var(--ease)}
 .tab.active{color:var(--accent)}
 .tab.active svg{transform:translateY(-1px) scale(1.05)}
 .tab:active svg{transform:scale(.88)}
-
-/* =========================================================
-   STATS
-   ========================================================= */
 .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
-.stat{
-  background:var(--surface);
-  border:1px solid var(--border-btn);
-  border-radius:var(--r-lg);
-  padding:15px 16px;
-  position:relative;overflow:hidden;
-  box-shadow:var(--shadow-card);
-}
+.stat{background:var(--surface);border:1px solid var(--border-btn);border-radius:var(--r-lg);padding:15px 16px;position:relative;overflow:hidden;box-shadow:var(--shadow-card)}
 .stat::after{content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--accent)}
 .stat .lbl{font-size:11px;color:var(--text-2);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:6px}
 .stat .val{font-size:24px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
@@ -187,50 +102,27 @@ input,select,button{-webkit-appearance:none;appearance:none}
    FICHA DE PIEZA
    ========================================================= */
 .rooms-list{display:flex;flex-direction:column;gap:14px}
-.card-room{
-  background:var(--surface);
-  border-radius:18px;
-  border:1.5px solid var(--border-btn);
-  padding:16px 16px 14px;
-  position:relative;overflow:hidden;
-  box-shadow:var(--shadow-card);
-  transition:transform .18s var(--ease),border-color .2s,box-shadow .2s;
-}
+.card-room{background:var(--surface);border-radius:18px;border:1.5px solid var(--border-btn);padding:16px 16px 14px;position:relative;overflow:hidden;box-shadow:var(--shadow-card);transition:transform .18s var(--ease),border-color .2s,box-shadow .2s}
 .card-room.free{border-color:var(--border-btn)}
 .card-room.busy{border-color:rgba(200,150,62,.55);background:linear-gradient(165deg,rgba(200,150,62,.06),var(--surface) 60%)}
-.card-room.pending{border-color:rgba(175,82,222,.5);background:linear-gradient(165deg,rgba(175,82,222,.06),var(--surface) 60%)}
+.card-room.corrida{border-color:rgba(175,82,222,.55);background:linear-gradient(165deg,rgba(175,82,222,.06),var(--surface) 60%)}
 .card-room.package{border-color:rgba(10,132,255,.5);background:linear-gradient(165deg,rgba(10,132,255,.06),var(--surface) 60%)}
-.card-room.urgent{
-  border-color:rgba(255,59,48,.7);
-  background:linear-gradient(165deg,rgba(255,59,48,.07),var(--surface) 60%);
-  animation:pulseUrgent 1.6s ease-in-out infinite;
-}
+.card-room.urgent{border-color:rgba(255,59,48,.7);background:linear-gradient(165deg,rgba(255,59,48,.07),var(--surface) 60%);animation:pulseUrgent 1.6s ease-in-out infinite}
 @keyframes pulseUrgent{0%,100%{border-color:rgba(255,59,48,.7)}50%{border-color:rgba(255,59,48,.35)}}
-
 .cr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
 .cr-pieza{font-size:22px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
 .cr-pieza .num{color:var(--text);margin-left:2px}
-.cr-pieza .mode-tag{
-  font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
-  padding:3px 8px;border-radius:20px;
-  background:rgba(10,132,255,.16);color:var(--blue);
-}
-.cr-badge{
-  font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
-  padding:5px 10px;border-radius:20px;flex-shrink:0;
-}
+.cr-pieza .mode-tag{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:3px 8px;border-radius:20px;background:rgba(10,132,255,.16);color:var(--blue)}
+.cr-pieza .mode-tag.corrida{background:rgba(175,82,222,.18);color:var(--purple)}
+.cr-badge{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:20px;flex-shrink:0}
 .cr-badge.free{background:rgba(52,199,89,.18);color:var(--green)}
 .cr-badge.busy{background:rgba(200,150,62,.22);color:#9A6E1F}
 html[data-theme="dark"] .cr-badge.busy{color:var(--accent)}
 .cr-badge.pending{background:rgba(175,82,222,.2);color:var(--purple)}
 .cr-badge.package{background:rgba(10,132,255,.2);color:var(--blue)}
+.cr-badge.corrida{background:rgba(175,82,222,.2);color:var(--purple)}
 .cr-badge.urgent{background:rgba(255,59,48,.2);color:var(--red);animation:blinkBar .9s ease-in-out infinite}
-
-.cr-grid{
-  display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:10px;
-  padding:14px 0;border-top:1px solid var(--sep);border-bottom:1px solid var(--sep);
-  margin-bottom:12px;
-}
+.cr-grid{display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:10px;padding:14px 0;border-top:1px solid var(--sep);border-bottom:1px solid var(--sep);margin-bottom:12px}
 .cr-col{display:flex;flex-direction:column;gap:3px;text-align:center;position:relative}
 .cr-col + .cr-col::before{content:'';position:absolute;left:-5px;top:4px;bottom:4px;width:1px;background:var(--sep)}
 .cr-col .k{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
@@ -241,18 +133,10 @@ html[data-theme="dark"] .cr-badge.busy{color:var(--accent)}
 .cr-col.hl .v.big{color:var(--green)}
 .cr-col.warn .v.big{color:var(--accent)}
 .cr-col.crit .v.big{color:var(--red)}
-
-.cr-amount-box{
-  background:var(--amount-bg);
-  border:1px solid var(--border-btn);
-  border-radius:12px;
-  padding:12px 14px; margin-bottom:12px;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;
-}
+.cr-amount-box{background:var(--amount-bg);border:1px solid var(--border-btn);border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .cr-amount-box .ab-lbl{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
 .cr-amount-box .ab-val{font-size:26px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .cr-amount-box .ab-sub{font-size:11px;color:var(--text-2);font-variant-numeric:tabular-nums;text-align:right;line-height:1.4}
-
 .cr-progress{height:7px;background:var(--fill);border-radius:4px;overflow:hidden;margin-bottom:6px;position:relative}
 .cr-progress-fill{position:absolute;right:0;top:0;bottom:0;border-radius:4px;background:var(--green);transition:width .6s linear,background .5s}
 .cr-progress-fill.warn{background:var(--accent)}
@@ -263,17 +147,58 @@ html[data-theme="dark"] .cr-badge.busy{color:var(--accent)}
 .cr-sub b{color:var(--accent);font-weight:700}
 .cr-sub.crit b{color:var(--red)}
 
-.cr-pay-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
-.pay-btn{
-  padding:11px 8px;border-radius:11px;
-  font-size:12px;font-weight:800;letter-spacing:.02em;
-  border:1px solid var(--border-btn);
-  background:var(--btn-bg);
-  color:var(--text-2);
-  box-shadow:var(--shadow-btn);
-  transition:transform .12s var(--ease),background .15s,color .15s;
-  text-align:center;white-space:nowrap;
+/* =========================================================
+   BOTÓN AGREGAR PRODUCTO — LLAMATIVO
+   ========================================================= */
+.btn-add-product{
+  width:100%;
+  padding:14px 18px;
+  margin-bottom:10px;
+  border-radius:14px;
+  background:var(--prod-btn-bg);
+  color:#fff;
+  font-size:15px;font-weight:800;
+  letter-spacing:.02em;
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  border:none;
+  box-shadow:var(--prod-btn-glow);
+  transition:transform .12s var(--ease),box-shadow .2s;
+  position:relative;
+  overflow:hidden;
+  animation:prodPulse 2.4s ease-in-out infinite;
 }
+.btn-add-product::before{
+  content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
+  background:radial-gradient(circle, rgba(255,255,255,.25) 0%, transparent 60%);
+  animation:shine 4s ease-in-out infinite;
+  pointer-events:none;
+}
+@keyframes shine{
+  0%{transform:translateX(-100%) translateY(-100%)}
+  50%{transform:translateX(100%) translateY(100%)}
+  100%{transform:translateX(-100%) translateY(-100%)}
+}
+@keyframes prodPulse{
+  0%,100%{box-shadow:var(--prod-btn-glow)}
+  50%{box-shadow:var(--prod-btn-glow), 0 0 0 4px rgba(200,150,62,.15)}
+}
+.btn-add-product:active{transform:scale(.97)}
+.btn-add-product .pap-icon{
+  width:26px;height:26px;border-radius:8px;
+  background:rgba(255,255,255,.25);
+  display:grid;place-items:center;
+  font-size:16px;font-weight:800;
+}
+.btn-add-product .pap-count{
+  margin-left:auto;
+  font-size:11px;font-weight:700;
+  padding:3px 9px;border-radius:20px;
+  background:rgba(255,255,255,.25);
+  letter-spacing:.04em;
+}
+
+.cr-pay-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.pay-btn{padding:11px 8px;border-radius:11px;font-size:12px;font-weight:800;letter-spacing:.02em;border:1px solid var(--border-btn);background:var(--btn-bg);color:var(--text-2);box-shadow:var(--shadow-btn);transition:transform .12s var(--ease),background .15s,color .15s;text-align:center;white-space:nowrap}
 .pay-btn:active{transform:scale(.94)}
 .pay-btn.green{background:rgba(52,199,89,.15);color:#1A8B3E;border-color:rgba(52,199,89,.35)}
 html[data-theme="dark"] .pay-btn.green{color:var(--green)}
@@ -282,29 +207,29 @@ html[data-theme="dark"] .pay-btn.blue{color:var(--blue)}
 .pay-btn.purple{background:rgba(175,82,222,.15);color:#8E3FBC;border-color:rgba(175,82,222,.35)}
 html[data-theme="dark"] .pay-btn.purple{color:var(--purple)}
 
-.btn-occupy{
-  width:100%;padding:14px;border-radius:12px;margin-top:10px;
-  background:var(--accent);color:#fff;
-  font-size:15px;font-weight:800;
-  border:1px solid var(--accent-deep);
-  box-shadow:0 2px 8px rgba(184,134,11,.35);
-  transition:transform .12s var(--ease);
+/* Botón editar horas */
+.btn-edit-hours{
+  width:100%;padding:11px;border-radius:11px;margin-bottom:10px;
+  background:var(--btn-bg);color:var(--text-2);
+  border:1px dashed var(--border-btn);
+  font-size:12.5px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  transition:transform .12s var(--ease),background .15s,color .15s;
 }
-.btn-occupy:active{transform:scale(.97)}
+.btn-edit-hours:active{transform:scale(.97)}
+.btn-edit-hours:hover{color:var(--accent);border-color:var(--accent)}
 
+.btn-occupy{width:100%;padding:14px;border-radius:12px;margin-top:10px;background:var(--accent);color:#fff;font-size:15px;font-weight:800;border:1px solid var(--accent-deep);box-shadow:0 2px 8px rgba(184,134,11,.35);transition:transform .12s var(--ease)}
+.btn-occupy:active{transform:scale(.97)}
 .card-room.free{padding:14px 16px}
 .card-room.free .cr-top{margin-bottom:8px}
 .card-room.free .cr-info{font-size:13px;color:var(--text-2);padding:2px 0 6px}
 .card-room.free .cr-rate{font-size:15px;font-weight:800;color:var(--accent)}
 
 /* =========================================================
-   GROUPS / TABLAS
+   RESTO (groups, tablas, forms, sheet, etc)
    ========================================================= */
-.group{
-  background:var(--surface);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px;
-  border:1px solid var(--border-btn);
-  box-shadow:var(--shadow-card);
-}
+.group{background:var(--surface);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px;border:1px solid var(--border-btn);box-shadow:var(--shadow-card)}
 .group-title{font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;padding:0 8px 8px}
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
@@ -313,51 +238,20 @@ td{padding:12px 14px;border-bottom:1px solid var(--sep);vertical-align:middle}
 tbody tr:last-child td{border-bottom:none}
 .num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
 .empty{padding:40px 20px;text-align:center;color:var(--text-2);font-size:13.5px}
-.row-btn{
-  font-size:12px;font-weight:700;padding:8px 12px;border-radius:9px;
-  background:var(--accent);color:#fff;
-  border:1px solid var(--accent-deep);
-  box-shadow:0 1px 3px rgba(184,134,11,.3);
-  transition:transform .15s var(--ease);white-space:nowrap;
-}
+.row-btn{font-size:12px;font-weight:700;padding:8px 12px;border-radius:9px;background:var(--accent);color:#fff;border:1px solid var(--accent-deep);box-shadow:0 1px 3px rgba(184,134,11,.3);transition:transform .15s var(--ease);white-space:nowrap}
 .row-btn:active{transform:scale(.93)}
-
 .room-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--sep)}
 .room-row:last-child{border-bottom:none}
-.room-row .rr-num{
-  width:44px;height:44px;border-radius:12px;flex-shrink:0;
-  background:linear-gradient(140deg,var(--accent),var(--accent-deep));
-  color:#fff;display:grid;place-items:center;
-  font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;
-  box-shadow:0 3px 10px rgba(184,134,11,.3);
-}
+.room-row .rr-num{width:44px;height:44px;border-radius:12px;flex-shrink:0;background:linear-gradient(140deg,var(--accent),var(--accent-deep));color:#fff;display:grid;place-items:center;font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;box-shadow:0 3px 10px rgba(184,134,11,.3)}
 .room-row .rr-info{flex:1;min-width:0}
 .room-row .rr-name{font-size:15px;font-weight:700}
 .room-row .rr-meta{font-size:11.5px;color:var(--text-2);font-variant-numeric:tabular-nums}
 .room-row .rr-status{font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:20px}
 .room-row .rr-status.libre{background:rgba(52,199,89,.16);color:var(--green)}
 .room-row .rr-status.ocupada{background:rgba(255,59,48,.16);color:var(--red)}
-
-/* =========================================================
-   BOTONES GENERALES
-   ========================================================= */
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  padding:14px 20px;border-radius:var(--r-md);
-  font-size:15px;font-weight:700;
-  background:var(--btn-bg);
-  color:var(--text);
-  border:1px solid var(--border-btn);
-  box-shadow:var(--shadow-btn);
-  transition:transform .12s var(--ease),background .15s;
-  white-space:nowrap;
-}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:14px 20px;border-radius:var(--r-md);font-size:15px;font-weight:700;background:var(--btn-bg);color:var(--text);border:1px solid var(--border-btn);box-shadow:var(--shadow-btn);transition:transform .12s var(--ease),background .15s;white-space:nowrap}
 .btn:active{transform:scale(.96)}
-.btn.primary{
-  background:var(--accent);color:#fff;
-  border-color:var(--accent-deep);
-  box-shadow:0 2px 8px rgba(184,134,11,.35);
-}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent-deep);box-shadow:0 2px 8px rgba(184,134,11,.35)}
 .btn.danger{background:rgba(255,59,48,.14);color:var(--red);border-color:rgba(255,59,48,.35)}
 .btn.green{background:rgba(52,199,89,.14);color:#1A8B3E;border-color:rgba(52,199,89,.35)}
 html[data-theme="dark"] .btn.green{color:var(--green)}
@@ -369,37 +263,15 @@ html[data-theme="dark"] .btn.purple{color:var(--purple)}
 .btn.block{width:100%}
 .fab-row{display:flex;gap:8px;margin-bottom:16px}
 .fab-row .btn{flex:1}
-
-/* =========================================================
-   INPUTS
-   ========================================================= */
 .field{margin-bottom:16px}
 .field > label{display:block;font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;padding:0 4px 7px}
-.field input,.field select{
-  width:100%;padding:14px 16px;
-  background:var(--input-bg);
-  border:1px solid var(--border-input);
-  border-radius:var(--r-md);
-  color:var(--text);font-size:16px;
-  box-shadow:var(--shadow-btn);
-  transition:border-color .18s,box-shadow .18s;
-}
+.field input,.field select{width:100%;padding:14px 16px;background:var(--input-bg);border:1px solid var(--border-input);border-radius:var(--r-md);color:var(--text);font-size:16px;box-shadow:var(--shadow-btn);transition:border-color .18s,box-shadow .18s}
 .field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(184,134,11,.15)}
 .field input::placeholder{color:var(--text-3)}
 .field .helper{font-size:11.5px;color:var(--text-3);padding:5px 4px 0}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .hint{font-size:13px;color:var(--text-2);padding:0 4px}
-
-/* =========================================================
-   TIME CAPTURE
-   ========================================================= */
-.time-capture{
-  background:var(--surface);
-  border:1px solid var(--border-btn);
-  border-radius:var(--r-md);
-  padding:20px 16px;margin-bottom:18px;text-align:center;
-  box-shadow:var(--shadow-card);
-}
+.time-capture{background:var(--surface);border:1px solid var(--border-btn);border-radius:var(--r-md);padding:20px 16px;margin-bottom:18px;text-align:center;box-shadow:var(--shadow-card)}
 .time-lbl-sm{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);font-weight:800;margin-bottom:6px}
 .time-display{font-size:48px;font-weight:800;letter-spacing:-.05em;font-variant-numeric:tabular-nums;line-height:1;color:var(--text);margin-bottom:4px}
 .time-display .sec{color:var(--accent);font-size:38px;transition:transform .2s var(--ease);display:inline-block}
@@ -408,313 +280,134 @@ html[data-theme="dark"] .btn.purple{color:var(--purple)}
 .captured-info{min-height:20px;font-size:12.5px;color:var(--text-2);margin-bottom:12px;font-variant-numeric:tabular-nums;display:flex;align-items:center;justify-content:center;gap:5px;opacity:0;transition:opacity .3s}
 .captured-info.show{opacity:1}
 .captured-info b{color:var(--green);font-weight:700}
-.time-btn{
-  width:100%;padding:13px 16px;
-  background:var(--accent);color:#fff;
-  border-radius:12px;font-size:14.5px;font-weight:700;
-  border:1px solid var(--accent-deep);
-  box-shadow:0 2px 8px rgba(184,134,11,.35);
-  display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  transition:transform .12s var(--ease);
-}
+.time-btn{width:100%;padding:13px 16px;background:var(--accent);color:#fff;border-radius:12px;font-size:14.5px;font-weight:700;border:1px solid var(--accent-deep);box-shadow:0 2px 8px rgba(184,134,11,.35);display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:transform .12s var(--ease)}
 .time-btn:active{transform:scale(.96)}
 .time-btn svg{width:16px;height:16px}
 .time-btn.captured{background:rgba(52,199,89,.16);color:var(--green);border-color:rgba(52,199,89,.4);box-shadow:none}
-
-/* =========================================================
-   CHIPS
-   ========================================================= */
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
-.chip{
-  padding:10px 16px;
-  background:var(--btn-bg);
-  border:1px solid var(--border-btn);
-  border-radius:20px;
-  font-size:14px;font-weight:700;
-  color:var(--text-2);
-  box-shadow:var(--shadow-btn);
-  transition:all .18s var(--ease);
-}
+.chip{padding:10px 16px;background:var(--btn-bg);border:1px solid var(--border-btn);border-radius:20px;font-size:14px;font-weight:700;color:var(--text-2);box-shadow:var(--shadow-btn);transition:all .18s var(--ease)}
 .chip.active{background:var(--accent);color:#fff;border-color:var(--accent-deep);box-shadow:0 2px 8px rgba(184,134,11,.35)}
 .chip:active{transform:scale(.94)}
-
-/* =========================================================
-   MODE PICKER
-   ========================================================= */
-.mode-picker{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
-.mode-pick{
-  padding:16px 12px;border-radius:14px;
-  border:1.5px solid var(--border-btn);
-  background:var(--surface);
-  text-align:center;cursor:pointer;
-  box-shadow:var(--shadow-card);
-  transition:all .18s var(--ease);
-}
+.mode-picker{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:18px}
+.mode-pick{padding:14px 8px;border-radius:14px;border:1.5px solid var(--border-btn);background:var(--surface);text-align:center;cursor:pointer;box-shadow:var(--shadow-card);transition:all .18s var(--ease)}
 .mode-pick.active{border-color:var(--accent);background:rgba(200,150,62,.12);box-shadow:0 2px 12px rgba(184,134,11,.2)}
 .mode-pick.active.night{border-color:var(--blue);background:rgba(10,132,255,.1);box-shadow:0 2px 12px rgba(10,132,255,.2)}
-.mode-pick .mp-ic{font-size:24px;margin-bottom:6px;display:block}
-.mode-pick .mp-tt{font-size:14px;font-weight:800;letter-spacing:-.01em}
-.mode-pick .mp-ds{font-size:11px;color:var(--text-2);margin-top:3px}
-
-/* =========================================================
-   BREAKDOWN
-   ========================================================= */
-.breakdown{
-  background:var(--surface);border-radius:var(--r-md);padding:2px 14px;margin-bottom:16px;
-  border:1px solid var(--border-btn);
-  box-shadow:var(--shadow-card);
-}
+.mode-pick.active.corrida{border-color:var(--purple);background:rgba(175,82,222,.1);box-shadow:0 2px 12px rgba(175,82,222,.2)}
+.mode-pick .mp-ic{font-size:22px;margin-bottom:5px;display:block}
+.mode-pick .mp-tt{font-size:12px;font-weight:800;letter-spacing:-.01em}
+.mode-pick .mp-ds{font-size:10px;color:var(--text-2);margin-top:2px;line-height:1.2}
+.breakdown{background:var(--surface);border-radius:var(--r-md);padding:2px 14px;margin-bottom:16px;border:1px solid var(--border-btn);box-shadow:var(--shadow-card)}
 .bd-row{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;font-size:14px;border-bottom:1px solid var(--sep)}
 .bd-row:last-child{border-bottom:none}
 .bd-row span:first-child{color:var(--text-2)}
 .bd-row span:last-child{font-weight:700;font-variant-numeric:tabular-nums}
 .bd-row.extra span{color:var(--accent)}
+.bd-row.tolerance span{color:var(--green);font-size:12.5px}
+.bd-row.tolerance span:last-child{color:var(--green)}
 .bd-row.total-row{border-top:1.5px solid var(--sep);padding-top:12px;margin-top:4px}
 .bd-row.total-row span:first-child{font-weight:800;color:var(--text)}
 .bd-row.total-row span:last-child{font-size:18px;color:var(--accent)}
 
-/* =========================================================
-   SHEET (móvil bottom sheet / PC modal centrado)
-   ========================================================= */
+/* Editar horas inline */
+.edit-hours-panel{
+  background:var(--surface);border:1px solid var(--border-btn);
+  border-radius:var(--r-md);padding:14px;margin-bottom:16px;
+  box-shadow:var(--shadow-card);
+}
+.edit-hours-panel .eh-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.edit-hours-panel input[type="time"]{
+  width:100%;padding:12px 14px;background:var(--input-bg);
+  border:1px solid var(--border-input);border-radius:var(--r-sm);
+  color:var(--text);font-size:16px;font-variant-numeric:tabular-nums;
+  box-shadow:var(--shadow-btn);text-align:center;font-weight:700;
+}
+.edit-hours-panel input[type="time"]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(184,134,11,.15)}
+.edit-hours-panel .eh-lbl{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);margin-bottom:6px;text-align:center}
+
 #modalRoot{position:fixed;inset:0;z-index:100;display:none}
 #modalRoot.open{display:block}
-.overlay{
-  position:absolute;inset:0;background:var(--overlay);
-  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-  display:flex;align-items:flex-end;justify-content:center;
-  animation:fadeIn .22s var(--ease);
-}
+.overlay{position:absolute;inset:0;background:var(--overlay);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .22s var(--ease)}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.sheet{
-  width:100%;max-width:520px;max-height:92vh;
-  background:var(--bg-elev);border-radius:22px 22px 0 0;
-  display:flex;flex-direction:column;overflow:hidden;
-  animation:slideUp .4s var(--ease);
-  box-shadow:0 -20px 60px rgba(0,0,0,.35);
-  border:1px solid var(--border-btn);border-bottom:none;
-}
+.sheet{width:100%;max-width:520px;max-height:92vh;background:var(--bg-elev);border-radius:22px 22px 0 0;display:flex;flex-direction:column;overflow:hidden;animation:slideUp .4s var(--ease);box-shadow:0 -20px 60px rgba(0,0,0,.35);border:1px solid var(--border-btn);border-bottom:none}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
 .sheet-head{position:relative;padding:22px 20px 10px;flex-shrink:0}
 .sheet-head::before{content:'';position:absolute;top:8px;left:50%;transform:translateX(-50%);width:38px;height:5px;border-radius:3px;background:var(--text-3)}
 .sheet-head h3{font-size:19px;font-weight:800;padding-top:6px}
-.sheet-head .x{
-  position:absolute;top:22px;right:18px;
-  width:32px;height:32px;border-radius:50%;
-  display:grid;place-items:center;
-  background:var(--btn-bg);color:var(--text-2);font-size:13px;
-  border:1px solid var(--border-btn);
-  box-shadow:var(--shadow-btn);
-}
+.sheet-head .x{position:absolute;top:22px;right:18px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--btn-bg);color:var(--text-2);font-size:13px;border:1px solid var(--border-btn);box-shadow:var(--shadow-btn)}
 .sheet-head .x:active{transform:scale(.9)}
 .sheet-body{padding:10px 20px 4px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
 .sheet-foot{padding:10px 20px calc(20px + var(--safe-b));display:flex;gap:10px;flex-shrink:0;background:var(--bg-elev);border-top:1px solid var(--sep)}
 .sheet-foot .btn{flex:1}
-
-/* =========================================================
-   INFO GRID
-   ========================================================= */
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:18px}
-.info-grid > div{
-  background:var(--surface);
-  border:1px solid var(--border-btn);
-  border-radius:var(--r-md);
-  padding:11px 13px;
-  box-shadow:var(--shadow-card);
-}
+.info-grid > div{background:var(--surface);border:1px solid var(--border-btn);border-radius:var(--r-md);padding:11px 13px;box-shadow:var(--shadow-card)}
 .info-grid span{display:block;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2);margin-bottom:3px}
 .info-grid b{font-size:14.5px;font-weight:700;font-variant-numeric:tabular-nums;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .info-grid.cols-3{grid-template-columns:repeat(3,1fr)}
-
-/* =========================================================
-   CONS LIST
-   ========================================================= */
-.cons-list{
-  background:var(--surface);border-radius:var(--r-md);overflow:hidden;margin-bottom:14px;
-  border:1px solid var(--border-btn);
-  box-shadow:var(--shadow-card);
-}
+.cons-list{background:var(--surface);border-radius:var(--r-md);overflow:hidden;margin-bottom:14px;border:1px solid var(--border-btn);box-shadow:var(--shadow-card)}
 .cons-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--sep);font-size:14px}
 .cons-item:last-child{border-bottom:none}
 .cons-item .q{color:var(--text-2);font-size:12.5px}
 .cons-item .p{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--accent);font-weight:700}
 .cons-item button{color:var(--text-3);font-size:14px;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--border-btn)}
 .cons-item button:active{background:var(--fill);color:var(--red)}
-
-/* =========================================================
-   INLINE ADD
-   ========================================================= */
 .inline-add{display:flex;gap:8px;margin-bottom:16px}
-.inline-add select{
-  flex:1;padding:12px 14px;
-  background:var(--input-bg);
-  border:1px solid var(--border-input);
-  border-radius:var(--r-md);font-size:15px;
-  box-shadow:var(--shadow-btn);
-}
-.inline-add input{
-  width:66px;text-align:center;padding:12px 8px;
-  background:var(--input-bg);
-  border:1px solid var(--border-input);
-  border-radius:var(--r-md);font-size:15px;
-  box-shadow:var(--shadow-btn);
-}
-
-/* =========================================================
-   TOTAL BOX
-   ========================================================= */
-.total-box{
-  display:flex;align-items:baseline;justify-content:space-between;
-  padding:16px 18px;
-  background:var(--surface);
-  border:1px solid var(--border-btn);
-  border-radius:var(--r-md);margin-top:6px;
-  box-shadow:var(--shadow-card);
-}
+.inline-add select{flex:1;padding:12px 14px;background:var(--input-bg);border:1px solid var(--border-input);border-radius:var(--r-md);font-size:15px;box-shadow:var(--shadow-btn)}
+.inline-add input{width:66px;text-align:center;padding:12px 8px;background:var(--input-bg);border:1px solid var(--border-input);border-radius:var(--r-md);font-size:15px;box-shadow:var(--shadow-btn)}
+.total-box{display:flex;align-items:baseline;justify-content:space-between;padding:16px 18px;background:var(--surface);border:1px solid var(--border-btn);border-radius:var(--r-md);margin-top:6px;box-shadow:var(--shadow-card)}
 .total-box span{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2)}
 .total-box b{font-size:26px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
-
-/* =========================================================
-   FILTROS / QUICK ROW
-   ========================================================= */
 .filters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .filters .field{margin-bottom:0}
 .quick-row{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
 .quick-row::-webkit-scrollbar{display:none}
 .quick-row .btn{flex-shrink:0}
-
-/* =========================================================
-   PAY LINES
-   ========================================================= */
-.pay-lines{
-  background:var(--surface);border-radius:var(--r-md);padding:10px 14px;margin-bottom:14px;
-  border:1px solid var(--border-btn);
-  box-shadow:var(--shadow-card);
-}
+.pay-lines{background:var(--surface);border-radius:var(--r-md);padding:10px 14px;margin-bottom:14px;border:1px solid var(--border-btn);box-shadow:var(--shadow-card)}
 .pay-line{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--sep)}
 .pay-line:last-child{border-bottom:none}
 .pay-line .pl-method{font-size:13px;font-weight:800;min-width:80px}
-.pay-line input{
-  flex:1;text-align:right;padding:8px 12px;
-  background:var(--input-bg);
-  border:1px solid var(--border-input);
-  border-radius:8px;font-size:14px;font-variant-numeric:tabular-nums;font-weight:700;
-}
+.pay-line input{flex:1;text-align:right;padding:8px 12px;background:var(--input-bg);border:1px solid var(--border-input);border-radius:8px;font-size:14px;font-variant-numeric:tabular-nums;font-weight:700}
 .pay-summary{display:flex;justify-content:space-between;padding:10px 4px 0;font-size:13px}
 .pay-summary span:first-child{color:var(--text-2);font-weight:600}
 .pay-summary b{font-variant-numeric:tabular-nums;font-weight:800}
 .pay-summary b.ok{color:var(--green)}
 .pay-summary b.err{color:var(--red)}
-
-/* =========================================================
-   TOAST
-   ========================================================= */
-#toast{
-  position:fixed;bottom:calc(100px + var(--safe-b));left:50%;
-  transform:translateX(-50%) translateY(14px) scale(.96);
-  background:var(--surface-3);color:var(--text);
-  padding:12px 22px;border-radius:24px;
-  font-size:14px;font-weight:700;
-  z-index:300;opacity:0;pointer-events:none;
-  transition:all .32s var(--ease);
-  box-shadow:0 12px 40px rgba(0,0,0,.4);
-  white-space:nowrap;backdrop-filter:blur(20px);
-  border:1px solid var(--border-btn);
-}
+#toast{position:fixed;bottom:calc(100px + var(--safe-b));left:50%;transform:translateX(-50%) translateY(14px) scale(.96);background:var(--surface-3);color:var(--text);padding:12px 22px;border-radius:24px;font-size:14px;font-weight:700;z-index:300;opacity:0;pointer-events:none;transition:all .32s var(--ease);box-shadow:0 12px 40px rgba(0,0,0,.4);white-space:nowrap;backdrop-filter:blur(20px);border:1px solid var(--border-btn)}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
-
-/* =========================================================
-   LOGIN
-   ========================================================= */
-.login-screen{
-  position:fixed;inset:0;z-index:250;
-  background:var(--bg);
-  display:flex;align-items:center;justify-content:center;padding:24px;
-  animation:fadeIn .3s var(--ease);
-}
-.login-box{
-  width:100%;max-width:360px;text-align:center;
-  padding:32px 24px;
-  background:var(--surface);
-  border:1px solid var(--border-btn);
-  border-radius:22px;
-  box-shadow:var(--shadow-float);
-}
-.login-logo{
-  width:76px;height:76px;border-radius:24px;
-  background:linear-gradient(140deg,var(--accent),var(--accent-deep));
-  color:#fff;display:grid;place-items:center;
-  font-size:34px;font-weight:800;letter-spacing:-.02em;
-  margin:0 auto 20px;
-  box-shadow:0 16px 40px -12px rgba(200,150,62,.6);
-}
+.login-screen{position:fixed;inset:0;z-index:250;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .3s var(--ease)}
+.login-box{width:100%;max-width:360px;text-align:center;padding:32px 24px;background:var(--surface);border:1px solid var(--border-btn);border-radius:22px;box-shadow:var(--shadow-float)}
+.login-logo{width:76px;height:76px;border-radius:24px;background:linear-gradient(140deg,var(--accent),var(--accent-deep));color:#fff;display:grid;place-items:center;font-size:34px;font-weight:800;letter-spacing:-.02em;margin:0 auto 20px;box-shadow:0 16px 40px -12px rgba(200,150,62,.6)}
 .login-box h1{font-size:22px;font-weight:800;letter-spacing:.26em;margin-bottom:4px}
 .login-box > p{font-size:13px;color:var(--text-2);margin-bottom:28px}
 .login-box .field{text-align:left}
 .login-error{color:var(--red);font-size:13px;font-weight:600;min-height:18px;margin-top:10px}
 .login-hint{font-size:11.5px;color:var(--text-3);margin-top:18px;line-height:1.5}
-
-/* =========================================================
-   USER SHEET
-   ========================================================= */
 .user-hero{text-align:center;padding:8px 0 22px;border-bottom:1px solid var(--sep);margin-bottom:16px}
-.user-hero .avatar-lg{
-  width:64px;height:64px;border-radius:20px;margin:0 auto 12px;
-  background:linear-gradient(140deg,var(--accent),var(--accent-deep));
-  color:#fff;display:grid;place-items:center;
-  font-size:26px;font-weight:800;
-  box-shadow:0 8px 20px rgba(184,134,11,.35);
-}
+.user-hero .avatar-lg{width:64px;height:64px;border-radius:20px;margin:0 auto 12px;background:linear-gradient(140deg,var(--accent),var(--accent-deep));color:#fff;display:grid;place-items:center;font-size:26px;font-weight:800;box-shadow:0 8px 20px rgba(184,134,11,.35)}
 .user-hero h4{font-size:18px;font-weight:800}
 .user-hero p{font-size:12.5px;color:var(--text-2);margin-top:2px}
-.user-hero .role-pill{
-  display:inline-block;margin-top:8px;padding:4px 12px;border-radius:20px;
-  font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
-  background:rgba(200,150,62,.18);color:#9A6E1F;
-}
+.user-hero .role-pill{display:inline-block;margin-top:8px;padding:4px 12px;border-radius:20px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:rgba(200,150,62,.18);color:#9A6E1F}
 html[data-theme="dark"] .user-hero .role-pill{color:var(--accent)}
-
-.menu-list{
-  background:var(--surface);border-radius:var(--r-md);overflow:hidden;margin-bottom:16px;
-  border:1px solid var(--border-btn);
-  box-shadow:var(--shadow-card);
-}
+.menu-list{background:var(--surface);border-radius:var(--r-md);overflow:hidden;margin-bottom:16px;border:1px solid var(--border-btn);box-shadow:var(--shadow-card)}
 .menu-item{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--sep);font-size:15px;font-weight:600;cursor:pointer;transition:background .15s}
 .menu-item:last-child{border-bottom:none}
 .menu-item:active{background:var(--fill)}
-.menu-item .mi-icon{
-  width:28px;height:28px;border-radius:9px;
-  background:var(--fill);
-  color:var(--accent);
-  display:grid;place-items:center;font-size:13px;font-weight:800;flex-shrink:0;
-}
+.menu-item .mi-icon{width:28px;height:28px;border-radius:9px;background:var(--fill);color:var(--accent);display:grid;place-items:center;font-size:13px;font-weight:800;flex-shrink:0}
 .menu-item .mi-arrow{margin-left:auto;color:var(--text-3);font-size:14px}
 .menu-item.danger{color:var(--red)}
 .menu-item.danger .mi-icon{background:rgba(255,59,48,.14);color:var(--red)}
-
-.shift-info{
-  background:var(--surface);border-radius:var(--r-md);padding:16px;margin-bottom:16px;text-align:center;
-  border:1px solid var(--border-btn);
-  box-shadow:var(--shadow-card);
-}
+.shift-info{background:var(--surface);border-radius:var(--r-md);padding:16px;margin-bottom:16px;text-align:center;border:1px solid var(--border-btn);box-shadow:var(--shadow-card)}
 .shift-info .si-lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);font-weight:800;margin-bottom:6px}
 .shift-info .si-time{font-size:28px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;color:var(--accent)}
 .shift-info .si-sub{font-size:12px;color:var(--text-2);margin-top:4px;font-variant-numeric:tabular-nums}
-
 .user-row{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid var(--sep)}
 .user-row:last-child{border-bottom:none}
-.user-row .avatar-sm{
-  width:38px;height:38px;border-radius:12px;flex-shrink:0;
-  background:linear-gradient(140deg,var(--accent),var(--accent-deep));
-  color:#fff;display:grid;place-items:center;
-  font-size:15px;font-weight:800;
-}
+.user-row .avatar-sm{width:38px;height:38px;border-radius:12px;flex-shrink:0;background:linear-gradient(140deg,var(--accent),var(--accent-deep));color:#fff;display:grid;place-items:center;font-size:15px;font-weight:800}
 .user-row .u-info{flex:1;min-width:0}
 .user-row .u-name{font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .user-row .u-meta{font-size:11.5px;color:var(--text-2)}
 .user-row .u-role{font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:20px;background:var(--fill);color:var(--text-2)}
 .user-row .u-role.admin{background:rgba(200,150,62,.18);color:#9A6E1F}
 html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
-
 .shift-row{padding:13px 14px;border-bottom:1px solid var(--sep)}
 .shift-row:last-child{border-bottom:none}
 .shift-row .sr-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
@@ -725,9 +418,6 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
 .shift-row .sr-badge.open{background:rgba(52,199,89,.16);color:var(--green)}
 .shift-row .sr-badge.closed{background:var(--fill);color:var(--text-2)}
 
-/* =========================================================
-   PRINT
-   ========================================================= */
 @media print{
   .no-print{display:none!important}
   .app{max-width:none;padding-bottom:0}
@@ -747,9 +437,6 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
 }
 .print-title{display:none}
 
-/* =========================================================
-   DESKTOP / PC  (≥ 700px)
-   ========================================================= */
 @media (min-width: 700px){
   .app{max-width:1240px;padding-bottom:120px}
   .app-header{padding:calc(var(--safe-t) + 14px) 32px 14px}
@@ -759,78 +446,37 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
   .page-title{padding:16px 0 24px}
   .page-title h1{font-size:36px}
   .page-title p{font-size:14.5px}
-
-  /* Stats a 4 columnas */
   .stats{grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
   .stat{padding:18px 18px}
-
-  /* Piezas en 2 columnas */
   .rooms-list{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-
-  /* Tabbar como dock flotante */
-  .tabbar{
-    width:auto;max-width:none;
-    bottom:22px;
-    padding:8px 12px;
-    border-radius:20px;
-    border:1px solid var(--border-btn);
-    border-top:1px solid var(--border-btn);
-    box-shadow:var(--shadow-float);
-    gap:4px;
-  }
-  .tab{
-    flex-direction:row;gap:8px;
-    padding:10px 18px;
-    border-radius:14px;
-    font-size:14px;font-weight:700;
-    transition:background .15s,color .15s;
-  }
+  .tabbar{width:auto;max-width:none;bottom:22px;padding:8px 12px;border-radius:20px;border:1px solid var(--border-btn);border-top:1px solid var(--border-btn);box-shadow:var(--shadow-float);gap:4px}
+  .tab{flex-direction:row;gap:8px;padding:10px 18px;border-radius:14px;font-size:14px;font-weight:700;transition:background .15s,color .15s}
   .tab svg{width:18px;height:18px}
   .tab.active{background:var(--amount-bg)}
   .tab.active svg{transform:none}
   .tab:hover:not(.active){background:var(--fill);color:var(--text)}
-
-  /* Sheets → modales centrados */
   .overlay{align-items:center;padding:32px 20px}
-  .sheet{
-    max-width:600px;max-height:85vh;
-    border-radius:22px;
-    border:1px solid var(--border-btn);
-    animation:popIn .3s var(--ease);
-    box-shadow:0 25px 70px rgba(0,0,0,.35);
-  }
-  @keyframes popIn{
-    from{opacity:0;transform:scale(.95) translateY(10px)}
-    to{opacity:1;transform:none}
-  }
+  .sheet{max-width:600px;max-height:85vh;border-radius:22px;border:1px solid var(--border-btn);animation:popIn .3s var(--ease);box-shadow:0 25px 70px rgba(0,0,0,.35)}
+  @keyframes popIn{from{opacity:0;transform:scale(.95) translateY(10px)}to{opacity:1;transform:none}}
   .sheet-head{padding:26px 26px 12px}
   .sheet-head::before{display:none}
   .sheet-head h3{font-size:22px;padding-top:0}
   .sheet-head .x{top:26px;right:22px}
   .sheet-body{padding:12px 26px 8px}
   .sheet-foot{padding:14px 26px 22px}
-
-  /* Filtros de reportes más anchos */
   .filters{grid-template-columns:1fr 1fr;gap:12px;max-width:520px}
   .quick-row{gap:10px}
-
-  /* Botones más cómodos */
   .btn{padding:13px 22px;font-size:15px}
   .btn.sm{padding:9px 16px;font-size:13.5px}
-
-  /* Toast un poco más arriba */
   #toast{bottom:110px}
+  .mode-picker{grid-template-columns:1fr 1fr 1fr;gap:12px}
 }
-
-/* Pantallas grandes */
 @media (min-width: 1100px){
   .rooms-list{grid-template-columns:repeat(3,1fr)}
   .stats{grid-template-columns:repeat(4,1fr);gap:16px}
   .view{padding:0 44px 48px}
   .app-header{padding:16px 44px}
 }
-
-/* Ajustes de login en desktop */
 @media (min-width: 700px){
   .login-box{padding:40px 32px;max-width:380px}
   .login-logo{width:84px;height:84px;font-size:38px}
@@ -999,6 +645,18 @@ function fmtDur(ms){
 function elapsed(ms){ if(ms < 0) ms = 0; const t = Math.floor(ms/60000); const h = Math.floor(t/60); const m = t%60; if(h === 0) return m + ' min'; return h + 'h ' + pad(m) + 'm'; }
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 2200); }
 
+/* Tolerancia: 10 min libres. Después se cobra por bloques de 30 min (media tarifa). */
+const TOLERANCE_MS = 10 * 60000;
+const HALF_BLOCK_MS = 30 * 60000;
+
+/* Calcula el recargo por tiempo excedido con tolerancia de 10 min */
+function calcExtraCharge(extraMs, hourlyRate){
+  if(extraMs <= TOLERANCE_MS) return { charge: 0, blocks: 0, tolerance: true };
+  const adj = extraMs - TOLERANCE_MS;
+  const blocks = Math.ceil(adj / HALF_BLOCK_MS);
+  return { charge: blocks * (hourlyRate / 2), blocks, tolerance: false };
+}
+
 /* TEMA */
 const ICON_MOON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`;
 const ICON_SUN  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.42 1.42"/></svg>`;
@@ -1007,8 +665,8 @@ function initTheme(){ const s = localStorage.getItem('motel-theme'); if(s) retur
 $('#themeToggle').addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
 
 /* DB */
-const KEY = 'motel_db_v2';
-const SESSION_KEY = 'motel-session-v2';
+const KEY = 'motel_db_v3';
+const SESSION_KEY = 'motel-session-v3';
 function seed(){
   return {
     rooms: Array.from({length:10}, (_,i) => ({
@@ -1125,7 +783,7 @@ function closeModal(){
   $('#modalRoot').classList.remove('open');
   $('#modalRoot').innerHTML = '';
   document.body.style.overflow = '';
-  ci = null; co = null;
+  ci = null; co = null; qp = null;
 }
 
 /* USER MENU */
@@ -1304,26 +962,63 @@ function tickLiveClocks(){
     if(ci && ci.captured){ const d = new Date(ci.entryTs); ciLive.innerHTML = `${pad(d.getHours())}:${pad(d.getMinutes())}:<span class="sec">${pad(d.getSeconds())}</span>`; }
     else { ciLive.innerHTML = renderLiveClock(now); const s = ciLive.querySelector('.sec'); if(s){ s.classList.remove('tick'); void s.offsetWidth; s.classList.add('tick'); } }
   }
-  const coLive = document.getElementById('coLiveClock');
-  if(coLive){
-    if(co && co.captured){ const d = new Date(co.exitTs); coLive.innerHTML = `${pad(d.getHours())}:${pad(d.getMinutes())}:<span class="sec">${pad(d.getSeconds())}</span>`; }
-    else { coLive.innerHTML = renderLiveClock(now); const s = coLive.querySelector('.sec'); if(s){ s.classList.remove('tick'); void s.offsetWidth; s.classList.add('tick'); } }
-  }
   updateTimers();
 }
 setInterval(tickLiveClocks, 1000);
 
+/* =========================================================
+   CÁLCULO DE MONTOS
+   ========================================================= */
 function calcRoomAmount(r, refTs){
   const t = refTs || Date.now();
+
   if(r.mode === 'paquete'){
     return { amount: r.packagePrice || 0, detail: 'paquete', endTime: r.packageEndTime };
   }
+
   const entry = new Date(r.checkIn).getTime();
   const end = r.checkOut ? new Date(r.checkOut).getTime() : t;
   const elapsedMs = Math.max(0, end - entry);
-  const hours = Math.max(1, Math.ceil(elapsedMs / 3600000));
   const rate = r.hourlyRate || r.rate || r.price || 0;
-  return { amount: hours * rate, hours, rate, detail: 'hora' };
+
+  // MODO CORRIDA (sin límite): cobra por hora completa desde el inicio.
+  // La primera hora cuenta completa; luego si sobra más de 10 min se cobra media hora extra
+  if(r.mode === 'corrida'){
+    // Regla simple: 1ª hora completa. Por cada 30 min posteriores se cobra media tarifa.
+    // Con tolerancia de 10 min en el último bloque.
+    const firstHourMs = 3600000;
+    if(elapsedMs <= firstHourMs + TOLERANCE_MS){
+      return { amount: rate, hours: 1, rate, detail: 'corrida' };
+    }
+    const extraMs = elapsedMs - firstHourMs;
+    const extra = calcExtraCharge(extraMs, rate);
+    return {
+      amount: rate + extra.charge,
+      hours: 1 + (extra.blocks * 0.5),
+      rate,
+      detail: 'corrida',
+      extraBlocks: extra.blocks,
+      extraCharge: extra.charge,
+      tolerance: extra.tolerance
+    };
+  }
+
+  // MODO HORA (tiempo pagado predefinido)
+  const paidMs = (r.paidHours || 1) * 3600000;
+  const extraMs = Math.max(0, elapsedMs - paidMs);
+  const extra = calcExtraCharge(extraMs, rate);
+  const baseCharge = (r.paidHours || 1) * rate;
+  return {
+    amount: baseCharge + extra.charge,
+    hours: r.paidHours,
+    rate,
+    detail: 'hora',
+    baseCharge,
+    extraBlocks: extra.blocks,
+    extraCharge: extra.charge,
+    tolerance: extra.tolerance,
+    extraMs
+  };
 }
 
 function stateFor(r){
@@ -1341,6 +1036,12 @@ function stateFor(r){
     const isUrgent = remaining < 30 * 60000 && remaining > 0;
     return { phase: r.checkOut ? 'finished' : 'running', mode: 'paquete', remaining, urgent: isUrgent, endTime: r.packageEndTime };
   }
+  if(r.mode === 'corrida'){
+    const entry = new Date(r.checkIn).getTime();
+    const elapsedMs = now - entry;
+    return { phase: r.checkOut ? 'finished' : 'running', mode: 'corrida', elapsedMs };
+  }
+  // modo hora
   const entry = new Date(r.checkIn).getTime();
   const paidMs = (r.paidHours || 1) * 3600000;
   const elapsedMs = now - entry;
@@ -1348,7 +1049,8 @@ function stateFor(r){
   const pct = Math.min(100, Math.max(0, (elapsedMs / paidMs) * 100));
   const barWidth = Math.max(0, 100 - pct);
   let cls = '', color = 'var(--green)', urgency = 'ok';
-  if(remaining < 0){ cls = 'crit blink'; color = 'var(--red)'; urgency = 'urgent'; }
+  if(remaining < -TOLERANCE_MS){ cls = 'crit blink'; color = 'var(--red)'; urgency = 'urgent'; }
+  else if(remaining < 0){ cls = 'warn'; color = 'var(--accent)'; urgency = 'warn'; }
   else if(pct < 50){ cls = ''; color = 'var(--green)'; urgency = 'ok'; }
   else if(pct < 80){ cls = 'warn'; color = 'var(--accent)'; urgency = 'warn'; }
   else if(pct < 95){ cls = 'crit'; color = 'var(--red)'; urgency = 'crit'; }
@@ -1356,6 +1058,9 @@ function stateFor(r){
   return { phase: r.checkOut ? 'finished' : 'running', mode: 'hora', elapsedMs, paidMs, remaining, pct, barWidth, cls, color, urgency };
 }
 
+/* =========================================================
+   FICHA TIPO BOCETO
+   ========================================================= */
 function cardRoom(r){
   const isLibre = r.status === 'libre';
   if(isLibre){
@@ -1372,6 +1077,7 @@ function cardRoom(r){
   }
   const s = stateFor(r);
 
+  /* ---- PAQUETE NOCTURNO ---- */
   if(s.mode === 'paquete'){
     const inTime = fmtTime(r.checkIn);
     const outTime = r.packageEndTime || '--:--';
@@ -1395,6 +1101,11 @@ function cardRoom(r){
           <div><div class="ab-lbl">Bs Total</div><div class="ab-val">${money(grand)}</div></div>
           <div class="ab-sub">Tarifa fija: ${money(totalAmt)}<br>${consTotal > 0 ? 'Consumos: ' + money(consTotal) : 'Sin consumos'}</div>
         </div>
+        <button class="btn-add-product" onclick="event.stopPropagation(); openQuickProduct('${r.id}')">
+          <span class="pap-icon">＋</span>
+          <span>Agregar producto</span>
+          ${consTotal > 0 ? `<span class="pap-count">${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems</span>` : ''}
+        </button>
         <div class="cr-pay-row">
           <button class="pay-btn purple" onclick="event.stopPropagation(); openCheckOut('${r.id}')">Por cobrar</button>
           <button class="pay-btn green" onclick="event.stopPropagation(); quickPay('${r.id}','efectivo')">Efecto</button>
@@ -1403,6 +1114,65 @@ function cardRoom(r){
       </div>`;
   }
 
+  /* ---- MODO CORRIDA (sin límite) ---- */
+  if(s.mode === 'corrida'){
+    const entryTimeStr = fmtTime(r.checkIn);
+    const nowTimeStr = fmtTime(new Date());
+    const elapsedStr = fmtHM(s.elapsedMs);
+    const isFinished = !!r.checkOut;
+    const calc = calcRoomAmount(r, r.checkOut ? new Date(r.checkOut).getTime() : Date.now());
+    const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+    const grand = calc.amount + consTotal;
+    const badgeCls = r.paymentStatus === 'pendiente' ? 'pending' : 'corrida';
+    const badgeTxt = r.paymentStatus === 'pendiente' ? 'Por cobrar' : 'Corrida';
+
+    // Hora que se cobraría ahora
+    const horasCobradas = calc.hours;
+
+    const gridHTML = isFinished ? `
+      <div class="cr-grid">
+        <div class="cr-col"><span class="k">H. Inicio</span><span class="v">${entryTimeStr}</span></div>
+        <div class="cr-col"><span class="k">H. Fin</span><span class="v">${fmtTime(r.checkOut)}</span></div>
+        <div class="cr-col hl"><span class="k">H. Pieza</span><span class="v big">${fmtHM(new Date(r.checkOut).getTime() - new Date(r.checkIn).getTime())}</span></div>
+      </div>` : `
+      <div class="cr-grid">
+        <div class="cr-col"><span class="k">Ingreso</span><span class="v">${entryTimeStr}</span></div>
+        <div class="cr-col"><span class="k">H. Actu</span><span class="v live" data-now-time="${r.id}">${nowTimeStr}</span></div>
+        <div class="cr-col hl"><span class="k">H. Pieza</span><span class="v big" data-elapsed="${r.id}">${elapsedStr}</span></div>
+      </div>`;
+
+    return `
+      <div class="card-room corrida">
+        <div class="cr-top">
+          <div class="cr-pieza">PIEZA <span class="num">${r.num}</span> <span class="mode-tag corrida">⏱️ Hora corrida</span></div>
+          <span class="cr-badge ${badgeCls}">${badgeTxt}</span>
+        </div>
+        ${gridHTML}
+        <div class="cr-amount-box">
+          <div><div class="ab-lbl">Monto</div><div class="ab-val" data-amount="${r.id}">${money(grand)}</div></div>
+          <div class="ab-sub">
+            ${horasCobradas}h × ${money(calc.rate)}
+            ${consTotal > 0 ? `<br>+ consumos ${money(consTotal)}` : ''}
+          </div>
+        </div>
+        <button class="btn-add-product" onclick="event.stopPropagation(); openQuickProduct('${r.id}')">
+          <span class="pap-icon">＋</span>
+          <span>Agregar producto</span>
+          ${consTotal > 0 ? `<span class="pap-count">${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems</span>` : ''}
+        </button>
+        <button class="btn-edit-hours" onclick="event.stopPropagation(); openCheckOut('${r.id}');">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
+          Editar hora de ingreso
+        </button>
+        <div class="cr-pay-row">
+          <button class="pay-btn purple" onclick="event.stopPropagation(); openCheckOut('${r.id}')">Por cobrar</button>
+          <button class="pay-btn green" onclick="event.stopPropagation(); quickPay('${r.id}','efectivo')">Efecto</button>
+          <button class="pay-btn blue" onclick="event.stopPropagation(); quickPay('${r.id}','qr')">Q.R.</button>
+        </div>
+      </div>`;
+  }
+
+  /* ---- MODO HORA ---- */
   const entryTimeStr = fmtTime(r.checkIn);
   const nowTimeStr = fmtTime(new Date());
   const elapsedStr = fmtHM(s.elapsedMs);
@@ -1430,7 +1200,7 @@ function cardRoom(r){
   const barHTML = isFinished ? '' : `
     <div class="cr-progress"><div class="cr-progress-fill ${s.cls}" data-timer-bar="${r.id}" style="width:${s.barWidth}%"></div></div>
     <div class="cr-sub ${s.remaining < 0 ? 'crit' : ''}" data-timer-sub="${r.id}">
-      ${s.remaining >= 0 ? 'Falta ' + fmtHM(s.remaining) : 'Excedido ' + fmtHM(-s.remaining)} · <b>${r.paidHours}h × ${money(r.hourlyRate)}</b>
+      ${s.remaining >= 0 ? 'Falta ' + fmtHM(s.remaining) : (s.remaining > -TOLERANCE_MS ? '✓ En tolerancia (' + fmtHM(-s.remaining) + ')' : 'Excedido ' + fmtHM(-s.remaining))} · <b>${r.paidHours}h × ${money(r.hourlyRate)}</b>
     </div>`;
 
   return `
@@ -1445,6 +1215,15 @@ function cardRoom(r){
         <div><div class="ab-lbl">Monto</div><div class="ab-val" data-amount="${r.id}">${money(grand)}</div></div>
         <div class="ab-sub">${calc.hours ? `${calc.hours}h × ${money(calc.rate)}` : ''}${consTotal > 0 ? `<br>+ consumos ${money(consTotal)}` : ''}</div>
       </div>
+      <button class="btn-add-product" onclick="event.stopPropagation(); openQuickProduct('${r.id}')">
+        <span class="pap-icon">＋</span>
+        <span>Agregar producto</span>
+        ${consTotal > 0 ? `<span class="pap-count">${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems</span>` : ''}
+      </button>
+      <button class="btn-edit-hours" onclick="event.stopPropagation(); openCheckOut('${r.id}');">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
+        Editar horas
+      </button>
       <div class="cr-pay-row">
         <button class="pay-btn purple" onclick="event.stopPropagation(); openCheckOut('${r.id}')">Por cobrar</button>
         <button class="pay-btn green" onclick="event.stopPropagation(); quickPay('${r.id}','efectivo')">Efecto</button>
@@ -1478,6 +1257,80 @@ function clickRoom(id){
   else openCheckOut(id);
 }
 
+/* =========================================================
+   AGREGAR PRODUCTO RÁPIDO desde la tarjeta
+   ========================================================= */
+let qp = null;
+function openQuickProduct(roomId){
+  const r = db.rooms.find(x => x.id === roomId);
+  if(!r || r.status !== 'ocupada') return;
+  qp = { roomId };
+
+  const prods = db.products.filter(p => stockOf(p.id) > 0);
+  if(!prods.length){
+    openSheet('Agregar producto', `
+      <p class="empty">No hay productos con stock disponible.<br><br>Ve a <b>Productos</b> para agregar alguno.</p>
+    `, `<button class="btn" onclick="closeModal()">Cerrar</button>`);
+    return;
+  }
+
+  const prodsHTML = prods.map(p => {
+    const inCart = r.consumos.find(c => c.productId === p.id);
+    return `
+      <div class="cons-item" style="padding:14px">
+        <span style="font-weight:700">${esc(p.name)}</span>
+        <span class="q">stock ${stockOf(p.id)} · ${money(p.price)}</span>
+        ${inCart ? `<span style="margin-left:auto;font-size:11px;font-weight:800;color:var(--accent)">×${inCart.qty}</span>` : ''}
+        <button onclick="addProdToRoom('${p.id}')" style="color:var(--accent);background:var(--accent);width:32px;height:32px;border-radius:50%;color:#fff;font-size:18px;font-weight:800;border:none;box-shadow:0 2px 8px rgba(184,134,11,.4)">+</button>
+      </div>`;
+  }).join('');
+
+  const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+  const consListHTML = r.consumos.length ? `
+    <div class="group-title" style="padding-left:4px">En la pieza (${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems)</div>
+    <div class="cons-list">${r.consumos.map((c,i) => `
+      <div class="cons-item">
+        <span>${esc(c.name)}</span>
+        <span class="q">×${c.qty}</span>
+        <span class="p">${money(c.price*c.qty)}</span>
+        <button onclick="rmProdFromRoom('${c.productId}')">✕</button>
+      </div>`).join('')}</div>
+  ` : '';
+
+  openSheet(`Agregar producto · Pieza ${r.num}`, `
+    ${consListHTML}
+    <div class="group-title" style="padding-left:4px">Productos disponibles</div>
+    <div class="cons-list">${prodsHTML}</div>
+  `, `<button class="btn primary" onclick="closeModal()">Listo${consTotal > 0 ? ` · ${money(consTotal)}` : ''}</button>`);
+}
+
+function addProdToRoom(pid){
+  const r = db.rooms.find(x => x.id === qp.roomId);
+  if(!r) return;
+  const p = db.products.find(x => x.id === pid);
+  if(!p) return;
+  const stock = stockOf(pid);
+  const ex = r.consumos.find(c => c.productId === pid);
+  const currentQty = ex ? ex.qty : 0;
+  if(currentQty + 1 > stock){ toast('Stock insuficiente'); return; }
+  if(ex) ex.qty += 1;
+  else r.consumos.push({ productId: pid, name: p.name, qty: 1, price: p.price, cost: p.cost });
+  save(); renderAll(); openQuickProduct(qp.roomId);
+  toast(`${p.name} agregado`);
+}
+function rmProdFromRoom(pid){
+  const r = db.rooms.find(x => x.id === qp.roomId);
+  if(!r) return;
+  const idx = r.consumos.findIndex(c => c.productId === pid);
+  if(idx === -1) return;
+  if(r.consumos[idx].qty > 1) r.consumos[idx].qty -= 1;
+  else r.consumos.splice(idx, 1);
+  save(); renderAll(); openQuickProduct(qp.roomId);
+}
+
+/* =========================================================
+   QUICK PAY
+   ========================================================= */
 function quickPay(id, method){
   const r = db.rooms.find(x => x.id === id);
   if(!r || r.status !== 'ocupada') return;
@@ -1495,6 +1348,7 @@ function registerSale(r, total, payments, refTs){
   const iso = new Date(refTs).toISOString();
   const detailParts = [`Pieza ${r.num}`];
   if(r.mode === 'paquete') detailParts.push('PAQUETE');
+  else if(r.mode === 'corrida') detailParts.push('CORRIDA ' + elapsed(refTs - new Date(r.checkIn).getTime()));
   else detailParts.push(elapsed(refTs - new Date(r.checkIn).getTime()));
   const payStr = payments.map(p => `${p.method.toUpperCase()} ${money(p.amount)}`).join(' + ');
   detailParts.push(payStr);
@@ -1522,16 +1376,24 @@ function registerSale(r, total, payments, refTs){
   save(); renderAll();
 }
 
-/* CHECK-IN */
+/* =========================================================
+   CHECK-IN — 3 modos: hora, corrida, paquete
+   ========================================================= */
 let ci = null;
 function openCheckIn(id){
   const r = db.rooms.find(x => x.id === id);
-  ci = { roomId: id, entryTs: Date.now(), captured: false, mode: 'hora', paidHours: 2, hourlyRate: r.price, packageEndTime: '07:00', packagePrice: 150 };
+  ci = {
+    roomId: id, entryTs: Date.now(), captured: false,
+    mode: 'hora',
+    paidHours: 2, hourlyRate: r.price,
+    packageEndTime: '07:00', packagePrice: 150
+  };
   renderCheckInSheet();
 }
 function renderCheckInSheet(){
   const r = db.rooms.find(x => x.id === ci.roomId);
   const chipsHTML = [1,2,3,4,6,12].map(h => `<button class="chip ${h === ci.paidHours ? 'active':''}" data-h="${h}">${h}h</button>`).join('');
+
   const horaBody = `
     <div class="field">
       <label>Tiempo pagado</label>
@@ -1540,21 +1402,55 @@ function renderCheckInSheet(){
     </div>
     <div class="field"><label>Tarifa por hora (Bs)</label><input id="ciRate" type="number" inputmode="decimal" min="0" step="1" value="${ci.hourlyRate}"></div>
     <div class="total-box"><span>Total a cobrar</span><b id="ciTotal">${money(ci.paidHours * ci.hourlyRate)}</b></div>`;
+
+  const corridaBody = `
+    <div class="field"><label>Tarifa por hora (Bs)</label><input id="ciRate" type="number" inputmode="decimal" min="0" step="1" value="${ci.hourlyRate}"></div>
+    <div class="total-box" style="flex-direction:column;align-items:stretch;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span>Se cobra al salir</span>
+        <b style="font-size:16px;color:var(--text-2)">${money(ci.hourlyRate)}/h</b>
+      </div>
+      <div style="font-size:11.5px;color:var(--text-2);text-align:left;line-height:1.5">
+        Sin límite de tiempo. Se cobra por hora completa transcurrida.<br>
+        <b style="color:var(--green)">Tolerancia: 10 min</b> · luego media tarifa cada 30 min.
+      </div>
+    </div>`;
+
   const paqueteBody = `
     <div class="field"><label>Hora de fin del paquete</label><input id="ciPackEnd" type="time" value="${ci.packageEndTime}"><p class="helper">Ej: 07:00 para paquete nocturno</p></div>
     <div class="field"><label>Precio del paquete (Bs)</label><input id="ciPackPrice" type="number" inputmode="decimal" min="0" step="1" value="${ci.packagePrice}"></div>
     <div class="total-box"><span>Total del paquete</span><b id="ciPackTotal">${money(ci.packagePrice)}</b></div>`;
 
+  const bodyHTML = ci.mode === 'hora' ? horaBody : (ci.mode === 'corrida' ? corridaBody : paqueteBody);
+
   openSheet(`Registrar ingreso`, `
-    <div class="cr-client" style="margin-bottom:14px">
-      <div class="cc-ico">${esc(r.num)}</div>
-      <div class="cc-info"><div class="cc-name">${esc(r.name)}</div><div class="cc-dni">${money(r.price)}/hora</div></div>
+    <div class="cr-client" style="margin-bottom:14px;padding:12px;background:var(--amount-bg);border-radius:12px;display:flex;align-items:center;gap:12px">
+      <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(140deg,var(--accent),var(--accent-deep));color:#fff;display:grid;place-items:center;font-size:16px;font-weight:800;box-shadow:0 4px 12px rgba(184,134,11,.35)">${esc(r.num)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:15px;font-weight:700">${esc(r.name)}</div>
+        <div style="font-size:12px;color:var(--text-2);font-variant-numeric:tabular-nums">${money(r.price)}/hora</div>
+      </div>
     </div>
+
     <div class="field" style="margin-bottom:10px"><label style="padding-left:0">Tipo de servicio</label></div>
     <div class="mode-picker">
-      <div class="mode-pick ${ci.mode === 'hora' ? 'active' : ''}" data-mode="hora"><span class="mp-ic">⏱️</span><div class="mp-tt">Por hora</div><div class="mp-ds">Tarifa por tiempo</div></div>
-      <div class="mode-pick ${ci.mode === 'paquete' ? 'active night' : ''}" data-mode="paquete"><span class="mp-ic">🌙</span><div class="mp-tt">Paquete nocturno</div><div class="mp-ds">Precio fijo hasta hora</div></div>
+      <div class="mode-pick ${ci.mode === 'hora' ? 'active' : ''}" data-mode="hora">
+        <span class="mp-ic">⏱️</span>
+        <div class="mp-tt">Por hora</div>
+        <div class="mp-ds">Tiempo pactado</div>
+      </div>
+      <div class="mode-pick ${ci.mode === 'corrida' ? 'active corrida' : ''}" data-mode="corrida">
+        <span class="mp-ic">♾️</span>
+        <div class="mp-tt">Hora corrida</div>
+        <div class="mp-ds">Sin límite · paga al salir</div>
+      </div>
+      <div class="mode-pick ${ci.mode === 'paquete' ? 'active night' : ''}" data-mode="paquete">
+        <span class="mp-ic">🌙</span>
+        <div class="mp-tt">Paquete</div>
+        <div class="mp-ds">Precio fijo hasta hora</div>
+      </div>
     </div>
+
     <div class="time-capture">
       <div class="time-lbl-sm">Hora de ingreso</div>
       <div class="time-display" id="ciLiveClock">${renderLiveClock(ci.entryTs)}</div>
@@ -1564,7 +1460,7 @@ function renderCheckInSheet(){
         <span id="ciCaptureLabel">${ci.captured ? 'Hora capturada' : 'Capturar hora de ingreso'}</span>
       </button>
     </div>
-    <div id="ciModeBody">${ci.mode === 'hora' ? horaBody : paqueteBody}</div>
+    <div id="ciModeBody">${bodyHTML}</div>
   `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="doCheckIn()">Registrar ingreso</button>`);
   setTimeout(() => {
     $$('.mode-pick').forEach(m => { m.onclick = () => { ci.mode = m.dataset.mode; renderCheckInSheet(); }; });
@@ -1579,7 +1475,9 @@ function renderCheckInSheet(){
         };
       });
       $('#ciHours').oninput = e => { ci.paidHours = Number(e.target.value) || 0; $$('#ciChips .chip').forEach(c => c.classList.toggle('active', Number(c.dataset.h) === ci.paidHours)); updateCiTotal(); };
-      $('#ciRate').oninput = e => { ci.hourlyRate = Number(e.target.value) || 0; updateCiTotal(); };
+      if($('#ciRate')) $('#ciRate').oninput = e => { ci.hourlyRate = Number(e.target.value) || 0; updateCiTotal(); };
+    } else if(ci.mode === 'corrida'){
+      if($('#ciRate')) $('#ciRate').oninput = e => { ci.hourlyRate = Number(e.target.value) || 0; };
     } else {
       $('#ciPackEnd').onchange = e => { ci.packageEndTime = e.target.value; };
       $('#ciPackPrice').oninput = e => { ci.packagePrice = Number(e.target.value) || 0; $('#ciPackTotal').textContent = money(ci.packagePrice); };
@@ -1615,24 +1513,35 @@ function doCheckIn(){
   if(ci.mode === 'hora'){
     r.paidHours = ci.paidHours;
     r.hourlyRate = ci.hourlyRate;
-    r.packageEndTime = null;
-    r.packagePrice = null;
+    r.packageEndTime = null; r.packagePrice = null;
+  } else if(ci.mode === 'corrida'){
+    r.paidHours = null;
+    r.hourlyRate = ci.hourlyRate;
+    r.packageEndTime = null; r.packagePrice = null;
   } else {
     r.packageEndTime = ci.packageEndTime;
     r.packagePrice = ci.packagePrice;
-    r.paidHours = null;
-    r.hourlyRate = null;
+    r.paidHours = null; r.hourlyRate = null;
   }
   save(); closeModal(); renderAll();
-  toast(`Pieza ${r.num} · ${ci.mode === 'paquete' ? 'Paquete' : ci.paidHours + 'h'}`);
+  toast(`Pieza ${r.num} · ${ci.mode === 'paquete' ? 'Paquete' : ci.mode === 'corrida' ? 'Corrida' : ci.paidHours + 'h'}`);
 }
 
-/* CHECK-OUT */
+/* =========================================================
+   CHECK-OUT con EDICIÓN DE HORAS
+   ========================================================= */
 let co = null;
 function openCheckOut(id){
   const r = db.rooms.find(x => x.id === id);
   const refTs = r.checkOut ? new Date(r.checkOut).getTime() : Date.now();
-  co = { id, exitTs: refTs, captured: r.checkOut ? true : false, payEfectivo: 0, payQr: 0 };
+  co = {
+    id, exitTs: refTs,
+    captured: r.checkOut ? true : false,
+    payEfectivo: 0, payQr: 0,
+    // Valores editables (se inicializan con las horas reales)
+    entryTime: fmtTime(r.checkIn),
+    exitTime: r.checkOut ? fmtTime(r.checkOut) : (function(){ const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); })()
+  };
   const calc = calcRoomAmount(r, refTs);
   const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
   co.payEfectivo = calc.amount + consTotal;
@@ -1645,40 +1554,31 @@ function renderCheckOutSheet(){
   const grand = calc.amount + consTotal;
   const pagado = (co.payEfectivo || 0) + (co.payQr || 0);
   const diff = grand - pagado;
-  const prodOpts = db.products.filter(p => stockOf(p.id) > 0).map(p => `<option value="${p.id}">${esc(p.name)} — ${money(p.price)}</option>`).join('');
+
   const consHTML = r.consumos.length
     ? `<div class="cons-list">${r.consumos.map((c,i) => `<div class="cons-item"><span>${esc(c.name)}</span><span class="q">×${c.qty}</span><span class="p">${money(c.price*c.qty)}</span><button onclick="delConsumo(${i})">✕</button></div>`).join('')}</div>`
     : `<p class="hint" style="margin:0 0 14px">Sin consumos.</p>`;
 
-  let headerHTML;
+  // Desglose según modo
+  let breakdownHTML = '';
   if(r.mode === 'paquete'){
-    headerHTML = `
-      <div class="info-grid">
-        <div><span>H. Inicio</span><b>${fmtTime(r.checkIn)}</b></div>
-        <div><span>H. Fin</span><b>${r.packageEndTime || '—'}</b></div>
-        <div><span>Tipo</span><b>Paquete nocturno</b></div>
-        <div><span>Tarifa fija</span><b>${money(r.packagePrice)}</b></div>
-      </div>`;
+    breakdownHTML = `
+      <div class="bd-row"><span>Paquete nocturno</span><span>${money(r.packagePrice)}</span></div>
+      ${consTotal > 0 ? `<div class="bd-row extra"><span>Consumos</span><span>${money(consTotal)}</span></div>` : ''}
+      <div class="bd-row total-row"><span>Total</span><span>${money(grand)}</span></div>`;
+  } else if(r.mode === 'corrida'){
+    breakdownHTML = `
+      <div class="bd-row"><span>${calc.hours}h × ${money(calc.rate)}</span><span>${money(calc.amount)}</span></div>
+      ${consTotal > 0 ? `<div class="bd-row extra"><span>Consumos</span><span>${money(consTotal)}</span></div>` : ''}
+      <div class="bd-row total-row"><span>Total</span><span>${money(grand)}</span></div>`;
   } else {
-    const startTime = fmtTime(r.checkIn);
-    const endTime = co.captured ? timeStr(co.exitTs).slice(0,5) : '--:--';
-    const elapsedStr = co.captured ? fmtHM(co.exitTs - new Date(r.checkIn).getTime()) : '--:--';
-    headerHTML = `
-      <div class="time-capture" style="margin-bottom:14px">
-        <div class="time-lbl-sm">Hora de salida</div>
-        <div class="time-display" id="coLiveClock">${co.captured ? `${pad(new Date(co.exitTs).getHours())}:${pad(new Date(co.exitTs).getMinutes())}:<span class="sec">${pad(new Date(co.exitTs).getSeconds())}</span>` : renderLiveClock(co.exitTs)}</div>
-        <div class="captured-info ${co.captured?'show':''}"><span>✓ Capturada:</span><b>${co.captured ? timeStr(co.exitTs) : '—'}</b></div>
-        <button class="time-btn ${co.captured?'captured':''}" id="coCaptureBtn" onclick="captureExitTime()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
-          <span id="coCaptureLabel">${co.captured ? 'Hora capturada' : 'Capturar hora de salida'}</span>
-        </button>
-      </div>
-      <div class="info-grid">
-        <div><span>H. Inicio</span><b>${startTime}</b></div>
-        <div><span>H. Fin</span><b>${endTime}</b></div>
-        <div><span>H. Pieza</span><b>${elapsedStr}</b></div>
-        <div><span>Tarifa</span><b>${money(r.hourlyRate)}/h</b></div>
-      </div>`;
+    // modo hora
+    breakdownHTML = `
+      <div class="bd-row"><span>${r.paidHours}h × ${money(r.hourlyRate)}</span><span>${money(calc.baseCharge)}</span></div>
+      ${calc.extraCharge > 0 ? `<div class="bd-row extra"><span>Extra ${calc.extraBlocks}×30m</span><span>${money(calc.extraCharge)}</span></div>` : ''}
+      ${calc.extraBlocks === 0 && calc.extraMs > 0 && calc.extraMs <= TOLERANCE_MS ? `<div class="bd-row tolerance"><span>✓ En tolerancia (≤10 min)</span><span>Bs 0</span></div>` : ''}
+      ${consTotal > 0 ? `<div class="bd-row extra"><span>Consumos</span><span>${money(consTotal)}</span></div>` : ''}
+      <div class="bd-row total-row"><span>Total</span><span>${money(grand)}</span></div>`;
   }
 
   const payLinesHTML = `
@@ -1695,21 +1595,71 @@ function renderCheckOutSheet(){
       ${Math.abs(diff) > 0.01 ? `<div class="pay-summary"><span>Diferencia</span><b class="err">${money(diff)}</b></div>` : ''}
     </div>`;
 
-  openSheet(`Cobrar · Pieza ${r.num}`, `
-    ${headerHTML}
-    <div class="group-title" style="padding-left:4px">Desglose</div>
-    <div class="breakdown">
-      <div class="bd-row"><span>${r.mode === 'paquete' ? 'Paquete' : (calc.hours + 'h × ' + money(calc.rate))}</span><span>${money(calc.amount)}</span></div>
-      ${consTotal > 0 ? `<div class="bd-row extra"><span>Consumos</span><span>${money(consTotal)}</span></div>` : ''}
-      <div class="bd-row total-row"><span>Total</span><span>${money(grand)}</span></div>
+  // Panel de edición de horas
+  const editHoursHTML = r.mode !== 'paquete' ? `
+    <div class="group-title" style="padding-left:4px">Editar horas (si hay errores)</div>
+    <div class="edit-hours-panel">
+      <div class="eh-row">
+        <div>
+          <div class="eh-lbl">H. Ingreso</div>
+          <input type="time" id="coEntryTime" value="${co.entryTime}" onchange="editHours('entry', this.value)">
+        </div>
+        <div>
+          <div class="eh-lbl">${r.mode === 'hora' ? 'H. Salida' : 'H. Actual / Fin'}</div>
+          <input type="time" id="coExitTime" value="${co.exitTime}" onchange="editHours('exit', this.value)">
+        </div>
+      </div>
+      <p class="helper" style="text-align:center;padding-top:8px">Ajusta manualmente si hubo error al capturar</p>
     </div>
-    <div class="group-title" style="padding-left:4px">Consumos (opcional)</div>
+  ` : '';
+
+  // Botón agregar producto
+  const addProdBtnHTML = `
+    <button class="btn-add-product" onclick="openQuickProduct('${r.id}')">
+      <span class="pap-icon">＋</span>
+      <span>Agregar producto</span>
+      ${consTotal > 0 ? `<span class="pap-count">${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems</span>` : ''}
+    </button>`;
+
+  openSheet(`Cobrar · Pieza ${r.num}`, `
+    ${addProdBtnHTML}
+    ${editHoursHTML}
+    <div class="group-title" style="padding-left:4px">Desglose</div>
+    <div class="breakdown">${breakdownHTML}</div>
+
+    <div class="group-title" style="padding-left:4px">Consumos</div>
     ${consHTML}
-    ${ prodOpts ? `<div class="inline-add"><select id="coProd">${prodOpts}</select><input id="coQty" type="number" inputmode="numeric" min="1" value="1"><button class="btn sm" onclick="addConsumo()">＋</button></div>` : '' }
+
     <div class="group-title" style="padding-left:4px">Forma de pago</div>
     ${payLinesHTML}
   `, `<button class="btn purple" onclick="doPorCobrar()">Por cobrar</button><button class="btn primary" onclick="doConfirmarCobro()">Cobrar</button>`);
 }
+
+/* Editar horas manualmente */
+function editHours(which, value){
+  const r = db.rooms.find(x => x.id === co.id);
+  if(!r) return;
+  const [hh, mm] = value.split(':').map(Number);
+  const baseDate = which === 'entry' ? new Date(r.checkIn) : new Date(co.exitTs);
+  baseDate.setHours(hh, mm, 0, 0);
+  if(which === 'entry'){
+    r.checkIn = baseDate.toISOString();
+    co.entryTime = value;
+  } else {
+    co.exitTs = baseDate.getTime();
+    co.captured = true;
+    co.exitTime = value;
+  }
+  // Recalcular pago efectivo
+  const calc = calcRoomAmount(r, co.exitTs);
+  const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+  co.payEfectivo = calc.amount + consTotal;
+  co.payQr = 0;
+  save();
+  renderCheckOutSheet();
+  toast('Hora actualizada');
+}
+
 function updatePay(val, method){
   const num = Number(val) || 0;
   if(method === 'efectivo') co.payEfectivo = num;
@@ -1735,26 +1685,16 @@ function delConsumo(i){
   save();
   renderCheckOutSheet();
 }
-function captureExitTime(){
-  co.exitTs = Date.now(); co.captured = true;
-  const r = db.rooms.find(x => x.id === co.id);
-  const calc = calcRoomAmount(r, co.exitTs);
-  const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
-  co.payEfectivo = calc.amount + consTotal;
-  co.payQr = 0;
-  renderCheckOutSheet();
-}
 function doPorCobrar(){
   const r = db.rooms.find(x => x.id === co.id);
-  const refTs = co.captured ? co.exitTs : Date.now();
-  r.checkOut = new Date(refTs).toISOString();
+  r.checkOut = new Date(co.exitTs).toISOString();
   r.paymentStatus = 'pendiente';
   save(); closeModal(); renderAll();
   toast(`Pieza ${r.num} marcada POR COBRAR`);
 }
 function doConfirmarCobro(){
   const r = db.rooms.find(x => x.id === co.id);
-  const refTs = co.captured ? co.exitTs : Date.now();
+  const refTs = co.exitTs;
   const calc = calcRoomAmount(r, refTs);
   const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
   const grand = calc.amount + consTotal;
@@ -1766,7 +1706,7 @@ function doConfirmarCobro(){
     if(!confirm(`El pago (${money(pagado)}) no coincide con el total (${money(grand)}).\n\n¿Registrar igual?`)) return;
   }
   if(!payments.length){ toast('Ingresa un monto de pago'); return; }
-  if(co.captured && !r.checkOut) r.checkOut = new Date(refTs).toISOString();
+  if(!r.checkOut) r.checkOut = new Date(refTs).toISOString();
   registerSale(r, pagado, payments, refTs);
   closeModal();
   toast(`Pieza ${r.num} cobrada · ${money(pagado)}`);
@@ -1789,11 +1729,12 @@ function updateTimers(){
         bar.style.width = s.barWidth + '%';
         bar.className = 'cr-progress-fill ' + s.cls;
         if(s.remaining >= 0){ sub.innerHTML = `Falta ${fmtHM(s.remaining)} · <b>${r.paidHours}h × ${money(r.hourlyRate)}</b>`; sub.classList.remove('crit'); }
+        else if(s.remaining > -TOLERANCE_MS){ sub.innerHTML = `✓ En tolerancia (${fmtHM(-s.remaining)}) · <b>${r.paidHours}h × ${money(r.hourlyRate)}</b>`; sub.classList.remove('crit'); }
         else { sub.innerHTML = `Excedido ${fmtHM(-s.remaining)} · <b>${r.paidHours}h × ${money(r.hourlyRate)}</b>`; sub.classList.add('crit'); }
       }
     }
     const amountEl = document.querySelector(`[data-amount="${r.id}"]`);
-    if(amountEl && r.mode === 'hora'){
+    if(amountEl && (r.mode === 'hora' || r.mode === 'corrida')){
       const calc = calcRoomAmount(r, now);
       const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
       amountEl.textContent = money(calc.amount + consTotal);
