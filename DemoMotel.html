@@ -8,7 +8,7 @@
 <style>
 :root{
   --accent:#C8963E; --accent-deep:#A87830;
-  --green:#34C759; --red:#FF3B30; --blue:#0A84FF;
+  --green:#34C759; --red:#FF3B30; --blue:#0A84FF; --purple:#AF52DE;
   --r-lg:20px; --r-md:14px;
   --ease:cubic-bezier(.32,.72,0,1);
   --safe-b:env(safe-area-inset-bottom,0px);
@@ -55,12 +55,7 @@ input,select,button{-webkit-appearance:none;appearance:none}
 .page-title > div{flex:1;min-width:0}
 .page-title h1{font-size:32px;font-weight:700;letter-spacing:-.028em;line-height:1.1}
 .page-title p{font-size:13.5px;color:var(--text-2);margin-top:3px}
-.page-title .add-btn{
-  padding:9px 14px;border-radius:11px;
-  background:var(--accent);color:var(--accent-text);
-  font-size:13px;font-weight:700;white-space:nowrap;
-  transition:transform .12s var(--ease);
-}
+.page-title .add-btn{padding:9px 14px;border-radius:11px;background:var(--accent);color:var(--accent-text);font-size:13px;font-weight:700;white-space:nowrap;transition:transform .12s var(--ease)}
 .page-title .add-btn:active{transform:scale(.94)}
 .tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;z-index:60;padding:6px 10px calc(var(--safe-b) + 6px);background:var(--nav-bg);backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);border-top:.5px solid var(--sep);display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
 .tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 0 4px;border-radius:10px;font-size:10.5px;font-weight:500;color:var(--text-3);transition:color .18s var(--ease),transform .18s var(--ease)}
@@ -79,56 +74,87 @@ input,select,button{-webkit-appearance:none;appearance:none}
 .stat .val.c-blue{color:var(--blue)}
 .stat .val.c-muted{color:var(--text-2)}
 
-/* TARJETAS TIPO CUADERNO */
+/* =========================================================
+   FICHA DE PIEZA — estilos tipo boceto
+   ========================================================= */
 .rooms-list{display:flex;flex-direction:column;gap:14px}
-.card-room{background:var(--surface);border-radius:18px;border:1.5px solid var(--sep);padding:16px;position:relative;overflow:hidden;transition:transform .18s var(--ease),border-color .2s}
+.card-room{
+  background:var(--surface);
+  border-radius:18px;
+  border:1.5px solid var(--sep);
+  padding:16px 16px 14px;
+  position:relative; overflow:hidden;
+  transition:transform .18s var(--ease),border-color .2s;
+}
 .card-room.free{border-color:var(--sep)}
-.card-room.busy{border-color:rgba(200,150,62,.55);background:linear-gradient(165deg,rgba(200,150,62,.07),var(--surface) 60%)}
-.card-room.urgent{border-color:rgba(255,59,48,.7);background:linear-gradient(165deg,rgba(255,59,48,.08),var(--surface) 60%);animation:pulseUrgent 1.6s ease-in-out infinite}
+.card-room.busy{border-color:rgba(200,150,62,.55);background:linear-gradient(165deg,rgba(200,150,62,.06),var(--surface) 60%)}
+.card-room.pending{
+  border-color:rgba(175,82,222,.6);
+  background:linear-gradient(165deg,rgba(175,82,222,.08),var(--surface) 60%);
+}
+.card-room.package{
+  border-color:rgba(10,132,255,.55);
+  background:linear-gradient(165deg,rgba(10,132,255,.07),var(--surface) 60%);
+}
+.card-room.urgent{
+  border-color:rgba(255,59,48,.7);
+  background:linear-gradient(165deg,rgba(255,59,48,.08),var(--surface) 60%);
+  animation:pulseUrgent 1.6s ease-in-out infinite;
+}
 @keyframes pulseUrgent{0%,100%{border-color:rgba(255,59,48,.7)}50%{border-color:rgba(255,59,48,.3)}}
-.cr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
-.cr-pieza{font-size:22px;font-weight:800;letter-spacing:-.02em}
-.cr-pieza .num{color:var(--text);margin-left:4px}
+
+/* Cabecera */
+.cr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
+.cr-pieza{font-size:22px;font-weight:800;letter-spacing:-.02em;display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.cr-pieza .num{color:var(--text);margin-left:2px}
+.cr-pieza .mode-tag{
+  font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+  padding:3px 8px;border-radius:20px;
+  background:rgba(10,132,255,.16);color:var(--blue);
+}
+.cr-pieza .mode-tag.hora{background:rgba(200,150,62,.16);color:var(--accent)}
 .cr-badge{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:20px;flex-shrink:0}
 .cr-badge.free{background:rgba(52,199,89,.16);color:var(--green)}
 .cr-badge.busy{background:rgba(200,150,62,.2);color:var(--accent)}
+.cr-badge.pending{background:rgba(175,82,222,.2);color:var(--purple)}
+.cr-badge.package{background:rgba(10,132,255,.2);color:var(--blue)}
 .cr-badge.urgent{background:rgba(255,59,48,.2);color:var(--red);animation:blinkBar .9s ease-in-out infinite}
 
-/* DNI / cliente */
-.cr-client{
-  padding:10px 12px;background:var(--fill);border-radius:12px;margin-bottom:12px;
-  display:flex;align-items:center;gap:10px;
+/* Grid estilo cuaderno: Ingreso | H.Actu | H.Pieza  ó  Inicio | Fin | H.Pieza */
+.cr-grid{
+  display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:10px;
+  padding:14px 0;border-top:1px solid var(--sep);border-bottom:1px solid var(--sep);
+  margin-bottom:12px;
 }
-html[data-theme="light"] .cr-client{background:rgba(120,120,128,.08)}
-.cr-client .cc-ico{
-  width:32px;height:32px;border-radius:9px;flex-shrink:0;
-  background:linear-gradient(140deg,var(--accent),var(--accent-deep));
-  color:var(--accent-text);display:grid;place-items:center;
-  font-size:12px;font-weight:800;letter-spacing:.03em;
-}
-.cr-client .cc-info{flex:1;min-width:0}
-.cr-client .cc-name{
-  font-size:14.5px;font-weight:700;letter-spacing:-.01em;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.cr-client .cc-dni{
-  font-size:11.5px;color:var(--text-2);font-variant-numeric:tabular-nums;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.cr-client.sin {opacity:.55}
-
-/* Grid de tiempo */
-.cr-grid{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:10px;padding:12px 0;border-top:1px solid var(--sep);border-bottom:1px solid var(--sep);margin-bottom:12px}
 .cr-col{display:flex;flex-direction:column;gap:3px;text-align:center;position:relative}
 .cr-col + .cr-col::before{content:'';position:absolute;left:-5px;top:4px;bottom:4px;width:1px;background:var(--sep)}
 .cr-col .k{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
-.cr-col .v{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;color:var(--text)}
-.cr-col .v.big{font-size:19px;color:var(--accent);letter-spacing:-.02em}
-.cr-col .v.dash{color:var(--text-3);font-weight:500}
+.cr-col .v{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;color:var(--text)}
+.cr-col .v.live{color:var(--accent);font-size:18px}
+.cr-col .v.dash{color:var(--text-3);font-weight:500;letter-spacing:.05em}
+.cr-col .v.big{font-size:19px;color:var(--accent)}
 .cr-col.hl .v.big{color:var(--green)}
 .cr-col.warn .v.big{color:var(--accent)}
 .cr-col.crit .v.big{color:var(--red)}
 
+/* Monto grande estilo "Bs 45" del boceto */
+.cr-amount-box{
+  background:var(--fill); border-radius:12px;
+  padding:12px 14px; margin-bottom:12px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+html[data-theme="light"] .cr-amount-box{background:rgba(120,120,128,.08)}
+.cr-amount-box .ab-lbl{
+  font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2);
+}
+.cr-amount-box .ab-val{
+  font-size:26px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.02em;
+}
+.cr-amount-box .ab-sub{
+  font-size:11px;color:var(--text-2);font-variant-numeric:tabular-nums;text-align:right;
+}
+
+/* Barra que se vacía (solo modo hora con tiempo pagado) */
 .cr-progress{height:7px;background:var(--fill);border-radius:4px;overflow:hidden;margin-bottom:6px;position:relative}
 .cr-progress-fill{position:absolute;right:0;top:0;bottom:0;border-radius:4px;background:var(--green);transition:width .6s linear,background .5s}
 .cr-progress-fill.warn{background:var(--accent)}
@@ -139,16 +165,21 @@ html[data-theme="light"] .cr-client{background:rgba(120,120,128,.08)}
 .cr-sub b{color:var(--accent);font-weight:700}
 .cr-sub.crit b{color:var(--red)}
 
-.cr-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.cr-total{display:flex;flex-direction:column;gap:2px}
-.cr-total .k{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
-.cr-total .v{font-size:22px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-.cr-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
-.pay-btn{padding:9px 12px;border-radius:11px;font-size:12px;font-weight:700;border:1px solid var(--sep);background:var(--fill);color:var(--text-2);transition:transform .12s var(--ease);white-space:nowrap}
+/* Botones de cobro estilo boceto: Por cobrar / Efecto / QR */
+.cr-pay-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.pay-btn{
+  padding:11px 8px;border-radius:11px;
+  font-size:12px;font-weight:700;letter-spacing:.02em;
+  border:1px solid var(--sep);background:var(--fill);color:var(--text-2);
+  transition:transform .12s var(--ease),background .15s,color .15s;
+  text-align:center;white-space:nowrap;
+}
 .pay-btn:active{transform:scale(.94)}
-.pay-btn.green{background:rgba(52,199,89,.16);color:var(--green);border-color:rgba(52,199,89,.28)}
-.pay-btn.blue{background:rgba(10,132,255,.16);color:var(--blue);border-color:rgba(10,132,255,.28)}
-.pay-btn.gold{background:rgba(200,150,62,.18);color:var(--accent);border-color:rgba(200,150,62,.3)}
+.pay-btn.green{background:rgba(52,199,89,.14);color:var(--green);border-color:rgba(52,199,89,.3)}
+.pay-btn.blue{background:rgba(10,132,255,.14);color:var(--blue);border-color:rgba(10,132,255,.3)}
+.pay-btn.purple{background:rgba(175,82,222,.14);color:var(--purple);border-color:rgba(175,82,222,.3)}
+
+/* Libre */
 .btn-occupy{width:100%;padding:14px;border-radius:12px;margin-top:10px;background:var(--accent);color:var(--accent-text);font-size:15px;font-weight:700;transition:transform .12s var(--ease)}
 .btn-occupy:active{transform:scale(.97)}
 .card-room.free{padding:14px 16px}
@@ -156,7 +187,7 @@ html[data-theme="light"] .cr-client{background:rgba(120,120,128,.08)}
 .card-room.free .cr-info{font-size:13px;color:var(--text-2);padding:2px 0 6px}
 .card-room.free .cr-rate{font-size:15px;font-weight:700;color:var(--accent)}
 
-/* GRID / TABLES / FORM */
+/* GROUP / TABLES / FORM (sin cambios) */
 .group{background:var(--surface);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px}
 .group-title{font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;padding:0 8px 8px}
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -168,30 +199,23 @@ tbody tr:last-child td{border-bottom:none}
 .empty{padding:40px 20px;text-align:center;color:var(--text-2);font-size:13.5px}
 .row-btn{font-size:12px;font-weight:600;padding:7px 12px;border-radius:9px;background:var(--fill);color:var(--accent);transition:transform .15s var(--ease);white-space:nowrap}
 .row-btn:active{transform:scale(.93)}
-.row-btn.danger{color:var(--red)}
-
-/* LISTA DE HABITACIONES (admin) */
 .room-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:.5px solid var(--sep)}
 .room-row:last-child{border-bottom:none}
-.room-row .rr-num{
-  width:44px;height:44px;border-radius:12px;flex-shrink:0;
-  background:linear-gradient(140deg,var(--accent),var(--accent-deep));
-  color:var(--accent-text);display:grid;place-items:center;
-  font-size:16px;font-weight:800;font-variant-numeric:tabular-nums;
-}
+.room-row .rr-num{width:44px;height:44px;border-radius:12px;flex-shrink:0;background:linear-gradient(140deg,var(--accent),var(--accent-deep));color:var(--accent-text);display:grid;place-items:center;font-size:16px;font-weight:800;font-variant-numeric:tabular-nums}
 .room-row .rr-info{flex:1;min-width:0}
 .room-row .rr-name{font-size:15px;font-weight:600}
 .room-row .rr-meta{font-size:11.5px;color:var(--text-2);font-variant-numeric:tabular-nums}
 .room-row .rr-status{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:20px}
 .room-row .rr-status.libre{background:rgba(52,199,89,.16);color:var(--green)}
 .room-row .rr-status.ocupada{background:rgba(255,59,48,.16);color:var(--red)}
-
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:14px 20px;border-radius:var(--r-md);font-size:16px;font-weight:600;background:var(--surface-2);color:var(--text);transition:transform .12s var(--ease),opacity .15s;white-space:nowrap}
 html[data-theme="light"] .btn{background:var(--fill)}
 .btn:active{transform:scale(.96);opacity:.85}
 .btn.primary{background:var(--accent);color:var(--accent-text)}
 .btn.danger{background:rgba(255,59,48,.14);color:var(--red)}
 .btn.green{background:rgba(52,199,89,.16);color:var(--green)}
+.btn.purple{background:rgba(175,82,222,.16);color:var(--purple)}
+.btn.blue{background:rgba(10,132,255,.16);color:var(--blue)}
 .btn.sm{padding:9px 14px;font-size:14px;border-radius:11px}
 .btn.block{width:100%}
 .fab-row{display:flex;gap:8px;margin-bottom:16px}
@@ -205,8 +229,6 @@ html[data-theme="light"] .field input,html[data-theme="light"] .field select{bac
 .field .helper{font-size:11.5px;color:var(--text-3);padding:5px 4px 0}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .hint{font-size:13px;color:var(--text-2);padding:0 4px}
-
-/* TIME CAPTURE */
 .time-capture{background:var(--surface);border-radius:var(--r-md);padding:20px 16px;margin-bottom:18px;text-align:center;border:.5px solid var(--sep)}
 html[data-theme="light"] .time-capture{background:var(--bg)}
 .time-lbl-sm{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);font-weight:600;margin-bottom:6px}
@@ -225,7 +247,25 @@ html[data-theme="light"] .time-capture{background:var(--bg)}
 .chip{padding:9px 16px;background:var(--surface);border-radius:20px;font-size:14px;font-weight:600;color:var(--text-2);border:1px solid transparent;transition:all .18s var(--ease)}
 html[data-theme="light"] .chip{background:var(--bg)}
 .chip.active{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.chip.active.green{background:var(--green);color:#fff;border-color:var(--green)}
+.chip.active.blue{background:var(--blue);color:#fff;border-color:var(--blue)}
+.chip.active.purple{background:var(--purple);color:#fff;border-color:var(--purple)}
 .chip:active{transform:scale(.94)}
+
+/* Modo selector (Por hora / Paquete) */
+.mode-picker{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.mode-pick{
+  padding:16px 12px;border-radius:14px;border:1.5px solid var(--sep);
+  background:var(--surface);text-align:center;cursor:pointer;
+  transition:all .18s var(--ease);
+}
+html[data-theme="light"] .mode-pick{background:var(--bg)}
+.mode-pick.active{border-color:var(--accent);background:rgba(200,150,62,.1)}
+.mode-pick.active.night{border-color:var(--blue);background:rgba(10,132,255,.1)}
+.mode-pick .mp-ic{font-size:22px;margin-bottom:6px;display:block}
+.mode-pick .mp-tt{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.mode-pick .mp-ds{font-size:11px;color:var(--text-2);margin-top:3px}
+
 .breakdown{background:var(--surface);border-radius:var(--r-md);padding:2px 14px;margin-bottom:16px}
 html[data-theme="light"] .breakdown{background:var(--bg)}
 .bd-row{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;font-size:14px;border-bottom:.5px solid var(--sep)}
@@ -233,6 +273,10 @@ html[data-theme="light"] .breakdown{background:var(--bg)}
 .bd-row span:first-child{color:var(--text-2)}
 .bd-row span:last-child{font-weight:600;font-variant-numeric:tabular-nums}
 .bd-row.extra span{color:var(--accent)}
+.bd-row.total-row{border-top:1.5px solid var(--sep);padding-top:12px;margin-top:4px}
+.bd-row.total-row span:first-child{font-weight:700;color:var(--text)}
+.bd-row.total-row span:last-child{font-size:18px;color:var(--accent)}
+
 #modalRoot{position:fixed;inset:0;z-index:100;display:none}
 #modalRoot.open{display:block}
 .overlay{position:absolute;inset:0;background:var(--overlay);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .22s var(--ease)}
@@ -322,6 +366,21 @@ html[data-theme="light"] .shift-info{background:var(--bg)}
 .shift-row .sr-badge{display:inline-block;font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:20px;margin-left:6px}
 .shift-row .sr-badge.open{background:rgba(52,199,89,.16);color:var(--green)}
 .shift-row .sr-badge.closed{background:var(--fill);color:var(--text-2)}
+
+/* Panel de pago combinado */
+.pay-lines{background:var(--surface);border-radius:var(--r-md);padding:10px 14px;margin-bottom:14px}
+html[data-theme="light"] .pay-lines{background:var(--bg)}
+.pay-line{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:.5px solid var(--sep)}
+.pay-line:last-child{border-bottom:none}
+.pay-line .pl-method{font-size:13px;font-weight:600;min-width:80px}
+.pay-line input{flex:1;text-align:right;padding:7px 10px;background:var(--surface-2);border:.5px solid var(--sep);border-radius:8px;font-size:14px;font-variant-numeric:tabular-nums}
+html[data-theme="light"] .pay-line input{background:var(--bg-elev)}
+.pay-summary{display:flex;justify-content:space-between;padding:10px 4px 0;font-size:13px}
+.pay-summary span:first-child{color:var(--text-2)}
+.pay-summary b{font-variant-numeric:tabular-nums}
+.pay-summary b.ok{color:var(--green)}
+.pay-summary b.err{color:var(--red)}
+
 @media print{
   .no-print{display:none!important}
   .app{max-width:none;padding-bottom:0}
@@ -353,7 +412,7 @@ html[data-theme="light"] .shift-info{background:var(--bg)}
     <div class="field"><label>Contraseña</label><input id="loginPass" type="password" placeholder="••••••" autocomplete="current-password"></div>
     <button class="btn primary block" onclick="doLogin()">Iniciar turno</button>
     <p class="login-error" id="loginError"></p>
-    <p class="login-hint">Si es la primera vez, ingresa con<br><b>admin / admin123</b></p>
+    <p class="login-hint">Primera vez: <b>admin / admin123</b></p>
   </div>
 </div>
 
@@ -386,14 +445,14 @@ html[data-theme="light"] .shift-info{background:var(--bg)}
 
   <section id="habitaciones" class="view">
     <div class="page-title">
-      <div><h1>Habitaciones</h1><p id="roomSummary"></p></div>
+      <div><h1>Piezas</h1><p id="roomSummary"></p></div>
       <button class="add-btn hidden" id="btnAddRoom" onclick="openRoomManager()">⚙ Piezas</button>
     </div>
     <div class="rooms-list" id="roomGrid"></div>
   </section>
 
   <section id="productos" class="view">
-    <div class="page-title"><div><h1>Productos</h1><p>Inventario general y kardex individual</p></div></div>
+    <div class="page-title"><div><h1>Productos</h1><p>Inventario y kardex individual</p></div></div>
     <div class="fab-row"><button class="btn primary sm" onclick="openNewProduct()">＋ Nuevo producto</button></div>
     <div class="group">
       <div class="table-wrap">
@@ -456,7 +515,7 @@ html[data-theme="light"] .shift-info{background:var(--bg)}
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="7" height="7" rx="2"/><rect x="13.5" y="3.5" width="7" height="7" rx="2"/><rect x="3.5" y="13.5" width="7" height="7" rx="2"/><rect x="13.5" y="13.5" width="7" height="7" rx="2"/></svg>Panel
   </button>
   <button class="tab" data-tab="habitaciones">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5v15"/><path d="M3 14h18v6"/><path d="M3 10h11a3 3 0 0 1 3 3v1"/><circle cx="7.5" cy="7.5" r="2"/></svg>Cuartos
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5v15"/><path d="M3 14h18v6"/><path d="M3 10h11a3 3 0 0 1 3 3v1"/><circle cx="7.5" cy="7.5" r="2"/></svg>Piezas
   </button>
   <button class="tab" data-tab="productos">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7l8.7 5 8.7-5"/><path d="M12 22V12"/></svg>Productos
@@ -484,8 +543,23 @@ const fmtDT = iso => { const d = new Date(iso); return `${pad(d.getDate())}/${pa
 const timeStr = ts => { const d = new Date(ts); return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); };
 const initials = name => (name||'?').trim().split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
 
-function fmtDur(ms){ if(ms < 0) ms = 0; const s = Math.floor(ms/1000); const h = Math.floor(s/3600); const m = Math.floor((s%3600)/60); const sec = s%60; if(h > 0) return `${h}h ${pad(m)}m ${pad(sec)}s`; return `${m}m ${pad(sec)}s`; }
-function fmtHM(ms){ if(ms < 0) ms = 0; const total = Math.floor(ms/60000); const h = Math.floor(total/60); const m = total % 60; if(h === 0) return `${m}m`; return `${h}h ${pad(m)}m`; }
+/* Formato "01:17" estilo cuaderno (HH:MM) */
+function fmtHM(ms){
+  if(ms < 0) ms = 0;
+  const total = Math.floor(ms/60000);
+  const h = Math.floor(total/60);
+  const m = total % 60;
+  return pad(h) + ':' + pad(m);
+}
+/* Formato largo "1h 15m" */
+function fmtDur(ms){
+  if(ms < 0) ms = 0;
+  const total = Math.floor(ms/60000);
+  const h = Math.floor(total/60);
+  const m = total % 60;
+  if(h === 0) return m + 'm';
+  return h + 'h ' + pad(m) + 'm';
+}
 function elapsed(ms){ if(ms < 0) ms = 0; const t = Math.floor(ms/60000); const h = Math.floor(t/60); const m = t%60; if(h === 0) return m + ' min'; return h + 'h ' + pad(m) + 'm'; }
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 2200); }
 
@@ -497,14 +571,24 @@ function initTheme(){ const s = localStorage.getItem('motel-theme'); if(s) retur
 $('#themeToggle').addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
 
 /* DB */
-const KEY = 'motel_db_v1';
-const SESSION_KEY = 'motel-session';
+const KEY = 'motel_db_v2';
+const SESSION_KEY = 'motel-session-v2';
 function seed(){
   return {
     rooms: Array.from({length:10}, (_,i) => ({
-      id:'r'+(i+1), num:pad(i+1), name: 'Habitación ' + pad(i+1),
+      id:'r'+(i+1), num:pad(i+1), name: 'Pieza ' + pad(i+1),
       price:60, rate:60, status:'libre',
-      client:'', dni:'', checkIn:null, paidHours:null, consumos:[], notes:''
+      mode: null,               // 'hora' | 'paquete'
+      checkIn: null,
+      checkOut: null,           // solo si ya salió pero no se cobró
+      paidHours: null,          // solo en modo hora
+      hourlyRate: 60,
+      packageEndTime: null,     // 'HH:MM' en modo paquete
+      packagePrice: null,
+      consumos: [],
+      paymentStatus: 'pendiente', // pendiente | pagado
+      payments: [],              // [{method, amount}]
+      userId: null, userName: null
     })),
     products: [], movements: [], sales: [],
     expenses: [], deposits: [],
@@ -515,21 +599,7 @@ function seed(){
 function load(){
   try{
     const raw = localStorage.getItem(KEY);
-    if(raw){
-      const d = JSON.parse(raw);
-      if(!d.users) d.users = [{ id:'u-admin', name:'Administrador', username:'admin', password:'admin123', role:'admin' }];
-      if(!d.shifts) d.shifts = [];
-      if(!d.expenses) d.expenses = [];
-      if(!d.deposits) d.deposits = [];
-      d.rooms.forEach(r => {
-        if(!('notes' in r)) r.notes = '';
-        if(!('client' in r)) r.client = '';
-        if(!('dni' in r)) r.dni = '';
-        if(!('name' in r)) r.name = 'Habitación ' + r.num;
-        if(r.status === 'ocupada' && !r.paidHours) r.paidHours = 1;
-      });
-      return d;
-    }
+    if(raw) return JSON.parse(raw);
   }catch(e){ console.warn(e); }
   return seed();
 }
@@ -537,8 +607,7 @@ function save(){ localStorage.setItem(KEY, JSON.stringify(db)); }
 let db = load();
 
 /* SESIÓN */
-let currentUser = null;
-let currentShift = null;
+let currentUser = null, currentShift = null;
 function getSession(){
   try{
     const raw = sessionStorage.getItem(SESSION_KEY);
@@ -589,7 +658,6 @@ function applyRoleUI(){
   if(!currentUser) return;
   const isAdmin = currentUser.role === 'admin';
   $('#userBtn').textContent = initials(currentUser.name);
-  // Botón "Piezas" solo para admin
   if(isAdmin) $('#btnAddRoom').classList.remove('hidden');
   else $('#btnAddRoom').classList.add('hidden');
   $$('.tab').forEach(t => {
@@ -661,9 +729,7 @@ function openUserSheet(){
 }
 function confirmLogout(){ if(confirm('¿Cerrar turno y salir?')) doLogout(); }
 
-/* =========================================================
-   GESTIÓN DE HABITACIONES / PIEZAS
-   ========================================================= */
+/* GESTIÓN DE PIEZAS */
 function openRoomManager(){
   if(currentUser?.role !== 'admin') return;
   const total = db.rooms.length;
@@ -678,7 +744,6 @@ function openRoomManager(){
       <span class="rr-status ${r.status}">${r.status === 'ocupada' ? 'Ocupada' : 'Libre'}</span>
       <button class="row-btn" onclick="openEditRoom('${r.id}')">Editar</button>
     </div>`).join('');
-
   openSheet('Gestionar piezas', `
     <div class="info-grid cols-3" style="grid-template-columns:repeat(3,1fr)">
       <div><span>Total</span><b>${total}</b></div>
@@ -689,70 +754,44 @@ function openRoomManager(){
     <button class="btn primary block" onclick="openEditRoom(null)">＋ Agregar nueva pieza</button>
   `, `<button class="btn" onclick="closeModal()">Cerrar</button>`);
 }
-
 function openEditRoom(id){
   const r = id ? db.rooms.find(x => x.id === id) : null;
-  // Sugerir el siguiente número si es nueva
   const nextNum = r ? r.num : pad(Math.max(0, ...db.rooms.map(x => Number(x.num) || 0)) + 1);
   openSheet(r ? `Editar pieza ${r.num}` : 'Nueva pieza', `
     <div class="row2">
-      <div class="field">
-        <label>Número de pieza</label>
-        <input id="erNum" value="${r ? esc(r.num) : nextNum}" placeholder="Ej: 11" inputmode="numeric" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>Tarifa por hora (Bs)</label>
-        <input id="erPrice" type="number" inputmode="decimal" min="0" step="1" value="${r ? r.price : 60}">
-      </div>
+      <div class="field"><label>Número</label><input id="erNum" value="${r ? esc(r.num) : nextNum}" inputmode="numeric" autocomplete="off"></div>
+      <div class="field"><label>Tarifa por hora (Bs)</label><input id="erPrice" type="number" inputmode="decimal" min="0" step="1" value="${r ? r.price : 60}"></div>
     </div>
-    <div class="field">
-      <label>Nombre / descripción</label>
-      <input id="erName" value="${r ? esc(r.name) : ''}" placeholder="Ej: Habitación 11 — Suite" autocomplete="off">
-      <p class="helper">Opcional. Si lo dejas vacío se usará "Habitación N".</p>
-    </div>
-    ${r && r.status === 'ocupada' ? `<p class="hint" style="color:var(--red);margin-bottom:14px">⚠ Esta pieza está ocupada. Los cambios de tarifa solo aplican al próximo ingreso.</p>` : ''}
+    <div class="field"><label>Nombre / descripción</label><input id="erName" value="${r ? esc(r.name) : ''}" placeholder="Ej: Pieza 11 — Suite" autocomplete="off"></div>
     ${r ? `<button class="btn danger block" style="margin-top:8px" onclick="deleteRoom('${r.id}')">Eliminar pieza</button>` : ''}
-  `, `
-    <button class="btn" onclick="openRoomManager()">Cancelar</button>
-    <button class="btn primary" onclick="saveRoom('${id || ''}')">Guardar</button>
-  `);
+  `, `<button class="btn" onclick="openRoomManager()">Cancelar</button><button class="btn primary" onclick="saveRoom('${id || ''}')">Guardar</button>`);
   setTimeout(()=>$('#erNum').focus(), 320);
 }
-
 function saveRoom(id){
   const num = $('#erNum').value.trim();
   const name = $('#erName').value.trim();
   const price = Number($('#erPrice').value) || 0;
   if(!num){ toast('Ingresa el número'); return; }
-  if(price <= 0){ toast('La tarifa debe ser mayor a 0'); return; }
-
-  // Validar duplicado
+  if(price <= 0){ toast('Tarifa mayor a 0'); return; }
   const dup = db.rooms.find(x => x.num === num && x.id !== id);
   if(dup){ toast(`Ya existe la pieza ${num}`); return; }
-
   if(id){
     const r = db.rooms.find(x => x.id === id);
-    r.num = num;
-    r.name = name || `Habitación ${num}`;
-    r.price = price;
-    // Si está libre, actualizamos también rate
+    r.num = num; r.name = name || `Pieza ${num}`; r.price = price;
     if(r.status === 'libre') r.rate = price;
   } else {
     db.rooms.push({
-      id: uid(), num, name: name || `Habitación ${num}`,
-      price, rate: price, status: 'libre',
-      client: '', dni: '', checkIn: null, paidHours: null,
-      consumos: [], notes: ''
+      id: uid(), num, name: name || `Pieza ${num}`,
+      price, rate: price, status:'libre',
+      mode: null, checkIn: null, checkOut: null, paidHours: null, hourlyRate: price,
+      packageEndTime: null, packagePrice: null, consumos: [],
+      paymentStatus: 'pendiente', payments: [], userId: null, userName: null
     });
   }
-  // Ordenar por número
   db.rooms.sort((a,b) => (Number(a.num)||0) - (Number(b.num)||0));
-  save();
-  openRoomManager();
-  renderAll();
+  save(); openRoomManager(); renderAll();
   toast(id ? 'Pieza actualizada' : 'Pieza agregada');
 }
-
 function deleteRoom(id){
   const r = db.rooms.find(x => x.id === id);
   if(!r) return;
@@ -777,9 +816,9 @@ function openUsersManager(){
 function openEditUser(id){
   const u = id ? db.users.find(x => x.id === id) : null;
   openSheet(u ? 'Editar usuario' : 'Nuevo usuario', `
-    <div class="field"><label>Nombre</label><input id="euName" value="${u ? esc(u.name) : ''}" placeholder="Nombre" autocomplete="off"></div>
-    <div class="field"><label>Usuario</label><input id="euUser" value="${u ? esc(u.username) : ''}" placeholder="usuario" autocomplete="off" autocapitalize="off"></div>
-    <div class="field"><label>Contraseña</label><input id="euPass" value="${u ? esc(u.password) : ''}" placeholder="Contraseña" autocomplete="off"></div>
+    <div class="field"><label>Nombre</label><input id="euName" value="${u ? esc(u.name) : ''}" autocomplete="off"></div>
+    <div class="field"><label>Usuario</label><input id="euUser" value="${u ? esc(u.username) : ''}" autocomplete="off" autocapitalize="off"></div>
+    <div class="field"><label>Contraseña</label><input id="euPass" value="${u ? esc(u.password) : ''}" autocomplete="off"></div>
     <div class="field"><label>Rol</label><select id="euRole"><option value="empleado" ${u && u.role === 'empleado' ? 'selected' : ''}>Empleado</option><option value="admin" ${u && u.role === 'admin' ? 'selected' : ''}>Administrador</option></select></div>
     ${u ? `<button class="btn danger block" style="margin-top:8px" onclick="deleteUser('${u.id}')">Eliminar</button>` : ''}
   `, `<button class="btn" onclick="openUsersManager()">Cancelar</button><button class="btn primary" onclick="saveUser('${id || ''}')">Guardar</button>`);
@@ -790,8 +829,6 @@ function saveUser(id){
   const password = $('#euPass').value;
   const role = $('#euRole').value;
   if(!name || !username || !password){ toast('Completa todo'); return; }
-  if(username.length < 3){ toast('Usuario corto'); return; }
-  if(password.length < 4){ toast('Contraseña corta'); return; }
   const dup = db.users.find(u => u.username.toLowerCase() === username && u.id !== id);
   if(dup){ toast('Ese usuario ya existe'); return; }
   if(id){ const u = db.users.find(x => x.id === id); Object.assign(u, { name, username, password, role }); }
@@ -848,101 +885,204 @@ function tickLiveClocks(){
 }
 setInterval(tickLiveClocks, 1000);
 
-/* HABITACIONES — TARJETAS */
+/* =========================================================
+   CÁLCULO DEL MONTO (según modo)
+   ========================================================= */
+function calcRoomAmount(r, refTs){
+  const t = refTs || Date.now();
+  if(r.mode === 'paquete'){
+    return {
+      amount: r.packagePrice || 0,
+      detail: 'paquete',
+      endTime: r.packageEndTime
+    };
+  }
+  // Modo hora: cobra por tiempo transcurrido con tarifa por hora
+  const entry = new Date(r.checkIn).getTime();
+  const end = r.checkOut ? new Date(r.checkOut).getTime() : t;
+  const elapsedMs = Math.max(0, end - entry);
+  const hours = Math.max(1, Math.ceil(elapsedMs / 3600000));
+  const rate = r.hourlyRate || r.rate || r.price || 0;
+  return {
+    amount: hours * rate,
+    hours,
+    rate,
+    detail: 'hora'
+  };
+}
+
+/* Estado visual de la pieza */
 function stateFor(r){
+  if(r.status === 'libre' && r.paymentStatus === 'pagado') return { phase: 'libre' };
+  if(!r.mode) return { phase: 'libre' };
+
   const now = Date.now();
-  const entryMs = new Date(r.checkIn).getTime();
+
+  // Modo paquete: contador desactivado
+  if(r.mode === 'paquete'){
+    const endToday = new Date();
+    if(r.packageEndTime){
+      const [hh, mm] = r.packageEndTime.split(':').map(Number);
+      endToday.setHours(hh, mm, 0, 0);
+      // Si la hora de fin ya pasó hoy, es que termina mañana
+      if(endToday.getTime() < new Date(r.checkIn).getTime()) endToday.setDate(endToday.getDate() + 1);
+    }
+    const remaining = endToday.getTime() - now;
+    const isUrgent = remaining < 30 * 60000 && remaining > 0;
+    return {
+      phase: r.checkOut ? 'finished' : 'running',
+      mode: 'paquete',
+      remaining,
+      urgent: isUrgent,
+      endTime: r.packageEndTime
+    };
+  }
+
+  // Modo hora
+  const entry = new Date(r.checkIn).getTime();
   const paidMs = (r.paidHours || 1) * 3600000;
-  const elapsedMs = now - entryMs;
+  const elapsedMs = now - entry;
   const remaining = paidMs - elapsedMs;
   const pct = Math.min(100, Math.max(0, (elapsedMs / paidMs) * 100));
   const barWidth = Math.max(0, 100 - pct);
-  let cls = '', color = 'var(--green)', urgency = 'free';
+  let cls = '', color = 'var(--green)', urgency = 'ok';
   if(remaining < 0){ cls = 'crit blink'; color = 'var(--red)'; urgency = 'urgent'; }
   else if(pct < 50){ cls = ''; color = 'var(--green)'; urgency = 'ok'; }
   else if(pct < 80){ cls = 'warn'; color = 'var(--accent)'; urgency = 'warn'; }
   else if(pct < 95){ cls = 'crit'; color = 'var(--red)'; urgency = 'crit'; }
   else { cls = 'crit blink'; color = 'var(--red)'; urgency = 'urgent'; }
-  return { elapsedMs, paidMs, remaining, pct, barWidth, cls, color, urgency };
+  return {
+    phase: r.checkOut ? 'finished' : 'running',
+    mode: 'hora',
+    elapsedMs, paidMs, remaining, pct, barWidth, cls, color, urgency
+  };
 }
 
+/* =========================================================
+   FICHA TIPO BOCETO
+   ========================================================= */
 function cardRoom(r){
-  const busy = r.status === 'ocupada';
-  if(!busy){
+  const isLibre = r.status === 'libre';
+
+  if(isLibre){
     return `
       <div class="card-room free" onclick="clickRoom('${r.id}')">
         <div class="cr-top">
           <div class="cr-pieza">PIEZA <span class="num">${r.num}</span></div>
           <span class="cr-badge free">Libre</span>
         </div>
-        <div class="cr-info">${esc(r.name)} · Disponible</div>
+        <div class="cr-info">${esc(r.name)}</div>
         <div class="cr-rate">${money(r.price)} <span style="font-size:12px;color:var(--text-2);font-weight:500">/ hora</span></div>
         <button class="btn-occupy" onclick="event.stopPropagation(); clickRoom('${r.id}')">▸ Ocupar ahora</button>
       </div>`;
   }
-  const s = stateFor(r);
-  const exitTime = s.remaining <= 0 ? 'Ahora' : '--:--';
-  let tiempoLabel, tiempoVal, sublabel, subcrit;
-  if(s.remaining >= 0){
-    tiempoLabel = 'TIEMPO'; tiempoVal = fmtHM(s.elapsedMs);
-    sublabel = `Falta ${fmtHM(s.remaining)}`;
-    subcrit = '';
-  } else {
-    tiempoLabel = 'EXCEDIDO'; tiempoVal = '+' + fmtHM(-s.remaining);
-    sublabel = `Tiempo pagado: ${fmtHM(s.paidMs)}`;
-    subcrit = 'crit';
-  }
-  const cardCls = s.urgency === 'urgent' ? 'urgent' : '';
-  const badgeCls = s.urgency === 'urgent' ? 'urgent' : 'busy';
-  const badgeTxt = s.urgency === 'urgent' ? '● Vencido' : 'Ocupada';
-  const colCls = s.urgency === 'urgent' ? 'crit' : (s.urgency === 'warn' ? 'warn' : (s.urgency === 'crit' ? 'crit' : 'hl'));
 
-  // Bloque de cliente con DNI
-  const hasClient = r.client || r.dni;
-  const initialsCli = r.client ? initials(r.client) : (r.dni ? r.dni.slice(-2) : '?');
-  const clientHTML = hasClient ? `
-    <div class="cr-client">
-      <div class="cc-ico">${initialsCli}</div>
-      <div class="cc-info">
-        <div class="cc-name">${esc(r.client || 'Sin nombre')}</div>
-        <div class="cc-dni">DNI: ${esc(r.dni || '—')}</div>
-      </div>
-    </div>` : `
-    <div class="cr-client sin">
-      <div class="cc-ico">?</div>
-      <div class="cc-info">
-        <div class="cc-name">Sin datos de cliente</div>
-        <div class="cc-dni">DNI: —</div>
-      </div>
-    </div>`;
+  const s = stateFor(r);
+
+  // --- MODO PAQUETE ---
+  if(s.mode === 'paquete'){
+    const inTime = fmtTime(r.checkIn);
+    const outTime = r.packageEndTime || '--:--';
+    const totalAmt = r.packagePrice || 0;
+    const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+    const grand = totalAmt + consTotal;
+    const badge = s.urgent ? 'urgent' : 'package';
+    const badgeTxt = s.urgent ? '● Por vencer' : 'Paquete';
+    return `
+      <div class="card-room package ${s.urgent ? 'urgent' : ''}">
+        <div class="cr-top">
+          <div class="cr-pieza">PIEZA <span class="num">${r.num}</span> <span class="mode-tag">🌙 Paquete nocturno</span></div>
+          <span class="cr-badge ${badge}">${badgeTxt}</span>
+        </div>
+
+        <div class="cr-grid">
+          <div class="cr-col"><span class="k">H. Inicio</span><span class="v">${inTime}</span></div>
+          <div class="cr-col"><span class="k">H. Fin</span><span class="v">${outTime}</span></div>
+          <div class="cr-col"><span class="k">H. Pieza</span><span class="v dash">- - - -</span></div>
+        </div>
+
+        <div class="cr-amount-box">
+          <div>
+            <div class="ab-lbl">Bs Total</div>
+            <div class="ab-val">${money(grand)}</div>
+          </div>
+          <div class="ab-sub">
+            Tarifa fija: ${money(totalAmt)}<br>
+            ${consTotal > 0 ? 'Consumos: ' + money(consTotal) : 'Sin consumos'}
+          </div>
+        </div>
+
+        <div class="cr-pay-row">
+          <button class="pay-btn purple" onclick="event.stopPropagation(); openCheckOut('${r.id}')">Por cobrar</button>
+          <button class="pay-btn green" onclick="event.stopPropagation(); quickPay('${r.id}','efectivo')">Efecto</button>
+          <button class="pay-btn blue" onclick="event.stopPropagation(); quickPay('${r.id}','qr')">Q.R.</button>
+        </div>
+      </div>`;
+  }
+
+  // --- MODO HORA ---
+  const entryTimeStr = fmtTime(r.checkIn);
+  const nowTimeStr = fmtTime(new Date());
+  const elapsedStr = fmtHM(s.elapsedMs);
+  const exitTimeStr = r.checkOut ? fmtTime(r.checkOut) : '--:--';
+  const isFinished = !!r.checkOut;
+
+  const calc = calcRoomAmount(r, r.checkOut ? new Date(r.checkOut).getTime() : Date.now());
+  const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+  const grand = calc.amount + consTotal;
+
+  const colCls = s.urgency === 'urgent' ? 'crit' : (s.urgency === 'warn' ? 'warn' : (s.urgency === 'crit' ? 'crit' : 'hl'));
+  const badgeCls = s.urgency === 'urgent' ? 'urgent' : (r.paymentStatus === 'pendiente' ? 'pending' : 'busy');
+  const badgeTxt = s.urgency === 'urgent' ? '● Vencido' : (r.paymentStatus === 'pendiente' ? 'Por cobrar' : 'Ocupada');
+
+  // Grid diferente si terminó (H.Inicio | H.Fin | H.Pieza) o si corre (Ingreso | H.Actu | H.Pieza)
+  const gridHTML = isFinished ? `
+    <div class="cr-grid">
+      <div class="cr-col"><span class="k">H. Inicio</span><span class="v">${entryTimeStr}</span></div>
+      <div class="cr-col"><span class="k">H. Fin</span><span class="v">${exitTimeStr}</span></div>
+      <div class="cr-col ${colCls}"><span class="k">H. Pieza</span><span class="v big">${fmtHM(new Date(r.checkOut).getTime() - new Date(r.checkIn).getTime())}</span></div>
+    </div>
+  ` : `
+    <div class="cr-grid">
+      <div class="cr-col"><span class="k">Ingreso</span><span class="v">${entryTimeStr}</span></div>
+      <div class="cr-col"><span class="k">H. Actu</span><span class="v live" data-now-time="${r.id}">${nowTimeStr}</span></div>
+      <div class="cr-col ${colCls}"><span class="k">H. Pieza</span><span class="v big" data-elapsed="${r.id}">${elapsedStr}</span></div>
+    </div>
+  `;
+
+  const barHTML = isFinished ? '' : `
+    <div class="cr-progress"><div class="cr-progress-fill ${s.cls}" data-timer-bar="${r.id}" style="width:${s.barWidth}%"></div></div>
+    <div class="cr-sub ${s.remaining < 0 ? 'crit' : ''}" data-timer-sub="${r.id}">
+      ${s.remaining >= 0 ? 'Falta ' + fmtHM(s.remaining) : 'Excedido ' + fmtHM(-s.remaining)} · <b>${r.paidHours}h × ${money(r.hourlyRate)}</b>
+    </div>
+  `;
 
   return `
-    <div class="card-room busy ${cardCls}">
+    <div class="card-room busy ${s.urgency === 'urgent' ? 'urgent' : ''}">
       <div class="cr-top">
         <div class="cr-pieza">PIEZA <span class="num">${r.num}</span></div>
         <span class="cr-badge ${badgeCls}">${badgeTxt}</span>
       </div>
 
-      ${clientHTML}
+      ${gridHTML}
 
-      <div class="cr-grid">
-        <div class="cr-col"><span class="k">Ingreso</span><span class="v">${fmtTime(r.checkIn)}</span></div>
-        <div class="cr-col"><span class="k">Salida</span><span class="v ${s.remaining <= 0 ? '' : 'dash'}">${exitTime}</span></div>
-        <div class="cr-col ${colCls}"><span class="k">${tiempoLabel}</span><span class="v big" data-time-val="${r.id}">${tiempoVal}</span></div>
-      </div>
+      ${barHTML}
 
-      <div class="cr-progress"><div class="cr-progress-fill ${s.cls}" data-timer-bar="${r.id}" style="width:${s.barWidth}%"></div></div>
-      <div class="cr-sub ${subcrit}" data-timer-sub="${r.id}">
-        ${sublabel} · <b>${r.paidHours}h × ${money(r.rate)}</b>
-      </div>
-
-      <div class="cr-bottom">
-        <div class="cr-total"><span class="k">Total</span><span class="v">${money(r.paidHours * r.rate)}</span></div>
-        <div class="cr-actions">
-          <button class="pay-btn green" onclick="event.stopPropagation(); quickCheckout('${r.id}','efectivo')">C · Efect.</button>
-          <button class="pay-btn blue"  onclick="event.stopPropagation(); quickCheckout('${r.id}','qr')">O · QR</button>
-          <button class="pay-btn gold"  onclick="event.stopPropagation(); openCheckOut('${r.id}')">Detalle</button>
+      <div class="cr-amount-box">
+        <div>
+          <div class="ab-lbl">Monto</div>
+          <div class="ab-val" data-amount="${r.id}">${money(grand)}</div>
         </div>
+        <div class="ab-sub">
+          ${calc.hours ? `${calc.hours}h × ${money(calc.rate)}` : ''}
+          ${consTotal > 0 ? `<br>+ consumos ${money(consTotal)}` : ''}
+        </div>
+      </div>
+
+      <div class="cr-pay-row">
+        <button class="pay-btn purple" onclick="event.stopPropagation(); openCheckOut('${r.id}')">Por cobrar</button>
+        <button class="pay-btn green" onclick="event.stopPropagation(); quickPay('${r.id}','efectivo')">Efecto</button>
+        <button class="pay-btn blue" onclick="event.stopPropagation(); quickPay('${r.id}','qr')">Q.R.</button>
       </div>
     </div>`;
 }
@@ -953,7 +1093,6 @@ function renderRooms(){
     list.innerHTML = `<div class="card-room free" style="text-align:center;padding:40px 16px">
       <div style="font-size:40px;margin-bottom:10px;opacity:.4">🏠</div>
       <div style="font-weight:700;margin-bottom:6px">Sin piezas registradas</div>
-      <div style="font-size:13px;color:var(--text-2);margin-bottom:14px">Agrega tu primera pieza para empezar</div>
       ${currentUser?.role === 'admin' ? `<button class="btn primary" onclick="openRoomManager()">＋ Agregar pieza</button>` : ''}
     </div>`;
     $('#roomSummary').innerHTML = `0 piezas`;
@@ -962,117 +1101,184 @@ function renderRooms(){
   list.innerHTML = db.rooms.map(cardRoom).join('');
   const libres = db.rooms.filter(r => r.status === 'libre').length;
   const ocup = db.rooms.length - libres;
-  $('#roomSummary').innerHTML = `<b style="color:var(--green)">${libres}</b> libres · <b style="color:var(--red)">${ocup}</b> ocupadas · ${db.rooms.length} total`;
+  const pend = db.rooms.filter(r => r.status === 'ocupada' && r.paymentStatus === 'pendiente').length;
+  $('#roomSummary').innerHTML = `<b style="color:var(--green)">${libres}</b> libres · <b style="color:var(--red)">${ocup}</b> ocupadas${pend > 0 ? ` · <b style="color:var(--purple)">${pend}</b> por cobrar` : ''}`;
 }
 
 function clickRoom(id){
   const r = db.rooms.find(x => x.id === id);
   if(!r) return;
-  r.status === 'ocupada' ? openCheckOut(id) : openCheckIn(id);
+  if(r.status === 'libre') openCheckIn(id);
+  else openCheckOut(id);
 }
 
-function quickCheckout(id, method){
+/* Pago rápido por botón Efecto / Q.R. */
+function quickPay(id, method){
   const r = db.rooms.find(x => x.id === id);
   if(!r || r.status !== 'ocupada') return;
-  const now = Date.now();
-  const bill = calcBill(r, now);
+  const refTs = r.checkOut ? new Date(r.checkOut).getTime() : Date.now();
+  const calc = calcRoomAmount(r, refTs);
   const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
-  const total = bill.total + consTotal;
-  if(!confirm(`Cobrar Pieza ${r.num} en ${method === 'efectivo' ? 'EFECTIVO' : 'QR'}\n\nCliente: ${r.client || 'Sin nombre'}\nDNI: ${r.dni || '—'}\nTotal: ${money(total)}`)) return;
-  const iso = new Date(now).toISOString();
-  const dur = elapsed(now - new Date(r.checkIn).getTime());
+  const total = calc.amount + consTotal;
+
+  const label = method === 'efectivo' ? 'EFECTIVO' : 'QR';
+  if(!confirm(`Cobrar Pieza ${r.num} en ${label}\n\nTotal: ${money(total)}`)) return;
+
+  registerSale(r, total, [{ method, amount: total }], refTs);
+  toast(`Pieza ${r.num} cobrada · ${money(total)}`);
+}
+
+/* Registrar venta y liberar pieza */
+function registerSale(r, total, payments, refTs){
+  const iso = new Date(refTs).toISOString();
+  const detailParts = [`Pieza ${r.num}`];
+  if(r.mode === 'paquete') detailParts.push('PAQUETE');
+  else detailParts.push(elapsed(refTs - new Date(r.checkIn).getTime()));
+  const payStr = payments.map(p => `${p.method.toUpperCase()} ${money(p.amount)}`).join(' + ');
+  detailParts.push(payStr);
+
   db.sales.push({
     id: uid(), ts: iso, day: dayKey(iso), type: 'habitacion',
-    detail: `Pieza ${r.num} · ${dur} · ${method.toUpperCase()}${r.client ? ' · ' + r.client : ''}${r.dni ? ' · DNI ' + r.dni : ''}`,
-    amount: bill.total, cost: 0,
+    detail: detailParts.join(' · '),
+    amount: total, cost: 0,
     userId: currentUser?.id, userName: currentUser?.name, shiftId: currentShift?.id,
-    clientName: r.client, clientDni: r.dni, roomNum: r.num
+    roomNum: r.num, payments: payments
   });
+
   r.consumos.forEach(c => {
     db.sales.push({
       id: uid(), ts: iso, day: dayKey(iso), type: 'producto',
-      detail: `${c.name} ×${c.qty} · Pieza ${r.num} · ${method.toUpperCase()}`,
+      detail: `${c.name} ×${c.qty} · Pieza ${r.num}`,
       amount: c.price * c.qty, cost: c.cost * c.qty,
       userId: currentUser?.id, userName: currentUser?.name, shiftId: currentShift?.id
     });
     db.movements.push({ id: uid(), productId: c.productId, type: 'venta', qty: c.qty, unitCost: c.cost, date: iso, note: `Pieza ${r.num}`, userId: currentUser?.id, shiftId: currentShift?.id });
   });
-  Object.assign(r, { status:'libre', client:'', dni:'', checkIn:null, paidHours:null, consumos:[], rate: r.price });
+
+  // Liberar pieza
+  Object.assign(r, {
+    status:'libre', mode:null, checkIn:null, checkOut:null, paidHours:null,
+    packageEndTime:null, packagePrice:null, consumos:[], paymentStatus:'pendiente',
+    payments:[], rate: r.price, hourlyRate: r.price,
+    userId: null, userName: null
+  });
   save(); renderAll();
-  toast(`Pieza ${r.num} cobrada · ${money(total)}`);
 }
 
 /* =========================================================
-   CHECK-IN (con cliente, DNI, pieza, hora, horas pagadas)
+   CHECK-IN — sin nombre, con modo hora o paquete
    ========================================================= */
 let ci = null;
 function openCheckIn(id){
   const r = db.rooms.find(x => x.id === id);
-  ci = { roomId: id, entryTs: Date.now(), paidHours: 2, rate: r.price, captured: false };
+  ci = {
+    roomId: id,
+    entryTs: Date.now(),
+    captured: false,
+    mode: 'hora',        // 'hora' | 'paquete'
+    paidHours: 2,
+    hourlyRate: r.price,
+    packageEndTime: '07:00',
+    packagePrice: 150
+  };
   renderCheckInSheet();
 }
+
 function renderCheckInSheet(){
   const r = db.rooms.find(x => x.id === ci.roomId);
   const chipsHTML = [1,2,3,4,6,12].map(h => `<button class="chip ${h === ci.paidHours ? 'active':''}" data-h="${h}">${h}h</button>`).join('');
+
+  const horaBody = `
+    <div class="field">
+      <label>Tiempo pagado</label>
+      <div class="chips" id="ciChips">${chipsHTML}</div>
+      <input id="ciHours" type="number" inputmode="decimal" min="0.5" step="0.5" value="${ci.paidHours}">
+    </div>
+    <div class="field">
+      <label>Tarifa por hora (Bs)</label>
+      <input id="ciRate" type="number" inputmode="decimal" min="0" step="1" value="${ci.hourlyRate}">
+    </div>
+    <div class="total-box"><span>Total a cobrar</span><b id="ciTotal">${money(ci.paidHours * ci.hourlyRate)}</b></div>
+  `;
+
+  const paqueteBody = `
+    <div class="field">
+      <label>Hora de fin del paquete</label>
+      <input id="ciPackEnd" type="time" value="${ci.packageEndTime}">
+      <p class="helper">Ej: 07:00 para paquete nocturno</p>
+    </div>
+    <div class="field">
+      <label>Precio del paquete (Bs)</label>
+      <input id="ciPackPrice" type="number" inputmode="decimal" min="0" step="1" value="${ci.packagePrice}">
+    </div>
+    <div class="total-box"><span>Total del paquete</span><b id="ciPackTotal">${money(ci.packagePrice)}</b></div>
+  `;
+
   openSheet(`Registrar ingreso`, `
     <div class="cr-client" style="margin-bottom:14px">
       <div class="cc-ico">${esc(r.num)}</div>
       <div class="cc-info">
-        <div class="cc-name">Pieza ${esc(r.num)}</div>
-        <div class="cc-dni">${esc(r.name)} · ${money(r.price)}/h</div>
+        <div class="cc-name">${esc(r.name)}</div>
+        <div class="cc-dni">${money(r.price)}/hora</div>
       </div>
     </div>
 
-    <div class="field">
-      <label>Nombre del cliente</label>
-      <input id="ciClient" placeholder="Ej: Juan Pérez" autocomplete="off">
-    </div>
-
-    <div class="field">
-      <label>DNI / Cédula de identidad</label>
-      <input id="ciDni" placeholder="Ej: 12345678" inputmode="numeric" autocomplete="off">
-      <p class="helper">Obligatorio para el registro</p>
+    <div class="field" style="margin-bottom:10px"><label style="padding-left:0">Tipo de servicio</label></div>
+    <div class="mode-picker">
+      <div class="mode-pick ${ci.mode === 'hora' ? 'active' : ''}" data-mode="hora">
+        <span class="mp-ic">⏱️</span>
+        <div class="mp-tt">Por hora</div>
+        <div class="mp-ds">Tarifa por tiempo</div>
+      </div>
+      <div class="mode-pick ${ci.mode === 'paquete' ? 'active night' : ''}" data-mode="paquete">
+        <span class="mp-ic">🌙</span>
+        <div class="mp-tt">Paquete nocturno</div>
+        <div class="mp-ds">Precio fijo hasta hora</div>
+      </div>
     </div>
 
     <div class="time-capture">
-      <div class="time-lbl-sm">Hora actual del dispositivo</div>
+      <div class="time-lbl-sm">Hora de ingreso</div>
       <div class="time-display" id="ciLiveClock">${renderLiveClock(ci.entryTs)}</div>
-      <div class="captured-info ${ci.captured?'show':''}" id="ciCapturedInfo"><span>✓ Hora capturada:</span><b id="ciCapturedTime">${ci.captured ? timeStr(ci.entryTs) : '—'}</b></div>
+      <div class="captured-info ${ci.captured?'show':''}" id="ciCapturedInfo"><span>✓ Capturada:</span><b id="ciCapturedTime">${ci.captured ? timeStr(ci.entryTs) : '—'}</b></div>
       <button class="time-btn ${ci.captured?'captured':''}" id="ciCaptureBtn" onclick="captureEntryTime()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
         <span id="ciCaptureLabel">${ci.captured ? 'Hora capturada' : 'Capturar hora de ingreso'}</span>
       </button>
     </div>
 
-    <div class="field">
-      <label>Tiempo pagado</label>
-      <div class="chips" id="ciChips">${chipsHTML}</div>
-      <input id="ciHours" type="number" inputmode="decimal" min="0.5" step="0.5" value="${ci.paidHours}">
-    </div>
-
-    <div class="field">
-      <label>Tarifa por hora (Bs)</label>
-      <input id="ciRate" type="number" inputmode="decimal" min="0" step="1" value="${ci.rate}">
-    </div>
-
-    <div class="total-box"><span>Total a cobrar</span><b id="ciTotal">${money(ci.paidHours * ci.rate)}</b></div>
+    <div id="ciModeBody">${ci.mode === 'hora' ? horaBody : paqueteBody}</div>
   `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="doCheckIn()">Registrar ingreso</button>`);
+
   setTimeout(() => {
-    $$('#ciChips .chip').forEach(chip => {
-      chip.onclick = () => {
-        ci.paidHours = Number(chip.dataset.h);
-        $$('#ciChips .chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        $('#ciHours').value = ci.paidHours;
-        updateCiTotal();
+    // Selector de modo
+    $$('.mode-pick').forEach(m => {
+      m.onclick = () => {
+        ci.mode = m.dataset.mode;
+        renderCheckInSheet();
       };
     });
-    $('#ciHours').oninput = e => { ci.paidHours = Number(e.target.value) || 0; $$('#ciChips .chip').forEach(c => c.classList.toggle('active', Number(c.dataset.h) === ci.paidHours)); updateCiTotal(); };
-    $('#ciRate').oninput = e => { ci.rate = Number(e.target.value) || 0; updateCiTotal(); };
-    $('#ciClient').focus();
-  }, 320);
+    // Modo hora
+    if(ci.mode === 'hora'){
+      $$('#ciChips .chip').forEach(chip => {
+        chip.onclick = () => {
+          ci.paidHours = Number(chip.dataset.h);
+          $$('#ciChips .chip').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          $('#ciHours').value = ci.paidHours;
+          updateCiTotal();
+        };
+      });
+      $('#ciHours').oninput = e => { ci.paidHours = Number(e.target.value) || 0; $$('#ciChips .chip').forEach(c => c.classList.toggle('active', Number(c.dataset.h) === ci.paidHours)); updateCiTotal(); };
+      $('#ciRate').oninput = e => { ci.hourlyRate = Number(e.target.value) || 0; updateCiTotal(); };
+    } else {
+      $('#ciPackEnd').onchange = e => { ci.packageEndTime = e.target.value; };
+      $('#ciPackPrice').oninput = e => { ci.packagePrice = Number(e.target.value) || 0; $('#ciPackTotal').textContent = money(ci.packagePrice); };
+    }
+  }, 100);
 }
-function updateCiTotal(){ const el = $('#ciTotal'); if(el) el.textContent = money(ci.paidHours * ci.rate); }
+function updateCiTotal(){ const el = $('#ciTotal'); if(el) el.textContent = money(ci.paidHours * ci.hourlyRate); }
+
 function captureEntryTime(){
   ci.entryTs = Date.now(); ci.captured = true;
   const i = $('#ciCapturedInfo'), t = $('#ciCapturedTime'), b = $('#ciCaptureBtn'), l = $('#ciCaptureLabel');
@@ -1084,128 +1290,154 @@ function captureEntryTime(){
   if(liveEl){ liveEl.classList.add('captured'); setTimeout(()=>liveEl.classList.remove('captured'), 700); }
   tickLiveClocks();
 }
+
 function doCheckIn(){
   const r = db.rooms.find(x => x.id === ci.roomId);
   if(!r) return;
-  const client = $('#ciClient').value.trim();
-  const dni = $('#ciDni').value.trim();
-  if(!client){ toast('Ingresa el nombre del cliente'); return; }
-  if(!dni){ toast('Ingresa el DNI del cliente'); return; }
-  if(ci.paidHours <= 0){ toast('Ingresa el tiempo pagado'); return; }
-  r.client = client;
-  r.dni = dni;
+  if(ci.mode === 'hora' && ci.paidHours <= 0){ toast('Ingresa el tiempo pagado'); return; }
+  if(ci.mode === 'paquete' && (!ci.packageEndTime || ci.packagePrice <= 0)){ toast('Completa el paquete'); return; }
+
+  r.mode = ci.mode;
   r.checkIn = new Date(ci.entryTs).toISOString();
-  r.paidHours = ci.paidHours;
-  r.rate = ci.rate;
+  r.checkOut = null;
   r.status = 'ocupada';
   r.consumos = [];
+  r.paymentStatus = 'pendiente';
+  r.payments = [];
   r.userId = currentUser?.id;
   r.userName = currentUser?.name;
+
+  if(ci.mode === 'hora'){
+    r.paidHours = ci.paidHours;
+    r.hourlyRate = ci.hourlyRate;
+    r.packageEndTime = null;
+    r.packagePrice = null;
+  } else {
+    r.packageEndTime = ci.packageEndTime;
+    r.packagePrice = ci.packagePrice;
+    r.paidHours = null;
+    r.hourlyRate = null;
+  }
+
   save(); closeModal(); renderAll();
-  toast(`Pieza ${r.num} · ${client}`);
+  toast(`Pieza ${r.num} · ${ci.mode === 'paquete' ? 'Paquete' : ci.paidHours + 'h'}`);
 }
 
 /* =========================================================
-   CHECK-OUT detallado
+   CHECK-OUT detallado (Por cobrar / combinado)
    ========================================================= */
 let co = null;
 function openCheckOut(id){
   const r = db.rooms.find(x => x.id === id);
-  co = { id, exitTs: Date.now(), charge: 0, captured: false, payMethod: 'efectivo' };
+  const refTs = r.checkOut ? new Date(r.checkOut).getTime() : Date.now();
+  co = {
+    id,
+    exitTs: refTs,
+    captured: r.checkOut ? true : false,
+    payEfectivo: 0,
+    payQr: 0
+  };
+  // Pre-llenar el pago con el total en efectivo
+  const calc = calcRoomAmount(r, refTs);
+  const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+  co.payEfectivo = calc.amount + consTotal;
   renderCheckOutSheet();
 }
-function calcBill(r, exitTs){
-  const entryMs = new Date(r.checkIn).getTime();
-  const elapsedMs = Math.max(0, exitTs - entryMs);
-  const paidMs = (r.paidHours || 1) * 3600000;
-  const extraMs = Math.max(0, elapsedMs - paidMs);
-  const extraBlocks = Math.ceil(extraMs / (30 * 60000));
-  const baseCharge = (r.paidHours || 1) * r.rate;
-  const extraCharge = extraBlocks * (r.rate / 2);
-  return { elapsedMs, paidMs, extraMs, extraBlocks, baseCharge, extraCharge, total: baseCharge + extraCharge };
-}
+
 function renderCheckOutSheet(){
   const r = db.rooms.find(x => x.id === co.id);
-  const bill = calcBill(r, co.exitTs);
-  co.charge = bill.total;
+  const calc = calcRoomAmount(r, co.exitTs);
   const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
-  const grandTotal = co.charge + consTotal;
+  const grand = calc.amount + consTotal;
+  const pagado = (co.payEfectivo || 0) + (co.payQr || 0);
+  const diff = grand - pagado;
+
   const prodOpts = db.products.filter(p => stockOf(p.id) > 0).map(p => `<option value="${p.id}">${esc(p.name)} — ${money(p.price)}</option>`).join('');
   const consHTML = r.consumos.length
     ? `<div class="cons-list">${r.consumos.map((c,i) => `<div class="cons-item"><span>${esc(c.name)}</span><span class="q">×${c.qty}</span><span class="p">${money(c.price*c.qty)}</span><button onclick="delConsumo(${i})">✕</button></div>`).join('')}</div>`
     : `<p class="hint" style="margin:0 0 14px">Sin consumos.</p>`;
-  const extraRow = bill.extraMs > 0 ? `<div class="bd-row extra"><span>Extra ${bill.extraBlocks}×30m</span><span>${money(bill.extraCharge)}</span></div>` : '';
-  const pays = ['efectivo','qr','transferencia'];
-  const payHTML = pays.map(p => `<button class="chip ${co.payMethod === p ? 'active' : ''}" data-pay="${p}">${p === 'efectivo' ? 'Efectivo' : p === 'qr' ? 'QR' : 'Transfer.'}</button>`).join('');
-  openSheet(`Salida · Pieza ${r.num}`, `
-    <div class="cr-client" style="margin-bottom:14px">
-      <div class="cc-ico">${esc(r.num)}</div>
-      <div class="cc-info">
-        <div class="cc-name">${esc(r.client || 'Sin nombre')}</div>
-        <div class="cc-dni">DNI: ${esc(r.dni || '—')}</div>
+
+  // Header: en modo hora, mostrar cierre + hora; en paquete, mostrar info fija
+  let headerHTML;
+  if(r.mode === 'paquete'){
+    headerHTML = `
+      <div class="info-grid">
+        <div><span>H. Inicio</span><b>${fmtTime(r.checkIn)}</b></div>
+        <div><span>H. Fin</span><b>${r.packageEndTime || '—'}</b></div>
+        <div><span>Tipo</span><b>Paquete nocturno</b></div>
+        <div><span>Tarifa fija</span><b>${money(r.packagePrice)}</b></div>
+      </div>`;
+  } else {
+    const startTime = fmtTime(r.checkIn);
+    const endTime = co.captured ? timeStr(co.exitTs).slice(0,5) : '--:--';
+    const elapsedStr = co.captured ? fmtHM(co.exitTs - new Date(r.checkIn).getTime()) : '--:--';
+    headerHTML = `
+      <div class="time-capture" style="margin-bottom:14px">
+        <div class="time-lbl-sm">Hora de salida</div>
+        <div class="time-display" id="coLiveClock">${co.captured ? `${pad(new Date(co.exitTs).getHours())}:${pad(new Date(co.exitTs).getMinutes())}:<span class="sec">${pad(new Date(co.exitTs).getSeconds())}</span>` : renderLiveClock(co.exitTs)}</div>
+        <div class="captured-info ${co.captured?'show':''}"><span>✓ Capturada:</span><b>${co.captured ? timeStr(co.exitTs) : '—'}</b></div>
+        <button class="time-btn ${co.captured?'captured':''}" id="coCaptureBtn" onclick="captureExitTime()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
+          <span id="coCaptureLabel">${co.captured ? 'Hora capturada' : 'Capturar hora de salida'}</span>
+        </button>
       </div>
+      <div class="info-grid">
+        <div><span>H. Inicio</span><b>${startTime}</b></div>
+        <div><span>H. Fin</span><b>${endTime}</b></div>
+        <div><span>H. Pieza</span><b>${elapsedStr}</b></div>
+        <div><span>Tarifa</span><b>${money(r.hourlyRate)}/h</b></div>
+      </div>`;
+  }
+
+  const payLinesHTML = `
+    <div class="pay-lines">
+      <div class="pay-line">
+        <span class="pl-method" style="color:var(--green)">Efectivo</span>
+        <input type="number" inputmode="decimal" min="0" step="0.5" id="coPayEfectivo" value="${co.payEfectivo.toFixed(2)}" oninput="updatePay(this.value,'efectivo')">
+      </div>
+      <div class="pay-line">
+        <span class="pl-method" style="color:var(--blue)">QR</span>
+        <input type="number" inputmode="decimal" min="0" step="0.5" id="coPayQr" value="${co.payQr.toFixed(2)}" oninput="updatePay(this.value,'qr')">
+      </div>
+      <div class="pay-summary">
+        <span>Pagado</span>
+        <b class="${Math.abs(diff) < 0.01 ? 'ok' : 'err'}">${money(pagado)} / ${money(grand)}</b>
+      </div>
+      ${Math.abs(diff) > 0.01 ? `<div class="pay-summary"><span>Diferencia</span><b class="err">${money(diff)}</b></div>` : ''}
+    </div>`;
+
+  openSheet(`Cobrar · Pieza ${r.num}`, `
+    ${headerHTML}
+
+    <div class="group-title" style="padding-left:4px">Desglose</div>
+    <div class="breakdown">
+      <div class="bd-row">
+        <span>${r.mode === 'paquete' ? 'Paquete' : (calc.hours + 'h × ' + money(calc.rate))}</span>
+        <span>${money(calc.amount)}</span>
+      </div>
+      ${consTotal > 0 ? `<div class="bd-row extra"><span>Consumos</span><span>${money(consTotal)}</span></div>` : ''}
+      <div class="bd-row total-row"><span>Total</span><span>${money(grand)}</span></div>
     </div>
 
-    <div class="time-capture">
-      <div class="time-lbl-sm">Hora actual</div>
-      <div class="time-display" id="coLiveClock">${renderLiveClock(co.exitTs)}</div>
-      <div class="captured-info ${co.captured?'show':''}" id="coCapturedInfo"><span>✓ Hora capturada:</span><b id="coCapturedTime">${co.captured ? timeStr(co.exitTs) : '—'}</b></div>
-      <button class="time-btn ${co.captured?'captured':''}" id="coCaptureBtn" onclick="captureExitTime()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
-        <span id="coCaptureLabel">${co.captured ? 'Hora capturada' : 'Capturar hora de salida'}</span>
-      </button>
-    </div>
-    <div class="info-grid">
-      <div><span>Ingreso</span><b>${fmtTime(r.checkIn)}</b></div>
-      <div><span>Tiempo total</span><b>${elapsed(bill.elapsedMs)}</b></div>
-      <div><span>Tiempo pagado</span><b>${r.paidHours}h</b></div>
-      <div><span>Tarifa</span><b>${money(r.rate)}/h</b></div>
-    </div>
-    <div class="group-title" style="padding-left:4px">Desglose habitación</div>
-    <div class="breakdown">
-      <div class="bd-row"><span>${r.paidHours}h × ${money(r.rate)}</span><span>${money(bill.baseCharge)}</span></div>
-      ${extraRow}
-    </div>
-    <div class="field"><label>Importe habitación (editable)</label><input id="coCharge" type="number" inputmode="decimal" min="0" step="1" value="${bill.total.toFixed(2)}" oninput="co.charge = Number(this.value)||0; updateCoTotal()"></div>
-    <div class="group-title" style="padding-left:4px">Consumos</div>
+    <div class="group-title" style="padding-left:4px">Consumos (opcional)</div>
     ${consHTML}
-    ${ prodOpts ? `<div class="inline-add"><select id="coProd">${prodOpts}</select><input id="coQty" type="number" inputmode="numeric" min="1" value="1"><button class="btn sm" onclick="addConsumo()">＋</button></div>` : `<p class="hint" style="margin-bottom:14px">Sin productos con stock.</p>` }
-    <div class="field" style="margin-top:16px"><label>Forma de pago</label><div class="chips" id="coPayChips">${payHTML}</div></div>
-    <div class="total-box"><span>Total a cobrar</span><b id="coTotal">${money(grandTotal)}</b></div>
-  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="doCheckOut()">Cobrar y liberar</button>`);
-  setTimeout(() => {
-    $$('#coPayChips .chip').forEach(chip => {
-      chip.onclick = () => {
-        co.payMethod = chip.dataset.pay;
-        $$('#coPayChips .chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-      };
-    });
-  }, 320);
+    ${ prodOpts ? `<div class="inline-add"><select id="coProd">${prodOpts}</select><input id="coQty" type="number" inputmode="numeric" min="1" value="1"><button class="btn sm" onclick="addConsumo()">＋</button></div>` : '' }
+
+    <div class="group-title" style="padding-left:4px">Forma de pago</div>
+    ${payLinesHTML}
+  `, `
+    <button class="btn purple" onclick="doPorCobrar()">Por cobrar</button>
+    <button class="btn primary" onclick="doConfirmarCobro()">Cobrar</button>
+  `);
 }
-function updateCoTotal(){
-  const r = db.rooms.find(x => x.id === co.id);
-  const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
-  const el = $('#coTotal');
-  if(el) el.textContent = money(co.charge + consTotal);
+
+function updatePay(val, method){
+  const num = Number(val) || 0;
+  if(method === 'efectivo') co.payEfectivo = num;
+  else co.payQr = num;
+  renderCheckOutSheet();
 }
-function captureExitTime(){
-  co.exitTs = Date.now(); co.captured = true;
-  const i = $('#coCapturedInfo'), t = $('#coCapturedTime'), b = $('#coCaptureBtn'), l = $('#coCaptureLabel');
-  if(t) t.textContent = timeStr(co.exitTs);
-  if(i) i.classList.add('show');
-  if(b) b.classList.add('captured');
-  if(l) l.textContent = 'Hora capturada';
-  const liveEl = $('#coLiveClock');
-  if(liveEl){ liveEl.classList.add('captured'); setTimeout(()=>liveEl.classList.remove('captured'), 700); }
-  const r = db.rooms.find(x => x.id === co.id);
-  const bill = calcBill(r, co.exitTs);
-  co.charge = bill.total;
-  const inp = $('#coCharge');
-  if(inp) inp.value = bill.total.toFixed(2);
-  updateCoTotal();
-  tickLiveClocks();
-}
+
 function addConsumo(){
   const r = db.rooms.find(x => x.id === co.id);
   const pid = $('#coProd').value;
@@ -1216,75 +1448,119 @@ function addConsumo(){
   const ex = r.consumos.find(c => c.productId === pid);
   if(ex) ex.qty += qty;
   else r.consumos.push({ productId: pid, name: p.name, qty, price: p.price, cost: p.cost });
+  save();
   renderCheckOutSheet();
 }
 function delConsumo(i){
   const r = db.rooms.find(x => x.id === co.id);
   r.consumos.splice(i,1);
+  save();
   renderCheckOutSheet();
 }
-function doCheckOut(){
-  const r = db.rooms.find(x => x.id === co.id);
-  const iso = new Date(co.exitTs).toISOString();
-  const dur = elapsed(co.exitTs - new Date(r.checkIn).getTime());
-  const detailParts = [`Pieza ${r.num}`, dur, co.payMethod.toUpperCase()];
-  if(r.client) detailParts.push(r.client);
-  if(r.dni) detailParts.push('DNI ' + r.dni);
 
-  db.sales.push({
-    id: uid(), ts: iso, day: dayKey(iso), type: 'habitacion',
-    detail: detailParts.join(' · '),
-    amount: co.charge, cost: 0,
-    userId: currentUser?.id, userName: currentUser?.name, shiftId: currentShift?.id,
-    clientName: r.client, clientDni: r.dni, roomNum: r.num
-  });
-  r.consumos.forEach(c => {
-    db.sales.push({
-      id: uid(), ts: iso, day: dayKey(iso), type: 'producto',
-      detail: `${c.name} ×${c.qty} · Pieza ${r.num} · ${co.payMethod.toUpperCase()}`,
-      amount: c.price * c.qty, cost: c.cost * c.qty,
-      userId: currentUser?.id, userName: currentUser?.name, shiftId: currentShift?.id
-    });
-    db.movements.push({ id: uid(), productId: c.productId, type: 'venta', qty: c.qty, unitCost: c.cost, date: iso, note: `Pieza ${r.num}`, userId: currentUser?.id, shiftId: currentShift?.id });
-  });
-  Object.assign(r, { status:'libre', client:'', dni:'', checkIn:null, paidHours:null, consumos:[], rate: r.price });
-  save(); closeModal(); renderAll();
-  toast(`Pieza ${r.num} cobrada · ${money(co.charge)}`);
+function captureExitTime(){
+  co.exitTs = Date.now(); co.captured = true;
+  // Recalcular pago efectivo
+  const r = db.rooms.find(x => x.id === co.id);
+  const calc = calcRoomAmount(r, co.exitTs);
+  const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+  co.payEfectivo = calc.amount + consTotal;
+  co.payQr = 0;
+  renderCheckOutSheet();
 }
 
-/* TIMERS */
+function doPorCobrar(){
+  const r = db.rooms.find(x => x.id === co.id);
+  // Marcar como salida pero por cobrar (no libera, queda visible con aviso)
+  const refTs = co.captured ? co.exitTs : Date.now();
+  r.checkOut = new Date(refTs).toISOString();
+  r.paymentStatus = 'pendiente';
+  save(); closeModal(); renderAll();
+  toast(`Pieza ${r.num} marcada POR COBRAR`);
+}
+
+function doConfirmarCobro(){
+  const r = db.rooms.find(x => x.id === co.id);
+  const refTs = co.captured ? co.exitTs : Date.now();
+  const calc = calcRoomAmount(r, refTs);
+  const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+  const grand = calc.amount + consTotal;
+
+  const payments = [];
+  if(co.payEfectivo > 0) payments.push({ method: 'efectivo', amount: co.payEfectivo });
+  if(co.payQr > 0) payments.push({ method: 'qr', amount: co.payQr });
+
+  const pagado = payments.reduce((a,p) => a + p.amount, 0);
+  if(Math.abs(pagado - grand) > 0.01){
+    if(!confirm(`El pago (${money(pagado)}) no coincide con el total (${money(grand)}).\n\n¿Registrar igual?`)) return;
+  }
+  if(!payments.length){ toast('Ingresa un monto de pago'); return; }
+
+  // Guardar la hora de salida capturada si aplica
+  if(co.captured && !r.checkOut) r.checkOut = new Date(refTs).toISOString();
+
+  registerSale(r, pagado, payments, refTs);
+  closeModal();
+  toast(`Pieza ${r.num} cobrada · ${money(pagado)}`);
+}
+
+/* =========================================================
+   TIMERS EN VIVO (contadores)
+   ========================================================= */
 function updateTimers(){
   const now = Date.now();
   db.rooms.forEach(r => {
     if(r.status !== 'ocupada') return;
-    const bar = document.querySelector(`[data-timer-bar="${r.id}"]`);
-    const val = document.querySelector(`[data-time-val="${r.id}"]`);
-    const sub = document.querySelector(`[data-timer-sub="${r.id}"]`);
-    if(!bar || !val) return;
-    const s = stateFor(r);
-    if(s.remaining >= 0){
-      val.textContent = fmtHM(s.elapsedMs);
-      val.style.color = s.color;
-      if(sub) sub.innerHTML = `Falta ${fmtHM(s.remaining)} · <b>${r.paidHours}h × ${money(r.rate)}</b>`;
-      if(sub) sub.classList.remove('crit');
-    } else {
-      val.textContent = '+' + fmtHM(-s.remaining);
-      val.style.color = 'var(--red)';
-      if(sub){ sub.innerHTML = `Vencido · pagó ${r.paidHours}h`; sub.classList.add('crit'); }
+
+    // Actualizar H.Actu (hora actual en vivo)
+    const nowTime = document.querySelector(`[data-now-time="${r.id}"]`);
+    if(nowTime){
+      const d = new Date(now);
+      nowTime.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes());
     }
-    bar.style.width = s.barWidth + '%';
-    bar.className = 'cr-progress-fill ' + s.cls;
+
+    // Actualizar H.Pieza (tiempo transcurrido)
+    const elapsedEl = document.querySelector(`[data-elapsed="${r.id}"]`);
+    if(elapsedEl && r.checkIn){
+      const el = now - new Date(r.checkIn).getTime();
+      elapsedEl.textContent = fmtHM(el);
+    }
+
+    // Barra de progreso (solo modo hora)
+    if(r.mode === 'hora'){
+      const bar = document.querySelector(`[data-timer-bar="${r.id}"]`);
+      const sub = document.querySelector(`[data-timer-sub="${r.id}"]`);
+      if(bar && sub){
+        const s = stateFor(r);
+        bar.style.width = s.barWidth + '%';
+        bar.className = 'cr-progress-fill ' + s.cls;
+        if(s.remaining >= 0){
+          sub.innerHTML = `Falta ${fmtHM(s.remaining)} · <b>${r.paidHours}h × ${money(r.hourlyRate)}</b>`;
+          sub.classList.remove('crit');
+        } else {
+          sub.innerHTML = `Excedido ${fmtHM(-s.remaining)} · <b>${r.paidHours}h × ${money(r.hourlyRate)}</b>`;
+          sub.classList.add('crit');
+        }
+      }
+    }
+
+    // Monto (solo modo hora, se recalcula)
+    const amountEl = document.querySelector(`[data-amount="${r.id}"]`);
+    if(amountEl && r.mode === 'hora'){
+      const calc = calcRoomAmount(r, now);
+      const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+      amountEl.textContent = money(calc.amount + consTotal);
+    }
   });
 }
 
-/* PRODUCTOS */
+/* =========================================================
+   PRODUCTOS & KARDEX
+   ========================================================= */
 function stockOf(pid){ return db.movements.filter(m => m.productId === pid).reduce((a,m) => m.type === 'entrada' ? a + m.qty : a - m.qty, 0); }
 function renderProducts(){
   const body = $('#prodBody');
-  if(!db.products.length){
-    body.innerHTML = `<tr><td colspan="6" class="empty">Sin productos. Agrega el primero.</td></tr>`;
-    return;
-  }
+  if(!db.products.length){ body.innerHTML = `<tr><td colspan="6" class="empty">Sin productos. Agrega el primero.</td></tr>`; return; }
   body.innerHTML = db.products.map(p => {
     const st = stockOf(p.id);
     const bajo = st <= 3;
@@ -1336,7 +1612,6 @@ function openEntrada(id){
     <div class="field"><label>Cantidad</label><input id="enQty" type="number" inputmode="numeric" min="1" step="1" value="1"></div>
     <div class="field"><label>Costo unitario (Bs)</label><input id="enCost" type="number" inputmode="decimal" min="0" step="0.5" value="${p.cost}"></div>
     <div class="field"><label>Nota</label><input id="enNote" placeholder="Compra proveedor" autocomplete="off"></div>
-    <p class="hint">Stock actual: <b style="color:var(--accent)">${stockOf(id)}</b></p>
   `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="doEntrada('${id}')">Registrar</button>`);
   setTimeout(()=>$('#enQty').select(), 320);
 }
@@ -1354,7 +1629,6 @@ function openSalida(id){
   openSheet(`Salida · ${esc(p.name)}`, `
     <div class="field"><label>Cantidad</label><input id="saQty" type="number" inputmode="numeric" min="1" step="1" value="1"></div>
     <div class="field"><label>Motivo</label><input id="saNote" placeholder="Merma, consumo interno..." autocomplete="off"></div>
-    <p class="hint">Stock disponible: <b style="color:var(--accent)">${stockOf(id)}</b></p>
   `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="doSalida('${id}')">Registrar</button>`);
   setTimeout(()=>$('#saQty').select(), 320);
 }
@@ -1408,7 +1682,6 @@ function openNewExpense(){
         <option value="Otro">Otro</option>
       </select>
     </div>
-    <p class="hint">Registrado por: <b>${esc(currentUser?.name || '—')}</b></p>
   `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveExpense()">Guardar</button>`);
   setTimeout(()=>$('#gxDesc').focus(), 320);
 }
@@ -1517,7 +1790,7 @@ function renderReports(){
   $('#repStats').innerHTML = `
     <div class="stat"><div class="lbl">Ingresos</div><div class="val c-accent" style="font-size:20px">${money(ingresos)}</div></div>
     <div class="stat"><div class="lbl">Utilidad neta</div><div class="val ${utilidadNeta >= 0 ? 'c-green' : 'c-red'}" style="font-size:20px">${money(utilidadNeta)}</div></div>
-    <div class="stat"><div class="lbl">Habitaciones</div><div class="val c-muted" style="font-size:18px">${money(hab)}</div></div>
+    <div class="stat"><div class="lbl">Piezas</div><div class="val c-muted" style="font-size:18px">${money(hab)}</div></div>
     <div class="stat"><div class="lbl">Productos</div><div class="val c-muted" style="font-size:18px">${money(prod)}</div></div>
     <div class="stat"><div class="lbl">Costo productos</div><div class="val c-muted" style="font-size:18px">${money(costos)}</div></div>
     <div class="stat"><div class="lbl">Gastos</div><div class="val" style="color:var(--red);font-size:18px">${money(gastos)}</div></div>
@@ -1621,11 +1894,6 @@ function renderReports(){
             if(!db.shifts) db.shifts = [];
             if(!db.expenses) db.expenses = [];
             if(!db.deposits) db.deposits = [];
-            db.rooms.forEach(r => {
-              if(!('client' in r)) r.client = '';
-              if(!('dni' in r)) r.dni = '';
-              if(!('name' in r)) r.name = 'Habitación ' + r.num;
-            });
             save(); renderAll(); toast('Datos restaurados');
           }catch(err){ toast('Archivo inválido'); }
         };
