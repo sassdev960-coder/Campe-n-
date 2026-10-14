@@ -48,7 +48,7 @@ input,select,button{-webkit-appearance:none;appearance:none}
 .icon-btn:active{transform:scale(.9)}
 .icon-btn svg{width:18px;height:18px}
 .icon-btn.avatar{background:linear-gradient(140deg,var(--accent),var(--accent-deep));color:var(--accent-text);font-size:14px;font-weight:700}
-.view{display:none;padding:0 16px 24px}
+.view{display:none;padding:0 14px 24px}
 .view.active{display:block;animation:viewIn .35s var(--ease)}
 @keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .page-title{padding:4px 4px 18px}
@@ -70,29 +70,118 @@ input,select,button{-webkit-appearance:none;appearance:none}
 .stat .val.c-red{color:var(--red)}
 .stat .val.c-blue{color:var(--blue)}
 .stat .val.c-muted{color:var(--text-2)}
-.rooms-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.room{background:var(--surface);border-radius:var(--r-lg);padding:14px;display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden;transition:transform .18s var(--ease);cursor:pointer}
-.room:active{transform:scale(.97)}
-.room.busy{background:linear-gradient(160deg,rgba(200,150,62,.06),var(--surface) 55%)}
-.room-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
-.room-num{font-size:22px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.pill{font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:4px 8px;border-radius:20px}
-.pill.free{background:rgba(52,199,89,.16);color:var(--green)}
-.pill.busy{background:rgba(255,59,48,.16);color:var(--red)}
-.room-cli{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-2)}
-.room-foot{margin-top:auto;padding-top:8px;font-size:14px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}
-.room-foot span{font-size:11px;color:var(--text-2);font-weight:500}
-.timer-block{margin-top:8px;padding-top:9px;border-top:.5px solid var(--sep)}
-.timer-main{display:flex;align-items:baseline;gap:5px;margin-bottom:8px}
-.timer-val{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1;transition:color .3s}
-.timer-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;transition:color .3s}
-.progress{position:relative;width:100%;height:6px;background:var(--fill);border-radius:3px;overflow:hidden;margin-bottom:6px}
-.progress-fill{position:absolute;right:0;top:0;bottom:0;border-radius:3px;transition:width .6s linear,background .5s;background:var(--green)}
-.progress-fill.warn{background:var(--accent)}
-.progress-fill.crit{background:var(--red)}
-.progress-fill.blink{animation:blinkBar .9s ease-in-out infinite}
+
+/* =========================================================
+   TARJETAS TIPO CUADERNO (1 por fila, grandes, claras)
+   ========================================================= */
+.rooms-list{display:flex;flex-direction:column;gap:14px}
+
+.card-room{
+  background:var(--surface);
+  border-radius:18px;
+  border:1.5px solid var(--sep);
+  padding:16px 16px 14px;
+  position:relative;
+  overflow:hidden;
+  transition:transform .18s var(--ease),border-color .2s;
+}
+.card-room.free{border-color:var(--sep)}
+.card-room.busy{
+  border-color:rgba(200,150,62,.55);
+  background:linear-gradient(165deg,rgba(200,150,62,.07),var(--surface) 60%);
+}
+.card-room.urgent{
+  border-color:rgba(255,59,48,.7);
+  background:linear-gradient(165deg,rgba(255,59,48,.08),var(--surface) 60%);
+  animation:pulseUrgent 1.6s ease-in-out infinite;
+}
+@keyframes pulseUrgent{0%,100%{border-color:rgba(255,59,48,.7)}50%{border-color:rgba(255,59,48,.3)}}
+
+/* Cabecera */
+.cr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.cr-pieza{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.cr-pieza .num{color:var(--text);margin-left:4px}
+.cr-badge{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 10px;border-radius:20px}
+.cr-badge.free{background:rgba(52,199,89,.16);color:var(--green)}
+.cr-badge.busy{background:rgba(200,150,62,.2);color:var(--accent)}
+.cr-badge.urgent{background:rgba(255,59,48,.2);color:var(--red);animation:blinkBar .9s ease-in-out infinite}
+
+/* Fila de 3 columnas: Ingreso · Salida · Tiempo */
+.cr-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1.2fr;
+  gap:10px;
+  padding:12px 0;
+  border-top:1px solid var(--sep);
+  border-bottom:1px solid var(--sep);
+  margin-bottom:12px;
+}
+.cr-col{display:flex;flex-direction:column;gap:3px;text-align:center;position:relative}
+.cr-col + .cr-col::before{
+  content:'';position:absolute;left:-5px;top:4px;bottom:4px;
+  width:1px;background:var(--sep);
+}
+.cr-col .k{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
+.cr-col .v{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em;color:var(--text)}
+.cr-col .v.big{font-size:19px;color:var(--accent);letter-spacing:-.02em}
+.cr-col .v.dash{color:var(--text-3);font-weight:500}
+.cr-col.hl .v.big{color:var(--green)}
+.cr-col.warn .v.big{color:var(--accent)}
+.cr-col.crit .v.big{color:var(--red)}
+
+/* Barra que se vacía */
+.cr-progress{
+  height:7px;background:var(--fill);border-radius:4px;overflow:hidden;margin-bottom:6px;
+  position:relative;
+}
+.cr-progress-fill{
+  position:absolute;right:0;top:0;bottom:0;border-radius:4px;
+  background:var(--green);
+  transition:width .6s linear,background .5s;
+}
+.cr-progress-fill.warn{background:var(--accent)}
+.cr-progress-fill.crit{background:var(--red)}
+.cr-progress-fill.blink{animation:blinkBar .9s ease-in-out infinite}
 @keyframes blinkBar{0%,100%{opacity:1}50%{opacity:.35}}
-.timer-sub{font-size:10.5px;color:var(--text-2);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cr-sub{font-size:11.5px;color:var(--text-2);font-variant-numeric:tabular-nums;text-align:center;margin-bottom:12px}
+.cr-sub b{color:var(--accent);font-weight:700}
+.cr-sub.crit b{color:var(--red)}
+
+/* Fila inferior: Bs + botones de cobro */
+.cr-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.cr-total{display:flex;flex-direction:column;gap:2px}
+.cr-total .k{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
+.cr-total .v{font-size:22px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.cr-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pay-btn{
+  padding:9px 12px;border-radius:11px;font-size:12px;font-weight:700;letter-spacing:.02em;
+  border:1px solid var(--sep);background:var(--fill);color:var(--text-2);
+  transition:transform .12s var(--ease),background .15s,color .15s;
+  white-space:nowrap;
+}
+.pay-btn:active{transform:scale(.94)}
+.pay-btn.green{background:rgba(52,199,89,.16);color:var(--green);border-color:rgba(52,199,89,.28)}
+.pay-btn.blue{background:rgba(10,132,255,.16);color:var(--blue);border-color:rgba(10,132,255,.28)}
+.pay-btn.gold{background:rgba(200,150,62,.18);color:var(--accent);border-color:rgba(200,150,62,.3)}
+
+/* Botón grande de "ocupar" para piezas libres */
+.btn-occupy{
+  width:100%;padding:14px;border-radius:12px;margin-top:10px;
+  background:var(--accent);color:var(--accent-text);
+  font-size:15px;font-weight:700;letter-spacing:.01em;
+  transition:transform .12s var(--ease);
+}
+.btn-occupy:active{transform:scale(.97)}
+
+/* Libre: layout más compacto */
+.card-room.free{padding:14px 16px}
+.card-room.free .cr-top{margin-bottom:8px}
+.card-room.free .cr-info{font-size:13px;color:var(--text-2);padding:2px 0 6px}
+.card-room.free .cr-rate{font-size:15px;font-weight:700;color:var(--accent)}
+
+/* =========================================================
+   LISTS / TABLES / FORM / SHEET
+   ========================================================= */
 .group{background:var(--surface);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px}
 .group-title{font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;padding:0 8px 8px}
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -140,8 +229,6 @@ html[data-theme="light"] .time-capture{background:var(--bg)}
 .chip{padding:9px 16px;background:var(--surface);border-radius:20px;font-size:14px;font-weight:600;color:var(--text-2);border:1px solid transparent;transition:all .18s var(--ease)}
 html[data-theme="light"] .chip{background:var(--bg)}
 .chip.active{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
-.chip.active.green{background:var(--green);color:#fff;border-color:var(--green)}
-.chip.active.blue{background:var(--blue);color:#fff;border-color:var(--blue)}
 .chip:active{transform:scale(.94)}
 .breakdown{background:var(--surface);border-radius:var(--r-md);padding:2px 14px;margin-bottom:16px}
 html[data-theme="light"] .breakdown{background:var(--bg)}
@@ -253,6 +340,8 @@ html[data-theme="light"] .shift-info{background:var(--bg)}
   td{border-color:#eee;color:#000}
   .page-title h1{font-size:22px}
   .print-title{display:block!important}
+  .card-room{border-color:#ccc!important;background:#fff!important;page-break-inside:avoid}
+  .cr-col .v.big{color:#b8860b!important}
 }
 .print-title{display:none}
 </style>
@@ -301,7 +390,7 @@ html[data-theme="light"] .shift-info{background:var(--bg)}
 
   <section id="habitaciones" class="view">
     <div class="page-title"><h1>Habitaciones</h1><p id="roomSummary"></p></div>
-    <div class="rooms-grid" id="roomGrid"></div>
+    <div class="rooms-list" id="roomGrid"></div>
   </section>
 
   <section id="productos" class="view">
@@ -346,7 +435,7 @@ html[data-theme="light"] .shift-info{background:var(--bg)}
     <div class="group" style="margin-bottom:20px">
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Producto</th><th class="num">Vendidos</th><th class="num">Ingreso</th><th class="num">Costo</th><th class="num">Utilidad</th></tr></thead>
+          <thead><tr><th>Producto</th><th class="num">Vend.</th><th class="num">Ingreso</th><th class="num">Costo</th><th class="num">Utilidad</th></tr></thead>
           <tbody id="repProduct"></tbody>
         </table>
       </div>
@@ -395,8 +484,34 @@ const fmtTime = iso => { const d = new Date(iso); return pad(d.getHours())+':'+p
 const fmtDT = iso => { const d = new Date(iso); return `${pad(d.getDate())}/${pad(d.getMonth()+1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 const timeStr = ts => { const d = new Date(ts); return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds()); };
 const initials = name => (name||'?').trim().split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
-function fmtDur(ms){ if(ms < 0) ms = 0; const s = Math.floor(ms/1000); const h = Math.floor(s/3600); const m = Math.floor((s%3600)/60); const sec = s%60; if(h > 0) return `${h}:${pad(m)}:${pad(sec)}`; return `${m}:${pad(sec)}`; }
-function elapsed(ms){ if(ms < 0) ms = 0; const t = Math.floor(ms/60000); const h = Math.floor(t/60); const m = t%60; if(h === 0) return m + ' min'; return h + 'h ' + pad(m) + 'm'; }
+
+/* Tiempo en formato "1h 15m" o "1h 15m 30s" para el contador principal */
+function fmtDur(ms){
+  if(ms < 0) ms = 0;
+  const s = Math.floor(ms/1000);
+  const h = Math.floor(s/3600);
+  const m = Math.floor((s%3600)/60);
+  const sec = s%60;
+  if(h > 0) return `${h}h ${pad(m)}m ${pad(sec)}s`;
+  return `${m}m ${pad(sec)}s`;
+}
+/* Formato "1h 15m" (sin segundos, para tarjetas) */
+function fmtHM(ms){
+  if(ms < 0) ms = 0;
+  const total = Math.floor(ms/60000);
+  const h = Math.floor(total/60);
+  const m = total % 60;
+  if(h === 0) return `${m}m`;
+  return `${h}h ${pad(m)}m`;
+}
+function elapsed(ms){
+  if(ms < 0) ms = 0;
+  const t = Math.floor(ms/60000);
+  const h = Math.floor(t/60);
+  const m = t%60;
+  if(h === 0) return m + ' min';
+  return h + 'h ' + pad(m) + 'm';
+}
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 2200); }
 
 /* TEMA */
@@ -597,10 +712,7 @@ function saveUser(id){
   } else {
     db.users.push({ id: uid(), name, username, password, role });
   }
-  if(!db.users.some(u => u.role === 'admin')){
-    toast('Debe haber al menos un admin');
-    db.users = db.users.filter(u => u.id !== id); save(); return;
-  }
+  if(!db.users.some(u => u.role === 'admin')){ toast('Debe haber al menos un admin'); db.users = db.users.filter(u => u.id !== id); save(); return; }
   save();
   if(id === currentUser.id){ Object.assign(currentUser, { name, username, password, role }); $('#userBtn').textContent = initials(name); applyRoleUI(); }
   closeModal(); toast('Usuario guardado');
@@ -652,8 +764,10 @@ function tickLiveClocks(){
 }
 setInterval(tickLiveClocks, 1000);
 
-/* HABITACIONES */
-function timerHTML(r){
+/* =========================================================
+   HABITACIONES — TARJETAS TIPO CUADERNO
+   ========================================================= */
+function stateFor(r){
   const now = Date.now();
   const entryMs = new Date(r.checkIn).getTime();
   const paidMs = (r.paidHours || 1) * 3600000;
@@ -661,49 +775,158 @@ function timerHTML(r){
   const remaining = paidMs - elapsedMs;
   const pct = Math.min(100, Math.max(0, (elapsedMs / paidMs) * 100));
   const barWidth = Math.max(0, 100 - pct);
-  let display, label, color, cls;
-  if(remaining >= 0){
-    display = fmtDur(remaining); label = 'restantes';
-    if(pct < 50){ color = 'var(--green)'; cls = ''; }
-    else if(pct < 80){ color = 'var(--accent)'; cls = 'warn'; }
-    else if(pct < 95){ color = 'var(--red)'; cls = 'crit'; }
-    else { color = 'var(--red)'; cls = 'crit blink'; }
+
+  let cls = '', color = 'var(--green)', urgency = 'free';
+  if(remaining < 0){
+    cls = 'crit blink'; color = 'var(--red)'; urgency = 'urgent';
+  } else if(pct < 50){
+    cls = ''; color = 'var(--green)'; urgency = 'ok';
+  } else if(pct < 80){
+    cls = 'warn'; color = 'var(--accent)'; urgency = 'warn';
+  } else if(pct < 95){
+    cls = 'crit'; color = 'var(--red)'; urgency = 'crit';
   } else {
-    display = '+' + fmtDur(-remaining); label = 'excedido'; color = 'var(--red)'; cls = 'crit blink';
+    cls = 'crit blink'; color = 'var(--red)'; urgency = 'urgent';
   }
+
+  return { elapsedMs, paidMs, remaining, pct, barWidth, cls, color, urgency };
+}
+
+function cardRoom(r){
+  const busy = r.status === 'ocupada';
+
+  if(!busy){
+    return `
+      <div class="card-room free" onclick="clickRoom('${r.id}')">
+        <div class="cr-top">
+          <div class="cr-pieza">PIEZA <span class="num">${r.num}</span></div>
+          <span class="cr-badge free">Libre</span>
+        </div>
+        <div class="cr-info">Habitación disponible para ocupar</div>
+        <div class="cr-rate">${money(r.price)} <span style="font-size:12px;color:var(--text-2);font-weight:500">/ hora</span></div>
+        <button class="btn-occupy" onclick="event.stopPropagation(); clickRoom('${r.id}')">▸ Ocupar ahora</button>
+      </div>`;
+  }
+
+  const s = stateFor(r);
+  const nowTime = pad(new Date().getHours())+':'+pad(new Date().getMinutes());
+  const exitTime = s.remaining <= 0 ? 'Ahora' : '--:--';
+
+  // Etiquetas de tiempo
+  let tiempoLabel, tiempoVal, sublabel, subcrit;
+  if(s.remaining >= 0){
+    tiempoLabel = 'TIEMPO';
+    tiempoVal = fmtHM(s.elapsedMs);
+    sublabel = `Falta ${fmtHM(s.remaining)}`;
+    subcrit = '';
+  } else {
+    tiempoLabel = 'EXCEDIDO';
+    tiempoVal = '+' + fmtHM(-s.remaining);
+    sublabel = `Tiempo pagado: ${fmtHM(s.paidMs)}`;
+    subcrit = 'crit';
+  }
+
+  const cardCls = s.urgency === 'urgent' ? 'urgent' : '';
+  const badgeCls = s.urgency === 'urgent' ? 'urgent' : 'busy';
+  const badgeTxt = s.urgency === 'urgent' ? '● Vencido' : 'Ocupada';
+  const colCls = s.urgency === 'urgent' ? 'crit' : (s.urgency === 'warn' ? 'warn' : (s.urgency === 'crit' ? 'crit' : 'hl'));
+
   return `
-    <div class="timer-block">
-      <div class="timer-main" data-timer-main="${r.id}"><span class="timer-val" style="color:${color}">${display}</span><span class="timer-lbl" style="color:${color}">${label}</span></div>
-      <div class="progress"><div class="progress-fill ${cls}" data-timer-bar="${r.id}" style="width:${barWidth}%"></div></div>
-      <div class="timer-sub" data-timer-sub="${r.id}">${r.paidHours}h · ${money(r.rate)}/h</div>
+    <div class="card-room busy ${cardCls}">
+      <div class="cr-top">
+        <div class="cr-pieza">PIEZA <span class="num">${r.num}</span></div>
+        <span class="cr-badge ${badgeCls}">${badgeTxt}</span>
+      </div>
+
+      <div class="cr-grid">
+        <div class="cr-col">
+          <span class="k">Ingreso</span>
+          <span class="v">${fmtTime(r.checkIn)}</span>
+        </div>
+        <div class="cr-col">
+          <span class="k">Salida</span>
+          <span class="v ${s.remaining <= 0 ? '' : 'dash'}">${exitTime}</span>
+        </div>
+        <div class="cr-col ${colCls}">
+          <span class="k">${tiempoLabel}</span>
+          <span class="v big" data-time-val="${r.id}">${tiempoVal}</span>
+        </div>
+      </div>
+
+      <div class="cr-progress">
+        <div class="cr-progress-fill ${s.cls}" data-timer-bar="${r.id}" style="width:${s.barWidth}%"></div>
+      </div>
+      <div class="cr-sub ${subcrit}" data-timer-sub="${r.id}">
+        ${sublabel} · <b>${r.paidHours}h × ${money(r.rate)}</b>
+      </div>
+
+      <div class="cr-bottom">
+        <div class="cr-total">
+          <span class="k">Total</span>
+          <span class="v">${money(r.paidHours * r.rate)}</span>
+        </div>
+        <div class="cr-actions">
+          <button class="pay-btn green" onclick="event.stopPropagation(); quickCheckout('${r.id}','efectivo')">C · Efect.</button>
+          <button class="pay-btn blue"  onclick="event.stopPropagation(); quickCheckout('${r.id}','qr')">O · QR</button>
+          <button class="pay-btn gold"  onclick="event.stopPropagation(); openCheckOut('${r.id}')">Detalle</button>
+        </div>
+      </div>
     </div>`;
 }
+
 function renderRooms(){
-  const grid = $('#roomGrid');
-  grid.innerHTML = db.rooms.map(r => {
-    const busy = r.status === 'ocupada';
-    return `<div class="room ${busy?'busy':''}" onclick="clickRoom('${r.id}')">
-      <div class="room-top"><span class="room-num">${r.num}</span><span class="pill ${busy?'busy':'free'}">${busy?'Ocup.':'Libre'}</span></div>
-      ${ busy ? `
-        <div class="room-cli">${fmtTime(r.checkIn)} → ${r.paidHours}h</div>
-        ${ timerHTML(r) }
-      ` : `
-        <div style="margin-top:auto;padding-top:10px;color:var(--text-2);font-size:13px">Disponible</div>
-        <div class="room-foot">${money(r.price)}<span> /h</span></div>
-      `}
-    </div>`;
-  }).join('');
+  const list = $('#roomGrid');
+  list.innerHTML = db.rooms.map(cardRoom).join('');
   const libres = db.rooms.filter(r => r.status === 'libre').length;
   const ocup = db.rooms.length - libres;
   $('#roomSummary').innerHTML = `<b style="color:var(--green)">${libres}</b> libres · <b style="color:var(--red)">${ocup}</b> ocupadas`;
 }
+
 function clickRoom(id){
   const r = db.rooms.find(x => x.id === id);
   if(!r) return;
   r.status === 'ocupada' ? openCheckOut(id) : openCheckIn(id);
 }
 
-/* CHECK-IN (simplificado, sin cliente/credencial) */
+/* Cobro rápido: efectivo o QR desde la tarjeta */
+function quickCheckout(id, method){
+  const r = db.rooms.find(x => x.id === id);
+  if(!r || r.status !== 'ocupada') return;
+  const now = Date.now();
+  const bill = calcBill(r, now);
+  const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+  const total = bill.total + consTotal;
+
+  if(!confirm(`Cobrar Pieza ${r.num} en ${method === 'efectivo' ? 'EFECTIVO' : 'QR'}\n\nTotal: ${money(total)}`)) return;
+
+  const iso = new Date(now).toISOString();
+  const dur = elapsed(now - new Date(r.checkIn).getTime());
+
+  db.sales.push({
+    id: uid(), ts: iso, day: dayKey(iso), type: 'habitacion',
+    detail: `Pieza ${r.num} · ${dur} · ${method.toUpperCase()}`,
+    amount: bill.total, cost: 0,
+    userId: currentUser?.id, userName: currentUser?.name, shiftId: currentShift?.id
+  });
+
+  r.consumos.forEach(c => {
+    db.sales.push({
+      id: uid(), ts: iso, day: dayKey(iso), type: 'producto',
+      detail: `${c.name} ×${c.qty} · Pieza ${r.num} · ${method.toUpperCase()}`,
+      amount: c.price * c.qty, cost: c.cost * c.qty,
+      userId: currentUser?.id, userName: currentUser?.name, shiftId: currentShift?.id
+    });
+    db.movements.push({ id: uid(), productId: c.productId, type: 'venta', qty: c.qty, unitCost: c.cost, date: iso, note: `Pieza ${r.num}`, userId: currentUser?.id, shiftId: currentShift?.id });
+  });
+
+  Object.assign(r, { status:'libre', checkIn:null, paidHours:null, consumos:[], rate: r.price });
+  save(); renderAll();
+  toast(`Pieza ${r.num} cobrada · ${money(total)}`);
+}
+
+/* =========================================================
+   CHECK-IN
+   ========================================================= */
 let ci = null;
 function openCheckIn(id){
   const r = db.rooms.find(x => x.id === id);
@@ -713,7 +936,7 @@ function openCheckIn(id){
 function renderCheckInSheet(){
   const r = db.rooms.find(x => x.id === ci.roomId);
   const chipsHTML = [1,2,3,4,6,12].map(h => `<button class="chip ${h === ci.paidHours ? 'active':''}" data-h="${h}">${h}h</button>`).join('');
-  openSheet(`Habitación ${r.num}`, `
+  openSheet(`Pieza ${r.num}`, `
     <div class="time-capture">
       <div class="time-lbl-sm">Hora actual</div>
       <div class="time-display" id="ciLiveClock">${renderLiveClock(ci.entryTs)}</div>
@@ -765,10 +988,12 @@ function doCheckIn(){
   r.userId = currentUser?.id;
   r.userName = currentUser?.name;
   save(); closeModal(); renderAll();
-  toast(`Hab. ${r.num} · ${ci.paidHours}h`);
+  toast(`Pieza ${r.num} · ${ci.paidHours}h`);
 }
 
-/* CHECK-OUT */
+/* =========================================================
+   CHECK-OUT (detallado)
+   ========================================================= */
 let co = null;
 function openCheckOut(id){
   const r = db.rooms.find(x => x.id === id);
@@ -798,7 +1023,7 @@ function renderCheckOutSheet(){
   const extraRow = bill.extraMs > 0 ? `<div class="bd-row extra"><span>Extra ${bill.extraBlocks}×30m</span><span>${money(bill.extraCharge)}</span></div>` : '';
   const pays = ['efectivo','qr','transferencia'];
   const payHTML = pays.map(p => `<button class="chip ${co.payMethod === p ? 'active' : ''}" data-pay="${p}">${p === 'efectivo' ? 'Efectivo' : p === 'qr' ? 'QR' : 'Transfer.'}</button>`).join('');
-  openSheet(`Salida · Hab. ${r.num}`, `
+  openSheet(`Salida · Pieza ${r.num}`, `
     <div class="time-capture">
       <div class="time-lbl-sm">Hora actual</div>
       <div class="time-display" id="coLiveClock">${renderLiveClock(co.exitTs)}</div>
@@ -882,51 +1107,51 @@ function doCheckOut(){
   const dur = elapsed(co.exitTs - new Date(r.checkIn).getTime());
   db.sales.push({
     id: uid(), ts: iso, day: dayKey(iso), type: 'habitacion',
-    detail: `Hab. ${r.num} · ${dur} · ${co.payMethod.toUpperCase()}`,
+    detail: `Pieza ${r.num} · ${dur} · ${co.payMethod.toUpperCase()}`,
     amount: co.charge, cost: 0,
     userId: currentUser?.id, userName: currentUser?.name, shiftId: currentShift?.id
   });
   r.consumos.forEach(c => {
     db.sales.push({
       id: uid(), ts: iso, day: dayKey(iso), type: 'producto',
-      detail: `${c.name} ×${c.qty} · Hab. ${r.num} · ${co.payMethod.toUpperCase()}`,
+      detail: `${c.name} ×${c.qty} · Pieza ${r.num} · ${co.payMethod.toUpperCase()}`,
       amount: c.price * c.qty, cost: c.cost * c.qty,
       userId: currentUser?.id, userName: currentUser?.name, shiftId: currentShift?.id
     });
-    db.movements.push({ id: uid(), productId: c.productId, type: 'venta', qty: c.qty, unitCost: c.cost, date: iso, note: `Hab. ${r.num}`, userId: currentUser?.id, shiftId: currentShift?.id });
+    db.movements.push({ id: uid(), productId: c.productId, type: 'venta', qty: c.qty, unitCost: c.cost, date: iso, note: `Pieza ${r.num}`, userId: currentUser?.id, shiftId: currentShift?.id });
   });
   Object.assign(r, { status:'libre', checkIn:null, paidHours:null, consumos:[], rate: r.price });
   save(); closeModal(); renderAll();
-  toast(`Hab. ${r.num} cobrada · ${money(co.charge)}`);
+  toast(`Pieza ${r.num} cobrada · ${money(co.charge)}`);
 }
 
-/* TIMERS */
+/* TIMERS EN VIVO */
 function updateTimers(){
   const now = Date.now();
   db.rooms.forEach(r => {
     if(r.status !== 'ocupada') return;
-    const main = document.querySelector(`[data-timer-main="${r.id}"]`);
-    const bar  = document.querySelector(`[data-timer-bar="${r.id}"]`);
-    if(!main || !bar) return;
-    const entryMs = new Date(r.checkIn).getTime();
-    const paidMs = (r.paidHours || 1) * 3600000;
-    const elapsedMs = now - entryMs;
-    const remaining = paidMs - elapsedMs;
-    const pct = Math.min(100, Math.max(0, (elapsedMs / paidMs) * 100));
-    const barWidth = Math.max(0, 100 - pct);
-    let display, label, color, cls;
-    if(remaining >= 0){
-      display = fmtDur(remaining); label = 'restantes';
-      if(pct < 50){ color = 'var(--green)'; cls = ''; }
-      else if(pct < 80){ color = 'var(--accent)'; cls = 'warn'; }
-      else if(pct < 95){ color = 'var(--red)'; cls = 'crit'; }
-      else { color = 'var(--red)'; cls = 'crit blink'; }
-    } else { display = '+' + fmtDur(-remaining); label = 'excedido'; color = 'var(--red)'; cls = 'crit blink'; }
-    const v = main.querySelector('.timer-val'), l = main.querySelector('.timer-lbl');
-    if(v){ v.textContent = display; v.style.color = color; }
-    if(l){ l.textContent = label; l.style.color = color; }
-    bar.style.width = barWidth + '%';
-    bar.className = 'progress-fill ' + cls;
+    const bar = document.querySelector(`[data-timer-bar="${r.id}"]`);
+    const val = document.querySelector(`[data-time-val="${r.id}"]`);
+    const sub = document.querySelector(`[data-timer-sub="${r.id}"]`);
+    if(!bar || !val) return;
+
+    const s = stateFor(r);
+
+    // Valor de tiempo grande
+    if(s.remaining >= 0){
+      val.textContent = fmtHM(s.elapsedMs);
+      val.style.color = s.color;
+      if(sub) sub.innerHTML = `Falta ${fmtHM(s.remaining)} · <b>${r.paidHours}h × ${money(r.rate)}</b>`;
+      if(sub) sub.classList.remove('crit');
+    } else {
+      val.textContent = '+' + fmtHM(-s.remaining);
+      val.style.color = 'var(--red)';
+      if(sub){ sub.innerHTML = `Vencido · pagó ${r.paidHours}h`; sub.classList.add('crit'); }
+    }
+
+    // Barra
+    bar.style.width = s.barWidth + '%';
+    bar.className = 'cr-progress-fill ' + s.cls;
   });
 }
 
@@ -1046,7 +1271,7 @@ function openKardex(id){
   `, `<button class="btn primary" onclick="closeModal()">Cerrar</button>`);
 }
 
-/* GASTOS */
+/* GASTOS / DEPÓSITOS */
 function openNewExpense(){
   openSheet('Nuevo gasto', `
     <div class="field"><label>Descripción</label><input id="gxDesc" placeholder="Ej: Compra de hielo" autocomplete="off"></div>
@@ -1055,39 +1280,36 @@ function openNewExpense(){
       <select id="gxCat">
         <option value="Insumos">Insumos</option>
         <option value="Limpieza">Limpieza</option>
-        <option value="Servicios">Servicios (luz, agua...)</option>
+        <option value="Servicios">Servicios</option>
         <option value="Sueldos">Sueldos / adelantos</option>
         <option value="Mantenimiento">Mantenimiento</option>
         <option value="Otro">Otro</option>
       </select>
     </div>
     <p class="hint">Registrado por: <b>${esc(currentUser?.name || '—')}</b></p>
-  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveExpense()">Guardar gasto</button>`);
+  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveExpense()">Guardar</button>`);
   setTimeout(()=>$('#gxDesc').focus(), 320);
 }
 function saveExpense(){
   const desc = $('#gxDesc').value.trim();
   const amt = Number($('#gxAmt').value) || 0;
   const cat = $('#gxCat').value;
-  if(!desc || amt <= 0){ toast('Completa descripción y monto'); return; }
+  if(!desc || amt <= 0){ toast('Completa todo'); return; }
   const now = new Date().toISOString();
   db.expenses.push({ id: uid(), ts: now, day: dayKey(now), desc, amount: amt, category: cat, userId: currentUser?.id, userName: currentUser?.name });
   save(); closeModal(); renderAll(); toast('Gasto registrado');
 }
-
-/* DEPÓSITOS */
 function openNewDeposit(){
   openSheet('Nuevo depósito', `
-    <div class="field"><label>Descripción</label><input id="dpDesc" placeholder="Ej: Depósito a caja fuerte" autocomplete="off"></div>
+    <div class="field"><label>Descripción</label><input id="dpDesc" placeholder="Ej: Depósito caja fuerte" autocomplete="off"></div>
     <div class="field"><label>Monto (Bs)</label><input id="dpAmt" type="number" inputmode="decimal" min="0" step="0.5" value="0"></div>
-    <p class="hint">Registrado por: <b>${esc(currentUser?.name || '—')}</b></p>
-  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveDeposit()">Guardar depósito</button>`);
+  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveDeposit()">Guardar</button>`);
   setTimeout(()=>$('#dpDesc').focus(), 320);
 }
 function saveDeposit(){
   const desc = $('#dpDesc').value.trim();
   const amt = Number($('#dpAmt').value) || 0;
-  if(!desc || amt <= 0){ toast('Completa descripción y monto'); return; }
+  if(!desc || amt <= 0){ toast('Completa todo'); return; }
   const now = new Date().toISOString();
   db.deposits.push({ id: uid(), ts: now, day: dayKey(now), desc, amount: amt, userId: currentUser?.id, userName: currentUser?.name });
   save(); closeModal(); renderAll(); toast('Depósito registrado');
@@ -1104,12 +1326,10 @@ function renderPanel(){
   const utilidadHoy = ingresoHoy - costoHoy - gastosHoy;
   const libres = db.rooms.filter(r => r.status === 'libre').length;
   const ocup = db.rooms.length - libres;
-
   const d = new Date();
   const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   $('#panelDate').textContent = `${dias[d.getDay()]}, ${d.getDate()} de ${meses[d.getMonth()]}`;
-
   $('#panelStats').innerHTML = `
     <div class="stat"><div class="lbl">Libres</div><div class="val c-green">${libres}</div></div>
     <div class="stat"><div class="lbl">Ocupadas</div><div class="val c-red">${ocup}</div></div>
@@ -1118,8 +1338,6 @@ function renderPanel(){
     <div class="stat"><div class="lbl">Gastos hoy</div><div class="val c-muted" style="font-size:18px">${money(gastosHoy)}</div></div>
     <div class="stat"><div class="lbl">Depósitos hoy</div><div class="val c-muted" style="font-size:18px">${money(depositosHoy)}</div></div>
   `;
-
-  // Movimientos recientes (ventas + gastos + depósitos)
   const all = [
     ...db.sales.map(s => ({ ts: s.ts, label: s.detail, amount: s.amount, tipo: s.type })),
     ...db.expenses.map(g => ({ ts: g.ts, label: `Gasto: ${g.desc}`, amount: -g.amount, tipo: 'gasto' })),
@@ -1171,7 +1389,6 @@ function renderReports(){
   const depositos = deposits.reduce((a,d) => a + d.amount, 0);
   const utilidadBruta = ingresos - costos;
   const utilidadNeta = utilidadBruta - gastos;
-
   const hab = sales.filter(s => s.type === 'habitacion').reduce((a,s) => a + s.amount, 0);
   const prod = sales.filter(s => s.type === 'producto').reduce((a,s) => a + s.amount, 0);
 
@@ -1179,7 +1396,7 @@ function renderReports(){
   if(pr) pr.textContent = `Del ${fmtDate(from)} al ${fmtDate(to)}`;
 
   $('#repStats').innerHTML = `
-    <div class="stat"><div class="lbl">Ingresos totales</div><div class="val c-accent" style="font-size:20px">${money(ingresos)}</div></div>
+    <div class="stat"><div class="lbl">Ingresos</div><div class="val c-accent" style="font-size:20px">${money(ingresos)}</div></div>
     <div class="stat"><div class="lbl">Utilidad neta</div><div class="val ${utilidadNeta >= 0 ? 'c-green' : 'c-red'}" style="font-size:20px">${money(utilidadNeta)}</div></div>
     <div class="stat"><div class="lbl">Habitaciones</div><div class="val c-muted" style="font-size:18px">${money(hab)}</div></div>
     <div class="stat"><div class="lbl">Productos</div><div class="val c-muted" style="font-size:18px">${money(prod)}</div></div>
@@ -1189,7 +1406,6 @@ function renderReports(){
     <div class="stat"><div class="lbl">Depósitos</div><div class="val c-muted" style="font-size:18px">${money(depositos)}</div></div>
   `;
 
-  // Resumen por día
   const byDay = {};
   sales.forEach(s => {
     if(!byDay[s.day]) byDay[s.day] = { hab:0, prod:0, gastos:0, util:0 };
@@ -1216,16 +1432,13 @@ function renderReports(){
       }).join('')
     : `<tr><td colspan="5" class="empty">Sin registros en el rango.</td></tr>`;
 
-  // Utilidad por producto
   const byProd = {};
   sales.filter(s => s.type === 'producto').forEach(s => {
-    // Extraer nombre del producto desde el detalle "X ×N · Hab. Y · MÉTODO"
     const name = s.detail.split(' ×')[0];
     if(!byProd[name]) byProd[name] = { qty: 0, ingreso: 0, costo: 0 };
     byProd[name].ingreso += s.amount;
     byProd[name].costo += s.cost;
   });
-  // También contar cantidades desde movements
   db.movements.filter(m => m.type === 'venta' && m.date.slice(0,10) >= from && m.date.slice(0,10) <= to).forEach(m => {
     const p = db.products.find(x => x.id === m.productId);
     if(p && byProd[p.name]) byProd[p.name].qty += m.qty;
@@ -1241,7 +1454,6 @@ function renderReports(){
       </tr>`).join('')
     : `<tr><td colspan="5" class="empty">Sin ventas de productos en el rango.</td></tr>`;
 
-  // Detalle de movimientos (ventas + gastos + depósitos)
   const all = [
     ...sales.map(s => ({ ts: s.ts, type: s.type, detail: s.detail, amount: s.amount, util: s.amount - s.cost, userName: s.userName })),
     ...expenses.map(g => ({ ts: g.ts, type: 'gasto', detail: `${g.desc} · ${g.category}`, amount: -g.amount, util: -g.amount, userName: g.userName })),
