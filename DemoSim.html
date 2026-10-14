@@ -1062,7 +1062,7 @@ function modalCliente(id){
 
     ${!c ? `
       <div class="field" style="background:var(--info-soft);padding:14px;border-radius:10px;border:1px solid #d1e0ec;margin-top:8px">
-        <label style="color:#0e2b45">Deuda inicial (Bs)</label>
+        
         <div class="money-input-wrap"><input id="m-cli-deuda-inicial" type="number" step="0.01" min="0" value="0" placeholder="0.00"></div>
         
       </div>
@@ -1082,10 +1082,7 @@ function modalCliente(id){
       <div class="field" style="background:var(--warning-soft);padding:14px;border-radius:10px;border:1px solid #ecdcae;margin-top:14px">
         <label style="color:#6d4d13">Agregar deuda vieja (Bs) — opcional</label>
         <div class="money-input-wrap"><input id="m-cli-ajuste-deuda" type="number" step="0.01" min="0" value="0" placeholder="0.00"></div>
-        <div class="hint" style="color:#6d4d13">
-          Cargá aquí deudas anteriores que este cliente tenía contigo y que <b>no</b> están registradas como ventas.
-          Se <b>suma</b> a la deuda actual.
-        </div>
+       
       </div>
     `}
     <div class="modal-actions">
