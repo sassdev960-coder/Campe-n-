@@ -1239,9 +1239,46 @@ function imprimirPorRawBT(txt){
     return true;
   } catch(e){ LOG.error('Error RawBT:', e); return false; }
 }
-function imprimirTicketCombinado(ventas, opts={}){
-  if((STATE.config||{}).metodoPrint === 'rawbt') imprimirPorRawBT(buildRawBTTicketCombinado(ventas, opts));
+function imprimirTicketNavegador(ventas, opts={}){
+  const cfg = STATE.config || {};
+  const v0 = ventas[0] || {};
+  const cliente = opts.cliente || v0.cliente || 'Consumidor final';
+  const pago = opts.pago || v0.pago || 'Efectivo';
+  const fecha = opts.fecha || v0.fecha || todayISO();
+  const hora = opts.hora || v0.hora || nowTime();
+  const items = ventas.flatMap(v => (v.items || []).map(i => ({...i, subtotal: Number(i.subtotal != null ? i.subtotal : (Number(i.precio)||0)*(Number(i.cantidad)||0))})));
+  const total = ventas.reduce((sum,v)=>sum+(Number(v.total)||0),0);
+  const filas = items.map(i => {
+    const u = i.unidad || 'unidad';
+    const cantidad = UNIDADES_GRANEL.includes(u)
+      ? `${Math.round(Number(i.cantidad_input || i.cantidad*GRAMOS_POR[u]))} g (${Number(i.cantidad||0)} ${u})`
+      : `${Number(i.cantidad||0)} ${u}`;
+    return `<tr><td>${esc(cantidad)}</td><td>${esc(i.nombre||'')}</td><td style="text-align:right">${fmt(i.subtotal)}</td></tr>`;
+  }).join('');
+  const recibido = opts.recibido != null ? `<p>Recibido: <b>${fmt(opts.recibido)}</b></p>` : '';
+  const cambio = opts.cambio != null ? `<p>Cambio: <b>${fmt(opts.cambio)}</b></p>` : '';
+  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Comprobante de venta</title><style>body{font:13px Arial,sans-serif;color:#111;width:300px;margin:12px auto}h2{text-align:center;font-size:17px;margin:0 0 5px}p{margin:4px 0}hr{border:0;border-top:1px dashed #555;margin:9px 0}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:5px 2px;border-bottom:1px dashed #bbb;text-align:left;vertical-align:top}.total{font-size:18px;font-weight:bold;text-align:right;margin-top:10px}.center{text-align:center}@media print{body{margin:0 auto}}</style></head><body><h2>${esc(cfg.nombreNegocio||'CARNICERÍA & ABARROTES')}</h2>${cfg.direccion?`<p class="center">${esc(cfg.direccion)}</p>`:''}${cfg.telefono?`<p class="center">Tel: ${esc(cfg.telefono)}</p>`:''}<hr><p>Fecha: ${esc(fmtFecha(fecha))} ${esc(hora)}</p><p>Cliente: ${esc(cliente)}</p><p>Pago: ${esc(pago)}</p><hr><table><thead><tr><th>Cantidad</th><th>Producto</th><th>Total</th></tr></thead><tbody>${filas}</tbody></table><hr><div class="total">TOTAL: ${fmt(total)}</div>${pago==='Efectivo'?recibido+ cambio:''}<hr><p class="center">Gracias por su compra<br>Vuelva pronto</p><script>window.onload=()=>{setTimeout(()=>window.print(),250)};<\/script></body></html>`;
+  const w = window.open('', '_blank', 'width=420,height=700');
+  if(!w){ toast('El navegador bloqueó la ventana de impresión. Permite ventanas emergentes e inténtalo otra vez.','error'); return false; }
+  w.document.open(); w.document.write(html); w.document.close();
+  return true;
 }
+function imprimirTicketCombinado(ventas, opts={}){
+  if(!ventas || !ventas.length){ toast('No hay datos para imprimir','error'); return false; }
+  if((STATE.config||{}).metodoPrint === 'rawbt'){
+    const ok = imprimirPorRawBT(buildRawBTTicketCombinado(ventas, opts));
+    if(!ok) toast('No se pudo abrir RawBT. Revisa que esté instalada.','error');
+    return ok;
+  }
+  return imprimirTicketNavegador(ventas, opts);
+}
+window.reimprimirVenta = (ventaId) => {
+  const v = STATE.ventas.find(x => String(x.id) === String(ventaId));
+  if(!v){ toast('Venta no encontrada','error'); return; }
+  const items = calc.itemsDeVenta(v.id).map(i => ({...i, subtotal:Number(i.subtotal != null ? i.subtotal : (Number(i.precio)||0)*(Number(i.cantidad)||0))}));
+  const venta = {...v, items, total:Number(v.total)||items.reduce((sum,i)=>sum+i.subtotal,0)};
+  imprimirTicketCombinado([venta], {cliente:v.cliente,pago:v.pago,fecha:v.fecha,hora:v.hora,recibido:v.recibido,cambio:v.cambio});
+};
 
 /* CÁLCULOS */
 const calc = {
@@ -1552,8 +1589,9 @@ VIEWS.ventas = () => {
             <td data-label="Pago"><span class="tag ${v.pago==='Crédito'?'warn':'ok'}">${esc(v.pago)}</span></td>
             <td data-label="Cambio" class="num" style="color:var(--green)">${(v.pago==='Efectivo'&&v.cambio!=null&&v.cambio>0)?fmt(v.cambio):'—'}</td>
             <td data-label="Total" class="num">${fmt(v.total)}</td>
-            <td data-label="Acciones" style="display:flex;gap:4px">
+            <td data-label="Acciones" style="display:flex;gap:4px;flex-wrap:wrap">
               <button class="btn ghost sm" onclick="openVentaDetalle('${v.id}')" title="Ver detalle">${icon('search')}</button>
+              <button class="btn ghost sm" onclick="reimprimirVenta('${v.id}')" title="Reimprimir comprobante">${icon('print')}</button>
               <button class="btn ghost sm" onclick="borrarVenta('${v.id}')" title="Eliminar">${icon('trash')}</button>
             </td>
           </tr>`;
@@ -2487,7 +2525,25 @@ window.openVentaModal = (productoIdInicial = null) => {
     });
     ul.querySelectorAll('.v-item-qty').forEach(inp => {
       const idx = parseInt(inp.dataset.idx);
-      const ap = () => setCantidadInput(idx, parseFloat(inp.value) || 0);
+      // Actualizar el estado y los importes mientras se escribe, sin reconstruir
+      // el campo en cada tecla (eso hacía perder el foco al introducir decimales).
+      inp.addEventListener('input', () => {
+        const it = items[idx];
+        if(!it) return;
+        const raw = String(inp.value).trim().replace(',', '.');
+        if(raw === '' || raw === '.' || !Number.isFinite(Number(raw))) return;
+        const n = Number(raw);
+        it.cantidadInput = n;
+        it.cantidad = aUnidadBase(n, it.unidadInput, it.unidad);
+        const fila = inp.closest('.v-item');
+        const subtotal = (Number(it.precio)||0) * (Number(it.cantidad)||0);
+        if(fila){ const totalFila = fila.querySelector('.v-item-total'); if(totalFila) totalFila.textContent = fmt(subtotal); }
+        const totalActual = items.reduce((sum,item)=>sum+(Number(item.precio)||0)*(Number(item.cantidad)||0),0);
+        totalEl.style.display = items.length ? 'flex' : 'none';
+        totalEl.querySelector('b').textContent = fmt(totalActual);
+        if(m._renderCambio) m._renderCambio();
+      });
+      const ap = () => setCantidadInput(idx, Number(String(inp.value).replace(',', '.')) || 0);
       inp.addEventListener('change', ap);
       inp.addEventListener('blur', ap);
     });
