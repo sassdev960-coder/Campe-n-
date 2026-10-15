@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SIMGest · Sistema de Gestión</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
 <style>
 :root{--bg:#f5f4f1;--surface:#fff;--surface-soft:#fafaf7;--ink:#15140f;--ink-2:#3a3833;--muted:#7a766d;--line:#e8e6e0;--line-soft:#f1efea;--primary:#1c3d5a;--primary-hover:#152e45;--accent:#8a6d3b;--success:#2d6a4f;--success-soft:#eaf3ee;--warning:#9c6f1f;--warning-soft:#fbf3e2;--danger:#8b2b2b;--danger-soft:#f9ecec;--info:#1e5a8a;--info-soft:#eaf1f7;--r-lg:14px;--shadow-sm:0 1px 2px rgba(20,18,12,.04),0 1px 3px rgba(20,18,12,.03)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -294,6 +296,107 @@ tbody tr:hover td{background:var(--surface-soft)}
 </head>
 <body>
 
+  <!-- ========== PANTALLA DE AUTH ========== -->
+<div id="authScreen" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-brand">
+      <div class="auth-logo">SG</div>
+      <div class="auth-title">SIMGest</div>
+      <div class="auth-sub">Sistema de gestión comercial</div>
+    </div>
+
+    <div class="auth-tabs">
+      <button id="tabLogin" class="auth-tab active" onclick="cambiarTabAuth('login')">Entrar</button>
+      <button id="tabRegistro" class="auth-tab" onclick="cambiarTabAuth('registro')">Crear cuenta</button>
+    </div>
+
+    <div id="formLogin">
+      <div class="field">
+        <label>Email</label>
+        <input id="authEmailLogin" type="email" placeholder="tucorreo@ejemplo.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Contraseña</label>
+        <input id="authPasswordLogin" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doLogin()" id="btnLogin">Entrar</button>
+      <div style="text-align:center;margin-top:14px;font-size:12px;color:var(--muted)">
+        <a href="#" onclick="event.preventDefault(); doResetPassword()" style="color:var(--primary)">¿Olvidaste tu contraseña?</a>
+      </div>
+    </div>
+
+    <div id="formRegistro" style="display:none">
+      <div class="field">
+        <label>Nombre completo</label>
+        <input id="authNombreReg" type="text" placeholder="Ej: Juan Pérez">
+      </div>
+      <div class="field">
+        <label>Nombre del negocio</label>
+        <input id="authNegocioReg" type="text" placeholder="Ej: Tienda Doña Rosa">
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input id="authEmailReg" type="email" placeholder="tucorreo@ejemplo.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label>Contraseña (mínimo 6 caracteres)</label>
+        <input id="authPasswordReg" type="password" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="doRegistro()" id="btnRegistro">Crear cuenta</button>
+    </div>
+
+    <div id="authError" class="auth-error" style="display:none"></div>
+
+    <!-- Onboarding: negocio nuevo -->
+    <div id="onboardingStep" style="display:none">
+      <div class="auth-onboarding">
+        <div class="auth-onboarding-title">¡Bienvenido!</div>
+        <div class="auth-onboarding-sub">Este es tu primer inicio de sesión. ¿Cómo querés arrancar?</div>
+        <button class="btn btn-primary btn-block" onclick="onboardingEmpezarCero()" id="btnCero">
+          Empezar de cero (negocio nuevo)
+        </button>
+        <button class="btn btn-outline btn-block" onclick="onboardingMigrar()" id="btnMigrar" style="margin-top:8px">
+          Migrar mis datos locales
+        </button>
+        <div class="auth-hint">Si ya usabas SIMGest en este navegador, elegí la segunda opción.</div>
+      </div>
+    </div>
+
+    <!-- Migración en progreso -->
+    <div id="migracionStep" style="display:none">
+      <div class="auth-onboarding">
+        <div class="auth-onboarding-title">Subiendo tus datos...</div>
+        <div id="migracionProgress" class="auth-onboarding-sub">Preparando...</div>
+        <div class="auth-progress"><div id="migracionBar" class="auth-progress-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="auth-footer">
+      <button class="btn-ghost" onclick="cerrarSesionGlobal()" id="btnLogoutTop" style="display:none;font-size:12px">Cerrar sesión</button>
+    </div>
+  </div>
+</div>
+
+<style>
+.auth-screen{position:fixed;inset:0;background:linear-gradient(135deg,#0f2942,#1c3d5a);display:grid;place-items:center;z-index:1000;padding:20px;overflow-y:auto}
+.auth-card{background:#fff;border-radius:16px;padding:36px 32px;max-width:440px;width:100%;box-shadow:0 24px 60px -12px rgba(0,0,0,.4)}
+.auth-brand{text-align:center;margin-bottom:24px}
+.auth-logo{width:56px;height:56px;border-radius:14px;background:var(--primary);color:#fff;display:grid;place-items:center;font-weight:700;font-size:20px;margin:0 auto 12px}
+.auth-title{font-size:22px;font-weight:600;letter-spacing:-.4px}
+.auth-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--surface-soft);padding:4px;border-radius:10px;margin-bottom:20px}
+.auth-tab{padding:8px;border-radius:8px;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:500;color:var(--ink-2);cursor:pointer;transition:all .15s}
+.auth-tab.active{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(20,18,12,.08)}
+.auth-error{background:var(--danger-soft);border:1px solid #ecd1d1;color:#6a2020;padding:10px 14px;border-radius:9px;font-size:12.5px;margin-top:14px;line-height:1.5}
+.auth-onboarding{margin-top:8px}
+.auth-onboarding-title{font-size:18px;font-weight:600;margin-bottom:6px}
+.auth-onboarding-sub{font-size:13px;color:var(--muted);margin-bottom:18px;line-height:1.5}
+.auth-hint{font-size:11.5px;color:var(--muted);text-align:center;margin-top:14px;line-height:1.5}
+.auth-progress{height:6px;background:var(--line-soft);border-radius:99px;overflow:hidden;margin-top:14px}
+.auth-progress-bar{height:100%;background:linear-gradient(90deg,#4a8d6b,#2d6a4f);border-radius:99px;transition:width .3s}
+.auth-footer{text-align:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--line-soft)}
+</style>
+
 <aside class="sidebar" id="sidebar">
   <div class="brand">
     <div class="brand-mark"><div class="brand-logo">SG</div><div class="brand-name">SIMGest</div></div>
@@ -306,6 +409,7 @@ tbody tr:hover td{background:var(--surface-soft)}
       <div class="user-info">
         <select id="usuarioSel" onchange="cambiarUsuario(this.value)"></select>
         <div class="user-role" id="rolLbl">Administrador</div>
+        <button onclick="cerrarSesionGlobal()" style="display:none;background:none;border:none;color:var(--muted);font-size:10.5px;cursor:pointer;padding:0;margin-top:4px;text-decoration:underline;font-family:inherit" id="btnLogoutSidebar">Cerrar sesión</button>
       </div>
     </div>
   </div>
@@ -323,6 +427,846 @@ tbody tr:hover td{background:var(--surface-soft)}
 
 <div id="modalRoot"></div>
 <div class="toast" id="toast"></div>
+
+  <script>
+/* ================================================================
+   MÓDULO SUPABASE — Auth, Sync y Migración
+   ================================================================ */
+
+// ⚠️ COMPLETAR CON TUS CREDENCIALES
+const SB_URL = 'https://TU-PROYECTO.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'; // anon key
+
+let sb = null;
+let sbUser = null;      // auth.user actual
+let sbNegocioId = null; // negocio_id activo
+let syncTimer = null;
+let modoLocal = false;  // true si no hay Supabase configurado
+
+/* ---------- INIT ---------- */
+async function initSupabase(){
+  if(!SB_URL || SB_URL.includes('TU-PROYECTO') || !SB_KEY || SB_KEY.includes('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...')){
+    // Sin credenciales → modo local, arrancar app directamente
+    console.warn('[SIMGest] Supabase no configurado. Modo local.');
+    modoLocal = true;
+    document.getElementById('authScreen').style.display = 'none';
+    window.arrancarApp();
+    return;
+  }
+  sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  // Escuchar cambios de sesión
+  sb.auth.onAuthStateChange((event, session) => {
+    if(event === 'SIGNED_OUT'){
+      sbUser = null; sbNegocioId = null;
+      mostrarLogin();
+    }
+  });
+
+  // Ver si hay sesión activa
+  const { data: { session } } = await sb.auth.getSession();
+  if(session){
+    await onAuth(session.user);
+  } else {
+    mostrarLogin();
+  }
+}
+
+/* ---------- UI ---------- */
+function cambiarTabAuth(tab){
+  document.getElementById('tabLogin').classList.toggle('active', tab==='login');
+  document.getElementById('tabRegistro').classList.toggle('active', tab==='registro');
+  document.getElementById('formLogin').style.display = tab==='login' ? 'block' : 'none';
+  document.getElementById('formRegistro').style.display = tab==='registro' ? 'block' : 'none';
+  ocultarAuthError();
+}
+
+function mostrarLogin(){
+  document.getElementById('authScreen').style.display = 'grid';
+  document.getElementById('formLogin').style.display = 'block';
+  document.getElementById('formRegistro').style.display = 'none';
+  document.getElementById('onboardingStep').style.display = 'none';
+  document.getElementById('migracionStep').style.display = 'none';
+    document.getElementById('btnLogoutTop').style.display = 'none';
+  const btnSide = document.getElementById('btnLogoutSidebar');
+  if(btnSide) btnSide.style.display = 'none';
+  ocultarAuthError();
+}
+    
+function ocultarLogin(){
+  document.getElementById('authScreen').style.display = 'none';
+}
+function mostrarAuthError(msg){
+  const el = document.getElementById('authError');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function ocultarAuthError(){
+  document.getElementById('authError').style.display = 'none';
+}
+function setCargando(botonId, cargando, textoOriginal){
+  const b = document.getElementById(botonId);
+  if(!b) return;
+  b.disabled = cargando;
+  b.textContent = cargando ? 'Un momento...' : textoOriginal;
+}
+
+/* ---------- LOGIN / REGISTRO ---------- */
+async function doLogin(){
+  const email = document.getElementById('authEmailLogin').value.trim();
+  const password = document.getElementById('authPasswordLogin').value;
+  if(!email || !password) return mostrarAuthError('Completá email y contraseña.');
+  setCargando('btnLogin', true, 'Entrar');
+  ocultarAuthError();
+  try{
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(error) throw error;
+    await onAuth(data.user);
+  }catch(e){
+    mostrarAuthError(traducirError(e.message));
+  }finally{
+    setCargando('btnLogin', false, 'Entrar');
+  }
+}
+async function doRegistro(){
+  const nombre = document.getElementById('authNombreReg').value.trim();
+  const negocio = document.getElementById('authNegocioReg').value.trim();
+  const email = document.getElementById('authEmailReg').value.trim();
+  const password = document.getElementById('authPasswordReg').value;
+  if(!nombre || !negocio || !email || !password) return mostrarAuthError('Completá todos los campos.');
+  if(password.length < 6) return mostrarAuthError('La contraseña debe tener al menos 6 caracteres.');
+  setCargando('btnRegistro', true, 'Crear cuenta');
+  ocultarAuthError();
+  try{
+    const { data, error } = await sb.auth.signUp({ email, password });
+    if(error) throw error;
+    if(!data.user) throw new Error('No se pudo crear la cuenta.');
+
+    // Crear negocio + usuario admin en la BD
+    const { data: negocioRow, error: errN } = await sb.from('negocios').insert({
+      nombre: negocio,
+      config: { usarTurnos: true },
+      capital: {
+        configurado: false,
+        efectivoInicial: 0,
+        efectivoBancosInicial: 0,
+        inventarioInicial: 0,
+        cuentasPorCobrarIniciales: 0,
+        notas: '',
+        fechaConfiguracion: null
+      }
+    }).select().single();
+    if(errN) throw errN;
+
+    const { error: errU } = await sb.from('usuarios').insert({
+      negocio_id: negocioRow.id,
+      auth_user_id: data.user.id,
+      codigo: 'U1',
+      nombre: nombre,
+      rol: 'admin',
+      activo: true,
+      color: '#1c3d5a'
+    });
+    if(errU) throw errU;
+
+    // Crear fila de caja
+    await sb.from('caja').insert({ negocio_id: negocioRow.id, saldo_inicial: 0 });
+
+    // Categorías de gastos por defecto
+    const catsGastos = ['Alquiler','Servicios (luz/agua/internet)','Transporte','Sueldos','Mantenimiento','Insumos de oficina','Impuestos','Otros'];
+    await sb.from('categorias_gastos').insert(
+      catsGastos.map(n => ({ negocio_id: negocioRow.id, nombre: n }))
+    );
+
+    await onAuth(data.user);
+  }catch(e){
+    mostrarAuthError(traducirError(e.message));
+  }finally{
+    setCargando('btnRegistro', false, 'Crear cuenta');
+  }
+}
+async function doResetPassword(){
+  const email = prompt('Ingresá tu email para enviarte el enlace de recuperación:');
+  if(!email) return;
+  const { error } = await sb.auth.resetPasswordForEmail(email);
+  if(error) return alert('Error: ' + error.message);
+  alert('Te mandamos un email con el enlace.');
+}
+async function cerrarSesionGlobal(){
+  if(!sb) return;
+  if(!confirm('¿Cerrar sesión?')) return;
+  await sb.auth.signOut();
+}
+
+/* ---------- POST-LOGIN ---------- */
+    async function onAuth(user){
+  sbUser = user;
+  // Buscar usuario vinculado
+  const { data: u, error } = await sb.from('usuarios')
+    .select('*')
+    .eq('auth_user_id', user.id)
+    .maybeSingle();
+
+  if(error){ mostrarLogin(); mostrarAuthError('Error al cargar usuario: ' + error.message); return; }
+
+  if(!u){
+    // Usuario sin negocio vinculado → onboarding
+    document.getElementById('formLogin').style.display = 'none';
+    document.getElementById('formRegistro').style.display = 'none';
+    document.getElementById('onboardingStep').style.display = 'block';
+    document.getElementById('authScreen').style.display = 'grid';
+    return;
+  }
+
+  sbNegocioId = u.negocio_id;
+
+  // Cargar TODO desde Supabase → localStorage
+  try{
+    await cargarStateDesdeSupabase();
+    ocultarLogin();
+    window.arrancarApp();
+        // Botones de cerrar sesión
+    const btn = document.getElementById('btnLogoutTop');
+    if(btn) btn.style.display = 'inline-flex';
+    const btnSide = document.getElementById('btnLogoutSidebar');
+    if(btnSide) btnSide.style.display = 'inline';
+  }catch(e){
+    console.error(e);
+    mostrarAuthError('Error al cargar datos: ' + e.message);
+  }
+}
+
+/* ---------- ONBOARDING ---------- */
+async function onboardingEmpezarCero(){
+  if(!sbUser) return;
+  setCargando('btnCero', true, 'Empezar de cero');
+  try{
+    // Ya está creado el negocio en registro, pero por si acaso
+    const { data: neg } = await sb.from('negocios').insert({
+      nombre: 'Mi negocio',
+      config: { usarTurnos: true },
+      capital: { configurado: false, efectivoInicial: 0, efectivoBancosInicial: 0, inventarioInicial: 0, cuentasPorCobrarIniciales: 0, notas: '', fechaConfiguracion: null }
+    }).select().single();
+
+    await sb.from('usuarios').insert({
+      negocio_id: neg.id,
+      auth_user_id: sbUser.id,
+      codigo: 'U1',
+      nombre: sbUser.email.split('@')[0],
+      rol: 'admin',
+      activo: true,
+      color: '#1c3d5a'
+    });
+
+    await sb.from('caja').insert({ negocio_id: neg.id, saldo_inicial: 0 });
+
+    await onAuth(sbUser);
+  }catch(e){
+    mostrarAuthError('Error: ' + e.message);
+  }finally{
+    setCargando('btnCero', false, 'Empezar de cero');
+  }
+}
+async function onboardingMigrar(){
+  if(!sbUser) return;
+  const stateLocal = leerStateLocal();
+  if(!stateLocal){
+    alert('No encontramos datos locales en este navegador. Vas a empezar de cero.');
+    return onboardingEmpezarCero();
+  }
+  const negocioNombre = prompt('Nombre del negocio (para identificar tus datos):', 'Mi negocio');
+  if(!negocioNombre) return;
+  document.getElementById('onboardingStep').style.display = 'none';
+  document.getElementById('migracionStep').style.display = 'block';
+  try{
+    await migrarStateASupabase(stateLocal, sbUser, negocioNombre);
+    alert('¡Datos migrados! Ahora vas a poder acceder desde cualquier dispositivo.');
+    await onAuth(sbUser);
+  }catch(e){
+    console.error(e);
+    document.getElementById('migracionStep').style.display = 'none';
+    document.getElementById('onboardingStep').style.display = 'block';
+    mostrarAuthError('Error al migrar: ' + e.message);
+  }
+}
+
+/* ---------- MIGRACIÓN LOCALSTORAGE → SUPABASE ---------- */
+function leerStateLocal(){
+  try{
+    const raw = localStorage.getItem('simgest_v18');
+    if(raw) return JSON.parse(raw);
+    // Buscar versiones anteriores
+    for(const k of ['simgest_v17','simgest_v16','simgest_v15']){
+      const r = localStorage.getItem(k);
+      if(r) return JSON.parse(r);
+    }
+    return null;
+  }catch(e){ return null; }
+}
+function actualizarProgreso(pct, texto){
+  document.getElementById('migracionBar').style.width = pct + '%';
+  if(texto) document.getElementById('migracionProgress').textContent = texto;
+}
+async function migrarStateASupabase(s, user, negocioNombre){
+  // Map: codigo local ('U1') → uuid Supabase
+  const map = { usuarios:{}, categorias:{}, proveedores:{}, productos:{}, clientes:{}, ventas:{}, compras:{} };
+
+  actualizarProgreso(5, 'Creando negocio...');
+
+  // 1. Negocio
+  const { data: negocio, error: e1 } = await sb.from('negocios').insert({
+    nombre: negocioNombre,
+    config: s.config || { usarTurnos: true },
+    capital: s.capital || {}
+  }).select().single();
+  if(e1) throw e1;
+  const negId = negocio.id;
+
+  actualizarProgreso(10, 'Subiendo usuarios...');
+
+  // 2. Usuarios (el primero vinculado al auth, los demás sin auth)
+  const usuariosRows = (s.usuarios||[]).map((u,i) => ({
+    negocio_id: negId,
+    auth_user_id: i===0 ? user.id : null,
+    codigo: u.id,
+    nombre: u.nombre,
+    rol: u.rol,
+    activo: u.activo !== false,
+    color: u.color || '#1c3d5a'
+  }));
+  const { data: usrs, error: e2 } = await sb.from('usuarios').insert(usuariosRows).select();
+  if(e2) throw e2;
+  usrs.forEach(u => { map.usuarios[u.codigo] = u.id; });
+
+  actualizarProgreso(15, 'Subiendo categorías...');
+  // 3. Categorías
+  if((s.categorias||[]).length){
+    const rows = s.categorias.map(c => ({ negocio_id: negId, codigo: c.id, nombre: c.nombre }));
+    const { data: cats, error } = await sb.from('categorias').insert(rows).select();
+    if(error) throw error;
+    cats.forEach(c => { map.categorias[c.codigo] = c.id; });
+  }
+
+  actualizarProgreso(20, 'Subiendo operadores...');
+  // 4. Proveedores
+  if((s.proveedores||[]).length){
+    const rows = s.proveedores.map(p => ({ negocio_id: negId, codigo: p.id, nombre: p.nombre, nota: p.nota || null }));
+    const { data: provs, error } = await sb.from('proveedores').insert(rows).select();
+    if(error) throw error;
+    provs.forEach(p => { map.proveedores[p.codigo] = p.id; });
+    // Las bolsas se crean automáticamente por trigger
+  }
+
+  actualizarProgreso(25, 'Subiendo productos...');
+  // 5. Productos
+  if((s.productos||[]).length){
+    const rows = s.productos.map(p => ({
+      negocio_id: negId,
+      codigo: p.id,
+      nombre: p.nombre,
+      categoria_id: p.categoriaId ? map.categorias[p.categoriaId] : null,
+      proveedor_id: p.proveedorId ? map.proveedores[p.proveedorId] : null,
+      unidad: p.unidad || 'unidad',
+      es_recarga: !!p.esRecarga,
+      tipo_recarga: p.esRecarga ? (p.tipoRecarga || 'paso') : null,
+      costo: p.costo || 0,
+      precio: p.precio || 0,
+      stock: p.stock || 0,
+      stock_inicial: p.stockInicial || 0
+    }));
+    const { data: prods, error } = await sb.from('productos').insert(rows).select();
+    if(error) throw error;
+    prods.forEach(p => { map.productos[p.codigo] = p.id; });
+  }
+
+  actualizarProgreso(30, 'Subiendo clientes...');
+  // 6. Clientes
+  if((s.clientes||[]).length){
+    const rows = s.clientes.map(c => ({
+      negocio_id: negId, codigo: c.id, nombre: c.nombre,
+      tel: c.tel || null, comunidad: c.comunidad || null,
+      plazo: c.plazo || 15, limite: c.limite || 500,
+      creado: c.creado || null
+    }));
+    const { data: clis, error } = await sb.from('clientes').insert(rows).select();
+    if(error) throw error;
+    clis.forEach(c => { map.clientes[c.codigo] = c.id; });
+  }
+
+  actualizarProgreso(35, 'Subiendo deudas iniciales...');
+  // 7. Deudas iniciales (capital)
+  if(s.capital?.deudasInicialesPorCliente){
+    const rows = Object.entries(s.capital.deudasInicialesPorCliente)
+      .filter(([cid, m]) => m > 0 && map.clientes[cid])
+      .map(([cid, monto]) => ({ negocio_id: negId, cliente_id: map.clientes[cid], monto }));
+    if(rows.length) { const { error } = await sb.from('capital_deudas_iniciales').insert(rows); if(error) throw error; }
+  }
+  // 8. Bolsas iniciales
+  if(s.capital?.bolsasIniciales){
+    const rows = Object.entries(s.capital.bolsasIniciales)
+      .filter(([k, m]) => m > 0)
+      .map(([k, monto]) => {
+        const [provCod, tipo] = k.split(':');
+        return { negocio_id: negId, proveedor_id: map.proveedores[provCod], tipo, monto };
+      }).filter(r => r.proveedor_id);
+    if(rows.length) { const { error } = await sb.from('capital_bolsas_iniciales').insert(rows); if(error) throw error; }
+  }
+
+  actualizarProgreso(45, 'Subiendo bolsas actuales...');
+  // 9. Bolsas actuales (UPDATE, ya fueron creadas por trigger)
+  for(const [k, b] of Object.entries(s.bolsas||{})){
+    const [provCod, tipo] = k.split(':');
+    const provId = map.proveedores[provCod];
+    if(!provId) continue;
+    await sb.from('bolsas')
+      .update({ saldo: b.saldo || 0, bonificaciones: b.bonificaciones || 0 })
+      .eq('negocio_id', negId).eq('proveedor_id', provId).eq('tipo', tipo);
+  }
+
+  actualizarProgreso(50, 'Subiendo caja...');
+  // 10. Caja (saldo inicial)
+  await sb.from('caja').upsert({ negocio_id: negId, saldo_inicial: s.caja?.saldoInicial || 0 });
+
+  // 11. Movimientos de caja
+  if((s.caja?.movimientos||[]).length){
+    const rows = s.caja.movimientos.map(m => ({
+      negocio_id: negId, codigo: m.id, fecha: m.fecha, hora: m.hora || '00:00',
+      tipo: m.tipo, monto: m.monto, descripcion: m.descripcion || null,
+      referencia: m.referencia || null,
+      usuario_id: m.usuarioId ? map.usuarios[m.usuarioId] : null,
+      usuario_nombre: m.usuarioNombre || null
+    }));
+    // Insertar en lotes de 100 para no reventar
+    for(let i=0; i<rows.length; i+=100){
+      const { error } = await sb.from('caja_movimientos').insert(rows.slice(i, i+100));
+      if(error) throw error;
+    }
+  }
+
+  actualizarProgreso(60, 'Subiendo bancos...');
+  // 12. Bancos
+  if((s.bancos||[]).length){
+    for(const b of s.bancos){
+      const { data: nuevoBanco, error } = await sb.from('bancos').insert({
+        negocio_id: negId, codigo: b.id, nombre: b.nombre, nota: b.nota || null,
+        saldo_inicial: b.saldoInicial || 0
+      }).select().single();
+      if(error) throw error;
+      // Movimientos del banco
+      if((b.movimientos||[]).length){
+        const movs = b.movimientos.map(m => ({
+          negocio_id: negId, banco_id: nuevoBanco.id, codigo: m.id,
+          fecha: m.fecha, hora: m.hora || '00:00',
+          monto: m.monto, descripcion: m.descripcion || null,
+          referencia: m.referencia || null,
+          usuario_id: m.usuarioId ? map.usuarios[m.usuarioId] : null,
+          usuario_nombre: m.usuarioNombre || null
+        }));
+        const { error: errM } = await sb.from('banco_movimientos').insert(movs);
+        if(errM) throw errM;
+      }
+    }
+  }
+
+  actualizarProgreso(70, 'Subiendo ventas...');
+  // 13. Ventas + items
+  for(const v of (s.ventas||[])){
+    const { data: ventaRow, error } = await sb.from('ventas').insert({
+      negocio_id: negId, codigo: v.id, fecha: v.fecha, hora: v.hora || '00:00',
+      cliente_id: v.clienteId ? map.clientes[v.clienteId] : null,
+      cliente_nombre: v.clienteNombre || 'Consumidor final',
+      tipo_pago: v.tipoPago, plazo: v.plazo || null, vencimiento: v.vencimiento || null,
+      total: v.total, pagado: v.pagado || 0,
+      monto_recibido: v.montoRecibido, cambio: v.cambio,
+      usuario_id: v.usuarioId ? map.usuarios[v.usuarioId] : null,
+      usuario_nombre: v.usuarioNombre || null
+    }).select().single();
+    if(error) throw error;
+    map.ventas[v.id] = ventaRow.id;
+
+    const items = (v.items||[]).map(it => ({
+      negocio_id: negId, venta_id: ventaRow.id,
+      producto_id: map.productos[it.productoId] || null,
+      nombre: it.nombre, unidad: it.unidad || null,
+      es_recarga: !!it.esRecarga,
+      tipo_recarga: it.esRecarga ? (it.tipoRecarga || null) : null,
+      proveedor_id: it.proveedorId ? map.proveedores[it.proveedorId] : null,
+      cantidad: it.cantidad, precio_unit: it.precioUnit, costo_unit: it.costoUnit,
+      subtotal: it.subtotal
+    }));
+    if(items.length){ const { error: errI } = await sb.from('venta_items').insert(items); if(errI) throw errI; }
+  }
+
+  actualizarProgreso(80, 'Subiendo abonos...');
+  // 14. Abonos
+  if((s.abonos||[]).length){
+    const rows = s.abonos.map(a => ({
+      negocio_id: negId, codigo: a.id,
+      cliente_id: a.clienteId ? map.clientes[a.clienteId] : null,
+      venta_id: a.ventaId ? map.ventas[a.ventaId] : null,
+      fecha: a.fecha, hora: a.hora || '00:00',
+      monto: a.monto, entregado: a.entregado ?? a.monto, vuelta: a.vuelta || 0,
+      usuario_id: a.usuarioId ? map.usuarios[a.usuarioId] : null,
+      usuario_nombre: a.usuarioNombre || null
+    }));
+    for(let i=0; i<rows.length; i+=100){
+      const { error } = await sb.from('abonos').insert(rows.slice(i, i+100));
+      if(error) throw error;
+    }
+  }
+
+  actualizarProgreso(85, 'Subiendo compras...');
+  // 15. Compras + items
+  for(const c of (s.compras||[])){
+    const { data: compraRow, error } = await sb.from('compras').insert({
+      negocio_id: negId, codigo: c.id, fecha: c.fecha, hora: c.hora || '00:00',
+      proveedor_id: c.proveedorId ? map.proveedores[c.proveedorId] : null,
+      proveedor_nombre: c.proveedorNombre || 'Sin proveedor',
+      total: c.total, nota: c.nota || null,
+      usuario_id: c.usuarioId ? map.usuarios[c.usuarioId] : null,
+      usuario_nombre: c.usuarioNombre || null
+    }).select().single();
+    if(error) throw error;
+    map.compras[c.id] = compraRow.id;
+    const items = (c.items||[]).map(it => ({
+      negocio_id: negId, compra_id: compraRow.id,
+      producto_id: map.productos[it.productoId] || null,
+      nombre: it.nombre, unidad: it.unidad || null,
+      cantidad: it.cantidad, costo_unit: it.costoUnit, subtotal: it.subtotal
+    }));
+    if(items.length){ const { error: errI } = await sb.from('compra_items').insert(items); if(errI) throw errI; }
+  }
+
+  actualizarProgreso(90, 'Subiendo gastos...');
+  // 16. Gastos
+  if((s.gastos||[]).length){
+    const rows = s.gastos.map(g => ({
+      negocio_id: negId, codigo: g.id, fecha: g.fecha, hora: g.hora || '00:00',
+      categoria: g.categoria, monto: g.monto, descripcion: g.descripcion || null,
+      usuario_id: g.usuarioId ? map.usuarios[g.usuarioId] : null,
+      usuario_nombre: g.usuarioNombre || null
+    }));
+    for(let i=0; i<rows.length; i+=100){
+      const { error } = await sb.from('gastos').insert(rows.slice(i, i+100));
+      if(error) throw error;
+    }
+  }
+
+  actualizarProgreso(93, 'Subiendo cuentas por pagar...');
+  // 17. Cuentas por pagar
+  if((s.cuentasPorPagar||[]).length){
+    const rows = s.cuentasPorPagar.map(c => ({
+      negocio_id: negId, codigo: c.id,
+      acreedor: c.acreedor, concepto: c.concepto || null,
+      monto_total: c.montoTotal, pagado: c.pagado || 0,
+      vencimiento: c.vencimiento || null, fecha_creacion: c.fechaCreacion || null,
+      usuario_id: c.usuarioId ? map.usuarios[c.usuarioId] : null,
+      usuario_nombre: c.usuarioNombre || null
+    }));
+    const { error } = await sb.from('cuentas_por_pagar').insert(rows);
+    if(error) throw error;
+  }
+
+  actualizarProgreso(96, 'Subiendo turnos...');
+  // 18. Turnos
+  if((s.turnos||[]).length){
+    const rows = s.turnos.map(t => ({
+      negocio_id: negId, codigo: t.id,
+      usuario_id: t.usuarioId ? map.usuarios[t.usuarioId] : null,
+      usuario_nombre: t.usuarioNombre || null,
+      fecha_apertura: t.fechaApertura, hora_apertura: t.horaApertura || '00:00',
+      saldo_inicial: t.saldoInicial || 0,
+      saldo_cierre: t.saldoCierre, fecha_cierre: t.fechaCierre, hora_cierre: t.horaCierre,
+      estado: t.estado, obs_apertura: t.obsApertura || null, obs_cierre: t.obsCierre || null,
+      diferencia: t.diferencia
+    }));
+    const { error } = await sb.from('turnos').insert(rows);
+    if(error) throw error;
+  }
+
+  actualizarProgreso(98, 'Subiendo ajustes de bolsa...');
+  // 19. Ajustes de bolsa
+  if((s.ajustesBolsa||[]).length){
+    const rows = s.ajustesBolsa
+      .filter(a => map.proveedores[a.provId])
+      .map(a => ({
+        negocio_id: negId, codigo: a.id,
+        fecha: a.fecha, hora: a.hora || '00:00',
+        proveedor_id: map.proveedores[a.provId], tipo: a.tipo,
+        delta: a.delta, motivo_tipo: a.motivoTipo, motivo: a.motivo || null,
+        saldo_antes: a.saldoAntes || 0, saldo_despues: a.saldoDespues || 0,
+        usuario_id: a.usuarioId ? map.usuarios[a.usuarioId] : null,
+        usuario_nombre: a.usuarioNombre || null
+      }));
+    if(rows.length){ const { error } = await sb.from('ajustes_bolsa').insert(rows); if(error) throw error; }
+  }
+
+  actualizarProgreso(100, '¡Listo!');
+}
+
+/* ---------- CARGA DE SUPABASE → LOCALSTORAGE ---------- */
+async function cargarStateDesdeSupabase(){
+  const negId = sbNegocioId;
+  actualizarProgreso(0, '');
+  // Traer todo en paralelo donde se pueda
+  const [
+    negocioQ, usuariosQ, categoriasQ, proveedoresQ, productosQ, clientesQ,
+    bolsasQ, ajustesQ, cajaQ, cajaMovQ, bancosQ, bancoMovQ,
+    ventasQ, ventaItemsQ, abonosQ, comprasQ, compraItemsQ, gastosQ,
+    catsGastosQ, cppQ, turnosQ, cierresQ, mesesQ,
+    deudasIniQ, bolsasIniQ
+  ] = await Promise.all([
+    sb.from('negocios').select('*').eq('id', negId).single(),
+    sb.from('usuarios').select('*').eq('negocio_id', negId),
+    sb.from('categorias').select('*').eq('negocio_id', negId),
+    sb.from('proveedores').select('*').eq('negocio_id', negId),
+    sb.from('productos').select('*').eq('negocio_id', negId),
+    sb.from('clientes').select('*').eq('negocio_id', negId),
+    sb.from('bolsas').select('*').eq('negocio_id', negId),
+    sb.from('ajustes_bolsa').select('*').eq('negocio_id', negId).order('fecha', {ascending:true}),
+    sb.from('caja').select('*').eq('negocio_id', negId).maybeSingle(),
+    sb.from('caja_movimientos').select('*').eq('negocio_id', negId).order('fecha', {ascending:true}),
+    sb.from('bancos').select('*').eq('negocio_id', negId),
+    sb.from('banco_movimientos').select('*').eq('negocio_id', negId),
+    sb.from('ventas').select('*').eq('negocio_id', negId).order('fecha', {ascending:true}),
+    sb.from('venta_items').select('*').eq('negocio_id', negId),
+    sb.from('abonos').select('*').eq('negocio_id', negId).order('fecha', {ascending:true}),
+    sb.from('compras').select('*').eq('negocio_id', negId).order('fecha', {ascending:true}),
+    sb.from('compra_items').select('*').eq('negocio_id', negId),
+    sb.from('gastos').select('*').eq('negocio_id', negId).order('fecha', {ascending:true}),
+    sb.from('categorias_gastos').select('*').eq('negocio_id', negId),
+    sb.from('cuentas_por_pagar').select('*').eq('negocio_id', negId),
+    sb.from('turnos').select('*').eq('negocio_id', negId),
+    sb.from('cierres').select('*').eq('negocio_id', negId),
+    sb.from('meses_cerrados').select('*').eq('negocio_id', negId),
+    sb.from('capital_deudas_iniciales').select('*').eq('negocio_id', negId),
+    sb.from('capital_bolsas_iniciales').select('*').eq('negocio_id', negId),
+  ]);
+
+  // Reconstruir maps inversos: uuid → codigo
+  const invUsuarios = {}; usuariosQ.data.forEach(u => invUsuarios[u.id] = u.codigo);
+  const invCategorias = {}; categoriasQ.data.forEach(c => invCategorias[c.id] = c.codigo);
+  const invProveedores = {}; proveedoresQ.data.forEach(p => invProveedores[p.id] = p.codigo);
+  const invProductos = {}; productosQ.data.forEach(p => invProductos[p.id] = p.codigo);
+  const invClientes = {}; clientesQ.data.forEach(c => invClientes[c.id] = c.codigo);
+  const invVentas = {}; ventasQ.data.forEach(v => invVentas[v.id] = v.codigo);
+  const invCompras = {}; comprasQ.data.forEach(c => invCompras[c.id] = c.codigo);
+
+  // Armar state en formato viejo
+  const s = {
+    seq: {
+      venta: 1, compra: 1, abono: 1, cliente: 1, producto: 1, proveedor: 1,
+      categoria: 1, mov: 1, cierre: 1, usuario: 1, turno: 1, gasto: 1,
+      cuentaPagar: 1, banco: 1, movBanco: 1, ajusteBolsa: 1
+    },
+    usuarios: usuariosQ.data.map(u => ({
+      id: u.codigo, nombre: u.nombre, rol: u.rol, activo: u.activo,
+      color: u.color, creado: u.creado
+    })),
+    usuarioActualId: usuariosQ.data[0]?.codigo || 'U1',
+    turnos: turnosQ.data.map(t => ({
+      id: t.codigo, usuarioId: t.usuario_id ? invUsuarios[t.usuario_id] : null,
+      usuarioNombre: t.usuario_nombre,
+      fechaApertura: t.fecha_apertura, horaApertura: t.hora_apertura,
+      saldoInicial: +t.saldo_inicial, saldoCierre: t.saldo_cierre !== null ? +t.saldo_cierre : null,
+      fechaCierre: t.fecha_cierre, horaCierre: t.hora_cierre,
+      estado: t.estado, obsApertura: t.obs_apertura, obsCierre: t.obs_cierre,
+      diferencia: t.diferencia !== null ? +t.diferencia : null
+    })),
+    proveedores: proveedoresQ.data.map(p => ({ id: p.codigo, nombre: p.nombre, nota: p.nota })),
+    categorias: categoriasQ.data.map(c => ({ id: c.codigo, nombre: c.nombre })),
+    productos: productosQ.data.map(p => ({
+      id: p.codigo, nombre: p.nombre,
+      categoriaId: p.categoria_id ? invCategorias[p.categoria_id] : null,
+      proveedorId: p.proveedor_id ? invProveedores[p.proveedor_id] : null,
+      unidad: p.unidad, esRecarga: p.es_recarga, tipoRecarga: p.tipo_recarga,
+      costo: +p.costo, precio: +p.precio, stock: +p.stock, stockInicial: +p.stock_inicial
+    })),
+    clientes: clientesQ.data.map(c => ({
+      id: c.codigo, nombre: c.nombre, tel: c.tel, comunidad: c.comunidad,
+      plazo: c.plazo, limite: +c.limite, creado: c.creado
+    })),
+    ventas: ventasQ.data.map(v => ({
+      id: v.codigo, fecha: v.fecha, hora: v.hora,
+      clienteId: v.cliente_id ? invClientes[v.cliente_id] : null,
+      clienteNombre: v.cliente_nombre, tipoPago: v.tipo_pago,
+      plazo: v.plazo, vencimiento: v.vencimiento,
+      items: ventaItemsQ.data.filter(i => i.venta_id === v.id).map(i => ({
+        productoId: i.producto_id ? invProductos[i.producto_id] : null,
+        nombre: i.nombre, unidad: i.unidad,
+        esRecarga: i.es_recarga, tipoRecarga: i.tipo_recarga,
+        proveedorId: i.proveedor_id ? invProveedores[i.proveedor_id] : null,
+        cantidad: +i.cantidad, precioUnit: +i.precio_unit, costoUnit: +i.costo_unit, subtotal: +i.subtotal
+      })),
+      total: +v.total, pagado: +v.pagado,
+      montoRecibido: v.monto_recibido !== null ? +v.monto_recibido : null,
+      cambio: v.cambio !== null ? +v.cambio : null,
+      usuarioId: v.usuario_id ? invUsuarios[v.usuario_id] : null,
+      usuarioNombre: v.usuario_nombre
+    })),
+    abonos: abonosQ.data.map(a => ({
+      id: a.codigo,
+      clienteId: a.cliente_id ? invClientes[a.cliente_id] : null,
+      ventaId: a.venta_id ? invVentas[a.venta_id] : null,
+      fecha: a.fecha, hora: a.hora,
+      monto: +a.monto, entregado: +a.entregado, vuelta: +a.vuelta,
+      usuarioId: a.usuario_id ? invUsuarios[a.usuario_id] : null,
+      usuarioNombre: a.usuario_nombre
+    })),
+    compras: comprasQ.data.map(c => ({
+      id: c.codigo, fecha: c.fecha, hora: c.hora,
+      proveedorId: c.proveedor_id ? invProveedores[c.proveedor_id] : null,
+      proveedorNombre: c.proveedor_nombre,
+      items: compraItemsQ.data.filter(i => i.compra_id === c.id).map(i => ({
+        productoId: i.producto_id ? invProductos[i.producto_id] : null,
+        nombre: i.nombre, unidad: i.unidad,
+        cantidad: +i.cantidad, costoUnit: +i.costo_unit, subtotal: +i.subtotal
+      })),
+      total: +c.total, nota: c.nota,
+      usuarioId: c.usuario_id ? invUsuarios[c.usuario_id] : null,
+      usuarioNombre: c.usuario_nombre
+    })),
+    gastos: gastosQ.data.map(g => ({
+      id: g.codigo, fecha: g.fecha, hora: g.hora,
+      categoria: g.categoria, monto: +g.monto, descripcion: g.descripcion,
+      usuarioId: g.usuario_id ? invUsuarios[g.usuario_id] : null,
+      usuarioNombre: g.usuario_nombre
+    })),
+    categoriasGastos: catsGastosQ.data.map(c => c.nombre),
+    cuentasPorPagar: cppQ.data.map(c => ({
+      id: c.codigo, acreedor: c.acreedor, concepto: c.concepto,
+      montoTotal: +c.monto_total, pagado: +c.pagado,
+      vencimiento: c.vencimiento, fechaCreacion: c.fecha_creacion,
+      usuarioId: c.usuario_id ? invUsuarios[c.usuario_id] : null,
+      usuarioNombre: c.usuario_nombre
+    })),
+    bancos: bancosQ.data.map(b => ({
+      id: b.codigo, nombre: b.nombre, nota: b.nota,
+      saldoInicial: +b.saldo_inicial,
+      movimientos: bancoMovQ.data.filter(m => m.banco_id === b.id).map(m => ({
+        id: m.codigo, fecha: m.fecha, hora: m.hora,
+        monto: +m.monto, descripcion: m.descripcion, referencia: m.referencia,
+        usuarioId: m.usuario_id ? invUsuarios[m.usuario_id] : null,
+        usuarioNombre: m.usuario_nombre
+      }))
+    })),
+    caja: {
+      saldoInicial: cajaQ.data ? +cajaQ.data.saldo_inicial : 0,
+      movimientos: cajaMovQ.data.map(m => ({
+        id: m.codigo, fecha: m.fecha, hora: m.hora,
+        tipo: m.tipo, monto: +m.monto, descripcion: m.descripcion,
+        referencia: m.referencia,
+        usuarioId: m.usuario_id ? invUsuarios[m.usuario_id] : null,
+        usuarioNombre: m.usuario_nombre
+      }))
+    },
+    bolsas: {},
+    ajustesBolsa: ajustesQ.data.map(a => ({
+      id: a.codigo, fecha: a.fecha, hora: a.hora,
+      provId: invProveedores[a.proveedor_id], tipo: a.tipo,
+      delta: +a.delta, motivoTipo: a.motivo_tipo, motivo: a.motivo,
+      saldoAntes: +a.saldo_antes, saldoDespues: +a.saldo_despues,
+      usuarioId: a.usuario_id ? invUsuarios[a.usuario_id] : null,
+      usuarioNombre: a.usuario_nombre
+    })),
+    cierres: cierresQ.data.map(c => ({
+      mes: c.mes, fecha: c.fecha, ventas: +c.ventas, ganancia: +c.ganancia,
+      gananciaFisica: +c.ganancia_fisica, bonificaciones: +c.bonificaciones,
+      gastos: +c.gastos, cajaFinal: +c.caja_final, patrimonio: +c.patrimonio,
+      stockTotal: +c.stock_total, usuarioNombre: c.usuario_nombre
+    })),
+    config: negocioQ.data.config || { usarTurnos: true },
+    mesesCerrados: mesesQ.data.map(m => m.mes),
+    capital: {
+      ...(negocioQ.data.capital || {}),
+      deudasInicialesPorCliente: {},
+      bolsasIniciales: {}
+    },
+    __migracionPendiente: false
+  };
+
+  // Bolsas
+  bolsasQ.data.forEach(b => {
+    const provCod = invProveedores[b.proveedor_id];
+    if(provCod) s.bolsas[`${provCod}:${b.tipo}`] = { saldo: +b.saldo, bonificaciones: +b.bonificaciones };
+  });
+
+  // Deudas iniciales
+  deudasIniQ.data.forEach(d => {
+    const cliCod = invClientes[d.cliente_id];
+    if(cliCod) s.capital.deudasInicialesPorCliente[cliCod] = +d.monto;
+  });
+
+  // Bolsas iniciales
+  bolsasIniQ.data.forEach(b => {
+    const provCod = invProveedores[b.proveedor_id];
+    if(provCod) s.capital.bolsasIniciales[`${provCod}:${b.tipo}`] = +b.monto;
+  });
+
+  // Recalcular sequentials
+  const maxCod = (arr, prefix) => {
+    let max = 0;
+    arr.forEach(x => { const m = String(x.codigo||'').match(/(\d+)$/); if(m) max = Math.max(max, +m[1]); });
+    return max + 1;
+  };
+  s.seq.venta = maxCod(ventasQ.data, 'V');
+  s.seq.compra = maxCod(comprasQ.data, 'P');
+  s.seq.abono = maxCod(abonosQ.data, 'A');
+  s.seq.cliente = maxCod(clientesQ.data, 'C');
+  s.seq.producto = maxCod(productosQ.data, 'PR');
+  s.seq.proveedor = maxCod(proveedoresQ.data, 'PV');
+  s.seq.categoria = maxCod(categoriasQ.data, 'CA');
+  s.seq.mov = maxCod(cajaMovQ.data, 'M');
+  s.seq.usuario = maxCod(usuariosQ.data, 'U');
+  s.seq.turno = maxCod(turnosQ.data, 'T');
+  s.seq.gasto = maxCod(gastosQ.data, 'G');
+  s.seq.cuentaPagar = maxCod(cppQ.data, 'CP');
+  s.seq.banco = maxCod(bancosQ.data, 'B');
+  s.seq.ajusteBolsa = maxCod(ajustesQ.data, 'AB');
+
+  // Guardar en localStorage con la clave actual
+  localStorage.setItem('simgest_v18', JSON.stringify(s));
+}
+
+/* ---------- SYNC (localStorage → Supabase) ---------- */
+window.syncToCloud = function(stateArg){
+  if(modoLocal || !sb || !sbNegocioId) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(async () => {
+    try{
+      await subirStateASupabase(stateArg);
+    }catch(e){
+      console.error('[sync] error:', e);
+    }
+  }, 2000); // debounce 2s
+};
+
+async function subirStateASupabase(s){
+  // Estrategia simple: borrar todo lo del negocio y reinsertar
+  // ⚠️ Esto funciona pero es lento. Para producción conviene diff incremental.
+  // TODO: implementar sync incremental.
+  console.log('[sync] estado pendiente de subir (implementación simplificada).');
+  // Por ahora NO hacemos nada para evitar sobrecargar. El botón de migración
+  // es el camino para subir datos. Después implementamos sync incremental.
+}
+
+/* ---------- ARRANCAR ---------- */
+document.addEventListener('DOMContentLoaded', () => {
+  initSupabase();
+});
+
+// Helper: traducir errores comunes de Supabase
+function traducirError(msg){
+  const m = String(msg||'').toLowerCase();
+  if(m.includes('invalid login credentials')) return 'Email o contraseña incorrectos.';
+  if(m.includes('email not confirmed')) return 'Verificá tu email antes de entrar.';
+  if(m.includes('user already registered')) return 'Este email ya está registrado.';
+  if(m.includes('password should be at least')) return 'La contraseña es muy corta.';
+  if(m.includes('invalid email')) return 'El email no es válido.';
+  if(m.includes('rate limit')) return 'Demasiados intentos. Esperá un momento.';
+  return msg;
+}
+</script>
 
 <script>
 /* ================================================================
@@ -388,7 +1332,13 @@ const ui = {
 /* ================================================================
    PERSISTENCIA
    ================================================================ */
-function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){} }
+function save(){
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    // Sincronizar a Supabase en background
+    if(window.syncToCloud) window.syncToCloud(state);
+  }catch(e){}
+}
 function load(){ try{ const raw=localStorage.getItem(LS_KEY); if(raw){ state=JSON.parse(raw); return true; } }catch(e){} return false; }
 function initState(){
   return {
@@ -3810,7 +4760,7 @@ function mostrarCartelMigracion(){
   };
   renderModal();
 }
-(function init(){
+window.arrancarApp = function(){
   try{
     if(!load()){ state=initState(); save(); }
     if(!state.usuarios) state.usuarios=[{id:'U1',nombre:'Administrador',rol:'admin',color:'#1c3d5a',activo:true,creado:HOY()}];
@@ -3843,9 +4793,7 @@ function mostrarCartelMigracion(){
     state.usuarios.forEach(u=>{ if(!['admin','cajero','cobrador'].includes(u.rol)) u.rol='cajero'; });
     state.bancos.forEach(b=>{ if(!b.movimientos) b.movimientos=[]; });
 
-    // Migración de formato viejo de bolsas
-    const huboMigracion = migrarDatosViejos();
-    // Asegurar que cada operador tenga 2 bolsas
+    migrarDatosViejos();
     state.proveedores.forEach(p=>{ bolsaDe(p.id,'paso'); bolsaDe(p.id,'paquete'); });
 
     usuarioActual=userById(state.usuarioActualId)||state.usuarios[0];
@@ -3856,7 +4804,6 @@ function mostrarCartelMigracion(){
 
     save(); render();
 
-    // Si hubo migración pendiente, mostrar cartel
     if(state.__migracionPendiente) setTimeout(mostrarCartelMigracion, 300);
   }catch(e){
     console.error(e);
@@ -3867,7 +4814,8 @@ function mostrarCartelMigracion(){
         <button class="btn btn-primary" style="margin-top:16px" onclick="localStorage.clear(); location.reload();">Restablecer y recargar</button>
       </div>`;
   }
-})();
+};
+
 </script>
 </body>
 </html>
