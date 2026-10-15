@@ -207,7 +207,6 @@ html[data-theme="dark"] .pay-btn.blue{color:var(--blue)}
 .pay-btn.purple{background:rgba(175,82,222,.15);color:#8E3FBC;border-color:rgba(175,82,222,.35)}
 html[data-theme="dark"] .pay-btn.purple{color:var(--purple)}
 
-/* Botón editar horas */
 .btn-edit-hours{
   width:100%;padding:11px;border-radius:11px;margin-bottom:10px;
   background:var(--btn-bg);color:var(--text-2);
@@ -226,9 +225,6 @@ html[data-theme="dark"] .pay-btn.purple{color:var(--purple)}
 .card-room.free .cr-info{font-size:13px;color:var(--text-2);padding:2px 0 6px}
 .card-room.free .cr-rate{font-size:15px;font-weight:800;color:var(--accent)}
 
-/* =========================================================
-   RESTO (groups, tablas, forms, sheet, etc)
-   ========================================================= */
 .group{background:var(--surface);border-radius:var(--r-lg);overflow:hidden;margin-bottom:16px;border:1px solid var(--border-btn);box-shadow:var(--shadow-card)}
 .group-title{font-size:12px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;padding:0 8px 8px}
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -307,23 +303,11 @@ html[data-theme="dark"] .btn.purple{color:var(--purple)}
 .bd-row.total-row{border-top:1.5px solid var(--sep);padding-top:12px;margin-top:4px}
 .bd-row.total-row span:first-child{font-weight:800;color:var(--text)}
 .bd-row.total-row span:last-child{font-size:18px;color:var(--accent)}
-
-/* Editar horas inline */
-.edit-hours-panel{
-  background:var(--surface);border:1px solid var(--border-btn);
-  border-radius:var(--r-md);padding:14px;margin-bottom:16px;
-  box-shadow:var(--shadow-card);
-}
+.edit-hours-panel{background:var(--surface);border:1px solid var(--border-btn);border-radius:var(--r-md);padding:14px;margin-bottom:16px;box-shadow:var(--shadow-card)}
 .edit-hours-panel .eh-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.edit-hours-panel input[type="time"]{
-  width:100%;padding:12px 14px;background:var(--input-bg);
-  border:1px solid var(--border-input);border-radius:var(--r-sm);
-  color:var(--text);font-size:16px;font-variant-numeric:tabular-nums;
-  box-shadow:var(--shadow-btn);text-align:center;font-weight:700;
-}
+.edit-hours-panel input[type="time"]{width:100%;padding:12px 14px;background:var(--input-bg);border:1px solid var(--border-input);border-radius:var(--r-sm);color:var(--text);font-size:16px;font-variant-numeric:tabular-nums;box-shadow:var(--shadow-btn);text-align:center;font-weight:700}
 .edit-hours-panel input[type="time"]:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(184,134,11,.15)}
 .edit-hours-panel .eh-lbl{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-2);margin-bottom:6px;text-align:center}
-
 #modalRoot{position:fixed;inset:0;z-index:100;display:none}
 #modalRoot.open{display:block}
 .overlay{position:absolute;inset:0;background:var(--overlay);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .22s var(--ease)}
@@ -784,6 +768,7 @@ function closeModal(){
   $('#modalRoot').innerHTML = '';
   document.body.style.overflow = '';
   ci = null; co = null; qp = null;
+  ciLock = false; coLock = false;
 }
 
 /* USER MENU */
@@ -958,8 +943,8 @@ function tickLiveClocks(){
   const se = document.getElementById('shiftElapsed');
   if(se && currentShift) se.textContent = fmtDur(now - new Date(currentShift.loginAt).getTime());
   const ciLive = document.getElementById('ciLiveClock');
-  if(ciLive){
-    if(ci && ci.captured){ const d = new Date(ci.entryTs); ciLive.innerHTML = `${pad(d.getHours())}:${pad(d.getMinutes())}:<span class="sec">${pad(d.getSeconds())}</span>`; }
+  if(ciLive && ci){
+    if(ci.captured){ const d = new Date(ci.entryTs); ciLive.innerHTML = `${pad(d.getHours())}:${pad(d.getMinutes())}:<span class="sec">${pad(d.getSeconds())}</span>`; }
     else { ciLive.innerHTML = renderLiveClock(now); const s = ciLive.querySelector('.sec'); if(s){ s.classList.remove('tick'); void s.offsetWidth; s.classList.add('tick'); } }
   }
   updateTimers();
@@ -970,6 +955,7 @@ setInterval(tickLiveClocks, 1000);
    CÁLCULO DE MONTOS
    ========================================================= */
 function calcRoomAmount(r, refTs){
+  if(!r || !r.mode) return { amount: 0, hours: 0, rate: 0 };
   const t = refTs || Date.now();
 
   if(r.mode === 'paquete'){
@@ -981,11 +967,7 @@ function calcRoomAmount(r, refTs){
   const elapsedMs = Math.max(0, end - entry);
   const rate = r.hourlyRate || r.rate || r.price || 0;
 
-  // MODO CORRIDA (sin límite): cobra por hora completa desde el inicio.
-  // La primera hora cuenta completa; luego si sobra más de 10 min se cobra media hora extra
   if(r.mode === 'corrida'){
-    // Regla simple: 1ª hora completa. Por cada 30 min posteriores se cobra media tarifa.
-    // Con tolerancia de 10 min en el último bloque.
     const firstHourMs = 3600000;
     if(elapsedMs <= firstHourMs + TOLERANCE_MS){
       return { amount: rate, hours: 1, rate, detail: 'corrida' };
@@ -1003,7 +985,7 @@ function calcRoomAmount(r, refTs){
     };
   }
 
-  // MODO HORA (tiempo pagado predefinido)
+  // Modo hora
   const paidMs = (r.paidHours || 1) * 3600000;
   const extraMs = Math.max(0, elapsedMs - paidMs);
   const extra = calcExtraCharge(extraMs, rate);
@@ -1022,7 +1004,7 @@ function calcRoomAmount(r, refTs){
 }
 
 function stateFor(r){
-  if(r.status === 'libre') return { phase: 'libre' };
+  if(!r || r.status === 'libre') return { phase: 'libre' };
   if(!r.mode) return { phase: 'libre' };
   const now = Date.now();
   if(r.mode === 'paquete'){
@@ -1041,7 +1023,6 @@ function stateFor(r){
     const elapsedMs = now - entry;
     return { phase: r.checkOut ? 'finished' : 'running', mode: 'corrida', elapsedMs };
   }
-  // modo hora
   const entry = new Date(r.checkIn).getTime();
   const paidMs = (r.paidHours || 1) * 3600000;
   const elapsedMs = now - entry;
@@ -1062,6 +1043,7 @@ function stateFor(r){
    FICHA TIPO BOCETO
    ========================================================= */
 function cardRoom(r){
+  if(!r) return '';
   const isLibre = r.status === 'libre';
   if(isLibre){
     return `
@@ -1077,7 +1059,6 @@ function cardRoom(r){
   }
   const s = stateFor(r);
 
-  /* ---- PAQUETE NOCTURNO ---- */
   if(s.mode === 'paquete'){
     const inTime = fmtTime(r.checkIn);
     const outTime = r.packageEndTime || '--:--';
@@ -1114,7 +1095,6 @@ function cardRoom(r){
       </div>`;
   }
 
-  /* ---- MODO CORRIDA (sin límite) ---- */
   if(s.mode === 'corrida'){
     const entryTimeStr = fmtTime(r.checkIn);
     const nowTimeStr = fmtTime(new Date());
@@ -1125,8 +1105,6 @@ function cardRoom(r){
     const grand = calc.amount + consTotal;
     const badgeCls = r.paymentStatus === 'pendiente' ? 'pending' : 'corrida';
     const badgeTxt = r.paymentStatus === 'pendiente' ? 'Por cobrar' : 'Corrida';
-
-    // Hora que se cobraría ahora
     const horasCobradas = calc.hours;
 
     const gridHTML = isFinished ? `
@@ -1172,7 +1150,7 @@ function cardRoom(r){
       </div>`;
   }
 
-  /* ---- MODO HORA ---- */
+  // Modo hora
   const entryTimeStr = fmtTime(r.checkIn);
   const nowTimeStr = fmtTime(new Date());
   const elapsedStr = fmtHM(s.elapsedMs);
@@ -1258,7 +1236,7 @@ function clickRoom(id){
 }
 
 /* =========================================================
-   AGREGAR PRODUCTO RÁPIDO desde la tarjeta
+   AGREGAR PRODUCTO RÁPIDO
    ========================================================= */
 let qp = null;
 function openQuickProduct(roomId){
@@ -1305,6 +1283,7 @@ function openQuickProduct(roomId){
 }
 
 function addProdToRoom(pid){
+  if(!qp) return;
   const r = db.rooms.find(x => x.id === qp.roomId);
   if(!r) return;
   const p = db.products.find(x => x.id === pid);
@@ -1315,17 +1294,20 @@ function addProdToRoom(pid){
   if(currentQty + 1 > stock){ toast('Stock insuficiente'); return; }
   if(ex) ex.qty += 1;
   else r.consumos.push({ productId: pid, name: p.name, qty: 1, price: p.price, cost: p.cost });
-  save(); renderAll(); openQuickProduct(qp.roomId);
+  save(); renderAll();
+  if(qp) openQuickProduct(qp.roomId);
   toast(`${p.name} agregado`);
 }
 function rmProdFromRoom(pid){
+  if(!qp) return;
   const r = db.rooms.find(x => x.id === qp.roomId);
   if(!r) return;
   const idx = r.consumos.findIndex(c => c.productId === pid);
   if(idx === -1) return;
   if(r.consumos[idx].qty > 1) r.consumos[idx].qty -= 1;
   else r.consumos.splice(idx, 1);
-  save(); renderAll(); openQuickProduct(qp.roomId);
+  save(); renderAll();
+  if(qp) openQuickProduct(qp.roomId);
 }
 
 /* =========================================================
@@ -1377,11 +1359,17 @@ function registerSale(r, total, payments, refTs){
 }
 
 /* =========================================================
-   CHECK-IN — 3 modos: hora, corrida, paquete
+   CHECK-IN — con guards anti-null y anti doble-tap
    ========================================================= */
 let ci = null;
+let ciLock = false;
+let coLock = false;
+
 function openCheckIn(id){
+  if(ciLock) return;
   const r = db.rooms.find(x => x.id === id);
+  if(!r){ toast('Pieza no encontrada'); return; }
+  if(r.status !== 'libre'){ toast('Esa pieza ya está ocupada'); return; }
   ci = {
     roomId: id, entryTs: Date.now(), captured: false,
     mode: 'hora',
@@ -1390,8 +1378,12 @@ function openCheckIn(id){
   };
   renderCheckInSheet();
 }
+
 function renderCheckInSheet(){
+  if(!ci){ closeModal(); return; }
   const r = db.rooms.find(x => x.id === ci.roomId);
+  if(!r){ closeModal(); return; }
+
   const chipsHTML = [1,2,3,4,6,12].map(h => `<button class="chip ${h === ci.paidHours ? 'active':''}" data-h="${h}">${h}h</button>`).join('');
 
   const horaBody = `
@@ -1424,7 +1416,7 @@ function renderCheckInSheet(){
   const bodyHTML = ci.mode === 'hora' ? horaBody : (ci.mode === 'corrida' ? corridaBody : paqueteBody);
 
   openSheet(`Registrar ingreso`, `
-    <div class="cr-client" style="margin-bottom:14px;padding:12px;background:var(--amount-bg);border-radius:12px;display:flex;align-items:center;gap:12px">
+    <div style="margin-bottom:14px;padding:12px;background:var(--amount-bg);border-radius:12px;display:flex;align-items:center;gap:12px">
       <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(140deg,var(--accent),var(--accent-deep));color:#fff;display:grid;place-items:center;font-size:16px;font-weight:800;box-shadow:0 4px 12px rgba(184,134,11,.35)">${esc(r.num)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:15px;font-weight:700">${esc(r.name)}</div>
@@ -1462,11 +1454,20 @@ function renderCheckInSheet(){
     </div>
     <div id="ciModeBody">${bodyHTML}</div>
   `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="doCheckIn()">Registrar ingreso</button>`);
+
   setTimeout(() => {
-    $$('.mode-pick').forEach(m => { m.onclick = () => { ci.mode = m.dataset.mode; renderCheckInSheet(); }; });
+    if(!ci) return;
+    $$('.mode-pick').forEach(m => {
+      m.onclick = () => {
+        if(!ci) return;
+        ci.mode = m.dataset.mode;
+        renderCheckInSheet();
+      };
+    });
     if(ci.mode === 'hora'){
       $$('#ciChips .chip').forEach(chip => {
         chip.onclick = () => {
+          if(!ci) return;
           ci.paidHours = Number(chip.dataset.h);
           $$('#ciChips .chip').forEach(c => c.classList.remove('active'));
           chip.classList.add('active');
@@ -1474,18 +1475,38 @@ function renderCheckInSheet(){
           updateCiTotal();
         };
       });
-      $('#ciHours').oninput = e => { ci.paidHours = Number(e.target.value) || 0; $$('#ciChips .chip').forEach(c => c.classList.toggle('active', Number(c.dataset.h) === ci.paidHours)); updateCiTotal(); };
-      if($('#ciRate')) $('#ciRate').oninput = e => { ci.hourlyRate = Number(e.target.value) || 0; updateCiTotal(); };
+      const ih = $('#ciHours');
+      if(ih) ih.oninput = e => {
+        if(!ci) return;
+        ci.paidHours = Number(e.target.value) || 0;
+        $$('#ciChips .chip').forEach(c => c.classList.toggle('active', Number(c.dataset.h) === ci.paidHours));
+        updateCiTotal();
+      };
+      const ir = $('#ciRate');
+      if(ir) ir.oninput = e => { if(!ci) return; ci.hourlyRate = Number(e.target.value) || 0; updateCiTotal(); };
     } else if(ci.mode === 'corrida'){
-      if($('#ciRate')) $('#ciRate').oninput = e => { ci.hourlyRate = Number(e.target.value) || 0; };
+      const ir = $('#ciRate');
+      if(ir) ir.oninput = e => { if(!ci) return; ci.hourlyRate = Number(e.target.value) || 0; };
     } else {
-      $('#ciPackEnd').onchange = e => { ci.packageEndTime = e.target.value; };
-      $('#ciPackPrice').oninput = e => { ci.packagePrice = Number(e.target.value) || 0; $('#ciPackTotal').textContent = money(ci.packagePrice); };
+      const pe = $('#ciPackEnd');
+      const pp = $('#ciPackPrice');
+      if(pe) pe.onchange = e => { if(!ci) return; ci.packageEndTime = e.target.value; };
+      if(pp) pp.oninput = e => {
+        if(!ci) return;
+        ci.packagePrice = Number(e.target.value) || 0;
+        const t = $('#ciPackTotal'); if(t) t.textContent = money(ci.packagePrice);
+      };
     }
   }, 100);
 }
-function updateCiTotal(){ const el = $('#ciTotal'); if(el) el.textContent = money(ci.paidHours * ci.hourlyRate); }
+
+function updateCiTotal(){
+  if(!ci) return;
+  const el = $('#ciTotal'); if(el) el.textContent = money(ci.paidHours * ci.hourlyRate);
+}
+
 function captureEntryTime(){
+  if(!ci) return;
   ci.entryTs = Date.now(); ci.captured = true;
   const i = $('#ciCapturedInfo'), t = $('#ciCapturedTime'), b = $('#ciCaptureBtn'), l = $('#ciCaptureLabel');
   if(t) t.textContent = timeStr(ci.entryTs);
@@ -1496,59 +1517,89 @@ function captureEntryTime(){
   if(liveEl){ liveEl.classList.add('captured'); setTimeout(()=>liveEl.classList.remove('captured'), 700); }
   tickLiveClocks();
 }
+
 function doCheckIn(){
+  // GUARD anti doble-tap
+  if(ciLock) return;
+  // GUARD anti null (la causa del error original)
+  if(!ci){ return; }
+
   const r = db.rooms.find(x => x.id === ci.roomId);
-  if(!r) return;
+  if(!r){ toast('Pieza no encontrada'); closeModal(); return; }
+  if(r.status !== 'libre'){ toast('Esa pieza ya está ocupada'); closeModal(); return; }
+
   if(ci.mode === 'hora' && ci.paidHours <= 0){ toast('Ingresa el tiempo pagado'); return; }
   if(ci.mode === 'paquete' && (!ci.packageEndTime || ci.packagePrice <= 0)){ toast('Completa el paquete'); return; }
-  r.mode = ci.mode;
-  r.checkIn = new Date(ci.entryTs).toISOString();
-  r.checkOut = null;
-  r.status = 'ocupada';
-  r.consumos = [];
-  r.paymentStatus = 'pendiente';
-  r.payments = [];
-  r.userId = currentUser?.id;
-  r.userName = currentUser?.name;
-  if(ci.mode === 'hora'){
-    r.paidHours = ci.paidHours;
-    r.hourlyRate = ci.hourlyRate;
-    r.packageEndTime = null; r.packagePrice = null;
-  } else if(ci.mode === 'corrida'){
-    r.paidHours = null;
-    r.hourlyRate = ci.hourlyRate;
-    r.packageEndTime = null; r.packagePrice = null;
-  } else {
-    r.packageEndTime = ci.packageEndTime;
-    r.packagePrice = ci.packagePrice;
-    r.paidHours = null; r.hourlyRate = null;
+
+  ciLock = true;
+  try {
+    r.mode = ci.mode;
+    r.checkIn = new Date(ci.entryTs).toISOString();
+    r.checkOut = null;
+    r.status = 'ocupada';
+    r.consumos = [];
+    r.paymentStatus = 'pendiente';
+    r.payments = [];
+    r.userId = currentUser?.id;
+    r.userName = currentUser?.name;
+
+    if(ci.mode === 'hora'){
+      r.paidHours = ci.paidHours;
+      r.hourlyRate = ci.hourlyRate;
+      r.packageEndTime = null; r.packagePrice = null;
+    } else if(ci.mode === 'corrida'){
+      r.paidHours = null;
+      r.hourlyRate = ci.hourlyRate;
+      r.packageEndTime = null; r.packagePrice = null;
+    } else {
+      r.packageEndTime = ci.packageEndTime;
+      r.packagePrice = ci.packagePrice;
+      r.paidHours = null; r.hourlyRate = null;
+    }
+
+    const roomNum = r.num;
+    const modeLabel = ci.mode === 'paquete' ? 'Paquete' : (ci.mode === 'corrida' ? 'Corrida' : ci.paidHours + 'h');
+
+    save();
+    closeModal();
+    renderAll();
+    toast(`Pieza ${roomNum} · ${modeLabel}`);
+  } finally {
+    ciLock = false;
   }
-  save(); closeModal(); renderAll();
-  toast(`Pieza ${r.num} · ${ci.mode === 'paquete' ? 'Paquete' : ci.mode === 'corrida' ? 'Corrida' : ci.paidHours + 'h'}`);
 }
 
 /* =========================================================
-   CHECK-OUT con EDICIÓN DE HORAS
+   CHECK-OUT con guards
    ========================================================= */
 let co = null;
+
 function openCheckOut(id){
+  if(coLock) return;
   const r = db.rooms.find(x => x.id === id);
+  if(!r){ toast('Pieza no encontrada'); return; }
+  if(r.status !== 'ocupada'){ toast('Esa pieza está libre'); return; }
+
   const refTs = r.checkOut ? new Date(r.checkOut).getTime() : Date.now();
+  const now = new Date();
   co = {
     id, exitTs: refTs,
     captured: r.checkOut ? true : false,
     payEfectivo: 0, payQr: 0,
-    // Valores editables (se inicializan con las horas reales)
     entryTime: fmtTime(r.checkIn),
-    exitTime: r.checkOut ? fmtTime(r.checkOut) : (function(){ const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); })()
+    exitTime: r.checkOut ? fmtTime(r.checkOut) : (pad(now.getHours()) + ':' + pad(now.getMinutes()))
   };
   const calc = calcRoomAmount(r, refTs);
   const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
   co.payEfectivo = calc.amount + consTotal;
   renderCheckOutSheet();
 }
+
 function renderCheckOutSheet(){
+  if(!co){ closeModal(); return; }
   const r = db.rooms.find(x => x.id === co.id);
+  if(!r){ closeModal(); return; }
+
   const calc = calcRoomAmount(r, co.exitTs);
   const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
   const grand = calc.amount + consTotal;
@@ -1559,7 +1610,6 @@ function renderCheckOutSheet(){
     ? `<div class="cons-list">${r.consumos.map((c,i) => `<div class="cons-item"><span>${esc(c.name)}</span><span class="q">×${c.qty}</span><span class="p">${money(c.price*c.qty)}</span><button onclick="delConsumo(${i})">✕</button></div>`).join('')}</div>`
     : `<p class="hint" style="margin:0 0 14px">Sin consumos.</p>`;
 
-  // Desglose según modo
   let breakdownHTML = '';
   if(r.mode === 'paquete'){
     breakdownHTML = `
@@ -1572,7 +1622,6 @@ function renderCheckOutSheet(){
       ${consTotal > 0 ? `<div class="bd-row extra"><span>Consumos</span><span>${money(consTotal)}</span></div>` : ''}
       <div class="bd-row total-row"><span>Total</span><span>${money(grand)}</span></div>`;
   } else {
-    // modo hora
     breakdownHTML = `
       <div class="bd-row"><span>${r.paidHours}h × ${money(r.hourlyRate)}</span><span>${money(calc.baseCharge)}</span></div>
       ${calc.extraCharge > 0 ? `<div class="bd-row extra"><span>Extra ${calc.extraBlocks}×30m</span><span>${money(calc.extraCharge)}</span></div>` : ''}
@@ -1595,7 +1644,6 @@ function renderCheckOutSheet(){
       ${Math.abs(diff) > 0.01 ? `<div class="pay-summary"><span>Diferencia</span><b class="err">${money(diff)}</b></div>` : ''}
     </div>`;
 
-  // Panel de edición de horas
   const editHoursHTML = r.mode !== 'paquete' ? `
     <div class="group-title" style="padding-left:4px">Editar horas (si hay errores)</div>
     <div class="edit-hours-panel">
@@ -1613,7 +1661,6 @@ function renderCheckOutSheet(){
     </div>
   ` : '';
 
-  // Botón agregar producto
   const addProdBtnHTML = `
     <button class="btn-add-product" onclick="openQuickProduct('${r.id}')">
       <span class="pap-icon">＋</span>
@@ -1635,10 +1682,11 @@ function renderCheckOutSheet(){
   `, `<button class="btn purple" onclick="doPorCobrar()">Por cobrar</button><button class="btn primary" onclick="doConfirmarCobro()">Cobrar</button>`);
 }
 
-/* Editar horas manualmente */
 function editHours(which, value){
+  if(!co) return;
   const r = db.rooms.find(x => x.id === co.id);
   if(!r) return;
+  if(!value) return;
   const [hh, mm] = value.split(':').map(Number);
   const baseDate = which === 'entry' ? new Date(r.checkIn) : new Date(co.exitTs);
   baseDate.setHours(hh, mm, 0, 0);
@@ -1650,7 +1698,6 @@ function editHours(which, value){
     co.captured = true;
     co.exitTime = value;
   }
-  // Recalcular pago efectivo
   const calc = calcRoomAmount(r, co.exitTs);
   const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
   co.payEfectivo = calc.amount + consTotal;
@@ -1661,15 +1708,20 @@ function editHours(which, value){
 }
 
 function updatePay(val, method){
+  if(!co) return;
   const num = Number(val) || 0;
   if(method === 'efectivo') co.payEfectivo = num;
   else co.payQr = num;
   renderCheckOutSheet();
 }
+
 function addConsumo(){
+  if(!co) return;
   const r = db.rooms.find(x => x.id === co.id);
-  const pid = $('#coProd').value;
-  const qty = Math.max(1, Number($('#coQty').value) || 1);
+  if(!r) return;
+  const pid = $('#coProd')?.value;
+  if(!pid) return;
+  const qty = Math.max(1, Number($('#coQty')?.value) || 1);
   const p = db.products.find(x => x.id === pid);
   if(!p) return;
   if(qty > stockOf(pid)){ toast('Stock insuficiente'); return; }
@@ -1679,21 +1731,38 @@ function addConsumo(){
   save();
   renderCheckOutSheet();
 }
+
 function delConsumo(i){
+  if(!co) return;
   const r = db.rooms.find(x => x.id === co.id);
+  if(!r) return;
   r.consumos.splice(i,1);
   save();
   renderCheckOutSheet();
 }
+
 function doPorCobrar(){
+  if(coLock) return;
+  if(!co){ return; }
   const r = db.rooms.find(x => x.id === co.id);
-  r.checkOut = new Date(co.exitTs).toISOString();
-  r.paymentStatus = 'pendiente';
-  save(); closeModal(); renderAll();
-  toast(`Pieza ${r.num} marcada POR COBRAR`);
+  if(!r){ closeModal(); return; }
+  coLock = true;
+  try {
+    r.checkOut = new Date(co.exitTs).toISOString();
+    r.paymentStatus = 'pendiente';
+    save(); closeModal(); renderAll();
+    toast(`Pieza ${r.num} marcada POR COBRAR`);
+  } finally {
+    coLock = false;
+  }
 }
+
 function doConfirmarCobro(){
+  if(coLock) return;
+  if(!co){ return; }
   const r = db.rooms.find(x => x.id === co.id);
+  if(!r){ closeModal(); return; }
+
   const refTs = co.exitTs;
   const calc = calcRoomAmount(r, refTs);
   const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
@@ -1706,10 +1775,17 @@ function doConfirmarCobro(){
     if(!confirm(`El pago (${money(pagado)}) no coincide con el total (${money(grand)}).\n\n¿Registrar igual?`)) return;
   }
   if(!payments.length){ toast('Ingresa un monto de pago'); return; }
-  if(!r.checkOut) r.checkOut = new Date(refTs).toISOString();
-  registerSale(r, pagado, payments, refTs);
-  closeModal();
-  toast(`Pieza ${r.num} cobrada · ${money(pagado)}`);
+
+  coLock = true;
+  try {
+    if(!r.checkOut) r.checkOut = new Date(refTs).toISOString();
+    const roomNum = r.num;
+    registerSale(r, pagado, payments, refTs);
+    closeModal();
+    toast(`Pieza ${roomNum} cobrada · ${money(pagado)}`);
+  } finally {
+    coLock = false;
+  }
 }
 
 /* TIMERS */
