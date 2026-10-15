@@ -522,6 +522,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
   <section id="productos" class="view">
     <div class="page-title"><div><h1>Productos</h1><p>Inventario y kardex individual</p></div></div>
     <div class="fab-row"><button class="btn primary sm" onclick="openNewProduct()">＋ Nuevo producto</button></div>
+    <div class="field"><label>Buscar producto</label><input id="productSearch" type="search" placeholder="Escribe el nombre, por ejemplo: cer" oninput="renderProducts()" autocomplete="off"><p class="helper">Busca por nombre y usa Entrada, Salida o Kardex para editar sus movimientos.</p></div>
     <div class="group">
       <div class="table-wrap">
         <table>
@@ -1644,22 +1645,18 @@ function renderCheckOutSheet(){
       ${Math.abs(diff) > 0.01 ? `<div class="pay-summary"><span>Diferencia</span><b class="err">${money(diff)}</b></div>` : ''}
     </div>`;
 
-  const editHoursHTML = r.mode !== 'paquete' ? `
-    <div class="group-title" style="padding-left:4px">Editar horas (si hay errores)</div>
+  const editHoursHTML = !r.checkOut ? `
+    <div class="group-title" style="padding-left:4px">Editar hora de ingreso</div>
     <div class="edit-hours-panel">
       <div class="eh-row">
-        <div>
-          <div class="eh-lbl">H. Ingreso</div>
-          <input type="time" id="coEntryTime" value="${co.entryTime}" onchange="editHours('entry', this.value)">
-        </div>
-        <div>
-          <div class="eh-lbl">${r.mode === 'hora' ? 'H. Salida' : 'H. Actual / Fin'}</div>
-          <input type="time" id="coExitTime" value="${co.exitTime}" onchange="editHours('exit', this.value)">
-        </div>
+        <div><div class="eh-lbl">Hora de ingreso (24 h)</div><input type="time" id="coEntryTime" step="60" value="${co.entryTime}" onchange="editHours('entry', this.value)"></div>
+        <div><div class="eh-lbl">Hora actual en vivo</div><div id="coLiveClock" style="padding:12px 4px;text-align:center;font-size:20px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums">${timeStr(Date.now())}</div></div>
       </div>
-      <p class="helper" style="text-align:center;padding-top:8px">Ajusta manualmente si hubo error al capturar</p>
+      <div class="field" style="margin:14px 0 0"><label>Observaciones del período</label><input id="coObservation" placeholder="Ej.: vidrio roto, daño, incidencia..." value="${esc(r.periodObservation || '')}" autocomplete="off" onchange="savePeriodObservation()"></div>
+      <p class="helper" style="text-align:center;padding-top:8px">Solo se modifica el ingreso. La hora actual sigue corriendo automáticamente.</p>
+      ${Array.isArray(r.hourEdits) && r.hourEdits.length ? `<div style="margin-top:12px"><div class="eh-lbl" style="text-align:left">Historial de ajustes</div>${r.hourEdits.slice().reverse().map(h=>`<div style="padding:8px 0;border-top:1px solid var(--sep);font-size:12px;color:var(--text-2)"><b>${esc(h.from || '--:--')} → ${esc(h.to || '--:--')}</b> · ${esc(fmtDT(h.at))}${h.observation ? `<div>${esc(h.observation)}</div>` : ''}</div>`).join('')}</div>` : ''}
     </div>
-  ` : '';
+  ` : `<div class="edit-hours-panel"><b>Ingreso:</b> ${esc(fmtTime(r.checkIn))} · <b>Fin:</b> ${esc(fmtTime(r.checkOut))}<p class="helper">El período ya está cerrado; las horas no se modifican desde esta pantalla.</p></div>`;
 
   const addProdBtnHTML = `
     <button class="btn-add-product" onclick="openQuickProduct('${r.id}')">
@@ -1682,29 +1679,39 @@ function renderCheckOutSheet(){
   `, `<button class="btn purple" onclick="doPorCobrar()">Por cobrar</button><button class="btn primary" onclick="doConfirmarCobro()">Cobrar</button>`);
 }
 
-function editHours(which, value){
+function savePeriodObservation(){
   if(!co) return;
   const r = db.rooms.find(x => x.id === co.id);
-  if(!r) return;
-  if(!value) return;
+  if(!r || r.checkOut) return;
+  r.periodObservation = ($('#coObservation')?.value || '').trim();
+  if(!Array.isArray(r.hourEdits)) r.hourEdits = [];
+  r.hourEdits.push({id:uid(), from:fmtTime(r.checkIn), to:fmtTime(r.checkIn), at:new Date().toISOString(), observation:r.periodObservation, userId:currentUser?.id, userName:currentUser?.name});
+  save();
+  toast('Observación guardada');
+}
+function editHours(which, value){
+  if(!co || which !== 'entry') return;
+  const r = db.rooms.find(x => x.id === co.id);
+  if(!r || r.checkOut || !value) return;
+  const observation = ($('#coObservation')?.value || '').trim();
+  const oldTime = fmtTime(r.checkIn);
+  const newDate = new Date(r.checkIn);
   const [hh, mm] = value.split(':').map(Number);
-  const baseDate = which === 'entry' ? new Date(r.checkIn) : new Date(co.exitTs);
-  baseDate.setHours(hh, mm, 0, 0);
-  if(which === 'entry'){
-    r.checkIn = baseDate.toISOString();
-    co.entryTime = value;
-  } else {
-    co.exitTs = baseDate.getTime();
-    co.captured = true;
-    co.exitTime = value;
-  }
+  newDate.setHours(hh, mm, 0, 0);
+  if(newDate.getTime() - Date.now() > 12 * 60 * 60 * 1000) newDate.setDate(newDate.getDate() - 1);
+  r.checkIn = newDate.toISOString();
+  r.periodObservation = observation;
+  if(!Array.isArray(r.hourEdits)) r.hourEdits = [];
+  r.hourEdits.push({id:uid(), from:oldTime, to:value, at:new Date().toISOString(), observation, userId:currentUser?.id, userName:currentUser?.name});
+  co.entryTime = fmtTime(r.checkIn);
+  co.exitTs = Date.now();
   const calc = calcRoomAmount(r, co.exitTs);
   const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
   co.payEfectivo = calc.amount + consTotal;
   co.payQr = 0;
   save();
   renderCheckOutSheet();
-  toast('Hora actualizada');
+  toast('Ingreso y observaciones guardados');
 }
 
 function updatePay(val, method){
@@ -1790,6 +1797,8 @@ function doConfirmarCobro(){
 
 /* TIMERS */
 function updateTimers(){
+  const coClock = document.getElementById("coLiveClock");
+  if(coClock && co){ const activeRoom = db.rooms.find(x => x.id === co.id); if(activeRoom && !activeRoom.checkOut) coClock.textContent = timeStr(Date.now()); }
   const now = Date.now();
   db.rooms.forEach(r => {
     if(r.status !== 'ocupada') return;
@@ -1823,7 +1832,10 @@ function stockOf(pid){ return db.movements.filter(m => m.productId === pid).redu
 function renderProducts(){
   const body = $('#prodBody');
   if(!db.products.length){ body.innerHTML = `<tr><td colspan="6" class="empty">Sin productos. Agrega el primero.</td></tr>`; return; }
-  body.innerHTML = db.products.map(p => {
+  const query = ($('#productSearch')?.value || '').trim().toLocaleLowerCase('es');
+  const filtered = db.products.filter(p => p.name.toLocaleLowerCase('es').includes(query));
+  if(!filtered.length){ body.innerHTML = `<tr><td colspan="6" class="empty">No se encontraron productos con “${esc(query)}”.</td></tr>`; return; }
+  body.innerHTML = filtered.map(p => {
     const st = stockOf(p.id);
     const bajo = st <= 3;
     const util = p.price - p.cost;
@@ -1902,6 +1914,40 @@ function doSalida(id){
   db.movements.push({ id: uid(), productId: id, type: 'salida', qty, unitCost: p.cost, date: new Date().toISOString(), note, userId: currentUser?.id });
   save(); closeModal(); renderAll(); toast(`−${qty} del stock`);
 }
+function editKardexMovement(movementId){
+  const m = db.movements.find(x => x.id === movementId);
+  if(!m || !['entrada','salida'].includes(m.type)){ toast('Este movimiento no se puede editar aquí'); return; }
+  const p = db.products.find(x => x.id === m.productId);
+  if(!p) return;
+  openSheet(`Editar ${m.type === 'entrada' ? 'entrada' : 'salida'} · ${esc(p.name)}`, `
+    <div class="field"><label>Producto</label><input value="${esc(p.name)}" disabled></div>
+    <div class="field"><label>Cantidad</label><input id="kmQty" type="number" min="1" step="1" value="${m.qty}"></div>
+    ${m.type === 'entrada' ? `<div class="field"><label>Costo unitario (Bs)</label><input id="kmCost" type="number" min="0" step="0.01" value="${Number(m.unitCost ?? p.cost)}"></div>` : ''}
+    <div class="field"><label>Observación / motivo</label><input id="kmNote" value="${esc(m.note || '')}" placeholder="Motivo del ajuste"></div>
+    <p class="helper">El stock se recalculará con la cantidad corregida. Los movimientos de venta son automáticos y no se editan aquí.</p>
+  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveKardexMovement('${movementId}')">Guardar cambios</button>`);
+}
+function saveKardexMovement(movementId){
+  const m = db.movements.find(x => x.id === movementId);
+  if(!m || !['entrada','salida'].includes(m.type)) return;
+  const qty = Number($('#kmQty')?.value);
+  const note = ($('#kmNote')?.value || '').trim();
+  if(!Number.isFinite(qty) || qty <= 0){ toast('La cantidad debe ser mayor que cero'); return; }
+  const delta = qty - Number(m.qty);
+  if(m.type === 'salida' && delta > stockOf(m.productId)){ toast('El stock no alcanza para esa corrección'); return; }
+  m.qty = qty;
+  m.note = note || (m.type === 'entrada' ? 'Entrada corregida' : 'Salida corregida');
+  if(m.type === 'entrada'){
+    const cost = Number($('#kmCost')?.value);
+    if(Number.isFinite(cost) && cost >= 0) m.unitCost = cost;
+  }
+  m.editedAt = new Date().toISOString();
+  m.editedBy = currentUser?.id;
+  save();
+  openKardex(m.productId);
+  renderAll();
+  toast('Movimiento de kardex actualizado');
+}
 function openKardex(id){
   const p = db.products.find(x => x.id === id);
   const movs = db.movements.filter(m => m.productId === id).sort((a,b) => new Date(a.date) - new Date(b.date));
@@ -1916,15 +1962,16 @@ function openKardex(id){
       <td><span style="color:${color};font-weight:700">${label}</span></td>
       <td class="num" style="color:${color}">${sign}${m.qty}</td>
       <td class="num" style="font-weight:800">${bal}</td>
+      <td>${m.type === 'entrada' || m.type === 'salida' ? `<button class="row-btn" onclick="editKardexMovement('${m.id}')">Editar</button>` : `<span style="color:var(--text-3);font-size:11px">Automático</span>`}</td>
     </tr>`;
-  }).join('') || `<tr><td colspan="4" class="empty">Sin movimientos</td></tr>`;
+  }).join('') || `<tr><td colspan="5" class="empty">Sin movimientos</td></tr>`;
   openSheet(`Kardex · ${esc(p.name)}`, `
     <div class="info-grid cols-3">
       <div><span>Stock</span><b>${stockOf(id)}</b></div>
       <div><span>Costo</span><b>${money(p.cost)}</b></div>
       <div><span>Precio</span><b>${money(p.price)}</b></div>
     </div>
-    <div class="cons-list"><div class="table-wrap"><table style="font-size:12.5px"><thead><tr><th>Fecha</th><th>Tipo</th><th class="num">Cant.</th><th class="num">Saldo</th></tr></thead><tbody>${rows}</tbody></table></div></div>
+    <div class="cons-list"><div class="table-wrap"><table style="font-size:12.5px"><thead><tr><th>Fecha</th><th>Tipo</th><th class="num">Cant.</th><th class="num">Saldo</th><th>Acción</th></tr></thead><tbody>${rows}</tbody></table></div></div>
     <button class="btn danger block" style="margin:8px 0 4px" onclick="delProduct('${id}')">Eliminar producto</button>
   `, `<button class="btn primary" onclick="closeModal()">Cerrar</button>`);
 }
@@ -2191,6 +2238,7 @@ document.addEventListener('keydown', e => {
     setTimeout(()=>$('#loginUser').focus(), 300);
   }
   updateTimers();
+  setInterval(updateTimers, 1000);
 })();
 </script>
 </body>
