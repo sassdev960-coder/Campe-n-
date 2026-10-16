@@ -549,6 +549,16 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
       <button class="btn primary sm" onclick="window.print()">Imprimir</button>
     </div>
     <div class="stats" id="repStats"></div>
+    <div class="group-title">Ingresos detallados por pieza</div>
+    <div class="group" style="margin-bottom:20px">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Pieza</th><th class="num">Cobros</th><th class="num">Hospedaje</th><th class="num">Consumos</th><th class="num">Total</th><th class="num">Efectivo</th><th class="num">QR</th><th class="num">Utilidad</th></tr></thead>
+          <tbody id="repRooms"></tbody>
+        </table>
+      </div>
+      <p class="helper" style="padding:8px 12px;margin:0">El total por pieza suma hospedaje y consumos. Efectivo y QR muestran los importes recibidos en el cobro de esa pieza, incluidos los consumos cobrados junto con la estadía.</p>
+    </div>
     <div class="group-title">Resumen por día</div>
     <div class="group" style="margin-bottom:20px">
       <div class="table-wrap">
@@ -571,7 +581,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
     <div class="group">
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Fecha</th><th>Detalle</th><th class="num">Monto</th><th class="num">Util.</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th class="num">Monto</th><th class="num">Util.</th></tr></thead>
           <tbody id="repDetail"></tbody>
         </table>
       </div>
@@ -1329,6 +1339,8 @@ function quickPay(id, method){
 
 function registerSale(r, total, payments, refTs){
   const iso = new Date(refTs).toISOString();
+  const consumosTotal = (r.consumos || []).reduce((sum,c) => sum + (Number(c.price) || 0) * (Number(c.qty) || 0), 0);
+  const ingresoHospedaje = Math.max(0, (Number(total) || 0) - consumosTotal);
   const detailParts = [`Pieza ${r.num}`];
   if(r.mode === 'paquete') detailParts.push('PAQUETE');
   else if(r.mode === 'corrida') detailParts.push('CORRIDA ' + elapsed(refTs - new Date(r.checkIn).getTime()));
@@ -1338,7 +1350,7 @@ function registerSale(r, total, payments, refTs){
   db.sales.push({
     id: uid(), ts: iso, day: dayKey(iso), type: 'habitacion',
     detail: detailParts.join(' · '),
-    amount: total, cost: 0,
+    amount: ingresoHospedaje, lodgingAmount: ingresoHospedaje, totalCollected: Number(total) || 0, cost: 0,
     userId: currentUser?.id, userName: currentUser?.name, shiftId: currentShift?.id,
     roomNum: r.num, payments: payments
   });
@@ -1633,7 +1645,7 @@ function renderCheckOutSheet(){
 
   const payLinesHTML = `
     <div class="pay-lines">
-      <p class="helper" style="margin:0 0 10px">Puedes dividir el pago entre efectivo y QR. Escribe cuánto paga por cada método.</p>
+      <p class="helper" style="margin:0 0 10px">Escribe lo que recibes por uno de los métodos y el otro se completará automáticamente con la diferencia para cubrir el total.</p>
       <div class="pay-line">
         <span class="pl-method" style="color:var(--green)">Efectivo</span>
         <input type="number" inputmode="decimal" min="0" step="0.5" id="coPayEfectivo" value="${Number(co.payEfectivo || 0).toFixed(2)}" oninput="updatePay(this.value,'efectivo')">
@@ -1643,7 +1655,7 @@ function renderCheckOutSheet(){
         <input type="number" inputmode="decimal" min="0" step="0.5" id="coPayQr" value="${Number(co.payQr || 0).toFixed(2)}" oninput="updatePay(this.value,'qr')">
       </div>
       <div class="pay-summary"><span>Pagado</span><b id="coPaySummary" class="${Math.abs(diff) < 0.01 ? 'ok' : 'err'}">${money(pagado)} / ${money(grand)}</b></div>
-      <div class="pay-summary" id="coPayDiffRow" style="${Math.abs(diff) > 0.01 ? '' : 'display:none'}"><span>Diferencia</span><b id="coPayDiff" class="err">${money(diff)}</b></div>
+      <div class="pay-summary" id="coPayDiffRow" style="${Math.abs(diff) > 0.01 ? '' : 'display:none'}"><span>${diff >= 0 ? 'Falta por pagar' : 'Excedente'}</span><b id="coPayDiff" class="err">${money(Math.abs(diff))}</b></div>
     </div>`;
 
   const editHoursHTML = !r.checkOut ? `
@@ -1733,22 +1745,38 @@ function updatePay(val, method){
   if(!co) return;
   const parsed = val === '' ? 0 : Number(val);
   const num = Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
-  if(method === 'efectivo') co.payEfectivo = num;
-  else if(method === 'qr') co.payQr = num;
-
-  // Actualiza únicamente el resumen; no vuelve a dibujar los inputs mientras se escribe.
   const r = db.rooms.find(x => x.id === co.id);
   if(!r) return;
   const calc = calcRoomAmount(r, co.exitTs);
   const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
-  const grand = calc.amount + consTotal;
+  const grand = Math.max(0, calc.amount + consTotal);
+
+  // El campo que el usuario está editando manda; el otro se calcula como diferencia.
+  // Si el importe supera el total, el otro método queda en cero y el resumen muestra el excedente.
+  if(method === 'efectivo'){
+    co.payEfectivo = num;
+    co.payQr = Math.max(0, Math.round((grand - num) * 100) / 100);
+  } else if(method === 'qr'){
+    co.payQr = num;
+    co.payEfectivo = Math.max(0, Math.round((grand - num) * 100) / 100);
+  }
+
+  const cashInput = document.getElementById('coPayEfectivo');
+  const qrInput = document.getElementById('coPayQr');
+  // Actualizamos solo el campo contrario para no interrumpir la escritura del usuario.
+  if(method === 'efectivo' && qrInput) qrInput.value = Number(co.payQr).toFixed(2);
+  if(method === 'qr' && cashInput) cashInput.value = Number(co.payEfectivo).toFixed(2);
+
   const pagado = (Number(co.payEfectivo) || 0) + (Number(co.payQr) || 0);
   const diff = grand - pagado;
   const summary = document.getElementById('coPaySummary');
   if(summary){ summary.textContent = `${money(pagado)} / ${money(grand)}`; summary.className = Math.abs(diff) < 0.01 ? 'ok' : 'err'; }
   const diffRow = document.getElementById('coPayDiffRow');
   const diffText = document.getElementById('coPayDiff');
-  if(diffRow && diffText){ diffRow.style.display = Math.abs(diff) > 0.01 ? '' : 'none'; diffText.textContent = money(diff); }
+  if(diffRow && diffText){
+    diffRow.style.display = Math.abs(diff) > 0.01 ? '' : 'none';
+    diffText.textContent = diff > 0 ? `Falta ${money(diff)}` : diff < 0 ? `Excedente ${money(Math.abs(diff))}` : money(0);
+  }
 }
 
 function addConsumo(){
@@ -2112,7 +2140,23 @@ function setRange(kind){
 function renderReports(){
   initReportDates();
   const from = $('#repFrom').value, to = $('#repTo').value;
-  const sales = db.sales.filter(s => s.day >= from && s.day <= to);
+  const rawSales = db.sales.filter(s => s.day >= from && s.day <= to);
+  // Link product consumption rows to the same checkout timestamp/piece. This also corrects reports
+  // for records created by older versions, which included consumption in the room sale and again as product sales.
+  const linkedProductAmounts = new Map();
+  rawSales.filter(s => s.type === 'producto').forEach(s => {
+    const match = String(s.detail || '').match(/(?:·|-)\s*Pieza\s+(.+)$/i);
+    if(!match) return;
+    const key = `${s.ts}|${String(match[1]).trim()}`;
+    linkedProductAmounts.set(key, (linkedProductAmounts.get(key) || 0) + (Number(s.amount) || 0));
+  });
+  const sales = rawSales.map(s => {
+    if(s.type !== 'habitacion') return s;
+    const roomNum = String(s.roomNum ?? (String(s.detail || '').match(/Pieza\s+([^·]+)/i)?.[1] || 'Sin pieza')).trim();
+    const linkedProducts = linkedProductAmounts.get(`${s.ts}|${roomNum}`) || 0;
+    const lodging = s.lodgingAmount != null ? Number(s.lodgingAmount) || 0 : Math.max(0, (Number(s.amount) || 0) - linkedProducts);
+    return { ...s, amount: lodging, lodgingAmount: lodging };
+  });
   const expenses = db.expenses.filter(g => g.day >= from && g.day <= to);
   const deposits = db.deposits.filter(d => d.day >= from && d.day <= to);
   const ingresos = sales.reduce((a,s) => a + s.amount, 0);
@@ -2135,6 +2179,51 @@ function renderReports(){
     <div class="stat"><div class="lbl">Utilidad bruta</div><div class="val c-blue" style="font-size:18px">${money(utilidadBruta)}</div></div>
     <div class="stat"><div class="lbl">Depósitos</div><div class="val c-muted" style="font-size:18px">${money(depositos)}</div></div>
   `;
+  // Resumen por pieza: separa hospedaje, consumos, métodos de pago y utilidad.
+  const roomRows = new Map();
+  const getRoomRow = (num) => {
+    const key = String(num ?? 'Sin pieza');
+    if(!roomRows.has(key)) roomRows.set(key, { num:key, stays:0, hospedaje:0, consumos:0, efectivo:0, qr:0, costo:0 });
+    return roomRows.get(key);
+  };
+  sales.filter(s => s.type === 'habitacion').forEach(s => {
+    const row = getRoomRow(s.roomNum ?? (String(s.detail || '').match(/Pieza\s+([^·]+)/i)?.[1] || 'Sin pieza').trim());
+    row.stays += 1;
+    row.hospedaje += Number(s.amount) || 0;
+    row.cost += Number(s.cost) || 0;
+    (Array.isArray(s.payments) ? s.payments : []).forEach(pay => {
+      const amount = Number(pay.amount) || 0;
+      if(String(pay.method).toLowerCase() === 'efectivo') row.efectivo += amount;
+      else if(String(pay.method).toLowerCase() === 'qr') row.qr += amount;
+    });
+  });
+  sales.filter(s => s.type === 'producto').forEach(s => {
+    const match = String(s.detail || '').match(/(?:·|-)\s*Pieza\s+(.+)$/i);
+    if(!match) return;
+    const row = getRoomRow(match[1].trim());
+    row.consumos += Number(s.amount) || 0;
+    row.cost += Number(s.cost) || 0;
+  });
+  const roomList = [...roomRows.values()].map(r => ({ ...r, total:r.hospedaje+r.consumos, util:r.hospedaje+r.consumos-r.cost }))
+    .sort((a,b) => String(a.num).localeCompare(String(b.num), undefined, {numeric:true}));
+  const roomTotals = roomList.reduce((a,r) => ({
+    stays:a.stays+r.stays, hospedaje:a.hospedaje+r.hospedaje, consumos:a.consumos+r.consumos,
+    total:a.total+r.total, efectivo:a.efectivo+r.efectivo, qr:a.qr+r.qr, util:a.util+r.util
+  }), {stays:0,hospedaje:0,consumos:0,total:0,efectivo:0,qr:0,util:0});
+  const repRooms = $('#repRooms');
+  if(repRooms) repRooms.innerHTML = roomList.length ? roomList.map(r => `<tr>
+    <td style="font-weight:700">Pieza ${esc(r.num)}</td>
+    <td class="num">${r.stays}</td>
+    <td class="num">${money(r.hospedaje)}</td>
+    <td class="num">${money(r.consumos)}</td>
+    <td class="num" style="font-weight:700">${money(r.total)}</td>
+    <td class="num" style="color:var(--green)">${money(r.efectivo)}</td>
+    <td class="num" style="color:var(--blue)">${money(r.qr)}</td>
+    <td class="num" style="color:${r.util >= 0 ? 'var(--green)' : 'var(--red)'};font-weight:700">${money(r.util)}</td>
+  </tr>`).join('') + `<tr style="font-weight:800;border-top:2px solid var(--sep)">
+    <td>TOTAL</td><td class="num">${roomTotals.stays}</td><td class="num">${money(roomTotals.hospedaje)}</td><td class="num">${money(roomTotals.consumos)}</td><td class="num">${money(roomTotals.total)}</td><td class="num">${money(roomTotals.efectivo)}</td><td class="num">${money(roomTotals.qr)}</td><td class="num">${money(roomTotals.util)}</td>
+  </tr>` : '<tr><td colspan="8" class="empty">Sin cobros de piezas ni consumos asignados en el rango.</td></tr>';
+
   const byDay = {};
   sales.forEach(s => {
     if(!byDay[s.day]) byDay[s.day] = { hab:0, prod:0, gastos:0, util:0 };
