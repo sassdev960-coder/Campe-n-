@@ -666,8 +666,8 @@ function seed(){
   return {
     rooms: Array.from({length:10}, (_,i) => ({
       id:'r'+(i+1), num:pad(i+1), name: 'Pieza ' + pad(i+1),
-      price:60, rate:60, status:'libre',
-      mode: null, checkIn: null, checkOut: null, paidHours: null, hourlyRate: 60,
+      price:30, rate:30, status:'libre',
+      mode: null, checkIn: null, checkOut: null, paidHours: null, hourlyRate: 30,
       packageEndTime: null, packagePrice: null, consumos: [],
       paymentStatus: 'pendiente', payments: [], userId: null, userName: null
     })),
@@ -842,7 +842,7 @@ function openEditRoom(id){
   openSheet(r ? `Editar pieza ${r.num}` : 'Nueva pieza', `
     <div class="row2">
       <div class="field"><label>Número</label><input id="erNum" value="${r ? esc(r.num) : nextNum}" inputmode="numeric" autocomplete="off"></div>
-      <div class="field"><label>Tarifa por hora (Bs)</label><input id="erPrice" type="number" inputmode="decimal" min="0" step="1" value="${r ? r.price : 60}"></div>
+      <div class="field"><label>Tarifa de pieza (Bs 30 o Bs 40)</label><select id="erPrice"><option value="30" ${(r ? Number(r.price) : 30) === 30 ? "selected" : ""}>Tarifa Bs 30</option><option value="40" ${(r ? Number(r.price) : 30) === 40 ? "selected" : ""}>Tarifa Bs 40</option></select><p class="helper">La tarifa seleccionada define la tabla de precios y el paquete nocturno.</p></div>
     </div>
     <div class="field"><label>Nombre / descripción</label><input id="erName" value="${r ? esc(r.name) : ''}" placeholder="Ej: Pieza 11 — Suite" autocomplete="off"></div>
     ${r ? `<button class="btn danger block" style="margin-top:8px" onclick="deleteRoom('${r.id}')">Eliminar pieza</button>` : ''}
@@ -965,53 +965,77 @@ setInterval(tickLiveClocks, 1000);
 /* =========================================================
    CÁLCULO DE MONTOS
    ========================================================= */
+const TARIFF_TABLES = {
+  30: [0,30,60,90,115,140,165,185,200,225,250],
+  40: [0,40,80,115,145,175,205,235,260,280,300]
+};
+const NIGHT_PRICES = {30:130, 40:150};
+function tariffPrice(rate, hours){
+  const base = Number(rate) || 30;
+  const table = TARIFF_TABLES[base];
+  const h = Math.max(0, Math.min(10, Math.ceil(Number(hours) || 0)));
+  if(h === 0) return 0;
+  if(table) return table[h];
+  return h * base;
+}
+function isNightWindow(ts){
+  const d = new Date(ts);
+  const mins = d.getHours()*60 + d.getMinutes();
+  return mins >= 22*60 || mins < 7*60;
+}
+function calcTariffWithNight(entryTs, endTs, rate){
+  const duration = Math.max(0, endTs-entryTs);
+  if(!duration) return {amount:0,hours:0,detail:'tarifa por tiempo',night:false,normalAmount:0,nightAmount:0};
+  const base = Number(rate) === 40 ? 40 : 30;
+  const entry = new Date(entryTs);
+  const end = new Date(endTs);
+  let cursor = new Date(entryTs);
+  let normalMs = 0, nightCount = 0, nightAmount = 0, normalAmount = 0;
+  // Divide la estadía en tramos normales y ventanas nocturnas (22:00–07:00).
+  while(cursor.getTime() < endTs){
+    const dayStart = new Date(cursor); dayStart.setHours(0,0,0,0);
+    const nightStart = new Date(dayStart); nightStart.setHours(22,0,0,0);
+    const nightEnd = new Date(dayStart); nightEnd.setDate(nightEnd.getDate()+1); nightEnd.setHours(7,0,0,0);
+    let segmentEnd, isNight;
+    const mins = cursor.getHours()*60 + cursor.getMinutes() + cursor.getSeconds()/60;
+    if(mins >= 22*60){ segmentEnd = nightEnd; isNight = true; }
+    else if(mins < 7*60){ const todaySeven = new Date(dayStart); todaySeven.setHours(7,0,0,0); segmentEnd = todaySeven; isNight = true; }
+    else { segmentEnd = nightStart; isNight = false; }
+    const actualEnd = Math.min(endTs, segmentEnd.getTime());
+    if(actualEnd <= cursor.getTime()) break;
+    const ms = actualEnd - cursor.getTime();
+    if(isNight){ nightCount++; nightAmount += NIGHT_PRICES[base]; }
+    else { normalAmount += tariffPrice(base, ms/3600000); normalMs += ms; }
+    cursor = new Date(actualEnd);
+  }
+  // La tarifa normal tiene un máximo equivalente a 10 horas; las ventanas nocturnas se cobran como paquete.
+  normalAmount = Math.min(normalAmount, tariffPrice(base,10));
+  return {amount:normalAmount+nightAmount,hours:Math.ceil(duration/3600000),rate:base,detail:'tarifa por tiempo',night:nightCount>0,normalAmount,nightAmount,nightCount,normalHours:Math.ceil(normalMs/3600000)};
+}
 function calcRoomAmount(r, refTs){
   if(!r || !r.mode) return { amount: 0, hours: 0, rate: 0 };
   const t = refTs || Date.now();
-
-  if(r.mode === 'paquete'){
-    return { amount: r.packagePrice || 0, detail: 'paquete', endTime: r.packageEndTime };
-  }
-
+  if(r.mode === 'paquete') return { amount: r.packagePrice || 0, detail: 'paquete', endTime: r.packageEndTime };
   const entry = new Date(r.checkIn).getTime();
   const end = r.checkOut ? new Date(r.checkOut).getTime() : t;
   const elapsedMs = Math.max(0, end - entry);
-  const rate = r.hourlyRate || r.rate || r.price || 0;
-
+  const rate = Number(r.hourlyRate || r.rate || r.price || 30);
+  if(r.mode === 'hora' && (rate === 30 || rate === 40 || Number(r.price) === 30 || Number(r.price) === 40)){
+    const calc = calcTariffWithNight(entry, end, Number(r.price) === 40 || rate === 40 ? 40 : 30);
+    return {...calc, elapsedMs, rate:Number(r.price) === 40 || rate === 40 ? 40 : 30, baseCharge:calc.normalAmount, extraCharge:0, extraBlocks:0, extraMs:0, tolerance:false};
+  }
   if(r.mode === 'corrida'){
     const firstHourMs = 3600000;
-    if(elapsedMs <= firstHourMs + TOLERANCE_MS){
-      return { amount: rate, hours: 1, rate, detail: 'corrida' };
-    }
+    if(elapsedMs <= firstHourMs + TOLERANCE_MS) return { amount: rate, hours: 1, rate, detail: 'corrida' };
     const extraMs = elapsedMs - firstHourMs;
     const extra = calcExtraCharge(extraMs, rate);
-    return {
-      amount: rate + extra.charge,
-      hours: 1 + (extra.blocks * 0.5),
-      rate,
-      detail: 'corrida',
-      extraBlocks: extra.blocks,
-      extraCharge: extra.charge,
-      tolerance: extra.tolerance
-    };
+    return {amount:rate+extra.charge,hours:1+(extra.blocks*0.5),rate,detail:'corrida',extraBlocks:extra.blocks,extraCharge:extra.charge,tolerance:extra.tolerance};
   }
-
-  // Modo hora
   const paidMs = (r.paidHours || 1) * 3600000;
   const extraMs = Math.max(0, elapsedMs - paidMs);
   const extra = calcExtraCharge(extraMs, rate);
   const baseCharge = (r.paidHours || 1) * rate;
-  return {
-    amount: baseCharge + extra.charge,
-    hours: r.paidHours,
-    rate,
-    detail: 'hora',
-    baseCharge,
-    extraBlocks: extra.blocks,
-    extraCharge: extra.charge,
-    tolerance: extra.tolerance,
-    extraMs
-  };
+  return {amount:baseCharge+extra.charge,hours:r.paidHours,rate,detail:'hora',baseCharge,extraBlocks:extra.blocks,extraCharge:extra.charge,tolerance:extra.tolerance,extraMs};
 }
 
 function stateFor(r){
@@ -1386,8 +1410,8 @@ function openCheckIn(id){
   ci = {
     roomId: id, entryTs: Date.now(), captured: false,
     mode: 'hora',
-    paidHours: 2, hourlyRate: r.price,
-    packageEndTime: '07:00', packagePrice: 150
+    paidHours: 1, hourlyRate: r.price,
+    packageEndTime: '07:00', packagePrice: Number(r.price) === 40 ? 150 : 130
   };
   renderCheckInSheet();
 }
@@ -1400,13 +1424,10 @@ function renderCheckInSheet(){
   const chipsHTML = [1,2,3,4,6,12].map(h => `<button class="chip ${h === ci.paidHours ? 'active':''}" data-h="${h}">${h}h</button>`).join('');
 
   const horaBody = `
-    <div class="field">
-      <label>Tiempo pagado</label>
-      <div class="chips" id="ciChips">${chipsHTML}</div>
-      <input id="ciHours" type="number" inputmode="decimal" min="0.5" step="0.5" value="${ci.paidHours}">
-    </div>
-    <div class="field"><label>Tarifa por hora (Bs)</label><input id="ciRate" type="number" inputmode="decimal" min="0" step="1" value="${ci.hourlyRate}"></div>
-    <div class="total-box"><span>Total a cobrar</span><b id="ciTotal">${money(ci.paidHours * ci.hourlyRate)}</b></div>`;
+    <div class="field"><label>Tarifa de la pieza</label>
+      <div class="total-box"><span>${Number(r.price) === 40 ? 'Tarifa Bs 40' : 'Tarifa Bs 30'}</span><b>${money(Number(r.price) === 40 ? 40 : 30)}/h</b></div>
+      <p class="helper">El sistema calculará automáticamente el precio según la tabla de 1 a 10 horas. Si corresponde, aplicará el paquete nocturno de 22:00 a 07:00.</p>
+    </div>`;
 
   const corridaBody = `
     <div class="field"><label>Tarifa por hora (Bs)</label><input id="ciRate" type="number" inputmode="decimal" min="0" step="1" value="${ci.hourlyRate}"></div>
@@ -1557,8 +1578,8 @@ function doCheckIn(){
     r.userName = currentUser?.name;
 
     if(ci.mode === 'hora'){
-      r.paidHours = ci.paidHours;
-      r.hourlyRate = ci.hourlyRate;
+      r.paidHours = ci.paidHours || 1;
+      r.hourlyRate = Number(r.price) === 40 ? 40 : (Number(r.price) === 30 ? 30 : ci.hourlyRate);
       r.packageEndTime = null; r.packagePrice = null;
     } else if(ci.mode === 'corrida'){
       r.paidHours = null;
@@ -1635,7 +1656,12 @@ function renderCheckOutSheet(){
       ${consTotal > 0 ? `<div class="bd-row extra"><span>Consumos</span><span>${money(consTotal)}</span></div>` : ''}
       <div class="bd-row total-row"><span>Total</span><span>${money(grand)}</span></div>`;
   } else {
-    breakdownHTML = `
+    const autoTariff = r.mode === 'hora' && (Number(r.price) === 30 || Number(r.price) === 40);
+    breakdownHTML = autoTariff ? `
+      <div class="bd-row"><span>Tarifa normal (${calc.normalHours || 0} h, máximo 10 h)</span><span>${money(calc.normalAmount || 0)}</span></div>
+      ${(calc.nightAmount || 0) > 0 ? `<div class="bd-row"><span>Paquete(s) nocturno(s) 22:00–07:00</span><span>${money(calc.nightAmount)}</span></div>` : ''}
+      ${consTotal > 0 ? `<div class="bd-row extra"><span>Consumos</span><span>${money(consTotal)}</span></div>` : ''}
+      <div class="bd-row total-row"><span>Total</span><span>${money(grand)}</span></div>` : `
       <div class="bd-row"><span>${r.paidHours}h × ${money(r.hourlyRate)}</span><span>${money(calc.baseCharge)}</span></div>
       ${calc.extraCharge > 0 ? `<div class="bd-row extra"><span>Extra ${calc.extraBlocks}×30m</span><span>${money(calc.extraCharge)}</span></div>` : ''}
       ${calc.extraBlocks === 0 && calc.extraMs > 0 && calc.extraMs <= TOLERANCE_MS ? `<div class="bd-row tolerance"><span>✓ En tolerancia (≤10 min)</span><span>Bs 0</span></div>` : ''}
