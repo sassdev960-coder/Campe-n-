@@ -1007,6 +1007,23 @@ async function migrarStateASupabase(s, user, negocioNombre){
 /* ---------- CARGA DE SUPABASE → LOCALSTORAGE ---------- */
 async function cargarStateDesdeSupabase(){
   const negId = sbNegocioId;
+
+  // Primero intentar cargar el estado completo guardado en la tabla estado_app.
+  // Esto evita perder datos de módulos que no estén representados en las tablas relacionales.
+  const { data: estadoGuardado, error: errorEstado } = await sb
+    .from('estado_app')
+    .select('estado')
+    .eq('negocio_id', negId)
+    .maybeSingle();
+
+  if(errorEstado && errorEstado.code !== 'PGRST116'){
+    console.warn('[SIMGest] No se pudo leer estado_app; se intentará cargar desde las tablas existentes:', errorEstado);
+  }
+  if(estadoGuardado && estadoGuardado.estado && typeof estadoGuardado.estado === 'object'){
+    localStorage.setItem('simgest_v18', JSON.stringify(estadoGuardado.estado));
+    return;
+  }
+
   actualizarProgreso(0, '');
   // Traer todo en paralelo donde se pueda
   const [
@@ -1230,24 +1247,41 @@ async function cargarStateDesdeSupabase(){
 
 /* ---------- SYNC (localStorage → Supabase) ---------- */
 window.syncToCloud = function(stateArg){
-  if(modoLocal || !sb || !sbNegocioId) return;
+  if(modoLocal || !sb || !sbNegocioId || !sbUser) return;
   clearTimeout(syncTimer);
+  // Copiar el estado ahora: evita que cambios posteriores modifiquen el objeto
+  // que está esperando el debounce.
+  const snapshot = JSON.parse(JSON.stringify(stateArg));
   syncTimer = setTimeout(async () => {
     try{
-      await subirStateASupabase(stateArg);
+      await subirStateASupabase(snapshot);
     }catch(e){
-      console.error('[sync] error:', e);
+      console.error('[SIMGest] Error sincronizando con Supabase:', e);
+      if(typeof toast === 'function'){
+        toast('No se pudo guardar en la nube: ' + (e.message || 'error desconocido'), 'err');
+      }
     }
-  }, 2000); // debounce 2s
+  }, 700); // debounce corto para agrupar cambios seguidos
 };
 
 async function subirStateASupabase(s){
-  // Estrategia simple: borrar todo lo del negocio y reinsertar
-  // ⚠️ Esto funciona pero es lento. Para producción conviene diff incremental.
-  // TODO: implementar sync incremental.
-  console.log('[sync] estado pendiente de subir (implementación simplificada).');
-  // Por ahora NO hacemos nada para evitar sobrecargar. El botón de migración
-  // es el camino para subir datos. Después implementamos sync incremental.
+  if(!sb || !sbNegocioId || !sbUser || modoLocal) return;
+
+  // Guardado completo e idempotente del estado de la aplicación.
+  // Requiere crear la tabla estado_app con el SQL entregado junto al archivo.
+  const payload = {
+    negocio_id: sbNegocioId,
+    estado: s,
+    actualizado_en: new Date().toISOString(),
+    actualizado_por: sbUser.id
+  };
+
+  const { error } = await sb
+    .from('estado_app')
+    .upsert(payload, { onConflict: 'negocio_id' });
+
+  if(error) throw error;
+  console.info('[SIMGest] Estado guardado en Supabase:', payload.actualizado_en);
 }
 
 /* ---------- ARRANCAR ---------- */
@@ -1335,9 +1369,14 @@ const ui = {
 function save(){
   try{
     localStorage.setItem(LS_KEY, JSON.stringify(state));
-    // Sincronizar a Supabase en background
+    // Sincronizar a Supabase en segundo plano; si falla, se informa en consola y con toast.
     if(window.syncToCloud) window.syncToCloud(state);
-  }catch(e){}
+    return true;
+  }catch(e){
+    console.error('[SIMGest] No se pudo guardar el estado local:', e);
+    if(typeof toast === 'function') toast('No se pudo guardar localmente: ' + (e.message || 'error'), 'err');
+    return false;
+  }
 }
 function load(){ try{ const raw=localStorage.getItem(LS_KEY); if(raw){ state=JSON.parse(raw); return true; } }catch(e){} return false; }
 function initState(){
