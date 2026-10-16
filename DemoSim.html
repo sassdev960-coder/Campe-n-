@@ -428,6 +428,23 @@ tbody tr:hover td{background:var(--surface-soft)}
 <div id="modalRoot"></div>
 <div class="toast" id="toast"></div>
 
+<div id="syncRecovery" style="position:fixed;right:18px;bottom:18px;z-index:800;width:min(360px,calc(100vw - 28px));font-family:inherit">
+  <button id="syncRecoveryToggle" type="button" onclick="toggleSyncRecovery()" style="width:100%;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 15px;border:0;border-radius:11px;background:#1c3d5a;color:#fff;font-family:inherit;font-size:13px;font-weight:600;box-shadow:0 8px 26px rgba(0,0,0,.18);cursor:pointer">
+    <span>↻ Revisar memoria del navegador</span><span id="syncRecoveryChevron">＋</span>
+  </button>
+  <div id="syncRecoveryBody" style="display:none;background:#fff;border:1px solid #e8e6e0;border-radius:11px;padding:15px;margin-top:8px;box-shadow:0 8px 26px rgba(0,0,0,.14);color:#15140f">
+    <div style="font-weight:600;font-size:13px;margin-bottom:5px">Revisión de sincronización</div>
+    <div style="font-size:12px;color:#7a766d;line-height:1.5;margin-bottom:12px">Compara los datos guardados en este navegador con el estado de SIMGest en Supabase. No sube nada hasta que lo confirmes.</div>
+    <div id="syncRecoveryStatus" role="status" style="font-size:12px;line-height:1.5;margin-bottom:12px">Pulsa revisar para buscar cambios pendientes.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button id="syncRecoveryScan" class="btn btn-outline" type="button" onclick="revisarMemoriaNavegador()">Revisar cambios</button>
+      <button id="syncRecoveryUpload" class="btn btn-primary" type="button" onclick="subirCambiosMemoria()" style="display:none">Subir datos locales</button>
+    </div>
+    <div style="font-size:10.5px;color:#7a766d;line-height:1.45;margin-top:10px">Importante: subir los datos locales reemplaza el estado completo guardado en la tabla <code>estado_app</code> de este negocio.</div>
+  </div>
+</div>
+
+
   <script>
 /* ================================================================
    MÓDULO SUPABASE — Auth, Sync y Migración
@@ -619,6 +636,16 @@ async function cerrarSesionGlobal(){
   }
 
   sbNegocioId = u.negocio_id;
+
+  // Conservar una copia previa antes de que la carga de la nube pueda reemplazar localStorage.
+  // Esto permite recuperar cambios locales que aún no se habían sincronizado.
+  try{
+    const localPrevio = localStorage.getItem('simgest_v18') ||
+      localStorage.getItem('simgest_v17') ||
+      localStorage.getItem('simgest_v16') ||
+      localStorage.getItem('simgest_v15');
+    if(localPrevio) localStorage.setItem('simgest_recovery_snapshot', localPrevio);
+  }catch(e){ console.warn('[SIMGest] No se pudo crear copia de recuperación local:', e); }
 
   // Cargar TODO desde Supabase → localStorage
   try{
@@ -1282,6 +1309,155 @@ async function subirStateASupabase(s){
 
   if(error) throw error;
   console.info('[SIMGest] Estado guardado en Supabase:', payload.actualizado_en);
+}
+
+
+/* ---------- RECUPERACIÓN MANUAL DE CAMBIOS LOCALES ---------- */
+let estadoLocalPendienteSubida = null;
+
+function toggleSyncRecovery(){
+  const body = document.getElementById('syncRecoveryBody');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  document.getElementById('syncRecoveryChevron').textContent = open ? '＋' : '−';
+}
+
+function mostrarEstadoRevision(texto, tipo='info'){
+  const el = document.getElementById('syncRecoveryStatus');
+  if(!el) return;
+  const colores = {info:'#183a56',ok:'#22503c',warn:'#6d4d13',err:'#6a2020'};
+  const fondos = {info:'#eaf1f7',ok:'#eaf3ee',warn:'#fbf3e2',err:'#f9ecec'};
+  el.textContent = texto;
+  el.style.color = colores[tipo] || colores.info;
+  el.style.background = fondos[tipo] || fondos.info;
+  el.style.padding = '10px';
+  el.style.borderRadius = '8px';
+}
+
+function serializarComparable(valor){
+  if(Array.isArray(valor)) return '[' + valor.map(serializarComparable).join(',') + ']';
+  if(valor && typeof valor === 'object'){
+    return '{' + Object.keys(valor).sort().map(k => JSON.stringify(k) + ':' + serializarComparable(valor[k])).join(',') + '}';
+  }
+  return JSON.stringify(valor);
+}
+
+async function revisarMemoriaNavegador(){
+  const btn = document.getElementById('syncRecoveryScan');
+  const upload = document.getElementById('syncRecoveryUpload');
+  estadoLocalPendienteSubida = null;
+  upload.style.display = 'none';
+
+  if(modoLocal || !sb || !sbNegocioId || !sbUser){
+    mostrarEstadoRevision('No hay una sesión de Supabase activa. Inicia sesión y vuelve a revisar.', 'warn');
+    return;
+  }
+
+  const raws = [
+    localStorage.getItem('simgest_v18'),
+    localStorage.getItem('simgest_recovery_snapshot'),
+    localStorage.getItem('simgest_v17'),
+    localStorage.getItem('simgest_v16'),
+    localStorage.getItem('simgest_v15')
+  ].filter(Boolean);
+
+  if(!raws.length){
+    mostrarEstadoRevision('No se encontraron datos de SIMGest en la memoria de este navegador.', 'warn');
+    return;
+  }
+
+  let candidatos;
+  try { candidatos = raws.map(raw => JSON.parse(raw)); }
+  catch(e){
+    mostrarEstadoRevision('Una copia local no se puede leer porque su contenido no es JSON válido. No se subió nada.', 'err');
+    return;
+  }
+  candidatos = candidatos.filter(x => x && typeof x === 'object' && !Array.isArray(x));
+  if(!candidatos.length){
+    mostrarEstadoRevision('Los datos locales no tienen el formato esperado. No se subió nada.', 'err');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Revisando…';
+  try{
+    // Evita que una sincronización automática pendiente se cruce con esta revisión.
+    clearTimeout(syncTimer);
+    const {data: remoto, error} = await sb
+      .from('estado_app')
+      .select('estado, actualizado_en')
+      .eq('negocio_id', sbNegocioId)
+      .maybeSingle();
+
+    if(error) throw error;
+
+    const remotoJson = remoto && remoto.estado ? serializarComparable(remoto.estado) : null;
+    const localState = candidatos.find(c => remotoJson === null || serializarComparable(c) !== remotoJson) || candidatos[0];
+
+    if(remotoJson === null){
+      estadoLocalPendienteSubida = localState;
+      mostrarEstadoRevision('Hay datos locales y todavía no se encontró un estado guardado en estado_app. Puedes subirlos si este es el negocio correcto.', 'warn');
+      upload.style.display = 'inline-flex';
+      return;
+    }
+
+    if(serializarComparable(localState) === remotoJson){
+      localStorage.removeItem('simgest_recovery_snapshot');
+      mostrarEstadoRevision('No se detectaron diferencias: la memoria del navegador coincide con el estado de Supabase.', 'ok');
+      return;
+    }
+
+    const secciones = ['usuarios','categorias','proveedores','productos','clientes','ventas','abonos','compras','gastos','cuentasPorPagar','bancos','turnos','cierres','ajustesBolsa'];
+    const diferencias = secciones.filter(k => JSON.stringify(localState[k] ?? null) !== JSON.stringify(remoto.estado?.[k] ?? null));
+    const resumen = diferencias.length
+      ? 'Se detectaron cambios en: ' + diferencias.join(', ') + '.'
+      : 'Se detectaron diferencias en la estructura o configuración general del estado.';
+    estadoLocalPendienteSubida = localState;
+    mostrarEstadoRevision(resumen + ' Confirma “Subir datos locales” solo si la copia del navegador es la que deseas conservar.', 'warn');
+    upload.style.display = 'inline-flex';
+  }catch(e){
+    console.error('[SIMGest] Error revisando diferencias:', e);
+    mostrarEstadoRevision('No se pudo comparar con Supabase: ' + (e.message || 'error desconocido') + '. No se subió ningún dato.', 'err');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Revisar cambios';
+  }
+}
+
+async function subirCambiosMemoria(){
+  if(!estadoLocalPendienteSubida) {
+    mostrarEstadoRevision('Primero pulsa “Revisar cambios”.', 'warn');
+    return;
+  }
+  if(!sb || !sbNegocioId || !sbUser || modoLocal) {
+    mostrarEstadoRevision('No hay una sesión válida de Supabase. No se subió nada.', 'err');
+    return;
+  }
+
+  const btn = document.getElementById('syncRecoveryUpload');
+  if(!confirm('¿Subir los datos locales y reemplazar el estado completo de este negocio en Supabase? Esta acción no fusiona registros.')) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Subiendo…';
+  try{
+    const snapshot = JSON.parse(JSON.stringify(estadoLocalPendienteSubida));
+    clearTimeout(syncTimer);
+    await subirStateASupabase(snapshot);
+    // Mantener la interfaz y el almacenamiento local alineados con lo que se acaba de subir.
+    if(typeof state !== 'undefined') state = snapshot;
+    localStorage.setItem('simgest_v18', JSON.stringify(snapshot));
+    localStorage.removeItem('simgest_recovery_snapshot');
+    estadoLocalPendienteSubida = null;
+    mostrarEstadoRevision('Sincronización completada. Los datos locales se guardaron en Supabase.', 'ok');
+    btn.style.display = 'none';
+    if(typeof toast === 'function') toast('Datos locales sincronizados con Supabase', 'ok');
+  }catch(e){
+    console.error('[SIMGest] Error subiendo datos locales:', e);
+    mostrarEstadoRevision('No se pudo subir la información: ' + (e.message || 'error desconocido') + '. Los datos locales siguen en el navegador.', 'err');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = 'Subir datos locales';
+  }
 }
 
 /* ---------- ARRANCAR ---------- */
