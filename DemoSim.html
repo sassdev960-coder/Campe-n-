@@ -2231,7 +2231,7 @@ function modalProveedor(id){
       <button class="btn btn-primary" onclick="guardarProveedor(${p?`'${p.id}'`:'null'})">${p?'Guardar':'Crear'}</button>
     </div>`;
 }
-function modalCliente(id){
+  function modalCliente(id){
   const c=id?state.clientes.find(x=>x.id===id):null;
   const deudaActual = c ? deudaCliente(c.id) : 0;
   const deudaVtas = c ? deudaVentasCliente(c.id) : 0;
@@ -2258,7 +2258,7 @@ function modalCliente(id){
       </div>
     </div>
     ${c?`
-      <div style="background:var(--surface-soft);border-radius:10px;padding:14px;border:1px solid var(--line-soft);margin-top:8px">
+      <div style="background:var(--surface-soft);border-radius:10px;padding:14px;border:1px solid var(--line-soft);margin-top:8px;margin-bottom:14px;">
         <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Deuda actual del cliente</div>
         <div style="font-size:26px;font-weight:600;color:${deudaActual>0?'var(--danger)':'var(--success)'};font-variant-numeric:tabular-nums">${money(deudaActual)}</div>
         <div style="font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.6">
@@ -2270,6 +2270,14 @@ function modalCliente(id){
           </div>
         </div>
       </div>
+      
+      <!-- NUEVO INPUT PARA DEUDA VIEJA -->
+      <div class="field" style="background:var(--warning-soft);padding:14px;border-radius:10px;border:1px solid #ecdcae;margin-top:14px">
+        <label style="color:#6d4d13;font-weight:600">Agregar deuda vieja adicional (Bs)</label>
+        <div class="money-input-wrap sm"><input id="m-cli-agregar-deuda" type="number" step="0.01" min="0" value="0" placeholder="0.00"></div>
+        <div class="hint" style="color:#6d4d13;margin-top:6px">Si el cliente ya te debía plata de antes, poné el monto acá. No genera venta ni entra a caja.</div>
+      </div>
+
     `:''}
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
@@ -2733,17 +2741,29 @@ function guardarProveedor(id){
   }
   cerrarModal(); render();
 }
-function guardarCliente(id){
+
+  function guardarCliente(id){
   const n=$('m-cli-nombre').value.trim();
   const tel=$('m-cli-tel').value.trim();
   const com=$('m-cli-com').value.trim();
   const plazo=Number($('m-cli-plazo').value);
   const limite=Number($('m-cli-limite').value)||0;
   if(!n) return toast('Ingresa nombre','err');
+
   if(id){
     const c=state.clientes.find(x=>x.id===id);
     c.nombre=n; c.tel=tel; c.comunidad=com; c.plazo=plazo; c.limite=limite;
-    toast('Cliente actualizado','ok');
+
+    // NUEVO: Procesar la deuda vieja adicional
+    const extraDeuda = Number($('m-cli-agregar-deuda')?.value) || 0;
+    if(extraDeuda > 0){
+      if(!state.capital.deudasInicialesPorCliente) state.capital.deudasInicialesPorCliente = {};
+      state.capital.deudasInicialesPorCliente[id] = num2((state.capital.deudasInicialesPorCliente[id] || 0) + extraDeuda);
+      state.capital.cuentasPorCobrarIniciales = num2((state.capital.cuentasPorCobrarIniciales || 0) + extraDeuda);
+      toast('Cliente actualizado y deuda añadida','ok');
+    } else {
+      toast('Cliente actualizado','ok');
+    }
   }else{
     const nuevoId='C'+(state.seq.cliente++);
     state.clientes.push({id:nuevoId,nombre:n,tel,comunidad:com||'—',plazo,limite,creado:HOY()});
