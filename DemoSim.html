@@ -1720,9 +1720,7 @@ function modalMontoLibreRecarga(productoId){
   return `<div class="modal-head"><div><div class="modal-title">Monto de la recarga</div><div class="card-subtitle">${esc(p.nombre)}${prov?` · ${esc(prov.nombre)}`:''}</div></div><button class="modal-close" onclick="cerrarModal()">×</button></div><div class="alert alert-info"><div><strong>Tipo de bolsa:</strong> ${TIPOS_BOLSA[tipo]}${bolsa?`<br><strong>Saldo disponible:</strong> ${money(bolsa.saldo||0)}`:''}</div></div><div class="field"><label>Monto que pide el cliente (Bs) *</label><div class="money-input-wrap"><input id="m-monto-libre" type="text" inputmode="decimal" placeholder="Ej: 25"></div></div><div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button><button class="btn btn-success" onclick="confirmarMontoLibreRecarga('${productoId}')">Agregar al carrito</button></div>`;
 }
 </script>
-/* ================================================================
-   ACCIONES (Guardado de datos)
-   ================================================================ */
+
   <script>
 function bloquearMesCerrado(fecha, contexto){
   const ym = mesDe(fecha);
