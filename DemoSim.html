@@ -1723,6 +1723,7 @@ function modalMontoLibreRecarga(productoId){
 /* ================================================================
    ACCIONES (Guardado de datos)
    ================================================================ */
+  <script>
 function bloquearMesCerrado(fecha, contexto){
   const ym = mesDe(fecha);
   if(mesCerrado(ym)){ toast(`${contexto}: el mes ${nombreMes(ym)} está cerrado.`,'err'); return true; }
