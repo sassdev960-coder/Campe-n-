@@ -1183,9 +1183,9 @@ const esCobrador = () => usuarioActual?.rol === 'cobrador';
 
 const ui = {
   ventaCarrito:[], ventaClienteId:'', ventaTipoPago:'contado',
-  ventaPlazo:15, ventaPlazoCustom:'', ventaMontoRecibido:'', ventaAbonoInicial:'', ventaMetodoPago:'efectivo', filtroMetodoVenta:'todos', filtroMetodoCobranza:'todos',
+  ventaPlazo:15, ventaPlazoCustom:'', ventaMontoRecibido:'', ventaAbonoInicial:'', ventaMetodoPago:'efectivo', ventaFecha:HOY(), filtroMetodoVenta:'todos', filtroMetodoCobranza:'todos',
   buscarCliente:'', mostrarBuscadorCliente:false,
-  compraCarrito:[], compraProveedorId:'', compraNota:'', buscarProdCompra:'',
+  compraCarrito:[], compraProveedorId:'', compraNota:'', compraFecha:HOY(), buscarProdCompra:'',
   modal:null, filtroInv:'Todas', clienteAbierto:null, cierreMes:mesActual(),
   buscarClienteLista:'', filtroClientesCobrador:'con_deuda',
   clientesMostrar: CLIENTES_POR_PAGINA,
@@ -1254,8 +1254,8 @@ function bonifBolsasPorTipo(tipo){ return num2(Object.entries(state.bolsas).filt
 function saldoCaja(){ if(!state) return 0; return num2(state.caja.saldoInicial+state.caja.movimientos.reduce((a,m)=>a+m.monto,0)); }
 function saldoBanco(b){ return num2(b.saldoInicial+(b.movimientos||[]).reduce((a,m)=>a+m.monto,0)); }
 function saldoBancosTotal(){ return num2(state.bancos.reduce((a,b)=>a+saldoBanco(b),0)); }
-function agregarMovimientoCaja(tipo,monto,descripcion,referencia){
-  state.caja.movimientos.push({id:'M'+(state.seq.mov++),fecha:HOY(),hora:horaActual(),tipo,monto:num2(monto),descripcion,referencia:referencia||null,usuarioId:usuarioActual?.id||null,usuarioNombre:usuarioActual?.nombre||'—'});
+function agregarMovimientoCaja(tipo,monto,descripcion,referencia,fecha=HOY(),hora=horaActual()){
+  state.caja.movimientos.push({id:'M'+(state.seq.mov++),fecha:fecha||HOY(),hora:hora||horaActual(),tipo,monto:num2(monto),descripcion,referencia:referencia||null,usuarioId:usuarioActual?.id||null,usuarioNombre:usuarioActual?.nombre||'—'});
 }
 function eliminarMovimientosPorRef(ref){ state.caja.movimientos=state.caja.movimientos.filter(m=>m.referencia!==ref); }
 function agregarMovimientoBanco(bancoId,monto,descripcion,referencia){
@@ -2196,7 +2196,9 @@ function totalCarritoVenta(){ return num2(ui.ventaCarrito.reduce((a,i)=>a+i.subt
 
 function confirmarVenta(){
   if(!turnoRequerido()) return toast('Abre tu turno','err'); if(ui.ventaCarrito.length===0) return toast('Carrito vacío','err');
-  if(mesCerrado(mesActual())) return toast(`El mes ${mesActual()} está cerrado`,'err');
+  const fechaVenta=ui.ventaFecha||HOY();
+  if(fechaVenta>HOY()) return toast('La fecha de la venta no puede ser futura.','err');
+  if(mesCerrado(mesDe(fechaVenta))) return toast(`El mes ${mesDe(fechaVenta)} está cerrado`,'err');
   for(const it of ui.ventaCarrito){ const p=prodById(it.productoId); if(!p) return toast(`Producto eliminado: ${it.nombre}`,'err'); if(!esProductoRecarga(p)&&p.stock<it.cantidad) return toast(`Stock insuficiente de ${p.nombre}`,'err'); }
   const cliente=ui.ventaClienteId?state.clientes.find(c=>c.id===ui.ventaClienteId):null;
   if(ui.ventaTipoPago==='credito'&&!cliente) return toast('Selecciona un cliente','err');
@@ -2207,7 +2209,7 @@ function confirmarVenta(){
   if(ui.ventaTipoPago==='credito'){
     plazo=ui.ventaPlazo==='custom'?Number(ui.ventaPlazoCustom):Number(ui.ventaPlazo);
     if(!(plazo>0)) return toast('Define un plazo','err');
-    vencimiento=addDias(HOY(),plazo);
+    vencimiento=addDias(fechaVenta,plazo);
     
     abonoInicial = parseNum(ui.ventaAbonoInicial);
     if(abonoInicial > total) return toast('El abono no puede superar el total de la venta','err');
@@ -2222,7 +2224,7 @@ function confirmarVenta(){
   }
   
   const venta={ 
-    id:'V'+(state.seq.venta++),fecha:HOY(),hora:horaActual(),
+    id:'V'+(state.seq.venta++),fecha:fechaVenta,hora:horaActual(),
     clienteId:cliente?cliente.id:null, clienteNombre:cliente?cliente.nombre:'Consumidor final',
     tipoPago:ui.ventaTipoPago, plazo, vencimiento,
     items:ui.ventaCarrito.map(i=>({...i})),
@@ -2235,12 +2237,12 @@ function confirmarVenta(){
   venta.items.forEach(it=>{ const p=prodById(it.productoId); if(!p) return; if(esProductoRecarga(p)){ const b=p.proveedorId?bolsaDe(p.proveedorId,it.tipoRecarga||tipoBolsaDeProducto(p)):null; if(b) b.saldo=num2((b.saldo||0)-it.subtotal); } else p.stock=num2(p.stock-it.cantidad); });
   
   if(venta.tipoPago==='contado' && venta.metodoPago==='efectivo') {
-    agregarMovimientoCaja('venta',total,'Venta '+venta.id+' · '+venta.clienteNombre,venta.id);
+    agregarMovimientoCaja('venta',total,'Venta '+venta.id+' · '+venta.clienteNombre,venta.id,venta.fecha,venta.hora);
   } else if(venta.tipoPago==='credito' && venta.pagado > 0 && venta.metodoPago==='efectivo') {
-    agregarMovimientoCaja('venta', venta.pagado, 'Abono inicial Venta '+venta.id+' · '+venta.clienteNombre, venta.id);
+    agregarMovimientoCaja('venta', venta.pagado, 'Abono inicial Venta '+venta.id+' · '+venta.clienteNombre, venta.id,venta.fecha,venta.hora);
   }
   
-  ui.ventaCarrito=[]; ui.ventaClienteId=''; ui.ventaMontoRecibido=''; ui.ventaAbonoInicial=''; ui.ventaTipoPago='contado'; ui.ventaMetodoPago='efectivo'; ui.ventaPlazo=15; ui.ventaPlazoCustom='';
+  ui.ventaCarrito=[]; ui.ventaClienteId=''; ui.ventaMontoRecibido=''; ui.ventaAbonoInicial=''; ui.ventaTipoPago='contado'; ui.ventaMetodoPago='efectivo'; ui.ventaPlazo=15; ui.ventaPlazoCustom=''; ui.ventaFecha=HOY();
   
   const gan=gananciaVenta(venta); 
   if(gan>0) toast(`Venta ${money(total)} · Ganancia ${money(gan)}${cambio>0.001?' · Cambio '+money(cambio):''}`,'ok'); 
@@ -2279,13 +2281,16 @@ function quitarDelCarritoCompra(ix){ ui.compraCarrito.splice(ix,1); render(); }
 function totalCarritoCompra(){ return num2(ui.compraCarrito.reduce((a,i)=>a+i.subtotal,0)); }
 
 function confirmarCompra(){
-  if(ui.compraCarrito.length===0) return toast('Carrito vacío','err'); if(mesCerrado(mesActual())) return toast(`El mes ${mesActual()} está cerrado`,'err');
+  if(ui.compraCarrito.length===0) return toast('Carrito vacío','err');
+  const fechaCompra=ui.compraFecha||HOY();
+  if(fechaCompra>HOY()) return toast('La fecha de la compra no puede ser futura.','err');
+  if(mesCerrado(mesDe(fechaCompra))) return toast(`El mes ${mesDe(fechaCompra)} está cerrado`,'err');
   const total=totalCarritoCompra(); const prov=ui.compraProveedorId?provById(ui.compraProveedorId):null;
   const ejecutar=()=>{
-    const compra={id:'P'+(state.seq.compra++),fecha:HOY(),hora:horaActual(),proveedorId:prov?prov.id:null,proveedorNombre:prov?prov.nombre:'Sin proveedor',items:ui.compraCarrito.map(i=>({...i})),total,nota:ui.compraNota.trim(),usuarioId:usuarioActual?.id||null,usuarioNombre:usuarioActual?.nombre||'—'};
+    const compra={id:'P'+(state.seq.compra++),fecha:fechaCompra,hora:horaActual(),proveedorId:prov?prov.id:null,proveedorNombre:prov?prov.nombre:'Sin proveedor',items:ui.compraCarrito.map(i=>({...i})),total,nota:ui.compraNota.trim(),usuarioId:usuarioActual?.id||null,usuarioNombre:usuarioActual?.nombre||'—'};
     state.compras.push(compra); compra.items.forEach(it=>{ const p=prodById(it.productoId); if(p) p.stock=num2(p.stock+it.cantidad); });
-    agregarMovimientoCaja('compra',-total,'Compra '+compra.id+' · '+compra.proveedorNombre,compra.id);
-    ui.compraCarrito=[]; ui.compraProveedorId=''; ui.compraNota=''; toast('Compra '+money(total),'ok'); render();
+    agregarMovimientoCaja('compra',-total,'Compra '+compra.id+' · '+compra.proveedorNombre,compra.id,compra.fecha,compra.hora);
+    ui.compraCarrito=[]; ui.compraProveedorId=''; ui.compraNota=''; ui.compraFecha=HOY(); toast('Compra '+money(total),'ok'); render();
   };
   if(total>saldoCaja()) pedirConfirmacion({criticidad:'advertencia',titulo:'Saldo insuficiente',mensaje:`El total (${money(total)}) supera la caja (${money(saldoCaja())}).`,textoBoton:'Continuar',onConfirm:ejecutar});
   else ejecutar();
@@ -2646,6 +2651,7 @@ function viewVentas(){
         </div>
         <div class="cart-total"><span class="cart-total-label">Total</span><span class="cart-total-value">${money(total)}</span></div>
         <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--line)">
+          <div class="field"><label>Fecha de la venta *</label><input id="inpVentaFecha" type="date" max="${HOY()}" value="${esc(ui.ventaFecha||HOY())}" onchange="ui.ventaFecha=this.value"><div class="hint">Por defecto es hoy. Si la venta fue ayer u otro día anterior, selecciona la fecha correcta antes de confirmar.</div></div>
           <div class="field" style="position:relative">
             <label>Cliente</label>
             ${cliente?`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--surface)"><div><div style="font-weight:500">${esc(cliente.nombre)}</div></div><button class="btn-ghost" style="font-size:12px" onclick="ui.ventaClienteId=''; render()">Cambiar</button></div>`:`
@@ -2783,7 +2789,7 @@ function viewCompras(){
       ${ui.compraCarrito.length===0?'<div class="empty" style="padding:30px 16px">Agrega productos.</div>':`
         <div class="cart-list">${ui.compraCarrito.map((i,ix)=>`<div class="cart-line"><div class="cart-info"><div class="cart-name">${esc(i.nombre)}</div></div><input type="text" inputmode="decimal" class="cart-qty" value="${i.cantidad}" onchange="actualizarLineaCompra(${ix},'cantidad',this.value)"><input type="text" inputmode="decimal" class="cart-price" value="${i.costoUnit}" onchange="actualizarLineaCompra(${ix},'costoUnit',this.value)"><div class="cart-sub">${money(i.subtotal)}</div><button class="btn-ghost" style="padding:2px 8px" onclick="quitarDelCarritoCompra(${ix})">×</button></div>`).join('')}</div>
         <div class="cart-total"><span class="cart-total-label">Total</span><span class="cart-total-value">${money(total)}</span></div>
-        <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--line)"><div class="field"><label>Proveedor</label><select onchange="ui.compraProveedorId=this.value; render()"><option value="">Sin proveedor</option>${state.proveedores.map(p=>`<option value="${p.id}" ${ui.compraProveedorId===p.id?'selected':''}>${esc(p.nombre)}</option>`).join('')}</select></div><div class="field"><label>Nota / Factura</label><input value="${esc(ui.compraNota)}" oninput="ui.compraNota=this.value"></div><button class="btn btn-primary btn-block" onclick="confirmarCompra()">Registrar compra</button></div>`}
+        <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--line)"><div class="field"><label>Fecha de ingreso de la compra *</label><input id="inpCompraFecha" type="date" max="${HOY()}" value="${esc(ui.compraFecha||HOY())}" onchange="ui.compraFecha=this.value"><div class="hint">Por defecto es hoy. Si recibiste la mercancía ayer u otro día anterior, cambia la fecha manualmente.</div></div><div class="field"><label>Proveedor</label><select onchange="ui.compraProveedorId=this.value; render()"><option value="">Sin proveedor</option>${state.proveedores.map(p=>`<option value="${p.id}" ${ui.compraProveedorId===p.id?'selected':''}>${esc(p.nombre)}</option>`).join('')}</select></div><div class="field"><label>Nota / Factura</label><input value="${esc(ui.compraNota)}" oninput="ui.compraNota=this.value"></div><button class="btn btn-primary btn-block" onclick="confirmarCompra()">Registrar compra</button></div>`}
     </div>
   </div>
   <div class="card">
