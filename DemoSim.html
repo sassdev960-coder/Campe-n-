@@ -2647,23 +2647,7 @@ function modalCerrarTurno(turnoId){
       <button class="btn btn-danger" onclick="confirmarCerrarTurno('${t.id}',${teorico})">Cerrar turno</button>
     </div>`;
 }
-function modalBanco(id){
-  const b=id?bancoById(id):null;
-  return `
-    <div class="modal-head"><div><div class="modal-title">${b?'Editar banco':'Nuevo banco'}</div></div>
-    <button class="modal-close" onclick="cerrarModal()">×</button></div>
-    <div class="field"><label>Nombre *</label>
-      <input id="m-banco-nombre" value="${b?esc(b.nombre):''}" autofocus></div>
-    <div class="field"><label>Notas</label>
-      <input id="m-banco-nota" value="${b?esc(b.nota||''):''}"></div>
-    ${!b?`<div class="field"><label>Saldo inicial (Bs)</label>
-      <div class="money-input-wrap"><input id="m-banco-saldo" type="number" step="0.01" min="0" value="0"></div>
-      <div class="hint">Para el arranque del negocio, mejor cargalo desde <b>Capital inicial</b>.</div></div>`:''}
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarBanco(${b?`'${b.id}'`:'null'})">${b?'Guardar':'Crear'}</button>
-    </div>`;
-}
+  
 function modalMovimientoBanco(bancoId){
   const b=bancoById(bancoId); if(!b) return '';
   return `
@@ -3005,10 +2989,39 @@ function guardarBanco(id){
   const n=$('m-banco-nombre').value.trim();
   const nota=$('m-banco-nota').value.trim();
   if(!n) return toast('Ingresa nombre','err');
-  if(id){ const b=bancoById(id); b.nombre=n; b.nota=nota; toast('Actualizado','ok'); }
-  else{ const saldo=Number($('m-banco-saldo').value)||0; state.bancos.push({id:'B'+(state.seq.banco++),nombre:n,nota,saldoInicial:num2(saldo),movimientos:[]}); toast('Creado','ok'); }
+  
+  if(id){ 
+    const b=bancoById(id); 
+    b.nombre=n; 
+    b.nota=nota; 
+    
+    // Procesar el ajuste manual si es que se ingresó un monto
+    const ajuste = Number($('m-banco-ajuste')?.value) || 0;
+    if(ajuste !== 0){
+      if(!b.movimientos) b.movimientos=[];
+      b.movimientos.push({
+        id:'MB'+(state.seq.movBanco++),
+        fecha:HOY(), 
+        hora:horaActual(),
+        monto:num2(ajuste),
+        descripcion:'Ajuste manual de saldo',
+        referencia:null,
+        usuarioId:usuarioActual?.id||null,
+        usuarioNombre:usuarioActual?.nombre||'—'
+      });
+      toast('Banco y saldo ajustados','ok');
+    } else {
+      toast('Banco actualizado','ok'); 
+    }
+  }
+  else{ 
+    const saldo=Number($('m-banco-saldo').value)||0; 
+    state.bancos.push({id:'B'+(state.seq.banco++),nombre:n,nota,saldoInicial:num2(saldo),movimientos:[]}); 
+    toast('Creado','ok'); 
+  }
   cerrarModal(); render();
 }
+  
 function guardarMovimientoBanco(bancoId){
   const tipo=$('m-bmov-tipo').value;
   const monto=Number($('m-bmov-monto').value)||0;
