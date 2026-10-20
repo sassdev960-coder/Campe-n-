@@ -2558,19 +2558,7 @@ function viewVentas(){
     <div class="card">
       <div class="card-head"><div><div class="card-title">Catálogo</div></div></div>
       <div class="search-wrap"><input id="buscarProdVenta" placeholder="Buscar producto..." value="${esc(ui.buscarProdVenta)}" oninput="ui.buscarProdVenta=this.value; renderConservarFoco('buscarProdVenta')"></div>
-      <div class="prod-list">${prods.length===0?'<div class="empty">Sin resultados.</div>':prods.map(p=>{ const d=dispDe(p); const esRec=esProductoRecarga(p); return `<div class="prod-item ${!d.ok?'stock-0':''}">
-  <div onclick="${!d.ok?'':`iniciarVentaProducto('${p.id}')`}" style="flex:1; display:flex; justify-content:space-between; align-items:center; cursor:pointer;">
-    <div>
-      <div class="prod-name">${esc(p.nombre)} ${esRec?`<span class="badge badge-accent" style="margin-left:6px">${TIPOS_BOLSA[d.tipo]}</span>`:''}</div>
-      <div class="prod-meta">${esRec?(provById(p.proveedorId)?.nombre||'Sin operador'):(unidadAbrev(p.unidad)+' · '+(catById(p.categoriaId)?.nombre||''))}</div>
-    </div>
-    <div style="text-align:right; margin-right:10px;">
-      <div class="prod-price">${esRec?'Monto libre':money(p.precio)}</div>
-      <div class="prod-stock" style="${!d.ok?'color:var(--danger);font-weight:600':''}">${d.texto}</div>
-    </div>
-  </div>
-  <button class="btn btn-primary btn-sm" onclick="event.stopPropagation(); iniciarVentaProducto('${p.id}')" ${!d.ok?'disabled':''} style="padding:4px 10px; font-size:16px; font-weight:bold;">+</button>
-</div><div><div class="prod-name">${esc(p.nombre)} ${esRec?`<span class="badge badge-accent" style="margin-left:6px">${TIPOS_BOLSA[d.tipo]}</span>`:''}</div><div class="prod-meta">${esRec?(provById(p.proveedorId)?.nombre||'Sin operador'):(unidadAbrev(p.unidad)+' · '+(catById(p.categoriaId)?.nombre||''))}</div></div><div style="text-align:right"><div class="prod-price">${esRec?'Monto libre':money(p.precio)}</div><div class="prod-stock" style="${!d.ok?'color:var(--danger);font-weight:600':''}">${d.texto}</div></div></div>`; }).join('')}</div>
+      <div class="prod-list">${prods.length===0?'<div class="empty">Sin resultados.</div>':prods.map(p=>{ const d=dispDe(p); const esRec=esProductoRecarga(p); return `<div class="prod-item ${!d.ok?'stock-0':''}" onclick="${!d.ok?'':`iniciarVentaProducto('${p.id}')`}"><div><div class="prod-name">${esc(p.nombre)} ${esRec?`<span class="badge badge-accent" style="margin-left:6px">${TIPOS_BOLSA[d.tipo]}</span>`:''}</div><div class="prod-meta">${esRec?(provById(p.proveedorId)?.nombre||'Sin operador'):(unidadAbrev(p.unidad)+' · '+(catById(p.categoriaId)?.nombre||''))}</div></div><div style="text-align:right"><div class="prod-price">${esRec?'Monto libre':money(p.precio)}</div><div class="prod-stock" style="${!d.ok?'color:var(--danger);font-weight:600':''}">${d.texto}</div></div></div>`; }).join('')}</div>
     </div>
     <div class="card">
       <div class="card-head"><div><div class="card-title">Carrito</div></div>${ui.ventaCarrito.length>0?`<button class="btn-ghost" onclick="ui.ventaCarrito=[]; render()">Vaciar</button>`:''}</div>
