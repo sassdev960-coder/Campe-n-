@@ -1183,7 +1183,7 @@ const esCobrador = () => usuarioActual?.rol === 'cobrador';
 
 const ui = {
   ventaCarrito:[], ventaClienteId:'', ventaTipoPago:'contado',
-  ventaPlazo:15, ventaPlazoCustom:'', ventaMontoRecibido:'', ventaAbonoInicial:'', ventaMetodoPago:'efectivo', ventaFecha:HOY(), filtroMetodoVenta:'todos', filtroMetodoCobranza:'todos',
+  ventaPlazo:15, ventaPlazoCustom:'', ventaMontoRecibido:'', ventaAbonoInicial:'', ventaMetodoPago:'efectivo', ventaFecha:HOY(), filtroMetodoVenta:'todos', filtroMetodoCobranza:'todos', fechaInicioVentas:'', fechaFinVentas:'', fechaInicioCompras:'', fechaFinCompras:'', ordenHistoricoVentas:false,
   buscarCliente:'', mostrarBuscadorCliente:false,
   compraCarrito:[], compraProveedorId:'', compraNota:'', compraFecha:HOY(), buscarProdCompra:'',
   modal:null, filtroInv:'Todas', clienteAbierto:null, cierreMes:mesActual(),
@@ -1194,7 +1194,7 @@ const ui = {
   filtroCuentasEstado:'pendientes', buscarCuenta:'',
   cuentaAbierta:null, buscarBanco:'',
   buscarProductoInv:'', buscarProductoConfig:'', buscarProveedor:'',
-  buscarUsuario:'', buscarCobranza:'', buscarVentaHist:'', buscarCategoria:'',
+  buscarUsuario:'', buscarCobranza:'', buscarVentaHist:'', buscarCompraHist:'', buscarCategoria:'',
   recargaMontoLibre: null
 };
 
@@ -1367,7 +1367,7 @@ function cambiarUsuario(id){
   usuarioActual=u; state.usuarioActualId=u.id;
   const disponibles=tabsDisponibles().map(t=>t.id); if(!disponibles.includes(vista)) vista=disponibles[0];
   ui.ventaCarrito=[]; ui.compraCarrito=[]; ui.clienteAbierto=null; ui.buscarCliente=''; ui.mostrarBuscadorCliente=false; ui.buscarClienteLista='';
-  ui.filtroClientesCobrador=esCobrador()?'con_deuda':'todos'; ui.buscarProdVenta=''; ui.buscarClienteVenta=''; ui.buscarProductoInv=''; ui.buscarProductoConfig=''; ui.buscarProveedor=''; ui.buscarUsuario=''; ui.buscarGasto=''; ui.buscarCobranza=''; ui.buscarVentaHist=''; ui.buscarCategoria=''; ui.buscarBanco=''; ui.clientesMostrar=CLIENTES_POR_PAGINA;
+  ui.filtroClientesCobrador=esCobrador()?'con_deuda':'todos'; ui.buscarProdVenta=''; ui.buscarClienteVenta=''; ui.buscarProductoInv=''; ui.buscarProductoConfig=''; ui.buscarProveedor=''; ui.buscarUsuario=''; ui.buscarGasto=''; ui.buscarCobranza=''; ui.buscarVentaHist=''; ui.buscarCompraHist=''; ui.fechaInicioVentas=''; ui.fechaFinVentas=''; ui.fechaInicioCompras=''; ui.fechaFinCompras=''; ui.ordenHistoricoVentas=false; ui.buscarCategoria=''; ui.buscarBanco=''; ui.clientesMostrar=CLIENTES_POR_PAGINA;
   $('avatarIni').textContent=iniciales(u.nombre); $('avatarIni').style.background=u.color||'#8a6d3b'; $('rolLbl').textContent=u.rol==='admin'?'Administrador':u.rol==='cajero'?'Cajero':'Cobrador';
   save(); render(); toast('Sesión iniciada: '+u.nombre,'ok');
 }
@@ -2621,11 +2621,27 @@ function viewCuentas(){
   </div>`;
 }
 
+function ordenarVentasHistoricamente(ventas){
+  return ventas.slice().sort((a,b)=>String(a.fecha||'').localeCompare(String(b.fecha||'')) || String(a.hora||'').localeCompare(String(b.hora||'')) || (parseInt(String(a.id||'').replace(/\D/g,''),10)||0)-(parseInt(String(b.id||'').replace(/\D/g,''),10)||0));
+}
+function referenciaVentaVisible(v){
+  if(!ui.ordenHistoricoVentas) return v.id;
+  const ordenadas=ordenarVentasHistoricamente(state.ventas||[]);
+  const idx=ordenadas.findIndex(x=>x.id===v.id);
+  return idx>=0?'V'+(idx+1):v.id;
+}
+function dentroRangoFecha(fecha,desde,hasta){
+  const f=String(fecha||'');
+  if(desde&&f<desde) return false;
+  if(hasta&&f>hasta) return false;
+  return true;
+}
+
 function viewVentas(){
   const ok=turnoRequerido(); const total=totalCarritoVenta(); const cliente=ui.ventaClienteId?state.clientes.find(c=>c.id===ui.ventaClienteId):null; const recibido=parseNum(ui.ventaMontoRecibido); const cambio=num2(recibido-total); const cambioOk=recibido>=total;
   const ganCarrito=num2(ui.ventaCarrito.reduce((a,i)=>a+gananciaItem(i),0)); const prods=buscarProductos(ui.buscarProdVenta,false); const clientesEnc=buscarClientesQuery(ui.buscarClienteVenta).slice(0,20);
   const dispDe=p=>{ if(esProductoRecarga(p)){ const tipo=tipoBolsaDeProducto(p); const b=p.proveedorId?bolsaDe(p.proveedorId,tipo):null; return {texto:b?'Saldo: '+money(b.saldo||0):'Sin operador',ok:b&&(b.saldo||0)>0,tipo}; } return {texto:p.stock<=0?'Agotado':'Stock: '+p.stock,ok:p.stock>0}; };
-  const misVentas=ventasVisibles().slice().reverse().slice(0,500); const qH=ui.buscarVentaHist; let histFilt=misVentas.slice(); if(qH) histFilt=histFilt.filter(v=>coincide(v.clienteNombre,qH)||coincide(v.id,qH)); if(ui.filtroMetodoVenta!=='todos') histFilt=histFilt.filter(v=>(v.metodoPago||'sin_registro')===ui.filtroMetodoVenta);
+  const misVentas=ventasVisibles().slice().reverse().slice(0,500); const qH=ui.buscarVentaHist; let histFilt=misVentas.slice(); histFilt=histFilt.filter(v=>dentroRangoFecha(v.fecha,ui.fechaInicioVentas,ui.fechaFinVentas)); if(qH) histFilt=histFilt.filter(v=>coincide(v.clienteNombre,qH)||coincide(v.id,qH)||coincide(referenciaVentaVisible(v),qH)); if(ui.filtroMetodoVenta!=='todos') histFilt=histFilt.filter(v=>(v.metodoPago||'sin_registro')===ui.filtroMetodoVenta);
   const mesCerradoHoy=mesCerrado(mesActual());
   
   return `
@@ -2685,11 +2701,13 @@ function viewVentas(){
     </div>
   </div>
   <div class="card">
-    <div class="card-head"><div><div class="card-title">${esAdmin()?'Historial completo':'Mis ventas'}</div><div class="card-subtitle">${histFilt.length} de ${misVentas.length}</div></div></div>
+    <div class="card-head"><div><div class="card-title">${esAdmin()?'Historial completo':'Mis ventas'}</div><div class="card-subtitle">${histFilt.length} de ${misVentas.length} ventas</div></div>${esAdmin()?`<button class="btn ${ui.ordenHistoricoVentas?'btn-primary':'btn-outline'} btn-sm" onclick="ui.ordenHistoricoVentas=!ui.ordenHistoricoVentas; render()">${ui.ordenHistoricoVentas?'Orden histórico activo':'Orden histórico'}</button>`:''}</div>
     <div class="search-wrap"><input id="inpVentaHist" placeholder="Buscar cliente o referencia..." value="${esc(ui.buscarVentaHist)}" oninput="ui.buscarVentaHist=this.value; renderConservarFoco('inpVentaHist')"></div>
+    <div class="grid-2" style="margin:10px 0 14px"><div class="field"><label>Fecha desde</label><input type="date" value="${esc(ui.fechaInicioVentas)}" max="${esc(ui.fechaFinVentas||'')}" onchange="ui.fechaInicioVentas=this.value; render()"></div><div class="field"><label>Fecha hasta</label><input type="date" value="${esc(ui.fechaFinVentas)}" min="${esc(ui.fechaInicioVentas||'')}" onchange="ui.fechaFinVentas=this.value; render()"></div></div>
+    <div class="btn-row" style="margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="ui.fechaInicioVentas=''; ui.fechaFinVentas=''; render()">Limpiar fechas</button><span class="hint">${ui.ordenHistoricoVentas?'Las referencias visibles se recalculan por fecha; los identificadores internos no cambian.':''}</span></div>
      <div class="filter-tabs"><button class="filter-tab ${ui.filtroMetodoVenta==='todos'?'active':''}" onclick="ui.filtroMetodoVenta='todos'; render()">Todos</button><button class="filter-tab ${ui.filtroMetodoVenta==='efectivo'?'active':''}" onclick="ui.filtroMetodoVenta='efectivo'; render()">Efectivo</button><button class="filter-tab ${ui.filtroMetodoVenta==='transferencia'?'active':''}" onclick="ui.filtroMetodoVenta='transferencia'; render()">Transferencias</button></div>
     <div class="table-wrap"><table><thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Pago</th><th>Método</th>${esAdmin()?'<th>Usuario</th>':''}<th class="num">Total</th><th class="num">Ganancia</th><th class="num">Estado</th>${esAdmin()?'<th></th>':''}</tr></thead><tbody>
-      ${histFilt.map(v=>`<tr><td><span class="badge badge-neutral">${v.id}</span></td><td>${fFecha(v.fecha)}<br><span style="font-size:11.5px;color:var(--muted)">${v.hora}</span></td><td>${esc(v.clienteNombre)}</td><td>${v.tipoPago==='contado'?'<span class="badge badge-success">Contado</span>':`<span class="badge badge-warning">Créd ${v.plazo}d</span>`}</td><td><span class="badge ${((v.metodoPago||'sin_registro')==='transferencia')?'badge-info':((v.metodoPago||'sin_registro')==='pendiente'?'badge-warning':((v.metodoPago||'sin_registro')==='sin_registro'?'badge-neutral':'badge-success'))}">${(v.metodoPago||'sin_registro')==='transferencia'?'Transferencia':((v.metodoPago||'sin_registro')==='pendiente'?'Pendiente':((v.metodoPago||'sin_registro')==='sin_registro'?'No registrado':'Efectivo'))}</span></td>${esAdmin()?`<td><span class="badge badge-info">${esc(v.usuarioNombre||'—')}</span></td>`:''}<td class="num bold">${money(v.total)}</td><td class="num" style="color:var(--success);font-weight:600">${money(gananciaVenta(v))}</td><td class="num">${v.tipoPago==='credito'?`<span class="badge ${saldoVenta(v)<=0.001?'badge-success':'badge-danger'}">${saldoVenta(v)<=0.001?'Pagada':'Debe '+money(saldoVenta(v))}</span>`:'<span class="badge badge-neutral">Pagado</span>'}</td>${esAdmin()?`<td class="num" style="white-space:nowrap">${!mesCerrado(v.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('editarVenta','${v.id}')">Editar</button> <button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarVenta('${v.id}')">Eliminar</button>`:'<span class="badge badge-neutral">🔒 Mes cerrado</span>'}</td>`:''}</tr>`).join('')||`<tr><td colspan="${esAdmin()?10:8}" class="empty">Sin resultados.</td></tr>`}
+      ${histFilt.map(v=>`<tr><td><span class="badge badge-neutral">${referenciaVentaVisible(v)}</span></td><td>${fFecha(v.fecha)}<br><span style="font-size:11.5px;color:var(--muted)">${v.hora}</span></td><td>${esc(v.clienteNombre)}</td><td>${v.tipoPago==='contado'?'<span class="badge badge-success">Contado</span>':`<span class="badge badge-warning">Créd ${v.plazo}d</span>`}</td><td><span class="badge ${((v.metodoPago||'sin_registro')==='transferencia')?'badge-info':((v.metodoPago||'sin_registro')==='pendiente'?'badge-warning':((v.metodoPago||'sin_registro')==='sin_registro'?'badge-neutral':'badge-success'))}">${(v.metodoPago||'sin_registro')==='transferencia'?'Transferencia':((v.metodoPago||'sin_registro')==='pendiente'?'Pendiente':((v.metodoPago||'sin_registro')==='sin_registro'?'No registrado':'Efectivo'))}</span></td>${esAdmin()?`<td><span class="badge badge-info">${esc(v.usuarioNombre||'—')}</span></td>`:''}<td class="num bold">${money(v.total)}</td><td class="num" style="color:var(--success);font-weight:600">${money(gananciaVenta(v))}</td><td class="num">${v.tipoPago==='credito'?`<span class="badge ${saldoVenta(v)<=0.001?'badge-success':'badge-danger'}">${saldoVenta(v)<=0.001?'Pagada':'Debe '+money(saldoVenta(v))}</span>`:'<span class="badge badge-neutral">Pagado</span>'}</td>${esAdmin()?`<td class="num" style="white-space:nowrap">${!mesCerrado(v.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('editarVenta','${v.id}')">Editar</button> <button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarVenta('${v.id}')">Eliminar</button>`:'<span class="badge badge-neutral">🔒 Mes cerrado</span>'}</td>`:''}</tr>`).join('')||`<tr><td colspan="${esAdmin()?10:8}" class="empty">Sin resultados.</td></tr>`}
     </tbody></table></div>
   </div>`;
 }
@@ -2776,6 +2794,8 @@ function viewCobranzas(){
 
 function viewCompras(){
   const total=totalCarritoCompra(); const prods=buscarProductos(ui.buscarProdCompra,true);
+  const qCompra=ui.buscarCompraHist||'';
+  const comprasHist=state.compras.slice().reverse().filter(c=>dentroRangoFecha(c.fecha,ui.fechaInicioCompras,ui.fechaFinCompras)).filter(c=>!qCompra||coincide(c.id,qCompra)||coincide(c.proveedorNombre,qCompra)||coincide(c.nota,qCompra));
   return `
   <div class="page-head"><div class="page-eyebrow">Ingresos</div><h1 class="page-title">Compras a proveedores</h1></div>
   <div class="grid-2">
@@ -2793,8 +2813,11 @@ function viewCompras(){
     </div>
   </div>
   <div class="card">
-    <div class="card-head"><div><div class="card-title">Historial</div></div></div>
-    <div class="table-wrap"><table><thead><tr><th>Ref.</th><th>Fecha</th><th>Proveedor</th><th class="num">Total</th><th></th></tr></thead><tbody>${state.compras.slice().reverse().map(c=>`<tr><td><span class="badge badge-neutral">${c.id}</span></td><td>${fFecha(c.fecha)}</td><td>${esc(c.proveedorNombre)}</td><td class="num bold">${money(c.total)}</td><td class="num">${!mesCerrado(c.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarCompra('${c.id}')">Eliminar</button>`:'🔒'}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">Sin compras</td></tr>'}</tbody></table></div>
+    <div class="card-head"><div><div class="card-title">Historial de compras</div><div class="card-subtitle">${comprasHist.length} registros</div></div></div>
+    <div class="search-wrap"><input id="inpCompraHist" placeholder="Buscar proveedor o referencia..." value="${esc(qCompra)}" oninput="ui.buscarCompraHist=this.value; renderConservarFoco('inpCompraHist')"></div>
+    <div class="grid-2" style="margin:10px 0 14px"><div class="field"><label>Fecha desde</label><input type="date" value="${esc(ui.fechaInicioCompras)}" max="${esc(ui.fechaFinCompras||'')}" onchange="ui.fechaInicioCompras=this.value; render()"></div><div class="field"><label>Fecha hasta</label><input type="date" value="${esc(ui.fechaFinCompras)}" min="${esc(ui.fechaInicioCompras||'')}" onchange="ui.fechaFinCompras=this.value; render()"></div></div>
+    <div class="btn-row" style="margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="ui.fechaInicioCompras=''; ui.fechaFinCompras=''; ui.buscarCompraHist=''; render()">Limpiar filtros</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Ref.</th><th>Fecha</th><th>Proveedor</th><th class="num">Total</th><th></th></tr></thead><tbody>${comprasHist.map(c=>`<tr><td><span class="badge badge-neutral">${c.id}</span></td><td>${fFecha(c.fecha)}</td><td>${esc(c.proveedorNombre)}</td><td class="num bold">${money(c.total)}</td><td class="num">${!mesCerrado(c.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarCompra('${c.id}')">Eliminar</button>`:'🔒'}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">Sin compras en este rango</td></tr>'}</tbody></table></div>
   </div>`;
 }
 
