@@ -428,7 +428,6 @@ tbody tr:hover td{background:var(--surface-soft)}
     </div>
   </div>
 </div>
-
 <script>
 /* ================================================================
    MÓDULO SUPABASE — Auth, Sync y Migración
@@ -1184,7 +1183,7 @@ const esCobrador = () => usuarioActual?.rol === 'cobrador';
 
 const ui = {
   ventaCarrito:[], ventaClienteId:'', ventaTipoPago:'contado',
-  ventaPlazo:15, ventaPlazoCustom:'', ventaMontoRecibido:'',
+  ventaPlazo:15, ventaPlazoCustom:'', ventaMontoRecibido:'', ventaAbonoInicial:'',
   buscarCliente:'', mostrarBuscadorCliente:false,
   compraCarrito:[], compraProveedorId:'', compraNota:'', buscarProdCompra:'',
   modal:null, filtroInv:'Todas', clienteAbierto:null, cierreMes:mesActual(),
@@ -1388,6 +1387,7 @@ function renderModal(){
   else if(tipo==='nuevaCategoria'||tipo==='editarCategoria') contenido=modalCategoria(id);
   else if(tipo==='nuevoProveedor'||tipo==='editarProveedor') contenido=modalProveedor(id);
   else if(tipo==='nuevoCliente'||tipo==='editarCliente') contenido=modalCliente(id);
+  else if(tipo==='registrarCreditoManual') contenido=modalRegistrarCreditoManual();
   else if(tipo==='nuevoUsuario'||tipo==='editarUsuario') contenido=modalUsuario(id);
   else if(tipo==='agregarDinero') contenido=modalDinero('aporte');
   else if(tipo==='retirarDinero') contenido=modalDinero('retiro');
@@ -1415,6 +1415,7 @@ function renderModal(){
   if(tipo==='nuevaCuentaPagar'||tipo==='pagarCuenta') setTimeout(()=>{const el=$('m-cuenta-monto'); if(el) el.focus();},50);
   if(tipo==='registrarBonificacion'||tipo==='ajustarSaldo') setTimeout(()=>{const el=$('m-bonif-monto'); if(el) el.focus();},50);
   if(tipo==='montoLibreRecarga') setTimeout(()=>{const el=$('m-monto-libre'); if(el){el.focus(); el.select();}},50);
+  if(tipo==='registrarCreditoManual') setTimeout(()=>{const el=$('m-cred-monto'); if(el) el.focus();},50);
   if(tipo==='configurarCapital'||tipo==='editarCapital'){ setTimeout(()=>{const el=$('m-cap-efectivo'); if(el) el.focus();},50); recalcularCapitalTotal(); }
 }
 
@@ -1564,6 +1565,28 @@ function modalCliente(id){
     <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button><button class="btn btn-primary" onclick="guardarCliente(${c?`'${c.id}'`:'null'})">${c?'Guardar':'Registrar'}</button></div>`;
 }
 
+function modalRegistrarCreditoManual(){
+  return `
+    <div class="modal-head"><div><div class="modal-title">Registrar crédito rápido</div><div class="card-subtitle">Para agregar deuda vieja o saldos pendientes sin hacer una venta.</div></div><button class="modal-close" onclick="cerrarModal()">×</button></div>
+    <div class="alert alert-info"><div>Esto sumará la deuda directamente al cliente. Podés cobrarla desde su historial.</div></div>
+    <div class="field"><label>Cliente *</label>
+      <select id="m-cred-cliente">
+        <option value="">Selecciona un cliente</option>
+        ${state.clientes.sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(c=>`<option value="${c.id}">${esc(c.nombre)} (${esc(c.comunidad)})</option>`).join('')}
+      </select>
+    </div>
+    <div class="field"><label>Monto de la deuda (Bs) *</label>
+      <div class="money-input-wrap"><input id="m-cred-monto" type="text" inputmode="decimal" placeholder="0.00"></div>
+    </div>
+    <div class="field"><label>Concepto / Motivo</label>
+      <input id="m-cred-concepto" placeholder="Ej: Deuda de mercadería">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarCreditoManual()">Registrar deuda</button>
+    </div>`;
+}
+
 function modalUsuario(id){
   const u=id?userById(id):null; const esAdminU=u&&u.rol==='admin';
   const countCajeros=state.usuarios.filter(x=>x.rol==='cajero').length; const countCobradores=state.usuarios.filter(x=>x.rol==='cobrador').length;
@@ -1696,7 +1719,8 @@ function modalMontoLibreRecarga(productoId){
   const p=prodById(productoId); if(!p) return ''; const tipo=tipoBolsaDeProducto(p); const prov=p.proveedorId?provById(p.proveedorId):null; const bolsa=p.proveedorId?bolsaDe(p.proveedorId,tipo):null;
   return `<div class="modal-head"><div><div class="modal-title">Monto de la recarga</div><div class="card-subtitle">${esc(p.nombre)}${prov?` · ${esc(prov.nombre)}`:''}</div></div><button class="modal-close" onclick="cerrarModal()">×</button></div><div class="alert alert-info"><div><strong>Tipo de bolsa:</strong> ${TIPOS_BOLSA[tipo]}${bolsa?`<br><strong>Saldo disponible:</strong> ${money(bolsa.saldo||0)}`:''}</div></div><div class="field"><label>Monto que pide el cliente (Bs) *</label><div class="money-input-wrap"><input id="m-monto-libre" type="text" inputmode="decimal" placeholder="Ej: 25"></div></div><div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button><button class="btn btn-success" onclick="confirmarMontoLibreRecarga('${productoId}')">Agregar al carrito</button></div>`;
 }
-  /* ================================================================
+</script>
+/* ================================================================
    ACCIONES (Guardado de datos)
    ================================================================ */
 function bloquearMesCerrado(fecha, contexto){
@@ -1845,6 +1869,23 @@ function guardarCliente(id){
     state.clientes.push({id:nuevoId,nombre:n,tel,comunidad:com||'—',plazo,limite,creado:HOY()}); toast('Cliente registrado','ok');
   }
   cerrarModal(); render();
+}
+
+function guardarCreditoManual(){
+  const cliId = $('m-cred-cliente').value;
+  const monto = parseNum($('m-cred-monto').value);
+  const concepto = $('m-cred-concepto').value.trim() || 'Deuda manual';
+  if(!cliId) return toast('Seleccioná un cliente','err');
+  if(!(monto>0)) return toast('Monto inválido','err');
+  
+  if(!state.capital.deudasInicialesPorCliente) state.capital.deudasInicialesPorCliente = {};
+  state.capital.deudasInicialesPorCliente[cliId] = num2((state.capital.deudasInicialesPorCliente[cliId] || 0) + monto);
+  state.capital.cuentasPorCobrarIniciales = num2((state.capital.cuentasPorCobrarIniciales || 0) + monto);
+  
+  const c = state.clientes.find(x=>x.id===cliId);
+  toast(`Deuda de ${money(monto)} registrada a ${c.nombre}`,'ok');
+  cerrarModal();
+  render();
 }
 
 function guardarUsuario(id){
@@ -2087,19 +2128,52 @@ function confirmarVenta(){
   for(const it of ui.ventaCarrito){ const p=prodById(it.productoId); if(!p) return toast(`Producto eliminado: ${it.nombre}`,'err'); if(!esProductoRecarga(p)&&p.stock<it.cantidad) return toast(`Stock insuficiente de ${p.nombre}`,'err'); }
   const cliente=ui.ventaClienteId?state.clientes.find(c=>c.id===ui.ventaClienteId):null;
   if(ui.ventaTipoPago==='credito'&&!cliente) return toast('Selecciona un cliente','err');
-  let plazo=null,vencimiento=null;
-  if(ui.ventaTipoPago==='credito'){ plazo=ui.ventaPlazo==='custom'?Number(ui.ventaPlazoCustom):Number(ui.ventaPlazo); if(!(plazo>0)) return toast('Define un plazo','err'); vencimiento=addDias(HOY(),plazo); }
-  const total=totalCarritoVenta(); let montoRecibido=null,cambio=null;
-  if(ui.ventaTipoPago==='contado'){ montoRecibido=parseNum(ui.ventaMontoRecibido); if(!(montoRecibido>=total)) return toast('Monto insuficiente','err'); cambio=num2(montoRecibido-total); }
   
-  const venta={ id:'V'+(state.seq.venta++),fecha:HOY(),hora:horaActual(),clienteId:cliente?cliente.id:null,clienteNombre:cliente?cliente.nombre:'Consumidor final',tipoPago:ui.ventaTipoPago,plazo,vencimiento,items:ui.ventaCarrito.map(i=>({...i})),total,pagado:ui.ventaTipoPago==='contado'?total:0,montoRecibido,cambio,usuarioId:usuarioActual?.id||null,usuarioNombre:usuarioActual?.nombre||'—' };
+  let plazo=null, vencimiento=null, montoRecibido=null, cambio=null, abonoInicial=0;
+  const total=totalCarritoVenta();
+  
+  if(ui.ventaTipoPago==='credito'){
+    plazo=ui.ventaPlazo==='custom'?Number(ui.ventaPlazoCustom):Number(ui.ventaPlazo);
+    if(!(plazo>0)) return toast('Define un plazo','err');
+    vencimiento=addDias(HOY(),plazo);
+    
+    abonoInicial = parseNum(ui.ventaAbonoInicial);
+    if(abonoInicial > total) return toast('El abono no puede superar el total de la venta','err');
+    if(abonoInicial < 0) abonoInicial = 0;
+    
+    montoRecibido = abonoInicial;
+    cambio = 0;
+  } else {
+    montoRecibido=parseNum(ui.ventaMontoRecibido);
+    if(!(montoRecibido>=total)) return toast('Monto insuficiente','err');
+    cambio=num2(montoRecibido-total);
+  }
+  
+  const venta={ 
+    id:'V'+(state.seq.venta++),fecha:HOY(),hora:horaActual(),
+    clienteId:cliente?cliente.id:null, clienteNombre:cliente?cliente.nombre:'Consumidor final',
+    tipoPago:ui.ventaTipoPago, plazo, vencimiento,
+    items:ui.ventaCarrito.map(i=>({...i})),
+    total, pagado:ui.ventaTipoPago==='contado'?total:abonoInicial,
+    montoRecibido, cambio,
+    usuarioId:usuarioActual?.id||null, usuarioNombre:usuarioActual?.nombre||'—' 
+  };
   state.ventas.push(venta);
   
   venta.items.forEach(it=>{ const p=prodById(it.productoId); if(!p) return; if(esProductoRecarga(p)){ const b=p.proveedorId?bolsaDe(p.proveedorId,it.tipoRecarga||tipoBolsaDeProducto(p)):null; if(b) b.saldo=num2((b.saldo||0)-it.subtotal); } else p.stock=num2(p.stock-it.cantidad); });
   
-  if(venta.tipoPago==='contado') agregarMovimientoCaja('venta',total,'Venta '+venta.id+' · '+venta.clienteNombre,venta.id);
-  ui.ventaCarrito=[]; ui.ventaClienteId=''; ui.ventaMontoRecibido=''; ui.ventaTipoPago='contado'; ui.ventaPlazo=15; ui.ventaPlazoCustom='';
-  const gan=gananciaVenta(venta); if(gan>0) toast(`Venta ${money(total)} · Ganancia ${money(gan)}${cambio>0.001?' · Cambio '+money(cambio):''}`,'ok'); else toast(`Venta ${money(total)}${cambio>0.001?' · Cambio '+money(cambio):''}`,'ok');
+  if(venta.tipoPago==='contado') {
+    agregarMovimientoCaja('venta',total,'Venta '+venta.id+' · '+venta.clienteNombre,venta.id);
+  } else if(venta.pagado > 0) {
+    agregarMovimientoCaja('venta', venta.pagado, 'Abono inicial Venta '+venta.id+' · '+venta.clienteNombre, venta.id);
+  }
+  
+  ui.ventaCarrito=[]; ui.ventaClienteId=''; ui.ventaMontoRecibido=''; ui.ventaAbonoInicial=''; ui.ventaTipoPago='contado'; ui.ventaPlazo=15; ui.ventaPlazoCustom='';
+  
+  const gan=gananciaVenta(venta); 
+  if(gan>0) toast(`Venta ${money(total)} · Ganancia ${money(gan)}${cambio>0.001?' · Cambio '+money(cambio):''}`,'ok'); 
+  else toast(`Venta ${money(total)}${cambio>0.001?' · Cambio '+money(cambio):''}`,'ok');
+  
   render();
 }
 
@@ -2161,8 +2235,7 @@ function render(){
   if(ui.modal&&(ui.modal.tipo==='configurarCapital'||ui.modal.tipo==='editarCapital')) setTimeout(recalcularCapitalTotal,20);
   requestAnimationFrame(()=>{ window.scrollTo({top:scrollY,behavior:'instant'}); });
   if(focusId){ const el=document.getElementById(focusId); if(el&&typeof el.focus==='function'){ try{ el.focus({preventScroll:true}); }catch(e){ el.focus(); } if(selStart!==null&&typeof el.setSelectionRange==='function'){ try{ el.setSelectionRange(selStart,selEnd); }catch(e){} } } }
-}
-  /* ================================================================
+}/* ================================================================
    VISTAS
    ================================================================ */
 function viewResumen(){ if(esCobrador()) return viewResumenCobrador(); return viewResumenGeneral(); }
@@ -2512,6 +2585,16 @@ function viewVentas(){
           <div class="field"><label>Forma de pago</label><div class="choice-row"><button class="choice ${ui.ventaTipoPago==='contado'?'active':''}" onclick="ui.ventaTipoPago='contado'; render()"><span class="choice-title">Contado</span></button><button class="choice ${ui.ventaTipoPago==='credito'?'active':''}" onclick="ui.ventaTipoPago='credito'; render()"><span class="choice-title">Crédito</span></button></div></div>
           ${ui.ventaTipoPago==='credito'?`
             <div class="field"><label>Plazo</label><div class="choice-row" style="grid-template-columns:repeat(4,1fr)"><button class="choice ${ui.ventaPlazo===15?'active':''}" onclick="ui.ventaPlazo=15; render()"><span class="choice-title">15d</span></button><button class="choice ${ui.ventaPlazo===20?'active':''}" onclick="ui.ventaPlazo=20; render()"><span class="choice-title">20d</span></button><button class="choice ${ui.ventaPlazo===30?'active':''}" onclick="ui.ventaPlazo=30; render()"><span class="choice-title">30d</span></button><button class="choice ${ui.ventaPlazo==='custom'?'active':''}" onclick="ui.ventaPlazo='custom'; render()"><span class="choice-title">Otro</span></button></div>${ui.ventaPlazo==='custom'?`<input type="number" min="1" placeholder="Días" value="${ui.ventaPlazoCustom}" onchange="ui.ventaPlazoCustom=this.value; render()" style="margin-top:8px">`:''}</div>
+            
+            <!-- NUEVO CAMPO DE ABONO INICIAL -->
+            <div class="field">
+              <label>Abono inicial (Bs) — Opcional</label>
+              <div class="money-input-wrap">
+                <input id="inpVentaAbonoInicial" type="text" inputmode="decimal" placeholder="0.00" value="${ui.ventaAbonoInicial}" oninput="ui.ventaAbonoInicial=this.value; render()">
+              </div>
+              <div class="hint">Si paga una parte ahora, escribila acá. El resto quedará como deuda.</div>
+            </div>
+
             ${!cliente?'<div class="alert alert-warning" style="margin-bottom:10px"><div>Selecciona un cliente.</div></div>':''}
           `:''}
           ${ui.ventaTipoPago==='contado'?`
@@ -2567,7 +2650,13 @@ function viewClientes(){
   <div class="grid-3" style="margin-bottom:20px"><div class="kpi"><div class="kpi-label">Por cobrar</div><div class="kpi-value">${money(totPorCobrar)}</div></div><div class="kpi"><div class="kpi-label">Monto vencido</div><div class="kpi-value ${totVencido>0?'is-danger':''}">${money(totVencido)}</div></div><div class="kpi"><div class="kpi-label">Total clientes</div><div class="kpi-value">${state.clientes.length}</div></div></div>
   <div class="grid-2">
     <div>
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap"><h3 style="font-size:15px;font-weight:600">Lista de clientes <span style="font-weight:400;color:var(--muted);font-size:12.5px">· ${totalFiltrados}</span></h3>${esAdmin()?`<button class="btn btn-primary btn-sm" onclick="abrirModal('nuevoCliente')">Nuevo cliente</button>`:''}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">
+        <h3 style="font-size:15px;font-weight:600">Lista de clientes <span style="font-weight:400;color:var(--muted);font-size:12.5px">· ${totalFiltrados}</span></h3>
+        <div class="btn-row">
+          ${esAdmin()?`<button class="btn btn-warning btn-sm" onclick="abrirModal('registrarCreditoManual')">+ Crédito Rápido</button>`:''}
+          ${esAdmin()?`<button class="btn btn-primary btn-sm" onclick="abrirModal('nuevoCliente')">Nuevo cliente</button>`:''}
+        </div>
+      </div>
       ${esCob?`<div class="filter-tabs"><button class="filter-tab ${ui.filtroClientesCobrador==='con_deuda'?'active':''}" onclick="ui.filtroClientesCobrador='con_deuda'; render()">Con deuda</button><button class="filter-tab ${ui.filtroClientesCobrador==='vencidos'?'active':''}" onclick="ui.filtroClientesCobrador='vencidos'; render()">Vencidos</button><button class="filter-tab ${ui.filtroClientesCobrador==='todos'?'active':''}" onclick="ui.filtroClientesCobrador='todos'; render()">Todos</button></div>`:''}
       <div class="search-wrap"><input id="inpClienteLista" placeholder="Buscar..." value="${esc(ui.buscarClienteLista)}" oninput="ui.buscarClienteLista=this.value; ui.clientesMostrar=CLIENTES_POR_PAGINA; renderConservarFoco('inpClienteLista')"></div>
       ${visibles.map(c=>{
@@ -2711,7 +2800,8 @@ function viewCierre(){
     <div class="table-wrap"><table><thead><tr><th>Período</th><th class="num">Ganancia</th></tr></thead><tbody>${state.cierres.slice().reverse().map(c=>`<tr><td class="bold">${nombreMes(c.mes)}</td><td class="num" style="color:var(--success);font-weight:600">${money(c.ganancia||0)}</td></tr>`).join('')}</tbody></table></div>
   </div>`;
 }
-  /* ================================================================
+
+/* ================================================================
    FUNCIONES DE CIERRE Y BASE
    ================================================================ */
 function accionEjecutarCierre(){
@@ -2745,19 +2835,13 @@ function accionCargarBase(){
 }
 
 function cargarBaseReal(){
-  // 1. Categorías base
   const cats=['Telefonía','Dulces','Útiles escolares','Bebidas','Bolsas electrónicas'].map(n=>{
-    const c={id:'CA'+(state.seq.categoria++),nombre:n};
-    state.categorias.push(c); return c;
+    const c={id:'CA'+(state.seq.categoria++),nombre:n}; state.categorias.push(c); return c;
   });
   const catPorNombre=n=>state.categorias.find(c=>c.nombre===n).id;
-  
-  // 2. Operador Entel
   const entel={id:'PV'+(state.seq.proveedor++),nombre:'Entel',nota:''};
-  state.proveedores.push(entel);
-  bolsaDe(entel.id,'paso'); bolsaDe(entel.id,'paquete');
+  state.proveedores.push(entel); bolsaDe(entel.id,'paso'); bolsaDe(entel.id,'paquete');
 
-  // 3. Productos de recarga (Paso y Paquete)
   state.productos.push({
     id:'PR'+(state.seq.producto++), nombre:'Recargas al paso', categoriaId:catPorNombre('Bolsas electrónicas'), proveedorId:entel.id,
     unidad:'bolivianos', esRecarga:true, tipoRecarga:'paso', costo:0, precio:0, stock:0, stockInicial:0
@@ -2767,7 +2851,6 @@ function cargarBaseReal(){
     unidad:'bolivianos', esRecarga:true, tipoRecarga:'paquete', costo:0, precio:0, stock:0, stockInicial:0
   });
 
-  // 4. Productos físicos de ejemplo
   const gen=[
     {nombre:'Chip Entel 10',cat:'Telefonía',unidad:'unidad',costo:5,precio:12},
     {nombre:'Chip Entel 15',cat:'Telefonía',unidad:'unidad',costo:7,precio:18},
@@ -2788,7 +2871,6 @@ function cargarBaseReal(){
    ================================================================ */
 function migrarDatosViejos(){
   let hubo=false;
-  // Migrar formato viejo de bolsas: bolsas['PV1'] → bolsas['PV1:paso'] + bolsas['PV1:paquete']
   const nuevasBolsas={};
   Object.entries(state.bolsas||{}).forEach(([k,v])=>{
     if(k.includes(':')){ nuevasBolsas[k]=v; }
@@ -2800,7 +2882,6 @@ function migrarDatosViejos(){
   });
   state.bolsas=nuevasBolsas;
   
-  // Migrar productos de recarga viejos
   state.productos.forEach(p=>{
     if(p.esRecarga){
       if(!p.tipoRecarga){ p.tipoRecarga = (p.nombre||'').toLowerCase().includes('paquete') ? 'paquete' : 'paso'; hubo=true; }
@@ -2865,7 +2946,6 @@ window.arrancarApp = function(){
 
     migrarDatosViejos();
     
-    // Asegurar que cada operador tenga sus 2 bolsas base
     state.proveedores.forEach(p=>{ bolsaDe(p.id,'paso'); bolsaDe(p.id,'paquete'); });
 
     usuarioActual=userById(state.usuarioActualId)||state.usuarios[0];
