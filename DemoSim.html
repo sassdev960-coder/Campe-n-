@@ -1183,7 +1183,7 @@ const esCobrador = () => usuarioActual?.rol === 'cobrador';
 
 const ui = {
   ventaCarrito:[], ventaClienteId:'', ventaTipoPago:'contado',
-  ventaPlazo:15, ventaPlazoCustom:'', ventaMontoRecibido:'', ventaAbonoInicial:'',
+  ventaPlazo:15, ventaPlazoCustom:'', ventaMontoRecibido:'', ventaAbonoInicial:'', ventaMetodoPago:'efectivo', filtroMetodoVenta:'todos', filtroMetodoCobranza:'todos',
   buscarCliente:'', mostrarBuscadorCliente:false,
   compraCarrito:[], compraProveedorId:'', compraNota:'', buscarProdCompra:'',
   modal:null, filtroInv:'Todas', clienteAbierto:null, cierreMes:mesActual(),
@@ -1669,6 +1669,7 @@ function modalAbono(clienteId){
     <div style="background:var(--surface-soft);border-radius:10px;padding:12px;margin-bottom:14px;border:1px solid var(--line-soft)"><div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Composición</div><div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>Ventas a crédito</span><b>${money(deudaVtas)}</b></div><div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>Deuda vieja</span><b>${money(deudaIni)}</b></div></div>
     ${pendientes.length>0?`<div class="field"><label>Ventas pendientes (${pendientes.length})</label><div class="pend-list">${pendientes.map(v=>`<div class="pend-item"><div><div style="font-weight:500">${fFecha(v.fecha)}</div><div style="color:var(--muted);font-size:11px">Vence ${fFecha(v.vencimiento)}</div></div><div style="text-align:right"><div style="font-weight:600">${money(saldoVenta(v))}</div></div></div>`).join('')}</div></div>`:''}
     <div class="field"><label>Monto que entrega (Bs) *</label><div class="money-input-wrap"><input type="text" inputmode="decimal" placeholder="0.00" id="m-abono-monto" oninput="actualizarAbonoPreview(${deuda})" value="${deuda}"></div><div class="hint">Si entrega más, se calcula la vuelta.</div></div>
+    <div class="field"><label>Método de pago *</label><select id="m-abono-metodo"><option value="efectivo">Efectivo</option><option value="transferencia">Transferencia</option></select></div>
     <div id="abono-preview"></div>
     <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button><button class="btn btn-success" onclick="confirmarAbono('${clienteId}')">Registrar cobro</button></div>`;
 }
@@ -1980,8 +1981,8 @@ function confirmarAbono(clienteId){
     state.capital.cuentasPorCobrarIniciales=num2(Math.max(0,(state.capital.cuentasPorCobrarIniciales||0)-aplIni)); restante=num2(restante-aplIni);
   }
   const abonoId='A'+(state.seq.abono++); const c=state.clientes.find(x=>x.id===clienteId);
-  state.abonos.push({id:abonoId,clienteId,ventaId:null,fecha:HOY(),hora:horaActual(),monto:num2(aplicado),entregado:num2(entregado),vuelta,usuarioId:usuarioActual?.id||null,usuarioNombre:usuarioActual?.nombre||'—'});
-  agregarMovimientoCaja('abono',aplicado,'Cobro de '+(c?.nombre||''),abonoId);
+  state.abonos.push({id:abonoId,clienteId,ventaId:null,fecha:HOY(),hora:horaActual(),monto:num2(aplicado),entregado:num2(entregado),vuelta,metodoPago:$('m-abono-metodo')?.value||'efectivo',estadoPago:'registrado',usuarioId:usuarioActual?.id||null,usuarioNombre:usuarioActual?.nombre||'—'});
+  if(($('m-abono-metodo')?.value||'efectivo')==='efectivo') agregarMovimientoCaja('abono',aplicado,'Cobro de '+(c?.nombre||''),abonoId);
   if(vuelta>0.001) toast(`Cobro ${money(aplicado)} · Vuelta ${money(vuelta)}`,'ok'); else toast('Cobro '+money(aplicado),'ok'); cerrarModal(); render();
 }
 
@@ -2154,20 +2155,20 @@ function confirmarVenta(){
     tipoPago:ui.ventaTipoPago, plazo, vencimiento,
     items:ui.ventaCarrito.map(i=>({...i})),
     total, pagado:ui.ventaTipoPago==='contado'?total:abonoInicial,
-    montoRecibido, cambio,
+    montoRecibido, cambio, metodoPago:(ui.ventaTipoPago==='contado'||abonoInicial>0)?ui.ventaMetodoPago:'pendiente', estadoPago:ui.ventaTipoPago==='contado'?'pagado':(abonoInicial>0?'abono_parcial':'pendiente'),
     usuarioId:usuarioActual?.id||null, usuarioNombre:usuarioActual?.nombre||'—' 
   };
   state.ventas.push(venta);
   
   venta.items.forEach(it=>{ const p=prodById(it.productoId); if(!p) return; if(esProductoRecarga(p)){ const b=p.proveedorId?bolsaDe(p.proveedorId,it.tipoRecarga||tipoBolsaDeProducto(p)):null; if(b) b.saldo=num2((b.saldo||0)-it.subtotal); } else p.stock=num2(p.stock-it.cantidad); });
   
-  if(venta.tipoPago==='contado') {
+  if(venta.tipoPago==='contado' && venta.metodoPago==='efectivo') {
     agregarMovimientoCaja('venta',total,'Venta '+venta.id+' · '+venta.clienteNombre,venta.id);
-  } else if(venta.pagado > 0) {
+  } else if(venta.tipoPago==='credito' && venta.pagado > 0 && venta.metodoPago==='efectivo') {
     agregarMovimientoCaja('venta', venta.pagado, 'Abono inicial Venta '+venta.id+' · '+venta.clienteNombre, venta.id);
   }
   
-  ui.ventaCarrito=[]; ui.ventaClienteId=''; ui.ventaMontoRecibido=''; ui.ventaAbonoInicial=''; ui.ventaTipoPago='contado'; ui.ventaPlazo=15; ui.ventaPlazoCustom='';
+  ui.ventaCarrito=[]; ui.ventaClienteId=''; ui.ventaMontoRecibido=''; ui.ventaAbonoInicial=''; ui.ventaTipoPago='contado'; ui.ventaMetodoPago='efectivo'; ui.ventaPlazo=15; ui.ventaPlazoCustom='';
   
   const gan=gananciaVenta(venta); 
   if(gan>0) toast(`Venta ${money(total)} · Ganancia ${money(gan)}${cambio>0.001?' · Cambio '+money(cambio):''}`,'ok'); 
@@ -2547,7 +2548,7 @@ function viewVentas(){
   const ok=turnoRequerido(); const total=totalCarritoVenta(); const cliente=ui.ventaClienteId?state.clientes.find(c=>c.id===ui.ventaClienteId):null; const recibido=parseNum(ui.ventaMontoRecibido); const cambio=num2(recibido-total); const cambioOk=recibido>=total;
   const ganCarrito=num2(ui.ventaCarrito.reduce((a,i)=>a+gananciaItem(i),0)); const prods=buscarProductos(ui.buscarProdVenta,false); const clientesEnc=buscarClientesQuery(ui.buscarClienteVenta).slice(0,20);
   const dispDe=p=>{ if(esProductoRecarga(p)){ const tipo=tipoBolsaDeProducto(p); const b=p.proveedorId?bolsaDe(p.proveedorId,tipo):null; return {texto:b?'Saldo: '+money(b.saldo||0):'Sin operador',ok:b&&(b.saldo||0)>0,tipo}; } return {texto:p.stock<=0?'Agotado':'Stock: '+p.stock,ok:p.stock>0}; };
-  const misVentas=ventasVisibles().slice().reverse().slice(0,500); const qH=ui.buscarVentaHist; let histFilt=misVentas.slice(); if(qH) histFilt=histFilt.filter(v=>coincide(v.clienteNombre,qH)||coincide(v.id,qH));
+  const misVentas=ventasVisibles().slice().reverse().slice(0,500); const qH=ui.buscarVentaHist; let histFilt=misVentas.slice(); if(qH) histFilt=histFilt.filter(v=>coincide(v.clienteNombre,qH)||coincide(v.id,qH)); if(ui.filtroMetodoVenta!=='todos') histFilt=histFilt.filter(v=>(v.metodoPago||'sin_registro')===ui.filtroMetodoVenta);
   const mesCerradoHoy=mesCerrado(mesActual());
   
   return `
@@ -2582,6 +2583,7 @@ function viewVentas(){
               </div>`}
           </div>
           <div class="field"><label>Forma de pago</label><div class="choice-row"><button class="choice ${ui.ventaTipoPago==='contado'?'active':''}" onclick="ui.ventaTipoPago='contado'; render()"><span class="choice-title">Contado</span></button><button class="choice ${ui.ventaTipoPago==='credito'?'active':''}" onclick="ui.ventaTipoPago='credito'; render()"><span class="choice-title">Crédito</span></button></div></div>
+          ${(ui.ventaTipoPago==='contado'||parseNum(ui.ventaAbonoInicial)>0)?`<div class="field"><label>Método del pago recibido</label><select id="selMetodoVenta" onchange="ui.ventaMetodoPago=this.value"><option value="efectivo" ${ui.ventaMetodoPago==='efectivo'?'selected':''}>Efectivo</option><option value="transferencia" ${ui.ventaMetodoPago==='transferencia'?'selected':''}>Transferencia</option></select><div class="hint">Se guardará en el historial y podrás filtrar por método.</div></div>`:''}
           ${ui.ventaTipoPago==='credito'?`
             <div class="field"><label>Plazo</label><div class="choice-row" style="grid-template-columns:repeat(4,1fr)"><button class="choice ${ui.ventaPlazo===15?'active':''}" onclick="ui.ventaPlazo=15; render()"><span class="choice-title">15d</span></button><button class="choice ${ui.ventaPlazo===20?'active':''}" onclick="ui.ventaPlazo=20; render()"><span class="choice-title">20d</span></button><button class="choice ${ui.ventaPlazo===30?'active':''}" onclick="ui.ventaPlazo=30; render()"><span class="choice-title">30d</span></button><button class="choice ${ui.ventaPlazo==='custom'?'active':''}" onclick="ui.ventaPlazo='custom'; render()"><span class="choice-title">Otro</span></button></div>${ui.ventaPlazo==='custom'?`<input type="number" min="1" placeholder="Días" value="${ui.ventaPlazoCustom}" onchange="ui.ventaPlazoCustom=this.value; render()" style="margin-top:8px">`:''}</div>
             
@@ -2606,9 +2608,10 @@ function viewVentas(){
   </div>
   <div class="card">
     <div class="card-head"><div><div class="card-title">${esAdmin()?'Historial completo':'Mis ventas'}</div><div class="card-subtitle">${histFilt.length} de ${misVentas.length}</div></div></div>
-    <div class="search-wrap"><input id="inpVentaHist" placeholder="Buscar..." value="${esc(ui.buscarVentaHist)}" oninput="ui.buscarVentaHist=this.value; renderConservarFoco('inpVentaHist')"></div>
-    <div class="table-wrap"><table><thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Pago</th>${esAdmin()?'<th>Usuario</th>':''}<th class="num">Total</th><th class="num">Ganancia</th><th class="num">Estado</th>${esAdmin()?'<th></th>':''}</tr></thead><tbody>
-      ${histFilt.map(v=>`<tr><td><span class="badge badge-neutral">${v.id}</span></td><td>${fFecha(v.fecha)}<br><span style="font-size:11.5px;color:var(--muted)">${v.hora}</span></td><td>${esc(v.clienteNombre)}</td><td>${v.tipoPago==='contado'?'<span class="badge badge-success">Contado</span>':`<span class="badge badge-warning">Créd ${v.plazo}d</span>`}</td>${esAdmin()?`<td><span class="badge badge-info">${esc(v.usuarioNombre||'—')}</span></td>`:''}<td class="num bold">${money(v.total)}</td><td class="num" style="color:var(--success);font-weight:600">${money(gananciaVenta(v))}</td><td class="num">${v.tipoPago==='credito'?`<span class="badge ${saldoVenta(v)<=0.001?'badge-success':'badge-danger'}">${saldoVenta(v)<=0.001?'Pagada':'Debe '+money(saldoVenta(v))}</span>`:'<span class="badge badge-neutral">Pagado</span>'}</td>${esAdmin()?`<td class="num">${!mesCerrado(v.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarVenta('${v.id}')">Eliminar</button>`:'<span class="badge badge-neutral">🔒</span>'}</td>`:''}</tr>`).join('')||`<tr><td colspan="${esAdmin()?9:7}" class="empty">Sin resultados.</td></tr>`}
+    <div class="search-wrap"><input id="inpVentaHist" placeholder="Buscar cliente o referencia..." value="${esc(ui.buscarVentaHist)}" oninput="ui.buscarVentaHist=this.value; renderConservarFoco('inpVentaHist')"></div>
+     <div class="filter-tabs"><button class="filter-tab ${ui.filtroMetodoVenta==='todos'?'active':''}" onclick="ui.filtroMetodoVenta='todos'; render()">Todos</button><button class="filter-tab ${ui.filtroMetodoVenta==='efectivo'?'active':''}" onclick="ui.filtroMetodoVenta='efectivo'; render()">Efectivo</button><button class="filter-tab ${ui.filtroMetodoVenta==='transferencia'?'active':''}" onclick="ui.filtroMetodoVenta='transferencia'; render()">Transferencias</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Pago</th><th>Método</th>${esAdmin()?'<th>Usuario</th>':''}<th class="num">Total</th><th class="num">Ganancia</th><th class="num">Estado</th>${esAdmin()?'<th></th>':''}</tr></thead><tbody>
+      ${histFilt.map(v=>`<tr><td><span class="badge badge-neutral">${v.id}</span></td><td>${fFecha(v.fecha)}<br><span style="font-size:11.5px;color:var(--muted)">${v.hora}</span></td><td>${esc(v.clienteNombre)}</td><td>${v.tipoPago==='contado'?'<span class="badge badge-success">Contado</span>':`<span class="badge badge-warning">Créd ${v.plazo}d</span>`}</td><td><span class="badge ${((v.metodoPago||'sin_registro')==='transferencia')?'badge-info':((v.metodoPago||'sin_registro')==='pendiente'?'badge-warning':((v.metodoPago||'sin_registro')==='sin_registro'?'badge-neutral':'badge-success'))}">${(v.metodoPago||'sin_registro')==='transferencia'?'Transferencia':((v.metodoPago||'sin_registro')==='pendiente'?'Pendiente':((v.metodoPago||'sin_registro')==='sin_registro'?'No registrado':'Efectivo'))}</span></td>${esAdmin()?`<td><span class="badge badge-info">${esc(v.usuarioNombre||'—')}</span></td>`:''}<td class="num bold">${money(v.total)}</td><td class="num" style="color:var(--success);font-weight:600">${money(gananciaVenta(v))}</td><td class="num">${v.tipoPago==='credito'?`<span class="badge ${saldoVenta(v)<=0.001?'badge-success':'badge-danger'}">${saldoVenta(v)<=0.001?'Pagada':'Debe '+money(saldoVenta(v))}</span>`:'<span class="badge badge-neutral">Pagado</span>'}</td>${esAdmin()?`<td class="num">${!mesCerrado(v.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarVenta('${v.id}')">Eliminar</button>`:'<span class="badge badge-neutral">🔒</span>'}</td>`:''}</tr>`).join('')||`<tr><td colspan="${esAdmin()?10:8}" class="empty">Sin resultados.</td></tr>`}
     </tbody></table></div>
   </div>`;
 }
@@ -2679,15 +2682,16 @@ function viewClientes(){
 
 function viewCobranzas(){
   const mis=abonosVisibles(); const totHist=num2(mis.reduce((a,x)=>a+x.monto,0)); const q=ui.buscarCobranza; let lista=mis.slice().reverse().slice(0,200);
-  if(q) lista=lista.filter(a=>{ const c=state.clientes.find(x=>x.id===a.clienteId); return coincide(c?.nombre||'',q); });
+  if(q) lista=lista.filter(a=>{ const c=state.clientes.find(x=>x.id===a.clienteId); return coincide(c?.nombre||'',q)||coincide(a.id,q); }); if(ui.filtroMetodoCobranza!=='todos') lista=lista.filter(a=>(a.metodoPago||'sin_registro')===ui.filtroMetodoCobranza);
   return `
   <div class="page-head"><div class="page-eyebrow">Cobranzas</div><h1 class="page-title">Historial de cobros</h1></div>
   <div class="kpi-grid"><div class="kpi"><div class="kpi-label">Cobrado histórico</div><div class="kpi-value is-success">${money(totHist)}</div></div></div>
   <div class="card">
     <div class="card-head"><div><div class="card-title">Registros</div></div></div>
-    <div class="search-wrap"><input id="inpCobranza" placeholder="Buscar..." value="${esc(ui.buscarCobranza)}" oninput="ui.buscarCobranza=this.value; renderConservarFoco('inpCobranza')"></div>
-    <div class="table-wrap"><table><thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th class="num">Entregado</th><th class="num">Aplicado</th></tr></thead><tbody>
-      ${lista.map(a=>{ const c=state.clientes.find(x=>x.id===a.clienteId); return `<tr><td><span class="badge badge-neutral">${a.id}</span></td><td>${fFecha(a.fecha)}</td><td>${esc(c?.nombre||'—')}</td><td class="num">${money(a.entregado??a.monto)}</td><td class="num bold" style="color:var(--success)">+ ${money(a.monto)}</td></tr>`; }).join('')||'<tr><td colspan="5" class="empty">Sin resultados.</td></tr>'}
+    <div class="search-wrap"><input id="inpCobranza" placeholder="Buscar cliente o referencia..." value="${esc(ui.buscarCobranza)}" oninput="ui.buscarCobranza=this.value; renderConservarFoco('inpCobranza')"></div>
+     <div class="filter-tabs"><button class="filter-tab ${ui.filtroMetodoCobranza==='todos'?'active':''}" onclick="ui.filtroMetodoCobranza='todos'; render()">Todos</button><button class="filter-tab ${ui.filtroMetodoCobranza==='efectivo'?'active':''}" onclick="ui.filtroMetodoCobranza='efectivo'; render()">Efectivo</button><button class="filter-tab ${ui.filtroMetodoCobranza==='transferencia'?'active':''}" onclick="ui.filtroMetodoCobranza='transferencia'; render()">Transferencias</button></div>
+    <div class="table-wrap"><table><thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Método</th><th class="num">Entregado</th><th class="num">Aplicado</th></tr></thead><tbody>
+      ${lista.map(a=>{ const c=state.clientes.find(x=>x.id===a.clienteId); return `<tr><td><span class="badge badge-neutral">${a.id}</span></td><td>${fFecha(a.fecha)}</td><td>${esc(c?.nombre||'—')}</td><td><span class="badge ${a.metodoPago==='transferencia'?'badge-info':(a.metodoPago?'badge-success':'badge-neutral')}">${a.metodoPago==='transferencia'?'Transferencia':(a.metodoPago==='efectivo'?'Efectivo':'No registrado')}</span></td><td class="num">${money(a.entregado??a.monto)}</td><td class="num bold" style="color:var(--success)">+ ${money(a.monto)}</td></tr>`; }).join('')||'<tr><td colspan="6" class="empty">Sin resultados.</td></tr>'}
     </tbody></table></div>
   </div>`;
 }
