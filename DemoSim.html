@@ -1008,7 +1008,20 @@ window.syncToCloud = function(stateArg){
       await subirStateASupabase(snapshot);
     }catch(e){
       console.error('[SIMGest] Error sincronizando:', e);
-      if(typeof toast === 'function') toast('No se pudo guardar en la nube: ' + (e.message || 'error'), 'err');
+      // Protección: conservar el último estado local si la nube falla.
+      // Esto no modifica ni elimina registros existentes en Supabase.
+      try{
+        localStorage.setItem('simgest_recovery_snapshot', JSON.stringify(snapshot));
+        console.warn('[SIMGest] Copia local de recuperación actualizada; los datos locales se conservaron.');
+      }catch(localErr){
+        console.warn('[SIMGest] No se pudo actualizar la copia de recuperación local:', localErr);
+      }
+      const detalle = String((e && e.message) || e || 'error');
+      const pareceRedOCors = e instanceof TypeError || /failed to fetch|networkerror|cors/i.test(detalle);
+      const aviso = pareceRedOCors
+        ? 'Guardado local conservado; Supabase no respondió (posible CORS o problema de red). No borres los datos del navegador y revisa el panel de Supabase.'
+        : 'No se pudo guardar en la nube: ' + detalle + '. La copia local se conservó.';
+      if(typeof toast === 'function') toast(aviso, 'err');
     }
   }, 700);
 };
