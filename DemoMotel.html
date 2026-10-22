@@ -84,7 +84,6 @@ input,select,button{-webkit-appearance:none;appearance:none}
 .page-title .add-btn{padding:10px 16px;border-radius:11px;background:var(--accent);color:#fff;font-size:13px;font-weight:700;white-space:nowrap;border:1px solid var(--accent);box-shadow:0 2px 8px rgba(184,134,11,.35);transition:transform .12s var(--ease)}
 .page-title .add-btn:active{transform:scale(.94)}
 
-/* BANNER DE FECHA GRANDE */
 .main-date-banner {
   font-size: 26px;
   font-weight: 900;
@@ -118,15 +117,13 @@ input,select,button{-webkit-appearance:none;appearance:none}
 .stat .val.c-blue{color:var(--blue)}
 .stat .val.c-muted{color:var(--text-2)}
 
-/* =========================================================
-   FICHA DE PIEZA
-   ========================================================= */
 .rooms-list{display:flex;flex-direction:column;gap:14px}
 .card-room{background:var(--surface);border-radius:18px;border:1.5px solid var(--border-btn);padding:16px 16px 14px;position:relative;overflow:hidden;box-shadow:var(--shadow-card);transition:transform .18s var(--ease),border-color .2s,box-shadow .2s}
 .card-room.free{border-color:var(--border-btn)}
 .card-room.busy{border-color:rgba(200,150,62,.55);background:linear-gradient(165deg,rgba(200,150,62,.06),var(--surface) 60%)}
 .card-room.corrida{border-color:rgba(175,82,222,.55);background:linear-gradient(165deg,rgba(175,82,222,.06),var(--surface) 60%)}
 .card-room.package{border-color:rgba(10,132,255,.5);background:linear-gradient(165deg,rgba(10,132,255,.06),var(--surface) 60%)}
+.card-room.stopped{border-color:rgba(175,82,222,.7);background:linear-gradient(165deg,rgba(175,82,222,.08),var(--surface) 60%)}
 .card-room.urgent{border-color:rgba(255,59,48,.7);background:linear-gradient(165deg,rgba(255,59,48,.07),var(--surface) 60%);animation:pulseUrgent 1.6s ease-in-out infinite}
 @keyframes pulseUrgent{0%,100%{border-color:rgba(255,59,48,.7)}50%{border-color:rgba(255,59,48,.35)}}
 .cr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px}
@@ -138,7 +135,7 @@ input,select,button{-webkit-appearance:none;appearance:none}
 .cr-badge.free{background:rgba(52,199,89,.18);color:var(--green)}
 .cr-badge.busy{background:rgba(200,150,62,.22);color:#9A6E1F}
 html[data-theme="dark"] .cr-badge.busy{color:var(--accent)}
-.cr-badge.pending{background:rgba(175,82,222,.2);color:var(--purple)}
+.cr-badge.pending{background:rgba(175,82,222,.24);color:var(--purple)}
 .cr-badge.package{background:rgba(10,132,255,.2);color:var(--blue)}
 .cr-badge.corrida{background:rgba(175,82,222,.2);color:var(--purple)}
 .cr-badge.urgent{background:rgba(255,59,48,.2);color:var(--red);animation:blinkBar .9s ease-in-out infinite}
@@ -223,6 +220,9 @@ html[data-theme="dark"] .pay-btn.green{color:var(--green)}
 html[data-theme="dark"] .pay-btn.blue{color:var(--blue)}
 .pay-btn.purple{background:rgba(175,82,222,.15);color:#8E3FBC;border-color:rgba(175,82,222,.35)}
 html[data-theme="dark"] .pay-btn.purple{color:var(--purple)}
+
+.stopped-actions{display:grid;grid-template-columns:auto 1fr;gap:8px;margin-bottom:10px}
+.stopped-actions .btn{padding:14px 16px;font-size:14px;font-weight:800;border-radius:12px}
 
 .btn-edit-hours{
   width:100%;padding:11px;border-radius:11px;margin-bottom:10px;
@@ -485,9 +485,8 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
   .login-box > p{font-size:14px;margin-bottom:32px}
 }
 
-/* Filtros del historial de movimientos del panel */
 .panel-movements-card{overflow:hidden}
-.panel-movement-filters{padding:16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:14px}
+.panel-movement-filters{padding:16px;border-bottom:1px solid var(--border-btn);display:flex;flex-direction:column;gap:14px}
 .panel-preset-buttons{display:flex;flex-wrap:wrap;gap:8px}
 .panel-date-fields{display:grid;grid-template-columns:minmax(140px,1fr) minmax(140px,1fr) auto;gap:12px;align-items:end}
 .panel-date-fields .field{margin:0;min-width:0}
@@ -495,6 +494,21 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
 #panelMovementRangeLabel{margin:0}
 @media(max-width:700px){.panel-date-fields{grid-template-columns:1fr 1fr}.panel-date-fields button{grid-column:1/-1;width:100%}.panel-movement-filters{padding:12px}.panel-preset-buttons .btn{flex:1}}
 @media print{.panel-movement-filters{display:none!important}}
+
+.sync-indicator{
+  position:fixed;bottom:calc(90px + var(--safe-b));right:16px;
+  padding:6px 12px;border-radius:20px;font-size:11px;font-weight:700;
+  background:var(--surface-3);color:var(--text-2);z-index:90;
+  display:flex;align-items:center;gap:6px;
+  box-shadow:0 4px 12px rgba(0,0,0,.3);transition:all .3s;
+  pointer-events:none;opacity:0;
+}
+.sync-indicator.show{opacity:1}
+.sync-indicator.online{background:rgba(52,199,89,.9);color:#fff}
+.sync-indicator.offline{background:rgba(255,59,48,.9);color:#fff}
+.sync-indicator.syncing{background:rgba(200,150,62,.9);color:#fff}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulseDot 1.6s ease-in-out infinite}
+@keyframes pulseDot{0%,100%{opacity:1}50%{opacity:.4}}
 </style>
 </head>
 <body>
@@ -509,6 +523,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
     <button class="btn primary block" onclick="doLogin()">Iniciar turno</button>
     <p class="login-error" id="loginError"></p>
     <p class="login-hint">Primera vez: <b>admin / admin123</b></p>
+    <p class="login-hint" id="supabaseStatus" style="color:var(--text-3)">Verificando conexión...</p>
   </div>
 </div>
 
@@ -555,7 +570,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
   <section id="habitaciones" class="view">
     <div class="page-title">
       <div><h1>Piezas</h1><p id="roomSummary"></p></div>
-      <button class="add-btn hidden" id="btnAddRoom" onclick="openRoomManager()">⚙ Piezas</button>
+      <button class="add-btn hidden" id="btnAddRoom" onclick="openRoomManager()">⚙ Gestionar piezas</button>
     </div>
     
     <div class="main-date-banner" id="mainDateDisplay"></div>
@@ -649,10 +664,22 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
   </button>
 </nav>
 
+<div class="sync-indicator" id="syncIndicator"><span class="sync-dot"></span><span id="syncText">Conectando...</span></div>
+
 <div id="modalRoot"></div>
 <div id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+/* =========================================================
+   ⚙️ CONFIGURACIÓN SUPABASE
+   ========================================================= */
+const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
+const SUPABASE_ANON_KEY = 'TU-ANON-KEY-AQUI';
+
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
 const $  = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const pad = n => String(n).padStart(2,'0');
@@ -702,9 +729,92 @@ function applyTheme(t){ document.documentElement.dataset.theme = t; localStorage
 function initTheme(){ const s = localStorage.getItem('motel-theme'); if(s) return applyTheme(s); applyTheme(window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
 $('#themeToggle').addEventListener('click', () => applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
 
+/* SUPABASE */
+let sb = null;
+const supaReady = (() => {
+  try {
+    if(!window.supabase) throw new Error('SDK no cargado');
+    if(SUPABASE_URL.includes('TU-PROYECTO') || SUPABASE_ANON_KEY.includes('TU-ANON')){
+      throw new Error('Configura SUPABASE_URL y SUPABASE_ANON_KEY');
+    }
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    return true;
+  } catch(e) {
+    console.warn('⚠ Supabase no disponible:', e.message, '→ usando localStorage');
+    return false;
+  }
+})();
+
+function setSyncStatus(status, text) {
+  const el = $('#syncIndicator');
+  const txt = $('#syncText');
+  if(!el) return;
+  el.className = 'sync-indicator show ' + status;
+  if(txt) txt.textContent = text;
+  clearTimeout(el._t);
+  if(status === 'online'){
+    el._t = setTimeout(() => { el.classList.remove('show'); }, 2500);
+  }
+}
+
+/* MAPEADORES */
+function toSnakeRoom(r){
+  return {
+    id: r.id, num: r.num, name: r.name,
+    price: r.price, rate: r.rate, status: r.status,
+    mode: r.mode || null,
+    check_in: r.checkIn || null,
+    check_out: r.checkOut || null,
+    paid_hours: r.paidHours ?? null,
+    hourly_rate: r.hourlyRate ?? null,
+    package_end_time: r.packageEndTime ?? null,
+    package_price: r.packagePrice ?? null,
+    consumos: r.consumos || [],
+    payment_status: r.paymentStatus || 'pendiente',
+    payments: r.payments || [],
+    user_id: r.userId || null,
+    user_name: r.userName || null,
+    period_observation: r.periodObservation || null,
+    hour_edits: r.hourEdits || []
+  };
+}
+function fromSnakeRoom(r){
+  return {
+    id: r.id, num: r.num, name: r.name,
+    price: Number(r.price) || 0,
+    rate: Number(r.rate) || 0,
+    status: r.status || 'libre',
+    mode: r.mode || null,
+    checkIn: r.check_in || null,
+    checkOut: r.check_out || null,
+    paidHours: r.paid_hours != null ? Number(r.paid_hours) : null,
+    hourlyRate: r.hourly_rate != null ? Number(r.hourly_rate) : null,
+    packageEndTime: r.package_end_time || null,
+    packagePrice: r.package_price != null ? Number(r.package_price) : null,
+    consumos: Array.isArray(r.consumos) ? r.consumos : [],
+    paymentStatus: r.payment_status || 'pendiente',
+    payments: Array.isArray(r.payments) ? r.payments : [],
+    userId: r.user_id || null,
+    userName: r.user_name || null,
+    periodObservation: r.period_observation || '',
+    hourEdits: Array.isArray(r.hour_edits) ? r.hour_edits : []
+  };
+}
+function toSnakeMovement(m){ return { id:m.id, product_id:m.productId, type:m.type, qty:m.qty, unit_cost:m.unitCost||0, date:m.date, note:m.note||null, user_id:m.userId||null, shift_id:m.shiftId||null, edited_at:m.editedAt||null, edited_by:m.editedBy||null }; }
+function fromSnakeMovement(m){ return { id:m.id, productId:m.product_id, type:m.type, qty:Number(m.qty), unitCost:Number(m.unit_cost)||0, date:m.date, note:m.note||'', userId:m.user_id||null, shiftId:m.shift_id||null, editedAt:m.edited_at||null, editedBy:m.edited_by||null }; }
+function toSnakeSale(s){ return { id:s.id, ts:s.ts, day:s.day, type:s.type, detail:s.detail, amount:s.amount||0, lodging_amount:s.lodgingAmount??null, total_collected:s.totalCollected??null, cost:s.cost||0, user_id:s.userId||null, user_name:s.userName||null, shift_id:s.shiftId||null, room_num:s.roomNum||null, payments:s.payments||[] }; }
+function fromSnakeSale(s){ return { id:s.id, ts:s.ts, day:typeof s.day==='string'?s.day:dayKey(s.day), type:s.type, detail:s.detail, amount:Number(s.amount)||0, lodgingAmount:s.lodging_amount!=null?Number(s.lodging_amount):null, totalCollected:s.total_collected!=null?Number(s.total_collected):null, cost:Number(s.cost)||0, userId:s.user_id||null, userName:s.user_name||null, shiftId:s.shift_id||null, roomNum:s.room_num||null, payments:Array.isArray(s.payments)?s.payments:[] }; }
+function toSnakeExpense(e){ return { id:e.id, ts:e.ts, day:e.day, description:e.desc, amount:e.amount||0, category:e.category||null, user_id:e.userId||null, user_name:e.userName||null }; }
+function fromSnakeExpense(e){ return { id:e.id, ts:e.ts, day:typeof e.day==='string'?e.day:dayKey(e.day), desc:e.description, amount:Number(e.amount)||0, category:e.category||'', userId:e.user_id||null, userName:e.user_name||null }; }
+function toSnakeDeposit(d){ return { id:d.id, ts:d.ts, day:d.day, description:d.desc, amount:d.amount||0, user_id:d.userId||null, user_name:d.userName||null }; }
+function fromSnakeDeposit(d){ return { id:d.id, ts:d.ts, day:typeof d.day==='string'?d.day:dayKey(d.day), desc:d.description, amount:Number(d.amount)||0, userId:d.user_id||null, userName:d.user_name||null }; }
+function toSnakeShift(s){ return { id:s.id, user_id:s.userId, user_name:s.userName, role:s.role, login_at:s.loginAt, logout_at:s.logoutAt||null }; }
+function fromSnakeShift(s){ return { id:s.id, userId:s.user_id, userName:s.user_name, role:s.role, loginAt:s.login_at, logoutAt:s.logout_at||null }; }
+
 /* DB */
 const KEY = 'motel_db_v3';
 const SESSION_KEY = 'motel-session-v3';
+
 function seed(){
   return {
     rooms: Array.from({length:10}, (_,i) => ({
@@ -712,7 +822,8 @@ function seed(){
       price:30, rate:30, status:'libre',
       mode: null, checkIn: null, checkOut: null, paidHours: null, hourlyRate: 30,
       packageEndTime: null, packagePrice: null, consumos: [],
-      paymentStatus: 'pendiente', payments: [], userId: null, userName: null
+      paymentStatus: 'pendiente', payments: [], userId: null, userName: null,
+      periodObservation: '', hourEdits: []
     })),
     products: [], movements: [], sales: [],
     expenses: [], deposits: [],
@@ -720,15 +831,110 @@ function seed(){
     shifts: []
   };
 }
-function load(){
+function loadLocal(){
   try{
     const raw = localStorage.getItem(KEY);
-    if(raw) return JSON.parse(raw);
+    if(raw){
+      const d = JSON.parse(raw);
+      if(!d.users || !d.users.length) d.users = [{ id:'u-admin', name:'Administrador', username:'admin', password:'admin123', role:'admin' }];
+      if(!d.shifts) d.shifts = [];
+      if(!d.expenses) d.expenses = [];
+      if(!d.deposits) d.deposits = [];
+      return d;
+    }
   }catch(e){ console.warn(e); }
   return seed();
 }
-function save(){ localStorage.setItem(KEY, JSON.stringify(db)); }
-let db = load();
+function saveLocal(){ try { localStorage.setItem(KEY, JSON.stringify(db)); } catch(e){ console.warn(e); } }
+
+/* SUPABASE CARGA */
+async function loadFromSupabase(){
+  if(!sb) return null;
+  try {
+    const [u, ro, pr, mv, sa, ex, de, sh] = await Promise.all([
+      sb.from('motel_users').select('*'),
+      sb.from('motel_rooms').select('*'),
+      sb.from('motel_products').select('*'),
+      sb.from('motel_movements').select('*'),
+      sb.from('motel_sales').select('*'),
+      sb.from('motel_expenses').select('*'),
+      sb.from('motel_deposits').select('*'),
+      sb.from('motel_shifts').select('*'),
+    ]);
+    if(u.error) throw u.error;
+    if(ro.error) throw ro.error;
+    if(pr.error) throw pr.error;
+    if(mv.error) throw mv.error;
+    if(sa.error) throw sa.error;
+    if(ex.error) throw ex.error;
+    if(de.error) throw de.error;
+    if(sh.error) throw sh.error;
+    return {
+      users: (u.data || []).map(x => ({ id:x.id, name:x.name, username:x.username, password:x.password, role:x.role })),
+      rooms: (ro.data || []).map(fromSnakeRoom),
+      products: (pr.data || []).map(x => ({ id:x.id, name:x.name, cost:Number(x.cost)||0, price:Number(x.price)||0 })),
+      movements: (mv.data || []).map(fromSnakeMovement),
+      sales: (sa.data || []).map(fromSnakeSale),
+      expenses: (ex.data || []).map(fromSnakeExpense),
+      deposits: (de.data || []).map(fromSnakeDeposit),
+      shifts: (sh.data || []).map(fromSnakeShift)
+    };
+  } catch(e) {
+    console.error('❌ loadFromSupabase:', e);
+    return null;
+  }
+}
+
+let syncTimer = null;
+let syncInFlight = false;
+async function syncToSupabase(){
+  if(!sb) return;
+  if(syncInFlight) return;
+  syncInFlight = true;
+  setSyncStatus('syncing', 'Guardando...');
+  try {
+    const tasks = [];
+    if(db.users.length) tasks.push(sb.from('motel_users').upsert(db.users.map(u => ({ id:u.id, name:u.name, username:u.username, password:u.password, role:u.role }))));
+    if(db.rooms.length) tasks.push(sb.from('motel_rooms').upsert(db.rooms.map(toSnakeRoom)));
+    if(db.products.length) tasks.push(sb.from('motel_products').upsert(db.products.map(p => ({ id:p.id, name:p.name, cost:p.cost||0, price:p.price||0 }))));
+    if(db.movements.length) tasks.push(sb.from('motel_movements').upsert(db.movements.map(toSnakeMovement)));
+    if(db.sales.length) tasks.push(sb.from('motel_sales').upsert(db.sales.map(toSnakeSale)));
+    if(db.expenses.length) tasks.push(sb.from('motel_expenses').upsert(db.expenses.map(toSnakeExpense)));
+    if(db.deposits.length) tasks.push(sb.from('motel_deposits').upsert(db.deposits.map(toSnakeDeposit)));
+    if(db.shifts.length) tasks.push(sb.from('motel_shifts').upsert(db.shifts.map(toSnakeShift)));
+    const results = await Promise.all(tasks);
+    const errors = results.filter(r => r && r.error);
+    if(errors.length) throw errors[0].error;
+    setSyncStatus('online', '✓ Guardado');
+  } catch(e) {
+    console.error('❌ syncToSupabase:', e);
+    setSyncStatus('offline', '✕ Error al guardar');
+  } finally {
+    syncInFlight = false;
+  }
+}
+
+async function supaDelete(table, filters){
+  if(!sb) return;
+  try {
+    let q = sb.from(table).delete();
+    Object.entries(filters).forEach(([k,v]) => { q = q.eq(k, v); });
+    const { error } = await q;
+    if(error) throw error;
+  } catch(e) {
+    console.error(`❌ supaDelete ${table}:`, e);
+  }
+}
+
+function save(){
+  saveLocal();
+  if(sb){
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncToSupabase, 500);
+  }
+}
+
+let db = seed();
 
 /* SESIÓN */
 let currentUser = null, currentShift = null;
@@ -808,7 +1014,6 @@ $$('.tab').forEach(b => b.addEventListener('click', () => {
   if(b.dataset.tab === 'reportes') renderReports();
 }));
 
-/* SHEET */
 function openSheet(title, body, foot){
   const root = $('#modalRoot');
   root.innerHTML = `<div class="overlay" onclick="if(event.target===this)closeModal()"><div class="sheet" onclick="event.stopPropagation()"><div class="sheet-head"><h3>${title}</h3><button class="x" onclick="closeModal()">✕</button></div><div class="sheet-body">${body}</div>${foot ? `<div class="sheet-foot">${foot}</div>` : ''}</div></div>`;
@@ -858,6 +1063,7 @@ function openRoomManager(){
   if(currentUser?.role !== 'admin') return;
   const total = db.rooms.length;
   const libres = db.rooms.filter(r => r.status === 'libre').length;
+  const nextNum = pad(Math.max(0, ...db.rooms.map(x => Number(x.num) || 0)) + 1);
   const rows = db.rooms.map(r => `
     <div class="room-row">
       <div class="rr-num">${esc(r.num)}</div>
@@ -874,8 +1080,9 @@ function openRoomManager(){
       <div><span>Libres</span><b>${libres}</b></div>
       <div><span>Ocupadas</span><b>${total - libres}</b></div>
     </div>
+    <p class="helper" style="padding:0 4px 10px">¿Necesitas más habitaciones? Presiona el botón de abajo y crea la pieza N° ${nextNum} o el número que elijas.</p>
     <div class="group" style="margin-bottom:14px;max-height:340px;overflow-y:auto">${rows || '<p class="empty">Sin piezas</p>'}</div>
-    <button class="btn primary block" onclick="openEditRoom(null)">＋ Agregar nueva pieza</button>
+    <button class="btn primary block" onclick="openEditRoom(null)">＋ Agregar nueva pieza (N° ${nextNum})</button>
   `, `<button class="btn" onclick="closeModal()">Cerrar</button>`);
 }
 function openEditRoom(id){
@@ -909,20 +1116,22 @@ function saveRoom(id){
       price, rate: price, status:'libre',
       mode: null, checkIn: null, checkOut: null, paidHours: null, hourlyRate: price,
       packageEndTime: null, packagePrice: null, consumos: [],
-      paymentStatus: 'pendiente', payments: [], userId: null, userName: null
+      paymentStatus: 'pendiente', payments: [], userId: null, userName: null,
+      periodObservation: '', hourEdits: []
     });
   }
   db.rooms.sort((a,b) => (Number(a.num)||0) - (Number(b.num)||0));
   save(); openRoomManager(); renderAll();
   toast(id ? 'Pieza actualizada' : 'Pieza agregada');
 }
-function deleteRoom(id){
+async function deleteRoom(id){
   const r = db.rooms.find(x => x.id === id);
   if(!r) return;
   if(r.status === 'ocupada'){ toast('No puedes eliminar una pieza ocupada'); return; }
   if(!confirm(`¿Eliminar la pieza ${r.num}?`)) return;
   db.rooms = db.rooms.filter(x => x.id !== id);
   save(); openRoomManager(); renderAll();
+  await supaDelete('motel_rooms', { id });
   toast('Pieza eliminada');
 }
 
@@ -962,7 +1171,7 @@ function saveUser(id){
   if(id === currentUser.id){ Object.assign(currentUser, { name, username, password, role }); $('#userBtn').textContent = initials(name); applyRoleUI(); }
   closeModal(); toast('Usuario guardado');
 }
-function deleteUser(id){
+async function deleteUser(id){
   if(id === currentUser.id){ toast('No puedes eliminarte'); return; }
   const u = db.users.find(x => x.id === id);
   if(!u) return;
@@ -970,6 +1179,7 @@ function deleteUser(id){
   if(!confirm(`¿Eliminar a "${u.name}"?`)) return;
   db.users = db.users.filter(x => x.id !== id); save();
   openUsersManager(); toast('Usuario eliminado');
+  await supaDelete('motel_users', { id });
 }
 
 /* SHIFTS */
@@ -1004,13 +1214,8 @@ function tickLiveClocks(){
 }
 setInterval(tickLiveClocks, 1000);
 
-/* =========================================================
-   CÁLCULO DE MONTOS
-   ========================================================= */
-const TARIFF_TABLES = {
-  30: [0,30,60,90,115,140,165,185,200,225,250],
-  40: [0,40,80,115,145,175,205,235,260,280,300]
-};
+/* CÁLCULOS */
+const TARIFF_TABLES = { 30: [0,30,60,90,115,140,165,185,200,225,250], 40: [0,40,80,115,145,175,205,235,260,280,300] };
 const NIGHT_PRICES = {30:130, 40:150};
 function tariffPrice(rate, hours){
   const base = Number(rate) || 30;
@@ -1029,8 +1234,6 @@ function calcTariffWithNight(entryTs, endTs, rate){
   const duration = Math.max(0, endTs-entryTs);
   if(!duration) return {amount:0,hours:0,detail:'tarifa por tiempo',night:false,normalAmount:0,nightAmount:0};
   const base = Number(rate) === 40 ? 40 : 30;
-  const entry = new Date(entryTs);
-  const end = new Date(endTs);
   let cursor = new Date(entryTs);
   let normalMs = 0, nightCount = 0, nightAmount = 0, normalAmount = 0;
   while(cursor.getTime() < endTs){
@@ -1114,9 +1317,7 @@ function stateFor(r){
   return { phase: r.checkOut ? 'finished' : 'running', mode: 'hora', elapsedMs, paidMs, remaining, pct, barWidth, cls, color, urgency };
 }
 
-/* =========================================================
-   FICHA TIPO BOCETO
-   ========================================================= */
+/* TARJETAS */
 function cardRoom(r){
   if(!r) return '';
   const isLibre = r.status === 'libre';
@@ -1133,13 +1334,46 @@ function cardRoom(r){
       </div>`;
   }
   const s = stateFor(r);
+  const isStopped = r.status === 'ocupada' && r.checkOut;
 
+  /* ---------- PAQUETE ---------- */
   if(s.mode === 'paquete'){
+    const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+    const totalAmt = r.packagePrice || 0;
+    const grand = totalAmt + consTotal;
     const inTime = fmtTime(r.checkIn);
     const outTime = r.packageEndTime || '--:--';
-    const totalAmt = r.packagePrice || 0;
-    const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
-    const grand = totalAmt + consTotal;
+
+    if(isStopped){
+      const realExit = fmtTime(r.checkOut);
+      return `
+        <div class="card-room stopped">
+          <div class="cr-top">
+            <div class="cr-pieza">PIEZA <span class="num">${r.num}</span> <span class="mode-tag">🌙 Paquete nocturno</span></div>
+            <span class="cr-badge pending">🔒 Detenido</span>
+          </div>
+          <div class="cr-grid">
+            <div class="cr-col"><span class="k">H. Inicio</span><span class="v">${inTime}</span></div>
+            <div class="cr-col"><span class="k">Salida real</span><span class="v">${realExit}</span></div>
+            <div class="cr-col hl"><span class="k">H. Fin pqt</span><span class="v big">${outTime}</span></div>
+          </div>
+          <div class="cr-sub" style="color:var(--purple);font-weight:700">🔒 Tiempo detenido · Pendiente de cobro</div>
+          <div class="cr-amount-box">
+            <div><div class="ab-lbl">Bs Total</div><div class="ab-val">${money(grand)}</div></div>
+            <div class="ab-sub">Tarifa fija: ${money(totalAmt)}<br>${consTotal > 0 ? 'Consumos: ' + money(consTotal) : 'Sin consumos'}</div>
+          </div>
+          <div class="stopped-actions">
+            <button class="btn purple" onclick="event.stopPropagation(); reopenTimer('${r.id}')">↺ Reabrir</button>
+            <button class="btn primary" onclick="event.stopPropagation(); openCheckOut('${r.id}')">💳 Cobrar</button>
+          </div>
+          <button class="btn-add-product" onclick="event.stopPropagation(); openQuickProduct('${r.id}')" style="margin-bottom:0">
+            <span class="pap-icon">＋</span>
+            <span>Agregar producto</span>
+            ${consTotal > 0 ? `<span class="pap-count">${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems</span>` : ''}
+          </button>
+        </div>`;
+    }
+
     const badge = s.urgent ? 'urgent' : 'package';
     const badgeTxt = s.urgent ? '● Por vencer' : 'Paquete';
     return `
@@ -1163,94 +1397,127 @@ function cardRoom(r){
           ${consTotal > 0 ? `<span class="pap-count">${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems</span>` : ''}
         </button>
         <div class="cr-pay-row">
-          <button class="pay-btn purple" onclick="event.stopPropagation(); openCheckOut('${r.id}')">Por cobrar</button>
+          <button class="pay-btn purple" onclick="event.stopPropagation(); openCheckOut('${r.id}')">⏸ Detener</button>
           <button class="pay-btn green" onclick="event.stopPropagation(); quickPay('${r.id}','efectivo')">Efecto</button>
           <button class="pay-btn blue" onclick="event.stopPropagation(); quickPay('${r.id}','qr')">Q.R.</button>
         </div>
       </div>`;
   }
 
+  /* ---------- CORRIDA ---------- */
   if(s.mode === 'corrida'){
+    const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+
+    if(isStopped){
+      const finalElapsed = new Date(r.checkOut).getTime() - new Date(r.checkIn).getTime();
+      const calc = calcRoomAmount(r, new Date(r.checkOut).getTime());
+      const grand = calc.amount + consTotal;
+      return `
+        <div class="card-room stopped">
+          <div class="cr-top">
+            <div class="cr-pieza">PIEZA <span class="num">${r.num}</span> <span class="mode-tag corrida">⏱️ Hora corrida</span></div>
+            <span class="cr-badge pending">🔒 Detenido</span>
+          </div>
+          <div class="cr-grid">
+            <div class="cr-col"><span class="k">Ingreso</span><span class="v">${fmtTime(r.checkIn)}</span></div>
+            <div class="cr-col"><span class="k">Salida</span><span class="v">${fmtTime(r.checkOut)}</span></div>
+            <div class="cr-col hl"><span class="k">H. Pieza</span><span class="v big">${fmtHM(finalElapsed)}</span></div>
+          </div>
+          <div class="cr-sub" style="color:var(--purple);font-weight:700">🔒 Tiempo detenido · Pendiente de cobro</div>
+          <div class="cr-amount-box">
+            <div><div class="ab-lbl">Monto</div><div class="ab-val">${money(grand)}</div></div>
+            <div class="ab-sub">${calc.hours}h × ${money(calc.rate)}${consTotal > 0 ? `<br>+ consumos ${money(consTotal)}` : ''}</div>
+          </div>
+          <div class="stopped-actions">
+            <button class="btn purple" onclick="event.stopPropagation(); reopenTimer('${r.id}')">↺ Reabrir</button>
+            <button class="btn primary" onclick="event.stopPropagation(); openCheckOut('${r.id}')">💳 Cobrar</button>
+          </div>
+          <button class="btn-add-product" onclick="event.stopPropagation(); openQuickProduct('${r.id}')" style="margin-bottom:0">
+            <span class="pap-icon">＋</span>
+            <span>Agregar producto</span>
+            ${consTotal > 0 ? `<span class="pap-count">${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems</span>` : ''}
+          </button>
+        </div>`;
+    }
+
     const entryTimeStr = fmtTime(r.checkIn);
     const nowTimeStr = fmtTime(new Date());
     const elapsedStr = fmtHM(s.elapsedMs);
-    const isFinished = !!r.checkOut;
-    const calc = calcRoomAmount(r, r.checkOut ? new Date(r.checkOut).getTime() : Date.now());
-    const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+    const calc = calcRoomAmount(r, Date.now());
     const grand = calc.amount + consTotal;
-    const badgeCls = r.paymentStatus === 'pendiente' ? 'pending' : 'corrida';
-    const badgeTxt = r.paymentStatus === 'pendiente' ? 'Por cobrar' : 'Corrida';
-    const horasCobradas = calc.hours;
-
-    const gridHTML = isFinished ? `
-      <div class="cr-grid">
-        <div class="cr-col"><span class="k">H. Inicio</span><span class="v">${entryTimeStr}</span></div>
-        <div class="cr-col"><span class="k">H. Fin</span><span class="v">${fmtTime(r.checkOut)}</span></div>
-        <div class="cr-col hl"><span class="k">H. Pieza</span><span class="v big">${fmtHM(new Date(r.checkOut).getTime() - new Date(r.checkIn).getTime())}</span></div>
-      </div>` : `
-      <div class="cr-grid">
-        <div class="cr-col"><span class="k">Ingreso</span><span class="v">${entryTimeStr}</span></div>
-        <div class="cr-col"><span class="k">H. Actu</span><span class="v live" data-now-time="${r.id}">${nowTimeStr}</span></div>
-        <div class="cr-col hl"><span class="k">H. Pieza</span><span class="v big" data-elapsed="${r.id}">${elapsedStr}</span></div>
-      </div>`;
-
     return `
       <div class="card-room corrida">
         <div class="cr-top">
           <div class="cr-pieza">PIEZA <span class="num">${r.num}</span> <span class="mode-tag corrida">⏱️ Hora corrida</span></div>
-          <span class="cr-badge ${badgeCls}">${badgeTxt}</span>
+          <span class="cr-badge pending">Corrida</span>
         </div>
-        ${gridHTML}
+        <div class="cr-grid">
+          <div class="cr-col"><span class="k">Ingreso</span><span class="v">${entryTimeStr}</span></div>
+          <div class="cr-col"><span class="k">H. Actu</span><span class="v live" data-now-time="${r.id}">${nowTimeStr}</span></div>
+          <div class="cr-col hl"><span class="k">H. Pieza</span><span class="v big" data-elapsed="${r.id}">${elapsedStr}</span></div>
+        </div>
         <div class="cr-amount-box">
           <div><div class="ab-lbl">Monto</div><div class="ab-val" data-amount="${r.id}">${money(grand)}</div></div>
-          <div class="ab-sub">
-            ${horasCobradas}h × ${money(calc.rate)}
-            ${consTotal > 0 ? `<br>+ consumos ${money(consTotal)}` : ''}
-          </div>
+          <div class="ab-sub">${calc.hours}h × ${money(calc.rate)}${consTotal > 0 ? `<br>+ consumos ${money(consTotal)}` : ''}</div>
         </div>
         <button class="btn-add-product" onclick="event.stopPropagation(); openQuickProduct('${r.id}')">
           <span class="pap-icon">＋</span>
           <span>Agregar producto</span>
           ${consTotal > 0 ? `<span class="pap-count">${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems</span>` : ''}
         </button>
-        <button class="btn-edit-hours" onclick="event.stopPropagation(); openCheckOut('${r.id}');">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
-          Editar hora de ingreso
-        </button>
         <div class="cr-pay-row">
-          <button class="pay-btn purple" onclick="event.stopPropagation(); openCheckOut('${r.id}')">Por cobrar</button>
+          <button class="pay-btn purple" onclick="event.stopPropagation(); openCheckOut('${r.id}')">⏸ Detener</button>
           <button class="pay-btn green" onclick="event.stopPropagation(); quickPay('${r.id}','efectivo')">Efecto</button>
           <button class="pay-btn blue" onclick="event.stopPropagation(); quickPay('${r.id}','qr')">Q.R.</button>
         </div>
       </div>`;
   }
 
-  // Modo hora
+  /* ---------- HORA ---------- */
+  const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+
+  if(isStopped){
+    const finalElapsed = new Date(r.checkOut).getTime() - new Date(r.checkIn).getTime();
+    const calc = calcRoomAmount(r, new Date(r.checkOut).getTime());
+    const grand = calc.amount + consTotal;
+    return `
+      <div class="card-room stopped">
+        <div class="cr-top">
+          <div class="cr-pieza">PIEZA <span class="num">${r.num}</span></div>
+          <span class="cr-badge pending">🔒 Detenido</span>
+        </div>
+        <div class="cr-grid">
+          <div class="cr-col"><span class="k">Ingreso</span><span class="v">${fmtTime(r.checkIn)}</span></div>
+          <div class="cr-col"><span class="k">Salida</span><span class="v">${fmtTime(r.checkOut)}</span></div>
+          <div class="cr-col hl"><span class="k">H. Pieza</span><span class="v big">${fmtHM(finalElapsed)}</span></div>
+        </div>
+        <div class="cr-sub" style="color:var(--purple);font-weight:700">🔒 Tiempo detenido · Pendiente de cobro</div>
+        <div class="cr-amount-box">
+          <div><div class="ab-lbl">Monto</div><div class="ab-val">${money(grand)}</div></div>
+          <div class="ab-sub">${calc.hours ? `${calc.hours}h × ${money(calc.rate)}` : ''}${consTotal > 0 ? `<br>+ consumos ${money(consTotal)}` : ''}</div>
+        </div>
+        <div class="stopped-actions">
+          <button class="btn purple" onclick="event.stopPropagation(); reopenTimer('${r.id}')">↺ Reabrir</button>
+          <button class="btn primary" onclick="event.stopPropagation(); openCheckOut('${r.id}')">💳 Cobrar</button>
+        </div>
+        <button class="btn-add-product" onclick="event.stopPropagation(); openQuickProduct('${r.id}')" style="margin-bottom:0">
+          <span class="pap-icon">＋</span>
+          <span>Agregar producto</span>
+          ${consTotal > 0 ? `<span class="pap-count">${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems</span>` : ''}
+        </button>
+      </div>`;
+  }
+
   const entryTimeStr = fmtTime(r.checkIn);
   const nowTimeStr = fmtTime(new Date());
   const elapsedStr = fmtHM(s.elapsedMs);
-  const exitTimeStr = r.checkOut ? fmtTime(r.checkOut) : '--:--';
-  const isFinished = !!r.checkOut;
-  const calc = calcRoomAmount(r, r.checkOut ? new Date(r.checkOut).getTime() : Date.now());
-  const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+  const calc = calcRoomAmount(r, Date.now());
   const grand = calc.amount + consTotal;
   const colCls = s.urgency === 'urgent' ? 'crit' : (s.urgency === 'warn' ? 'warn' : (s.urgency === 'crit' ? 'crit' : 'hl'));
-  const badgeCls = s.urgency === 'urgent' ? 'urgent' : (r.paymentStatus === 'pendiente' ? 'pending' : 'busy');
-  const badgeTxt = s.urgency === 'urgent' ? '● Vencido' : (r.paymentStatus === 'pendiente' ? 'Por cobrar' : 'Ocupada');
+  const badgeCls = s.urgency === 'urgent' ? 'urgent' : 'busy';
+  const badgeTxt = s.urgency === 'urgent' ? '● Vencido' : 'Ocupada';
 
-  const gridHTML = isFinished ? `
-    <div class="cr-grid">
-      <div class="cr-col"><span class="k">H. Inicio</span><span class="v">${entryTimeStr}</span></div>
-      <div class="cr-col"><span class="k">H. Fin</span><span class="v">${exitTimeStr}</span></div>
-      <div class="cr-col ${colCls}"><span class="k">H. Pieza</span><span class="v big">${fmtHM(new Date(r.checkOut).getTime() - new Date(r.checkIn).getTime())}</span></div>
-    </div>` : `
-    <div class="cr-grid">
-      <div class="cr-col"><span class="k">Ingreso</span><span class="v">${entryTimeStr}</span></div>
-      <div class="cr-col"><span class="k">H. Actu</span><span class="v live" data-now-time="${r.id}">${nowTimeStr}</span></div>
-      <div class="cr-col ${colCls}"><span class="k">H. Pieza</span><span class="v big" data-elapsed="${r.id}">${elapsedStr}</span></div>
-    </div>`;
-
-  const barHTML = isFinished ? '' : `
+  const barHTML = `
     <div class="cr-progress"><div class="cr-progress-fill ${s.cls}" data-timer-bar="${r.id}" style="width:${s.barWidth}%"></div></div>
     <div class="cr-sub ${s.remaining < 0 ? 'crit' : ''}" data-timer-sub="${r.id}">
       ${s.remaining >= 0 ? 'Falta ' + fmtHM(s.remaining) : (s.remaining > -TOLERANCE_MS ? '✓ En tolerancia (' + fmtHM(-s.remaining) + ')' : 'Excedido ' + fmtHM(-s.remaining))} · <b>${r.paidHours}h × ${money(r.hourlyRate)}</b>
@@ -1262,7 +1529,11 @@ function cardRoom(r){
         <div class="cr-pieza">PIEZA <span class="num">${r.num}</span></div>
         <span class="cr-badge ${badgeCls}">${badgeTxt}</span>
       </div>
-      ${gridHTML}
+      <div class="cr-grid">
+        <div class="cr-col"><span class="k">Ingreso</span><span class="v">${entryTimeStr}</span></div>
+        <div class="cr-col"><span class="k">H. Actu</span><span class="v live" data-now-time="${r.id}">${nowTimeStr}</span></div>
+        <div class="cr-col ${colCls}"><span class="k">H. Pieza</span><span class="v big" data-elapsed="${r.id}">${elapsedStr}</span></div>
+      </div>
       ${barHTML}
       <div class="cr-amount-box">
         <div><div class="ab-lbl">Monto</div><div class="ab-val" data-amount="${r.id}">${money(grand)}</div></div>
@@ -1273,12 +1544,8 @@ function cardRoom(r){
         <span>Agregar producto</span>
         ${consTotal > 0 ? `<span class="pap-count">${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems</span>` : ''}
       </button>
-      <button class="btn-edit-hours" onclick="event.stopPropagation(); openCheckOut('${r.id}');">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5"/><path d="M9 2h6"/></svg>
-        Editar horas
-      </button>
       <div class="cr-pay-row">
-        <button class="pay-btn purple" onclick="event.stopPropagation(); openCheckOut('${r.id}')">Por cobrar</button>
+        <button class="pay-btn purple" onclick="event.stopPropagation(); openCheckOut('${r.id}')">⏸ Detener</button>
         <button class="pay-btn green" onclick="event.stopPropagation(); quickPay('${r.id}','efectivo')">Efecto</button>
         <button class="pay-btn blue" onclick="event.stopPropagation(); quickPay('${r.id}','qr')">Q.R.</button>
       </div>
@@ -1299,8 +1566,8 @@ function renderRooms(){
   list.innerHTML = db.rooms.map(cardRoom).join('');
   const libres = db.rooms.filter(r => r.status === 'libre').length;
   const ocup = db.rooms.length - libres;
-  const pend = db.rooms.filter(r => r.status === 'ocupada' && r.paymentStatus === 'pendiente').length;
-  $('#roomSummary').innerHTML = `<b style="color:var(--green)">${libres}</b> libres · <b style="color:var(--red)">${ocup}</b> ocupadas${pend > 0 ? ` · <b style="color:var(--purple)">${pend}</b> por cobrar` : ''}`;
+  const stopped = db.rooms.filter(r => r.status === 'ocupada' && r.checkOut).length;
+  $('#roomSummary').innerHTML = `<b style="color:var(--green)">${libres}</b> libres · <b style="color:var(--red)">${ocup}</b> ocupadas${stopped > 0 ? ` · <b style="color:var(--purple)">${stopped}</b> detenidas` : ''}`;
 }
 
 function clickRoom(id){
@@ -1310,9 +1577,19 @@ function clickRoom(id){
   else openCheckOut(id);
 }
 
-/* =========================================================
-   AGREGAR PRODUCTO RÁPIDO (Con cantidad directa)
-   ========================================================= */
+function reopenTimer(id){
+  if(coLock) return;
+  const r = db.rooms.find(x => x.id === id);
+  if(!r || r.status !== 'ocupada') return;
+  if(!r.checkOut){ toast('El tiempo ya está corriendo'); return; }
+  if(!confirm(`¿Reabrir el tiempo de la Pieza ${r.num}?\n\nEl cronómetro volverá a correr desde el ingreso original.`)) return;
+  r.checkOut = null;
+  r.paymentStatus = 'pendiente';
+  save(); renderAll();
+  toast(`Pieza ${r.num} · tiempo reabierto`);
+}
+
+/* PRODUCTO RÁPIDO */
 let qp = null;
 function openQuickProduct(roomId){
   const r = db.rooms.find(x => x.id === roomId);
@@ -1321,9 +1598,7 @@ function openQuickProduct(roomId){
 
   const prods = db.products.filter(p => stockOf(p.id) > 0);
   if(!prods.length){
-    openSheet('Agregar producto', `
-      <p class="empty">No hay productos con stock disponible.<br><br>Ve a <b>Productos</b> para agregar alguno.</p>
-    `, `<button class="btn" onclick="closeModal()">Cerrar</button>`);
+    openSheet('Agregar producto', `<p class="empty">No hay productos con stock disponible.<br><br>Ve a <b>Productos</b> para agregar alguno.</p>`, `<button class="btn" onclick="closeModal()">Cerrar</button>`);
     return;
   }
 
@@ -1366,19 +1641,14 @@ function addProdToRoom(pid){
   if(!r) return;
   const p = db.products.find(x => x.id === pid);
   if(!p) return;
-  
   const qtyInput = document.getElementById(`qp-qty-${pid}`);
   const qty = Math.max(1, Number(qtyInput?.value) || 1);
-
   const stock = stockOf(pid);
   const ex = r.consumos.find(c => c.productId === pid);
   const currentQty = ex ? ex.qty : 0;
-  
   if(currentQty + qty > stock){ toast('Stock insuficiente'); return; }
-  
   if(ex) ex.qty += qty;
   else r.consumos.push({ productId: pid, name: p.name, qty: qty, price: p.price, cost: p.cost });
-  
   save(); renderAll();
   if(qp) openQuickProduct(qp.roomId);
   toast(`${qty} ${p.name} agregado(s)`);
@@ -1396,9 +1666,7 @@ function rmProdFromRoom(pid){
   if(qp) openQuickProduct(qp.roomId);
 }
 
-/* =========================================================
-   QUICK PAY
-   ========================================================= */
+/* QUICK PAY */
 function quickPay(id, method){
   const r = db.rooms.find(x => x.id === id);
   if(!r || r.status !== 'ocupada') return;
@@ -1441,14 +1709,13 @@ function registerSale(r, total, payments, refTs){
   Object.assign(r, {
     status:'libre', mode:null, checkIn:null, checkOut:null, paidHours:null,
     packageEndTime:null, packagePrice:null, consumos:[], paymentStatus:'pendiente',
-    payments:[], rate: r.price, hourlyRate: r.price, userId: null, userName: null
+    payments:[], rate: r.price, hourlyRate: r.price, userId: null, userName: null,
+    periodObservation: '', hourEdits: []
   });
   save(); renderAll();
 }
 
-/* =========================================================
-   CHECK-IN
-   ========================================================= */
+/* CHECK-IN */
 let ci = null;
 let ciLock = false;
 let coLock = false;
@@ -1458,12 +1725,7 @@ function openCheckIn(id){
   const r = db.rooms.find(x => x.id === id);
   if(!r){ toast('Pieza no encontrada'); return; }
   if(r.status !== 'libre'){ toast('Esa pieza ya está ocupada'); return; }
-  ci = {
-    roomId: id, entryTs: Date.now(), captured: false,
-    mode: 'hora',
-    paidHours: 1, hourlyRate: r.price,
-    packageEndTime: '07:00', packagePrice: Number(r.price) === 40 ? 150 : 130
-  };
+  ci = { roomId: id, entryTs: Date.now(), captured: false, mode: 'hora', paidHours: 1, hourlyRate: r.price, packageEndTime: '07:00', packagePrice: Number(r.price) === 40 ? 150 : 130 };
   renderCheckInSheet();
 }
 
@@ -1471,8 +1733,6 @@ function renderCheckInSheet(){
   if(!ci){ closeModal(); return; }
   const r = db.rooms.find(x => x.id === ci.roomId);
   if(!r){ closeModal(); return; }
-
-  const chipsHTML = [1,2,3,4,6,12].map(h => `<button class="chip ${h === ci.paidHours ? 'active':''}" data-h="${h}">${h}h</button>`).join('');
 
   const horaBody = `
     <div class="field"><label>Tarifa de la pieza</label>
@@ -1543,51 +1803,20 @@ function renderCheckInSheet(){
   setTimeout(() => {
     if(!ci) return;
     $$('.mode-pick').forEach(m => {
-      m.onclick = () => {
-        if(!ci) return;
-        ci.mode = m.dataset.mode;
-        renderCheckInSheet();
-      };
+      m.onclick = () => { if(!ci) return; ci.mode = m.dataset.mode; renderCheckInSheet(); };
     });
     if(ci.mode === 'hora'){
-      $$('#ciChips .chip').forEach(chip => {
-        chip.onclick = () => {
-          if(!ci) return;
-          ci.paidHours = Number(chip.dataset.h);
-          $$('#ciChips .chip').forEach(c => c.classList.remove('active'));
-          chip.classList.add('active');
-          $('#ciHours').value = ci.paidHours;
-          updateCiTotal();
-        };
-      });
-      const ih = $('#ciHours');
-      if(ih) ih.oninput = e => {
-        if(!ci) return;
-        ci.paidHours = Number(e.target.value) || 0;
-        $$('#ciChips .chip').forEach(c => c.classList.toggle('active', Number(c.dataset.h) === ci.paidHours));
-        updateCiTotal();
-      };
       const ir = $('#ciRate');
-      if(ir) ir.oninput = e => { if(!ci) return; ci.hourlyRate = Number(e.target.value) || 0; updateCiTotal(); };
+      if(ir) ir.oninput = e => { if(!ci) return; ci.hourlyRate = Number(e.target.value) || 0; };
     } else if(ci.mode === 'corrida'){
       const ir = $('#ciRate');
       if(ir) ir.oninput = e => { if(!ci) return; ci.hourlyRate = Number(e.target.value) || 0; };
     } else {
-      const pe = $('#ciPackEnd');
-      const pp = $('#ciPackPrice');
+      const pe = $('#ciPackEnd'); const pp = $('#ciPackPrice');
       if(pe) pe.onchange = e => { if(!ci) return; ci.packageEndTime = e.target.value; };
-      if(pp) pp.oninput = e => {
-        if(!ci) return;
-        ci.packagePrice = Number(e.target.value) || 0;
-        const t = $('#ciPackTotal'); if(t) t.textContent = money(ci.packagePrice);
-      };
+      if(pp) pp.oninput = e => { if(!ci) return; ci.packagePrice = Number(e.target.value) || 0; const t = $('#ciPackTotal'); if(t) t.textContent = money(ci.packagePrice); };
     }
   }, 100);
-}
-
-function updateCiTotal(){
-  if(!ci) return;
-  const el = $('#ciTotal'); if(el) el.textContent = money(ci.paidHours * ci.hourlyRate);
 }
 
 function captureEntryTime(){
@@ -1606,11 +1835,9 @@ function captureEntryTime(){
 function doCheckIn(){
   if(ciLock) return;
   if(!ci){ return; }
-
   const r = db.rooms.find(x => x.id === ci.roomId);
   if(!r){ toast('Pieza no encontrada'); closeModal(); return; }
   if(r.status !== 'libre'){ toast('Esa pieza ya está ocupada'); closeModal(); return; }
-
   if(ci.mode === 'hora' && ci.paidHours <= 0){ toast('Ingresa el tiempo pagado'); return; }
   if(ci.mode === 'paquete' && (!ci.packageEndTime || ci.packagePrice <= 0)){ toast('Completa el paquete'); return; }
 
@@ -1625,7 +1852,6 @@ function doCheckIn(){
     r.payments = [];
     r.userId = currentUser?.id;
     r.userName = currentUser?.name;
-
     if(ci.mode === 'hora'){
       r.paidHours = ci.paidHours || 1;
       r.hourlyRate = Number(r.price) === 40 ? 40 : (Number(r.price) === 30 ? 30 : ci.hourlyRate);
@@ -1639,22 +1865,16 @@ function doCheckIn(){
       r.packagePrice = ci.packagePrice;
       r.paidHours = null; r.hourlyRate = null;
     }
-
     const roomNum = r.num;
     const modeLabel = ci.mode === 'paquete' ? 'Paquete' : (ci.mode === 'corrida' ? 'Corrida' : ci.paidHours + 'h');
-
-    save();
-    closeModal();
-    renderAll();
+    save(); closeModal(); renderAll();
     toast(`Pieza ${roomNum} · ${modeLabel}`);
   } finally {
     ciLock = false;
   }
 }
 
-/* =========================================================
-   CHECK-OUT
-   ========================================================= */
+/* CHECK-OUT */
 let co = null;
 
 function openCheckOut(id){
@@ -1662,12 +1882,12 @@ function openCheckOut(id){
   const r = db.rooms.find(x => x.id === id);
   if(!r){ toast('Pieza no encontrada'); return; }
   if(r.status !== 'ocupada'){ toast('Esa pieza está libre'); return; }
-
   const refTs = r.checkOut ? new Date(r.checkOut).getTime() : Date.now();
   const now = new Date();
   co = {
     id, exitTs: refTs,
     captured: r.checkOut ? true : false,
+    exitEdited: false,
     payEfectivo: 0, payQr: 0,
     entryDate: dayKey(r.checkIn),
     entryTime: fmtTime(r.checkIn),
@@ -1765,7 +1985,7 @@ function renderCheckOutSheet(){
       <p class="helper" style="text-align:center;padding-top:8px">Los cambios recalculan el cobro automáticamente.</p>
       ${Array.isArray(r.hourEdits) && r.hourEdits.length ? `<div style="margin-top:12px"><div class="eh-lbl" style="text-align:left">Historial de ajustes</div>${r.hourEdits.slice().reverse().map(h=>`<div style="padding:8px 0;border-top:1px solid var(--sep);font-size:12px;color:var(--text-2)"><b>${esc(h.from || '--:--')} → ${esc(h.to || '--:--')}</b> · ${esc(fmtDT(h.at))}${h.observation ? `<div>${esc(h.observation)}</div>` : ''}</div>`).join('')}</div>` : ''}
     </div>
-  ` : `<div class="edit-hours-panel"><b>Ingreso:</b> ${esc(fmtDT(r.checkIn))} · <b>Fin:</b> ${esc(fmtDT(r.checkOut))}<p class="helper">El período ya está cerrado; las horas no se modifican desde esta pantalla.</p></div>`;
+  ` : `<div class="edit-hours-panel"><b>Ingreso:</b> ${esc(fmtDT(r.checkIn))} · <b>Salida:</b> ${esc(fmtDT(r.checkOut))}<p class="helper" style="color:var(--purple);font-weight:700">🔒 Tiempo detenido · Pendiente de cobro</p></div>`;
 
   const addProdBtnHTML = `
     <button class="btn-add-product" onclick="openQuickProduct('${r.id}')">
@@ -1773,6 +1993,11 @@ function renderCheckOutSheet(){
       <span>Agregar producto</span>
       ${consTotal > 0 ? `<span class="pap-count">${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems</span>` : ''}
     </button>`;
+
+  const footerHTML = r.checkOut
+    ? `<button class="btn primary" onclick="doConfirmarCobro()">💳 Cobrar y liberar</button>`
+    : `<button class="btn purple" onclick="doPorCobrar()">⏸ Detener sin cobrar</button>
+       <button class="btn primary" onclick="doConfirmarCobro()">💳 Cobrar y liberar</button>`;
 
   openSheet(`Cobrar · Pieza ${r.num}`, `
     ${addProdBtnHTML}
@@ -1785,22 +2010,16 @@ function renderCheckOutSheet(){
 
     <div class="group-title" style="padding-left:4px">Forma de pago</div>
     ${payLinesHTML}
-  `, `<button class="btn purple" onclick="doPorCobrar()">Por cobrar</button><button class="btn primary" onclick="doConfirmarCobro()">Cobrar</button>`);
+  `, footerHTML);
 }
 
-function addHourEdit(from, to, observation) {
+function savePeriodObservation(){
+  if(!co) return;
   const r = db.rooms.find(x => x.id === co.id);
-  if(!r) return;
-  if(!Array.isArray(r.hourEdits)) r.hourEdits = [];
-  r.hourEdits.push({
-    id: uid(),
-    from: from ? fmtDT(from) : '--',
-    to: to ? fmtDT(to) : '--',
-    at: new Date().toISOString(),
-    observation,
-    userId: currentUser?.id,
-    userName: currentUser?.name
-  });
+  if(!r || r.checkOut) return;
+  r.periodObservation = ($('#coObservation')?.value || '').trim();
+  save();
+  toast('Observación guardada');
 }
 
 function updateCoTimeAndPay() {
@@ -1816,20 +2035,17 @@ function updateCoTimeAndPay() {
   save();
   renderCheckOutSheet();
   renderAll();
-  toast('Fecha/hora actualizada');
 }
 
 function editEntryDate(val) {
   if(!co) return;
   const r = db.rooms.find(x => x.id === co.id);
   if(!r) return;
-  const oldCheckIn = r.checkIn;
   const [y, m, d] = val.split('-').map(Number);
   const newDate = new Date(r.checkIn);
   newDate.setFullYear(y, m - 1, d);
   r.checkIn = newDate.toISOString();
   co.entryDate = val;
-  addHourEdit(oldCheckIn, r.checkIn, 'Fecha ingreso');
   updateCoTimeAndPay();
 }
 
@@ -1838,48 +2054,37 @@ function editEntryTime(val) {
   const r = db.rooms.find(x => x.id === co.id);
   if(!r) return;
   if(!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(val)) { toast('Hora inválida'); return; }
-  const oldCheckIn = r.checkIn;
   const [hh, mm] = val.split(':').map(Number);
   const newDate = new Date(r.checkIn);
   newDate.setHours(hh, mm, 0, 0);
   r.checkIn = newDate.toISOString();
   co.entryTime = val;
-  addHourEdit(oldCheckIn, r.checkIn, 'Hora ingreso');
   updateCoTimeAndPay();
 }
 
 function editExitDate(val) {
   if(!co) return;
+  co.exitEdited = true;
   const [y, m, d] = val.split('-').map(Number);
   const newDate = new Date(co.exitTs);
   newDate.setFullYear(y, m - 1, d);
   co.exitTs = newDate.getTime();
   co.exitDate = val;
   co.captured = true;
-  addHourEdit(null, new Date(co.exitTs).toISOString(), 'Fecha salida');
   updateCoTimeAndPay();
 }
 
 function editExitTime(val) {
   if(!co) return;
   if(!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(val)) { toast('Hora inválida'); return; }
+  co.exitEdited = true;
   const [hh, mm] = val.split(':').map(Number);
   const newDate = new Date(co.exitTs);
   newDate.setHours(hh, mm, 0, 0);
   co.exitTs = newDate.getTime();
   co.exitTime = val;
   co.captured = true;
-  addHourEdit(null, new Date(co.exitTs).toISOString(), 'Hora salida');
   updateCoTimeAndPay();
-}
-
-function savePeriodObservation(){
-  if(!co) return;
-  const r = db.rooms.find(x => x.id === co.id);
-  if(!r || r.checkOut) return;
-  r.periodObservation = ($('#coObservation')?.value || '').trim();
-  save();
-  toast('Observación guardada');
 }
 
 function format24HourInput(input){
@@ -1897,7 +2102,6 @@ function updatePay(val, method){
   const calc = calcRoomAmount(r, co.exitTs);
   const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
   const grand = Math.max(0, calc.amount + consTotal);
-
   if(method === 'efectivo'){
     co.payEfectivo = num;
     co.payQr = Math.max(0, Math.round((grand - num) * 100) / 100);
@@ -1905,12 +2109,10 @@ function updatePay(val, method){
     co.payQr = num;
     co.payEfectivo = Math.max(0, Math.round((grand - num) * 100) / 100);
   }
-
   const cashInput = document.getElementById('coPayEfectivo');
   const qrInput = document.getElementById('coPayQr');
   if(method === 'efectivo' && qrInput) qrInput.value = Number(co.payQr).toFixed(2);
   if(method === 'qr' && cashInput) cashInput.value = Number(co.payEfectivo).toFixed(2);
-
   const pagado = (Number(co.payEfectivo) || 0) + (Number(co.payQr) || 0);
   const diff = grand - pagado;
   const summary = document.getElementById('coPaySummary');
@@ -1921,23 +2123,6 @@ function updatePay(val, method){
     diffRow.style.display = Math.abs(diff) > 0.01 ? '' : 'none';
     diffText.textContent = diff > 0 ? `Falta ${money(diff)}` : diff < 0 ? `Excedente ${money(Math.abs(diff))}` : money(0);
   }
-}
-
-function addConsumo(){
-  if(!co) return;
-  const r = db.rooms.find(x => x.id === co.id);
-  if(!r) return;
-  const pid = $('#coProd')?.value;
-  if(!pid) return;
-  const qty = Math.max(1, Number($('#coQty')?.value) || 1);
-  const p = db.products.find(x => x.id === pid);
-  if(!p) return;
-  if(qty > stockOf(pid)){ toast('Stock insuficiente'); return; }
-  const ex = r.consumos.find(c => c.productId === pid);
-  if(ex) ex.qty += qty;
-  else r.consumos.push({ productId: pid, name: p.name, qty, price: p.price, cost: p.cost });
-  save();
-  renderCheckOutSheet();
 }
 
 function delConsumo(i){
@@ -1954,12 +2139,16 @@ function doPorCobrar(){
   if(!co){ return; }
   const r = db.rooms.find(x => x.id === co.id);
   if(!r){ closeModal(); return; }
+  if(!co.exitEdited && !r.checkOut){
+    co.exitTs = Date.now();
+    co.captured = true;
+  }
   coLock = true;
   try {
     r.checkOut = new Date(co.exitTs).toISOString();
     r.paymentStatus = 'pendiente';
     save(); closeModal(); renderAll();
-    toast(`Pieza ${r.num} marcada POR COBRAR`);
+    toast(`Pieza ${r.num} · tiempo detenido`);
   } finally {
     coLock = false;
   }
@@ -1970,7 +2159,10 @@ function doConfirmarCobro(){
   if(!co){ return; }
   const r = db.rooms.find(x => x.id === co.id);
   if(!r){ closeModal(); return; }
-
+  if(!co.exitEdited && !r.checkOut){
+    co.exitTs = Date.now();
+    co.captured = true;
+  }
   const refTs = co.exitTs;
   const calc = calcRoomAmount(r, refTs);
   const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
@@ -1983,7 +2175,6 @@ function doConfirmarCobro(){
     if(!confirm(`El pago (${money(pagado)}) no coincide con el total (${money(grand)}).\n\n¿Registrar igual?`)) return;
   }
   if(!payments.length){ toast('Ingresa un monto de pago'); return; }
-
   coLock = true;
   try {
     if(!r.checkOut) r.checkOut = new Date(refTs).toISOString();
@@ -2006,7 +2197,11 @@ function updateTimers(){
     const nowTime = document.querySelector(`[data-now-time="${r.id}"]`);
     if(nowTime){ const d = new Date(now); nowTime.textContent = pad(d.getHours()) + ':' + pad(d.getMinutes()); }
     const elapsedEl = document.querySelector(`[data-elapsed="${r.id}"]`);
-    if(elapsedEl && r.checkIn){ const el = now - new Date(r.checkIn).getTime(); elapsedEl.textContent = fmtHM(el); }
+    if(elapsedEl && r.checkIn){
+      const endRef = r.checkOut ? new Date(r.checkOut).getTime() : now;
+      const el = endRef - new Date(r.checkIn).getTime();
+      elapsedEl.textContent = fmtHM(el);
+    }
     if(r.mode === 'hora'){
       const bar = document.querySelector(`[data-timer-bar="${r.id}"]`);
       const sub = document.querySelector(`[data-timer-sub="${r.id}"]`);
@@ -2074,12 +2269,14 @@ function saveNewProduct(){
   if(st > 0) db.movements.push({ id: uid(), productId: p.id, type: 'entrada', qty: st, unitCost: p.cost, date: new Date().toISOString(), note: 'Stock inicial', userId: currentUser?.id });
   save(); closeModal(); renderAll(); toast('Producto creado');
 }
-function delProduct(id){
+async function delProduct(id){
   const p = db.products.find(x => x.id === id);
   if(!confirm(`¿Eliminar "${p.name}"?`)) return;
   db.products = db.products.filter(x => x.id !== id);
   db.movements = db.movements.filter(m => m.productId !== id);
   save(); renderAll(); toast('Producto eliminado');
+  await supaDelete('motel_products', { id });
+  await supaDelete('motel_movements', { product_id: id });
 }
 function openEntrada(id){
   const p = db.products.find(x => x.id === id);
@@ -2117,37 +2314,30 @@ function doSalida(id){
 }
 function editKardexMovement(movementId){
   const m = db.movements.find(x => x.id === movementId);
-  if(!m || !['entrada','salida'].includes(m.type)){ toast('Este movimiento no se puede editar aquí'); return; }
+  if(!m || !['entrada','salida'].includes(m.type)){ toast('No editable'); return; }
   const p = db.products.find(x => x.id === m.productId);
   if(!p) return;
-  openSheet(`Editar ${m.type === 'entrada' ? 'entrada' : 'salida'} · ${esc(p.name)}`, `
+  openSheet(`Editar ${m.type} · ${esc(p.name)}`, `
     <div class="field"><label>Producto</label><input value="${esc(p.name)}" disabled></div>
     <div class="field"><label>Cantidad</label><input id="kmQty" type="number" min="1" step="1" value="${m.qty}"></div>
     ${m.type === 'entrada' ? `<div class="field"><label>Costo unitario (Bs)</label><input id="kmCost" type="number" min="0" step="0.01" value="${Number(m.unitCost ?? p.cost)}"></div>` : ''}
-    <div class="field"><label>Observación / motivo</label><input id="kmNote" value="${esc(m.note || '')}" placeholder="Motivo del ajuste"></div>
-    <p class="helper">El stock se recalculará con la cantidad corregida. Los movimientos de venta son automáticos y no se editan aquí.</p>
-  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveKardexMovement('${movementId}')">Guardar cambios</button>`);
+    <div class="field"><label>Observación</label><input id="kmNote" value="${esc(m.note || '')}" placeholder="Motivo del ajuste"></div>
+  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveKardexMovement('${movementId}')">Guardar</button>`);
 }
 function saveKardexMovement(movementId){
   const m = db.movements.find(x => x.id === movementId);
   if(!m || !['entrada','salida'].includes(m.type)) return;
   const qty = Number($('#kmQty')?.value);
   const note = ($('#kmNote')?.value || '').trim();
-  if(!Number.isFinite(qty) || qty <= 0){ toast('La cantidad debe ser mayor que cero'); return; }
-  const delta = qty - Number(m.qty);
-  if(m.type === 'salida' && delta > stockOf(m.productId)){ toast('El stock no alcanza para esa corrección'); return; }
+  if(!Number.isFinite(qty) || qty <= 0){ toast('Cantidad inválida'); return; }
+  if(m.type === 'salida' && (qty - m.qty) > stockOf(m.productId)){ toast('Stock insuficiente'); return; }
   m.qty = qty;
-  m.note = note || (m.type === 'entrada' ? 'Entrada corregida' : 'Salida corregida');
+  m.note = note || m.note;
   if(m.type === 'entrada'){
     const cost = Number($('#kmCost')?.value);
     if(Number.isFinite(cost) && cost >= 0) m.unitCost = cost;
   }
-  m.editedAt = new Date().toISOString();
-  m.editedBy = currentUser?.id;
-  save();
-  openKardex(m.productId);
-  renderAll();
-  toast('Movimiento de kardex actualizado');
+  save(); openKardex(m.productId); renderAll(); toast('Movimiento actualizado');
 }
 function openKardex(id){
   const p = db.products.find(x => x.id === id);
@@ -2163,7 +2353,7 @@ function openKardex(id){
       <td><span style="color:${color};font-weight:700">${label}</span></td>
       <td class="num" style="color:${color}">${sign}${m.qty}</td>
       <td class="num" style="font-weight:800">${bal}</td>
-      <td>${m.type === 'entrada' || m.type === 'salida' ? `<button class="row-btn" onclick="editKardexMovement('${m.id}')">Editar</button>` : `<span style="color:var(--text-3);font-size:11px">Automático</span>`}</td>
+      <td>${m.type === 'entrada' || m.type === 'salida' ? `<button class="row-btn" onclick="editKardexMovement('${m.id}')">Editar</button>` : `<span style="color:var(--text-3);font-size:11px">Auto</span>`}</td>
     </tr>`;
   }).join('') || `<tr><td colspan="5" class="empty">Sin movimientos</td></tr>`;
   openSheet(`Kardex · ${esc(p.name)}`, `
@@ -2243,7 +2433,6 @@ function renderPanel(){
     <div class="stat"><div class="lbl">Gastos hoy</div><div class="val c-muted" style="font-size:18px">${money(gastosHoy)}</div></div>
     <div class="stat"><div class="lbl">Depósitos hoy</div><div class="val c-muted" style="font-size:18px">${money(depositosHoy)}</div></div>
   `;
-  // El filtro se inicializa en hoy una sola vez para respetar la selección del usuario al actualizar el panel.
   if(!$('#panelFrom').value || !$('#panelTo').value){
     $('#panelFrom').value = hoy;
     $('#panelTo').value = hoy;
@@ -2259,7 +2448,6 @@ function setPanelMovementRange(kind){
     from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   } else if(kind === 'week'){
-    // Semana calendario anterior: lunes a domingo.
     const day = (now.getDay() + 6) % 7;
     const mondayThisWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
     from = new Date(mondayThisWeek); from.setDate(from.getDate() - 7);
@@ -2290,8 +2478,7 @@ function renderPanelMovements(){
     ...db.sales.map(s => ({ ts:s.ts, day:s.day || dayKey(s.ts), label:s.detail || s.type || 'Venta', amount:Number(s.amount)||0, tipo:s.type || 'venta' })),
     ...db.expenses.map(g => ({ ts:g.ts, day:g.day || dayKey(g.ts), label:`Gasto: ${g.desc || 'Sin detalle'}`, amount:-(Number(g.amount)||0), tipo:'gasto' })),
     ...db.deposits.map(d => ({ ts:d.ts, day:d.day || dayKey(d.ts), label:`Depósito: ${d.desc || 'Sin detalle'}`, amount:Number(d.amount)||0, tipo:'deposito' }))
-  ].filter(m => m.ts && m.day >= from && m.day <= to)
-   .sort((a,b) => new Date(b.ts) - new Date(a.ts));
+  ].filter(m => m.ts && m.day >= from && m.day <= to).sort((a,b) => new Date(b.ts) - new Date(a.ts));
   const preset = window.panelMovementPreset;
   const presetText = preset === 'today' ? 'Movimientos de hoy' : preset === 'week' ? 'Movimientos de la semana pasada' : preset === 'month' ? 'Movimientos del mes pasado' : 'Rango seleccionado';
   $('#panelMovementRangeLabel').textContent = `${presetText} · ${fmtDate(from)} al ${fmtDate(to)} · ${all.length} movimiento${all.length === 1 ? '' : 's'}`;
@@ -2304,32 +2491,22 @@ function renderPanelMovements(){
       <td><span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:${bg};color:${color};text-transform:capitalize">${esc(m.tipo)}</span> <span style="font-size:13px">${esc(m.label)}</span></td>
       <td class="num" style="font-weight:700;color:${color};white-space:nowrap">${money(m.amount)}</td>
     </tr>`;
-  }).join('') : `<tr><td colspan="4" class="empty">No hay movimientos en el rango de fechas seleccionado.</td></tr>`;
+  }).join('') : `<tr><td colspan="4" class="empty">No hay movimientos en el rango seleccionado.</td></tr>`;
   ['Today','Week','Month'].forEach(k=>{ const b=$('#panelBtn'+k); if(b) b.classList.toggle('primary', (k==='Today'&&preset==='today')||(k==='Week'&&preset==='week')||(k==='Month'&&preset==='month')); });
 }
 
-/* ACTUALIZAR FECHAS */
 function updateDateDisplays() {
   const d = new Date();
   const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   const dateStr = `${dias[d.getDay()]}, ${d.getDate()} de ${meses[d.getMonth()]} de ${d.getFullYear()}`;
-  
-  const elPanel = $('#panelDate');
-  if (elPanel) elPanel.textContent = dateStr;
-  
-  const elMain = $('#mainDateDisplay');
-  if (elMain) elMain.textContent = dateStr;
+  const elPanel = $('#panelDate'); if (elPanel) elPanel.textContent = dateStr;
+  const elMain = $('#mainDateDisplay'); if (elMain) elMain.textContent = dateStr;
 }
 
 /* REPORTES */
 function setRange(kind){
-  if(kind === 'limpiar') {
-    $('#repFrom').value = '';
-    $('#repTo').value = '';
-    renderReports();
-    return;
-  }
+  if(kind === 'limpiar') { $('#repFrom').value = ''; $('#repTo').value = ''; renderReports(); return; }
   const to = new Date(); const from = new Date();
   if(kind === 'semana') from.setDate(to.getDate() - 6);
   if(kind === 'mes') from.setDate(1);
@@ -2349,7 +2526,6 @@ function renderReports(){
     $('#repDetail').innerHTML = '<tr><td colspan="5" class="empty">Seleccione un rango de fechas.</td></tr>';
     return;
   }
-  
   const rawSales = db.sales.filter(s => s.day >= from && s.day <= to);
   const linkedProductAmounts = new Map();
   rawSales.filter(s => s.type === 'producto').forEach(s => {
@@ -2375,8 +2551,7 @@ function renderReports(){
   const utilidadNeta = utilidadBruta - gastos;
   const hab = sales.filter(s => s.type === 'habitacion').reduce((a,s) => a + s.amount, 0);
   const prod = sales.filter(s => s.type === 'producto').reduce((a,s) => a + s.amount, 0);
-  const pr = $('#printRange');
-  if(pr) pr.textContent = `Del ${fmtDate(from)} al ${fmtDate(to)}`;
+  const pr = $('#printRange'); if(pr) pr.textContent = `Del ${fmtDate(from)} al ${fmtDate(to)}`;
   $('#repStats').innerHTML = `
     <div class="stat"><div class="lbl">Ingresos</div><div class="val c-accent" style="font-size:20px">${money(ingresos)}</div></div>
     <div class="stat"><div class="lbl">Utilidad neta</div><div class="val ${utilidadNeta >= 0 ? 'c-green' : 'c-red'}" style="font-size:20px">${money(utilidadNeta)}</div></div>
@@ -2411,12 +2586,8 @@ function renderReports(){
     row.consumos += Number(s.amount) || 0;
     row.cost += Number(s.cost) || 0;
   });
-  const roomList = [...roomRows.values()].map(r => ({ ...r, total:r.hospedaje+r.consumos, util:r.hospedaje+r.consumos-r.cost }))
-    .sort((a,b) => String(a.num).localeCompare(String(b.num), undefined, {numeric:true}));
-  const roomTotals = roomList.reduce((a,r) => ({
-    stays:a.stays+r.stays, hospedaje:a.hospedaje+r.hospedaje, consumos:a.consumos+r.consumos,
-    total:a.total+r.total, efectivo:a.efectivo+r.efectivo, qr:a.qr+r.qr, util:a.util+r.util
-  }), {stays:0,hospedaje:0,consumos:0,total:0,efectivo:0,qr:0,util:0});
+  const roomList = [...roomRows.values()].map(r => ({ ...r, total:r.hospedaje+r.consumos, util:r.hospedaje+r.consumos-r.cost })).sort((a,b) => String(a.num).localeCompare(String(b.num), undefined, {numeric:true}));
+  const roomTotals = roomList.reduce((a,r) => ({ stays:a.stays+r.stays, hospedaje:a.hospedaje+r.hospedaje, consumos:a.consumos+r.consumos, total:a.total+r.total, efectivo:a.efectivo+r.efectivo, qr:a.qr+r.qr, util:a.util+r.util }), {stays:0,hospedaje:0,consumos:0,total:0,efectivo:0,qr:0,util:0});
   const repRooms = $('#repRooms');
   if(repRooms) repRooms.innerHTML = roomList.length ? roomList.map(r => `<tr>
     <td style="font-weight:700">Pieza ${esc(r.num)}</td>
@@ -2438,11 +2609,7 @@ function renderReports(){
     if(s.type === 'habitacion') d.hab += s.amount; else d.prod += s.amount;
     d.util += s.amount - s.cost;
   });
-  expenses.forEach(g => {
-    if(!byDay[g.day]) byDay[g.day] = { hab:0, prod:0, gastos:0, util:0 };
-    byDay[g.day].gastos += g.amount;
-    byDay[g.day].util -= g.amount;
-  });
+  expenses.forEach(g => { if(!byDay[g.day]) byDay[g.day] = { hab:0, prod:0, gastos:0, util:0 }; byDay[g.day].gastos += g.amount; byDay[g.day].util -= g.amount; });
   const days = Object.keys(byDay).sort().reverse();
   $('#repDaily').innerHTML = days.length
     ? days.map(k => {
@@ -2503,18 +2670,14 @@ function renderReports(){
   brand.addEventListener('dblclick', () => {
     if(currentUser?.role !== 'admin') return;
     const blob = new Blob([JSON.stringify(db, null, 2)], { type:'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `motel-respaldo-${todayKey()}.json`;
-    a.click();
-    URL.revokeObjectURL(a.href);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `motel-respaldo-${todayKey()}.json`; a.click(); URL.revokeObjectURL(a.href);
     toast('Respaldo descargado');
   });
   const start = () => {
     t = setTimeout(() => {
       if(currentUser?.role !== 'admin') return;
-      const inp = document.createElement('input');
-      inp.type = 'file'; inp.accept = '.json';
+      const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json';
       inp.onchange = ev => {
         const f = ev.target.files[0]; if(!f) return;
         const r = new FileReader();
@@ -2544,22 +2707,35 @@ function renderReports(){
   brand.addEventListener('touchend', cancel);
 })();
 
-/* RENDER GLOBAL */
-function renderAll(){ 
+function renderAll(){
   updateDateDisplays();
-  renderRooms(); 
-  renderProducts(); 
-  renderPanel(); 
-  renderReports(); 
+  renderRooms();
+  renderProducts();
+  renderPanel();
+  renderReports();
 }
 document.addEventListener('keydown', e => {
   if(e.key === 'Escape') closeModal();
   if(e.key === 'Enter' && !$('#loginScreen').classList.contains('hidden')) doLogin();
 });
 
-/* BOOT */
-(function boot(){
+(async function boot(){
   initTheme();
+  const statusEl = $('#supabaseStatus');
+  if(statusEl){
+    statusEl.textContent = supaReady ? '☁ Conectado a Supabase' : '⚠ Supabase no configurado — usando solo este navegador';
+    statusEl.style.color = supaReady ? 'var(--green)' : 'var(--red)';
+  }
+  let remote = null;
+  if(supaReady){ setSyncStatus('syncing', 'Cargando...'); remote = await loadFromSupabase(); }
+  if(remote && remote.users && remote.users.length > 0){
+    db = remote; saveLocal(); setSyncStatus('online', '✓ Datos cargados');
+  } else if(supaReady){
+    db = seed(); saveLocal(); setSyncStatus('syncing', 'Sembrando...');
+    await syncToSupabase(); setSyncStatus('online', '✓ Base inicial creada');
+  } else {
+    db = loadLocal();
+  }
   const session = getSession();
   if(session){ currentUser = session.user; currentShift = session.shift; enterApp(); }
   else {
@@ -2570,7 +2746,6 @@ document.addEventListener('keydown', e => {
   }
   updateTimers();
   setInterval(updateTimers, 1000);
-  // Al iniciar, los reportes están en blanco
   renderReports();
 })();
 </script>
