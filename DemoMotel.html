@@ -484,6 +484,17 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
   .login-box h1{font-size:24px}
   .login-box > p{font-size:14px;margin-bottom:32px}
 }
+
+/* Filtros del historial de movimientos del panel */
+.panel-movements-card{overflow:hidden}
+.panel-movement-filters{padding:16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:14px}
+.panel-preset-buttons{display:flex;flex-wrap:wrap;gap:8px}
+.panel-date-fields{display:grid;grid-template-columns:minmax(140px,1fr) minmax(140px,1fr) auto;gap:12px;align-items:end}
+.panel-date-fields .field{margin:0;min-width:0}
+.panel-date-fields input{width:100%;min-width:0}
+#panelMovementRangeLabel{margin:0}
+@media(max-width:700px){.panel-date-fields{grid-template-columns:1fr 1fr}.panel-date-fields button{grid-column:1/-1;width:100%}.panel-movement-filters{padding:12px}.panel-preset-buttons .btn{flex:1}}
+@media print{.panel-movement-filters{display:none!important}}
 </style>
 </head>
 <body>
@@ -518,10 +529,23 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
       <button class="btn green sm" onclick="openNewDeposit()">+ Depósito</button>
     </div>
     <div class="group-title">Últimos movimientos</div>
-    <div class="group">
+    <div class="group panel-movements-card">
+      <div class="panel-movement-filters no-print">
+        <div class="panel-preset-buttons">
+          <button type="button" class="btn primary sm" id="panelBtnToday" onclick="setPanelMovementRange('today')">Hoy</button>
+          <button type="button" class="btn sm" id="panelBtnWeek" onclick="setPanelMovementRange('week')">Semana pasada</button>
+          <button type="button" class="btn sm" id="panelBtnMonth" onclick="setPanelMovementRange('month')">Mes pasado</button>
+        </div>
+        <div class="panel-date-fields">
+          <div class="field"><label for="panelFrom">Desde</label><input type="date" id="panelFrom"></div>
+          <div class="field"><label for="panelTo">Hasta</label><input type="date" id="panelTo"></div>
+          <button type="button" class="btn primary" onclick="applyPanelMovementRange()">Buscar movimientos</button>
+        </div>
+        <p class="helper" id="panelMovementRangeLabel">Movimientos de hoy</p>
+      </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Hora</th><th>Detalle</th><th class="num">Monto</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Hora</th><th>Detalle</th><th class="num">Monto</th></tr></thead>
           <tbody id="panelRecent"></tbody>
         </table>
       </div>
@@ -2201,7 +2225,7 @@ function renderPanel(){
   const hoy = todayKey();
   const ventasHoy = db.sales.filter(s => s.day === hoy);
   const ingresoHoy = ventasHoy.reduce((a,s) => a + s.amount, 0);
-  const costoHoy = ventasHoy.reduce((a,s) => a + s.cost, 0);
+  const costoHoy = ventasHoy.reduce((a,s) => a + (Number(s.cost)||0), 0);
   const gastosHoy = db.expenses.filter(g => g.day === hoy).reduce((a,g) => a + g.amount, 0);
   const depositosHoy = db.deposits.filter(d => d.day === hoy).reduce((a,d) => a + d.amount, 0);
   const utilidadHoy = ingresoHoy - costoHoy - gastosHoy;
@@ -2219,22 +2243,69 @@ function renderPanel(){
     <div class="stat"><div class="lbl">Gastos hoy</div><div class="val c-muted" style="font-size:18px">${money(gastosHoy)}</div></div>
     <div class="stat"><div class="lbl">Depósitos hoy</div><div class="val c-muted" style="font-size:18px">${money(depositosHoy)}</div></div>
   `;
+  // El filtro se inicializa en hoy una sola vez para respetar la selección del usuario al actualizar el panel.
+  if(!$('#panelFrom').value || !$('#panelTo').value){
+    $('#panelFrom').value = hoy;
+    $('#panelTo').value = hoy;
+    window.panelMovementPreset = 'today';
+  }
+  renderPanelMovements();
+}
+
+function setPanelMovementRange(kind){
+  const now = new Date();
+  let from, to;
+  if(kind === 'today'){
+    from = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    to = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  } else if(kind === 'week'){
+    // Semana calendario anterior: lunes a domingo.
+    const day = (now.getDay() + 6) % 7;
+    const mondayThisWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day);
+    from = new Date(mondayThisWeek); from.setDate(from.getDate() - 7);
+    to = new Date(from); to.setDate(to.getDate() + 6);
+  } else {
+    from = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    to = new Date(now.getFullYear(), now.getMonth(), 0);
+  }
+  $('#panelFrom').value = dayKey(from);
+  $('#panelTo').value = dayKey(to);
+  window.panelMovementPreset = kind;
+  renderPanelMovements();
+}
+
+function applyPanelMovementRange(){
+  const from = $('#panelFrom').value;
+  const to = $('#panelTo').value;
+  if(!from || !to){ toast('Selecciona la fecha inicial y final'); return; }
+  if(from > to){ toast('La fecha inicial no puede ser posterior a la fecha final'); return; }
+  window.panelMovementPreset = 'custom';
+  renderPanelMovements();
+}
+
+function renderPanelMovements(){
+  const from = $('#panelFrom')?.value || todayKey();
+  const to = $('#panelTo')?.value || todayKey();
   const all = [
-    ...db.sales.map(s => ({ ts: s.ts, label: s.detail, amount: s.amount, tipo: s.type })),
-    ...db.expenses.map(g => ({ ts: g.ts, label: `Gasto: ${g.desc}`, amount: -g.amount, tipo: 'gasto' })),
-    ...db.deposits.map(d => ({ ts: d.ts, label: `Depósito: ${d.desc}`, amount: d.amount, tipo: 'deposito' }))
-  ].sort((a,b) => new Date(b.ts) - new Date(a.ts)).slice(0, 12);
-  $('#panelRecent').innerHTML = all.length
-    ? all.map(m => {
-        const color = m.tipo === 'gasto' ? 'var(--red)' : m.tipo === 'deposito' ? 'var(--blue)' : 'var(--accent)';
-        const bg = m.tipo === 'gasto' ? 'rgba(255,59,48,.14)' : m.tipo === 'deposito' ? 'rgba(10,132,255,.14)' : 'rgba(200,150,62,.14)';
-        return `<tr>
-          <td style="color:var(--text-2);font-size:12.5px">${fmtTime(m.ts)}</td>
-          <td><span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:${bg};color:${color};text-transform:capitalize">${m.tipo}</span> <span style="font-size:13px">${esc(m.label)}</span></td>
-          <td class="num" style="font-weight:700;color:${color}">${money(m.amount)}</td>
-        </tr>`;
-      }).join('')
-    : `<tr><td colspan="3" class="empty">Sin movimientos aún.</td></tr>`;
+    ...db.sales.map(s => ({ ts:s.ts, day:s.day || dayKey(s.ts), label:s.detail || s.type || 'Venta', amount:Number(s.amount)||0, tipo:s.type || 'venta' })),
+    ...db.expenses.map(g => ({ ts:g.ts, day:g.day || dayKey(g.ts), label:`Gasto: ${g.desc || 'Sin detalle'}`, amount:-(Number(g.amount)||0), tipo:'gasto' })),
+    ...db.deposits.map(d => ({ ts:d.ts, day:d.day || dayKey(d.ts), label:`Depósito: ${d.desc || 'Sin detalle'}`, amount:Number(d.amount)||0, tipo:'deposito' }))
+  ].filter(m => m.ts && m.day >= from && m.day <= to)
+   .sort((a,b) => new Date(b.ts) - new Date(a.ts));
+  const preset = window.panelMovementPreset;
+  const presetText = preset === 'today' ? 'Movimientos de hoy' : preset === 'week' ? 'Movimientos de la semana pasada' : preset === 'month' ? 'Movimientos del mes pasado' : 'Rango seleccionado';
+  $('#panelMovementRangeLabel').textContent = `${presetText} · ${fmtDate(from)} al ${fmtDate(to)} · ${all.length} movimiento${all.length === 1 ? '' : 's'}`;
+  $('#panelRecent').innerHTML = all.length ? all.map(m => {
+    const color = m.tipo === 'gasto' ? 'var(--red)' : m.tipo === 'deposito' ? 'var(--blue)' : 'var(--accent)';
+    const bg = m.tipo === 'gasto' ? 'rgba(255,59,48,.14)' : m.tipo === 'deposito' ? 'rgba(10,132,255,.14)' : 'rgba(200,150,62,.14)';
+    return `<tr>
+      <td style="color:var(--text-2);font-size:12.5px;white-space:nowrap">${fmtDate(m.day)}</td>
+      <td style="color:var(--text-2);font-size:12.5px;white-space:nowrap">${fmtTime(m.ts)}</td>
+      <td><span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:${bg};color:${color};text-transform:capitalize">${esc(m.tipo)}</span> <span style="font-size:13px">${esc(m.label)}</span></td>
+      <td class="num" style="font-weight:700;color:${color};white-space:nowrap">${money(m.amount)}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="4" class="empty">No hay movimientos en el rango de fechas seleccionado.</td></tr>`;
+  ['Today','Week','Month'].forEach(k=>{ const b=$('#panelBtn'+k); if(b) b.classList.toggle('primary', (k==='Today'&&preset==='today')||(k==='Week'&&preset==='week')||(k==='Month'&&preset==='month')); });
 }
 
 /* ACTUALIZAR FECHAS */
