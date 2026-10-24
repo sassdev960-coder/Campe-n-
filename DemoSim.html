@@ -2286,9 +2286,10 @@ function agregarAlCarritoVenta(productoId, montoLibre){
     if(p.stock<cantidad) return toast(`Stock insuficiente (${p.stock})`,'err');
     const enCarrito=ui.ventaCarrito.filter(i=>i.productoId===productoId).reduce((a,i)=>a+i.cantidad,0);
     if(p.stock<enCarrito+cantidad) return toast(`Ya tienes ${enCarrito} en carrito`,'err');
-    const existe=ui.ventaCarrito.find(i=>i.productoId===productoId&&!i.esRecarga);
-    if(existe){ existe.cantidad=num2(existe.cantidad+cantidad); existe.subtotal=num2(existe.cantidad*existe.precioUnit); }
-    else ui.ventaCarrito.push({productoId,nombre:p.nombre,unidad:p.unidad,esRecarga:false,proveedorId:p.proveedorId||null,cantidad:num2(cantidad),precioUnit:p.precio,costoUnit:p.costo,subtotal:num2(cantidad*p.precio)});
+    // Cada incorporación de un producto físico crea una línea independiente.
+    // Así se pueden registrar varias tandas del mismo producto (p. ej., 10 + 10 tarjetas).
+    // La disponibilidad se valida sumando todas las líneas del mismo producto.
+    ui.ventaCarrito.push({productoId,nombre:p.nombre,unidad:p.unidad,esRecarga:false,proveedorId:p.proveedorId||null,cantidad:num2(cantidad),precioUnit:p.precio,costoUnit:p.costo,subtotal:num2(cantidad*p.precio)});
   }
   render();
 }
