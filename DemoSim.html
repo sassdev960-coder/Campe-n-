@@ -1196,7 +1196,7 @@ const esCobrador = () => usuarioActual?.rol === 'cobrador';
 
 const ui = {
   ventaCarrito:[], ventaClienteId:'', ventaTipoPago:'contado',
-  ventaPlazo:15, ventaPlazoCustom:'', ventaMontoRecibido:'', ventaAbonoInicial:'', ventaMetodoPago:'efectivo', ventaFecha:HOY(), filtroMetodoVenta:'todos', filtroMetodoCobranza:'todos', fechaInicioVentas:'', fechaFinVentas:'', fechaInicioVentasAplicada:'', fechaFinVentasAplicada:'', fechaInicioCompras:'', fechaFinCompras:'', fechaInicioComprasAplicada:'', fechaFinComprasAplicada:'', ordenHistoricoVentas:false,
+  ventaPlazo:15, ventaPlazoCustom:'', ventaMontoRecibido:'', ventaAbonoInicial:'', ventaMetodoPago:'efectivo', ventaClienteLibre:'', ventaFecha:HOY(), filtroMetodoVenta:'todos', filtroMetodoCobranza:'todos', fechaInicioVentas:'', fechaFinVentas:'', fechaInicioVentasAplicada:'', fechaFinVentasAplicada:'', fechaInicioCompras:'', fechaFinCompras:'', fechaInicioComprasAplicada:'', fechaFinComprasAplicada:'', ordenHistoricoVentas:false,
   buscarCliente:'', mostrarBuscadorCliente:false,
   compraCarrito:[], compraProveedorId:'', compraNota:'', compraFecha:HOY(), buscarProdCompra:'',
   modal:null, filtroInv:'Todas', clienteAbierto:null, cierreMes:mesActual(),
@@ -1747,18 +1747,25 @@ function modalRegistrarCreditoManual(){
 
 function modalUsuario(id){
   const u=id?userById(id):null; const esAdminU=u&&u.rol==='admin';
-  const countCajeros=state.usuarios.filter(x=>x.rol==='cajero').length; const countCobradores=state.usuarios.filter(x=>x.rol==='cobrador').length;
+  const countCajeros=state.usuarios.filter(x=>x.rol==='cajero').length;
+  const countCobradores=state.usuarios.filter(x=>x.rol==='cobrador').length;
+  const rolActual=u?u.rol:'cajero';
   return `
-    <div class="modal-head"><div><div class="modal-title">${u?'Editar usuario':'Nuevo usuario'}</div><div class="card-subtitle">${u?'Cambia el nombre.':`Cajeros: ${countCajeros}/${MAX_CAJEROS} · Cobradores: ${countCobradores}/${MAX_COBRADORES}`}</div></div><button class="modal-close" onclick="cerrarModal()">×</button></div>
+    <div class="modal-head"><div><div class="modal-title">${u?'Editar usuario':'Nuevo usuario'}</div><div class="card-subtitle">${u?'Cambia nombre, rol o estado.':`Cajeros: ${countCajeros}/${MAX_CAJEROS} · Cobradores: ${countCobradores}/${MAX_COBRADORES}`}</div></div><button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="field"><label>Nombre completo *</label><input id="m-u-nombre" value="${u?esc(u.nombre):''}" autofocus></div>
-    ${!u?`
-      <div class="field"><label>Rol *</label><select id="m-u-rol" onchange="ajustarColoresPorRol(this.value)"><option value="cajero">Cajero</option><option value="cobrador">Cobrador</option><option value="admin">Administrador</option></select></div>
-      <div class="field"><label>Color</label><div style="display:flex;gap:8px;flex-wrap:wrap" id="m-u-colores">${COLORES_CAJERO.map((c,i)=>`<button type="button" class="color-btn" data-color="${c}" data-rol="cajero" onclick="seleccionarColor(this)" style="width:38px;height:38px;border-radius:50%;border:3px solid ${i===0?'#1c3d5a':'transparent'};background:${c};cursor:pointer;padding:0;display:grid"></button>`).join('')}${COLORES_COBRADOR.map(c=>`<button type="button" class="color-btn" data-color="${c}" data-rol="cobrador" onclick="seleccionarColor(this)" style="width:38px;height:38px;border-radius:50%;border:3px solid transparent;background:${c};cursor:pointer;padding:0;display:none"></button>`).join('')}</div><input type="hidden" id="m-u-color" value="${COLORES_CAJERO[0]}"></div>
+    ${!esAdminU?`
+      <div class="field"><label>Rol *</label><select id="m-u-rol" onchange="ajustarColoresPorRol(this.value)">
+        <option value="cajero" ${rolActual==='cajero'?'selected':''}>Cajero</option>
+        <option value="cobrador" ${rolActual==='cobrador'?'selected':''}>Cobrador</option>
+        ${!u?`<option value="admin">Administrador</option>`:''}
+      </select><div class="hint">El rol determina las pantallas disponibles.</div></div>
     `:''}
-    ${esAdminU&&id?`<div class="alert alert-info"><div>El usuario es administrador.</div></div>`:''}
-    ${!esAdminU&&id?`<div class="field"><label>Estado</label><select id="m-u-activo"><option value="true" ${u.activo!==false?'selected':''}>Activo</option><option value="false" ${u.activo===false?'selected':''}>Inactivo</option></select></div>`:''}
+    ${!u?`<div class="field"><label>Color</label><div style="display:flex;gap:8px;flex-wrap:wrap" id="m-u-colores">${COLORES_CAJERO.map((c,i)=>`<button type="button" class="color-btn" data-color="${c}" data-rol="cajero" onclick="seleccionarColor(this)" style="width:38px;height:38px;border-radius:50%;border:3px solid ${i===0?'#1c3d5a':'transparent'};background:${c};cursor:pointer;padding:0;display:grid"></button>`).join('')}${COLORES_COBRADOR.map(c=>`<button type="button" class="color-btn" data-color="${c}" data-rol="cobrador" onclick="seleccionarColor(this)" style="width:38px;height:38px;border-radius:50%;border:3px solid transparent;background:${c};cursor:pointer;padding:0;display:none"></button>`).join('')}</div><input type="hidden" id="m-u-color" value="${COLORES_CAJERO[0]}"></div>`:''}
+    ${esAdminU?`<div class="alert alert-info"><div>El administrador principal no puede cambiar de rol ni desactivarse.</div></div>`:''}
+    ${u&&!esAdminU?`<div class="field"><label>Estado</label><select id="m-u-activo"><option value="true" ${u.activo!==false?'selected':''}>Activo</option><option value="false" ${u.activo===false?'selected':''}>Inactivo</option></select></div>`:''}
     <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button><button class="btn btn-primary" onclick="guardarUsuario(${u?`'${u.id}'`:'null'})">${u?'Guardar':'Crear'}</button></div>`;
 }
+
 function ajustarColoresPorRol(rol){
   document.querySelectorAll('#m-u-colores .color-btn').forEach(b=>{ b.style.display=(b.dataset.rol===rol)?'grid':'none'; b.style.border='3px solid transparent'; });
   const first=document.querySelector(`#m-u-colores .color-btn[data-rol="${rol}"]`); if(first){ first.style.border='3px solid #1c3d5a'; $('m-u-color').value=first.dataset.color; }
@@ -2047,10 +2054,43 @@ function guardarCreditoManual(){
 }
 
 function guardarUsuario(id){
-  const n=$('m-u-nombre').value.trim(); if(!n) return toast('Ingresa nombre','err');
-  if(id){ const u=userById(id); u.nombre=n; if(u.rol!=='admin'&&$('m-u-activo')) u.activo=$('m-u-activo').value==='true'; toast('Actualizado','ok'); cerrarModal(); if(usuarioActual.id===id){ usuarioActual=u; $('avatarIni').textContent=iniciales(u.nombre); } renderUsuarioSelector(); render(); return; }
+  const el=$('m-u-nombre'); const n=el?el.value.trim():'';
+  if(!n) return toast('Ingresa nombre','err');
+  if(id){
+    const u=userById(id); if(!u) return toast('Usuario no encontrado','err');
+    u.nombre=n;
+    const nuevoRol=$('m-u-rol')?.value;
+    if(u.rol!=='admin'&&nuevoRol&&nuevoRol!==u.rol){
+      if(nuevoRol==='cajero'&&state.usuarios.filter(x=>x.rol==='cajero'&&x.id!==id).length>=MAX_CAJEROS) return toast(`Máx ${MAX_CAJEROS} cajeros`,'err');
+      if(nuevoRol==='cobrador'&&state.usuarios.filter(x=>x.rol==='cobrador'&&x.id!==id).length>=MAX_COBRADORES) return toast(`Máx ${MAX_COBRADORES} cobradores`,'err');
+      u.rol=nuevoRol;
+      if($('m-u-color')) u.color=$('m-u-color').value||u.color;
+    }
+    if(u.rol!=='admin'&&$('m-u-activo')) u.activo=$('m-u-activo').value==='true';
+    if(usuarioActual.id===id){ usuarioActual=u; $('avatarIni').textContent=iniciales(u.nombre); $('avatarIni').style.background=u.color||'#8a6d3b'; $('rolLbl').textContent=u.rol==='admin'?'Administrador':u.rol==='cajero'?'Cajero':'Cobrador'; }
+    save(); toast('Usuario actualizado','ok'); cerrarModal(); renderUsuarioSelector(); render(); return;
+  }
   const rol=$('m-u-rol').value; const color=$('m-u-color').value||COLORES_CAJERO[0];
-  state.usuarios.push({id:'U'+(state.seq.usuario++),nombre:n,rol,color,activo:true,creado:HOY()}); toast('Usuario creado','ok'); cerrarModal(); renderUsuarioSelector(); render();
+  if(rol==='cajero'&&state.usuarios.filter(u=>u.rol==='cajero').length>=MAX_CAJEROS) return toast(`Máx ${MAX_CAJEROS} cajeros`,'err');
+  if(rol==='cobrador'&&state.usuarios.filter(u=>u.rol==='cobrador').length>=MAX_COBRADORES) return toast(`Máx ${MAX_COBRADORES} cobradores`,'err');
+  state.usuarios.push({id:'U'+(state.seq.usuario++),nombre:n,rol,color,activo:true,creado:HOY()});
+  save(); toast('Usuario creado','ok'); cerrarModal(); renderUsuarioSelector(); render();
+}
+function eliminarUsuario(id){
+  const u=userById(id); if(!u) return;
+  if(u.rol==='admin') return toast('No se puede eliminar al administrador','err');
+  if(u.id===usuarioActual.id) return toast('No puedes eliminar tu propio usuario','err');
+  const ventas=state.ventas.filter(v=>v.usuarioId===id).length;
+  const cobros=state.abonos.filter(a=>a.usuarioId===id).length;
+  const movs=(state.caja?.movimientos||[]).filter(m=>m.usuarioId===id).length;
+  const detalle=[]; if(ventas) detalle.push(`${ventas} venta(s)`); if(cobros) detalle.push(`${cobros} cobro(s)`); if(movs) detalle.push(`${movs} movimiento(s) de caja`);
+  pedirConfirmacion({
+    criticidad:detalle.length?'critico':'advertencia',titulo:'Eliminar usuario',
+    mensaje:`¿Eliminar a <b>${esc(u.nombre)}</b> (${esc(u.rol)})?`,
+    detalle:detalle.length?`<div style="color:var(--danger);margin-bottom:6px">⚠️ Tiene ${detalle.join(', ')} registrados.</div><div>Los registros históricos conservarán el nombre guardado.</div>`:'<div>Este usuario no tiene movimientos registrados.</div>',
+    textoBoton:'Sí, eliminar',
+    onConfirm:()=>{ state.usuarios=state.usuarios.filter(x=>x.id!==id); if(state.usuarioActualId===id) state.usuarioActualId=state.usuarios.find(x=>x.activo!==false)?.id||state.usuarios[0]?.id; save(); toast('Usuario eliminado','ok'); renderUsuarioSelector(); render(); }
+  });
 }
 
 function guardarBanco(id){
@@ -2266,17 +2306,41 @@ function iniciarVentaProducto(productoId){
 }
 function actualizarLineaCarrito(ix,campo,valor){
   const it=ui.ventaCarrito[ix]; if(!it) return;
-  if(it.esRecarga && campo==='precioUnit'){
-    const p=prodById(it.productoId); const b=p?.proveedorId?bolsaDe(p.proveedorId, it.tipoRecarga):null; const disp=b?(b.saldo||0):0;
+  if(it.esRecarga&&campo==='precioUnit'){
+    const p=prodById(it.productoId); const b=p?.proveedorId?bolsaDe(p.proveedorId,it.tipoRecarga):null; const disp=b?(b.saldo||0):0;
     const otros=ui.ventaCarrito.filter((_,i)=>i!==ix&&_.productoId===it.productoId).reduce((a,i)=>a+i.subtotal,0);
     const nuevo=parseNum(valor); if(nuevo<=0) return toast('Monto inválido','err');
     if(disp<otros+nuevo) return toast(`Saldo insuficiente (${money(disp)})`,'err');
     it.precioUnit=nuevo; it.costoUnit=nuevo;
-  } else if(campo==='precioUnit'){ it.precioUnit=parseNum(valor); }
-  else if(campo==='cantidad'){ const v=parseNum(valor); if(v<=0) return toast('Cantidad inválida','err'); it.cantidad=v; }
-  it.subtotal=num2(it.cantidad*it.precioUnit);
-  render();
+  } else if(campo==='precioUnit'){
+    const nuevo=parseNum(valor); if(!(nuevo>0)) return toast('Precio inválido','err'); it.precioUnit=nuevo;
+  } else if(campo==='cantidad'){
+    const v=parseNum(valor); if(!(v>0)) return toast('Cantidad inválida','err');
+    const p=prodById(it.productoId);
+    if(p&&!esProductoRecarga(p)){
+      const otras=ui.ventaCarrito.filter((_,i)=>i!==ix&&_.productoId===it.productoId&&!_.esRecarga).reduce((a,x)=>a+(Number(x.cantidad)||0),0);
+      const max=Math.max(0,Number(p.stock||0)-otras);
+      if(v>max){ toast(`Stock insuficiente. Disponible: ${max}.`,'err'); if(max<=0){ui.ventaCarrito.splice(ix,1);render();return;} it.cantidad=max; }
+      else it.cantidad=v;
+    } else it.cantidad=v;
+  }
+  it.subtotal=num2(it.cantidad*it.precioUnit); render();
 }
+function abrirVentaPorCantidad(productoId){
+  const p=prodById(productoId); if(!p) return;
+  if(!turnoRequerido()) return toast('Primero abre tu turno','err');
+  const enCarrito=ui.ventaCarrito.filter(i=>i.productoId===productoId&&!i.esRecarga).reduce((a,i)=>a+(Number(i.cantidad)||0),0);
+  const maxDisp=Math.max(0,Number(p.stock||0)-enCarrito);
+  if(maxDisp<=0) return toast('Sin stock disponible.','err');
+  const resp=prompt(`¿Cuántas unidades de "${p.nombre}" querés agregar?\\n\\nStock disponible: ${maxDisp}`,'1');
+  if(resp===null) return;
+  const cant=parseNum(resp);
+  if(!(cant>0)||!Number.isInteger(cant)) return toast('Ingresa una cantidad entera válida','err');
+  if(cant>maxDisp) return toast(`Solo hay ${maxDisp} disponibles.`,'err');
+  agregarAlCarritoVenta(productoId,cant);
+  toast(`Agregadas ${cant} unidades de ${p.nombre}`,'ok');
+}
+
 function quitarDelCarrito(ix){ ui.ventaCarrito.splice(ix,1); render(); }
 function totalCarritoVenta(){ return num2(ui.ventaCarrito.reduce((a,i)=>a+i.subtotal,0)); }
 
@@ -2285,7 +2349,9 @@ function confirmarVenta(){
   const fechaVenta=ui.ventaFecha||HOY();
   if(fechaVenta>HOY()) return toast('La fecha de la venta no puede ser futura.','err');
   if(mesCerrado(mesDe(fechaVenta))) return toast(`El mes ${mesDe(fechaVenta)} está cerrado`,'err');
-  for(const it of ui.ventaCarrito){ const p=prodById(it.productoId); if(!p) return toast(`Producto eliminado: ${it.nombre}`,'err'); if(!esProductoRecarga(p)&&p.stock<it.cantidad) return toast(`Stock insuficiente de ${p.nombre}`,'err'); }
+  const cantidadesStock={};
+  for(const it of ui.ventaCarrito){ const p=prodById(it.productoId); if(!p) return toast(`Producto eliminado: ${it.nombre}`,'err'); if(!esProductoRecarga(p)) cantidadesStock[p.id]=(cantidadesStock[p.id]||0)+(Number(it.cantidad)||0); }
+  for(const [pid,cant] of Object.entries(cantidadesStock)){const p=prodById(pid);if(p&&cant>Number(p.stock||0))return toast(`Stock insuficiente de ${p.nombre}. Disponible: ${p.stock}`,'err');}
   const cliente=ui.ventaClienteId?state.clientes.find(c=>c.id===ui.ventaClienteId):null;
   if(ui.ventaTipoPago==='credito'&&!cliente) return toast('Selecciona un cliente','err');
   
@@ -2309,9 +2375,17 @@ function confirmarVenta(){
     cambio=num2(montoRecibido-total);
   }
   
+  let clienteIdFinal=cliente?cliente.id:null;
+  let clienteNombreFinal=cliente?cliente.nombre:'Consumidor final';
+  if(!cliente&&ui.ventaTipoPago!=='credito'&&ui.ventaClienteLibre&&ui.ventaClienteLibre.trim()){
+    const nombreLibre=ui.ventaClienteLibre.trim();
+    const match=state.clientes.find(c=>normalizar(c.nombre)===normalizar(nombreLibre));
+    if(match){clienteIdFinal=match.id;clienteNombreFinal=match.nombre;}
+    else clienteNombreFinal=nombreLibre;
+  }
   const venta={ 
     id:'V'+(state.seq.venta++),fecha:fechaVenta,hora:horaActual(),
-    clienteId:cliente?cliente.id:null, clienteNombre:cliente?cliente.nombre:'Consumidor final',
+    clienteId:clienteIdFinal, clienteNombre:clienteNombreFinal,
     tipoPago:ui.ventaTipoPago, plazo, vencimiento,
     items:ui.ventaCarrito.map(i=>({...i})),
     total, pagado:ui.ventaTipoPago==='contado'?total:abonoInicial,
@@ -2328,7 +2402,8 @@ function confirmarVenta(){
     agregarMovimientoCaja('venta', venta.pagado, 'Abono inicial Venta '+venta.id+' · '+venta.clienteNombre, venta.id,venta.fecha,venta.hora);
   }
   
-  ui.ventaCarrito=[]; ui.ventaClienteId=''; ui.ventaMontoRecibido=''; ui.ventaAbonoInicial=''; ui.ventaTipoPago='contado'; ui.ventaMetodoPago='efectivo'; ui.ventaPlazo=15; ui.ventaPlazoCustom=''; ui.ventaFecha=HOY();
+  save();
+  ui.ventaCarrito=[]; ui.ventaClienteId=''; ui.ventaMontoRecibido=''; ui.ventaAbonoInicial=''; ui.ventaTipoPago='contado'; ui.ventaMetodoPago='efectivo'; ui.ventaPlazo=15; ui.ventaPlazoCustom=''; ui.ventaClienteLibre=''; ui.ventaFecha=HOY();
   
   const gan=gananciaVenta(venta); 
   if(gan>0) toast(`Venta ${money(total)} · Ganancia ${money(gan)}${cambio>0.001?' · Cambio '+money(cambio):''}`,'ok'); 
@@ -2790,7 +2865,7 @@ function viewVentas(){
     <div class="card">
       <div class="card-head"><div><div class="card-title">Catálogo</div></div></div>
       <div class="search-wrap"><input id="buscarProdVenta" placeholder="Buscar producto..." value="${esc(ui.buscarProdVenta)}" oninput="ui.buscarProdVenta=this.value; renderConservarFoco('buscarProdVenta')"></div>
-      <div class="prod-list">${prods.length===0?'<div class="empty">Sin resultados.</div>':prods.map(p=>{ const d=dispDe(p); const esRec=esProductoRecarga(p); return `<div class="prod-item ${!d.ok?'stock-0':''}" onclick="${!d.ok?'':`iniciarVentaProducto('${p.id}')`}"><div><div class="prod-name">${esc(p.nombre)} ${esRec?`<span class="badge badge-accent" style="margin-left:6px">${TIPOS_BOLSA[d.tipo]}</span>`:''}</div><div class="prod-meta">${esRec?(provById(p.proveedorId)?.nombre||'Sin operador'):(unidadAbrev(p.unidad)+' · '+(catById(p.categoriaId)?.nombre||''))}</div></div><div style="text-align:right"><div class="prod-price">${esRec?'Monto libre':money(p.precio)}</div><div class="prod-stock" style="${!d.ok?'color:var(--danger);font-weight:600':''}">${d.texto}</div></div></div>`; }).join('')}</div>
+      <div class="prod-list">${prods.length===0?'<div class="empty">Sin resultados.</div>':prods.map(p=>{ const d=dispDe(p); const esRec=esProductoRecarga(p); return `<div class="prod-item ${!d.ok?'stock-0':''}"><div onclick="${!d.ok?'':`iniciarVentaProducto('${p.id}')`}" style="flex:1;display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer"><div><div class="prod-name">${esc(p.nombre)} ${esRec?`<span class="badge badge-accent" style="margin-left:6px">${TIPOS_BOLSA[d.tipo]}</span>`:''}</div><div class="prod-meta">${esRec?(provById(p.proveedorId)?.nombre||'Sin operador'):(unidadAbrev(p.unidad)+' · '+(catById(p.categoriaId)?.nombre||''))}</div></div><div style="text-align:right"><div class="prod-price">${esRec?'Monto libre':money(p.precio)}</div><div class="prod-stock" style="${!d.ok?'color:var(--danger);font-weight:600':''}">${d.texto}</div></div></div>${!esRec&&d.ok?`<button class="btn btn-outline btn-sm" style="padding:3px 8px;font-size:11px" title="Vender por cantidad" onclick="event.stopPropagation(); abrirVentaPorCantidad('${p.id}')">xN</button>`:''}</div>`; }).join('')}</div>
     </div>
     <div class="card">
       <div class="card-head"><div><div class="card-title">Carrito</div></div>${ui.ventaCarrito.length>0?`<button class="btn-ghost" onclick="ui.ventaCarrito=[]; render()">Vaciar</button>`:''}</div>
@@ -2814,6 +2889,7 @@ function viewVentas(){
                 ${ui.mostrarBuscadorCliente?`<div class="search-results">${clientesEnc.map(c=>`<div class="search-item" onclick="seleccionarClienteVenta('${c.id}')"><div class="name">${esc(c.nombre)}</div><div class="meta">${esc(c.comunidad)}</div></div>`).join('')||'<div class="search-item"><div class="meta">Sin resultados.</div></div>'}<div class="search-item" onclick="ui.ventaClienteId=''; ui.buscarClienteVenta=''; ui.mostrarBuscadorCliente=false; render()" style="color:var(--muted)"><div class="name">Consumidor final</div></div></div>`:''}
               </div>`}
           </div>
+          ${!cliente?`<div class="field"><label>Nombre en la venta (opcional, solo contado)</label><input type="text" id="inpVentaClienteLibre" placeholder="Ej: Juan Pérez (opcional)" value="${esc(ui.ventaClienteLibre||'')}" oninput="ui.ventaClienteLibre=this.value" ${ui.ventaTipoPago==='credito'?'disabled':''}><div class="hint">${ui.ventaTipoPago==='credito'?'Para crédito se requiere un cliente registrado.':'Si escribes un nombre, aparecerá en el historial. Si lo dejas vacío, se usará Consumidor final.'}</div></div>`:''}
           <div class="field"><label>Forma de pago</label><div class="choice-row"><button class="choice ${ui.ventaTipoPago==='contado'?'active':''}" onclick="ui.ventaTipoPago='contado'; render()"><span class="choice-title">Contado</span></button><button class="choice ${ui.ventaTipoPago==='credito'?'active':''}" onclick="ui.ventaTipoPago='credito'; render()"><span class="choice-title">Crédito</span></button></div></div>
           ${(ui.ventaTipoPago==='contado'||parseNum(ui.ventaAbonoInicial)>0)?`<div class="field"><label>Método del pago recibido</label><select id="selMetodoVenta" onchange="ui.ventaMetodoPago=this.value"><option value="efectivo" ${ui.ventaMetodoPago==='efectivo'?'selected':''}>Efectivo</option><option value="transferencia" ${ui.ventaMetodoPago==='transferencia'?'selected':''}>Transferencia</option></select><div class="hint">Se guardará en el historial y podrás filtrar por método.</div></div>`:''}
           ${ui.ventaTipoPago==='credito'?`
@@ -3014,7 +3090,7 @@ function viewUsuarios(){
   <div class="page-head"><div class="page-eyebrow">Configuración</div><h1 class="page-title">Usuarios</h1></div>
   <div class="card">
     <div class="card-head"><div><div class="card-title">Usuarios</div></div><button class="btn btn-primary" onclick="abrirModal('nuevoUsuario')">Nuevo usuario</button></div>
-    ${usuarios.map(u=>{ const esElActual=u.id===usuarioActual.id; const rolLbl=u.rol==='admin'?'Administrador':u.rol==='cajero'?'Cajero':'Cobrador'; return `<div class="user-card"><div class="user-card-head"><div class="user-card-avatar" style="background:${u.color||'#8a6d3b'}">${iniciales(u.nombre)}</div><div><div class="user-card-name">${esc(u.nombre)} ${esElActual?'<span class="badge badge-success">Sesión actual</span>':''}</div><div class="user-card-meta"><span class="badge badge-info">${rolLbl}</span></div></div></div><div style="display:flex;gap:6px">${esElActual?'':`<button class="btn btn-outline btn-sm" onclick="cambiarUsuario('${u.id}')">Usar</button>`}<button class="btn-ghost" style="font-size:12px" onclick="abrirModal('editarUsuario','${u.id}')">Editar</button></div></div>`; }).join('')}
+    ${usuarios.map(u=>{ const esElActual=u.id===usuarioActual.id; const rolLbl=u.rol==='admin'?'Administrador':u.rol==='cajero'?'Cajero':'Cobrador'; return `<div class="user-card"><div class="user-card-head"><div class="user-card-avatar" style="background:${u.color||'#8a6d3b'}">${iniciales(u.nombre)}</div><div><div class="user-card-name">${esc(u.nombre)} ${esElActual?'<span class="badge badge-success">Sesión actual</span>':''}</div><div class="user-card-meta"><span class="badge badge-info">${rolLbl}</span></div></div></div><div style="display:flex;gap:6px;flex-wrap:wrap">${esElActual?'':`<button class="btn btn-outline btn-sm" onclick="cambiarUsuario('${u.id}')">Usar</button>`}<button class="btn-ghost" style="font-size:12px" onclick="abrirModal('editarUsuario','${u.id}')">Editar</button>${u.rol!=='admin'?`<button class="btn-ghost" style="font-size:12px;color:var(--danger)" onclick="eliminarUsuario('${u.id}')">Eliminar</button>`:''}</div></div>`; }).join('')}
   </div>`;
 }
 
