@@ -1269,7 +1269,21 @@ function saldoCaja(){ if(!state) return 0; return num2(state.caja.saldoInicial+s
 function saldoBanco(b){ return num2(b.saldoInicial+(b.movimientos||[]).reduce((a,m)=>a+m.monto,0)); }
 function saldoBancosTotal(){ return num2(state.bancos.reduce((a,b)=>a+saldoBanco(b),0)); }
 function agregarMovimientoCaja(tipo,monto,descripcion,referencia,fecha=HOY(),hora=horaActual()){
-  state.caja.movimientos.push({id:'M'+(state.seq.mov++),fecha:fecha||HOY(),hora:hora||horaActual(),tipo,monto:num2(monto),descripcion,referencia:referencia||null,usuarioId:usuarioActual?.id||null,usuarioNombre:usuarioActual?.nombre||'—'});
+  // La fecha de la operación puede ser retroactiva; el turno corresponde al momento de registro.
+  const turnoActual = usuarioActual && esUsarTurnos() ? turnoAbiertoDe(usuarioActual.id) : null;
+  state.caja.movimientos.push({
+    id:'M'+(state.seq.mov++),
+    fecha:fecha||HOY(),
+    hora:hora||horaActual(),
+    registradoEn:new Date().toISOString(),
+    turnoId:turnoActual?.id||null,
+    tipo,
+    monto:num2(monto),
+    descripcion,
+    referencia:referencia||null,
+    usuarioId:usuarioActual?.id||null,
+    usuarioNombre:usuarioActual?.nombre||'—'
+  });
 }
 function eliminarMovimientosPorRef(ref){ state.caja.movimientos=state.caja.movimientos.filter(m=>m.referencia!==ref); }
 function agregarMovimientoBanco(bancoId,monto,descripcion,referencia){
@@ -1325,6 +1339,18 @@ function patrimonioNeto(){
 
 function turnoAbierto(){ return state.turnos.find(t=>t.estado==='abierto')||null; }
 function turnoAbiertoDe(uid){ return state.turnos.find(t=>t.estado==='abierto'&&t.usuarioId===uid)||null; }
+// Usa el turno guardado explícitamente para movimientos nuevos, aunque la venta tenga fecha retroactiva.
+// Para movimientos antiguos sin turnoId conserva la regla histórica por usuario y fecha de apertura.
+function movimientosDelTurno(turno){
+  if(!turno) return [];
+  return (state.caja?.movimientos||[]).filter(m=>{
+    if(m.turnoId) return m.turnoId===turno.id;
+    return m.usuarioId===turno.usuarioId && (m.fecha||'') >= (turno.fechaApertura||'');
+  });
+}
+function saldoTeoricoTurno(turno){
+  return num2((turno?.saldoInicial||0)+movimientosDelTurno(turno).reduce((a,m)=>a+(Number(m.monto)||0),0));
+}
 function ultimoTurno(){
   const cerrados=state.turnos.filter(t=>t.estado==='cerrado').sort((a,b)=>{const fa=(a.fechaCierre||'')+(a.horaCierre||'');const fb=(b.fechaCierre||'')+(b.horaCierre||'');return fb.localeCompare(fa);});
   return cerrados[0]||null;
@@ -1467,22 +1493,35 @@ function modalEditarVenta(id){
     <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button><button class="btn btn-primary" onclick="guardarEdicionVenta('${esc(v.id)}')">Guardar cambios</button></div>`;
 }
 
-  function modalDetalleVenta(id){
+function modalDetalleVenta(id){
   const v = state.ventas.find(x => x.id === id);
   if(!v) return '<div class="empty">Venta no encontrada</div>';
-  
   const items = Array.isArray(v.items) ? v.items : [];
   const resumen = {};
+  let unidadesFisicas = 0;
   items.forEach(it => {
-    let tipo = 'Producto físico';
-    if(it.esRecarga) {
-      tipo = 'Recarga ' + (it.tipoRecarga === 'paquete' ? 'de paquetes' : 'al paso');
-    }
-    if(!resumen[tipo]) resumen[tipo] = { cantidad: 0, total: 0 };
+    const tipo = it.esRecarga ? ('Recarga ' + (it.tipoRecarga === 'paquete' ? 'de paquetes' : 'al paso')) : 'Producto físico';
+    if(!resumen[tipo]) resumen[tipo] = { cantidad: 0, total: 0, lineas: 0 };
     resumen[tipo].cantidad += Number(it.cantidad) || 1;
     resumen[tipo].total += Number(it.subtotal) || 0;
+    resumen[tipo].lineas += 1;
+    if(!it.esRecarga) unidadesFisicas += Number(it.cantidad) || 0;
   });
-
+  const lineasDetalle = items.map((it, ix) => {
+    const cantidad = Number(it.cantidad) || 1;
+    const precio = Number(it.precioUnit) || 0;
+    const subtotal = it.subtotal != null ? Number(it.subtotal) : cantidad * precio;
+    const tipo = it.esRecarga
+      ? `<span class="badge badge-info">Recarga ${it.tipoRecarga === 'paquete' ? 'Paquete' : 'Al paso'}</span>`
+      : `<span class="badge badge-neutral">Producto físico</span>`;
+    return `<tr>
+      <td style="color:var(--muted)">${ix+1}</td>
+      <td>${tipo}<br><strong>${esc(it.nombre || 'Producto sin nombre')}</strong>${it.unidad&&!it.esRecarga?`<div style="font-size:11px;color:var(--muted)">Unidad: ${esc(it.unidad)}</div>`:''}</td>
+      <td class="num">${cantidad}</td>
+      <td class="num">${money(precio)}</td>
+      <td class="num bold">${money(subtotal)}</td>
+    </tr>`;
+  }).join('');
   return `
     <div class="modal-head">
       <div>
@@ -1491,50 +1530,27 @@ function modalEditarVenta(id){
       </div>
       <button class="modal-close" onclick="cerrarModal()">×</button>
     </div>
-    
     <div class="alert alert-info" style="margin-bottom:14px">
-      <div><strong>Pago:</strong> ${v.tipoPago === 'contado' ? 'Contado' : 'Crédito a ' + (v.plazo || 0) + ' días'} · 
-      <strong>Método:</strong> ${(v.metodoPago || 'sin registro') === 'transferencia' ? 'Transferencia' : (v.metodoPago === 'efectivo' ? 'Efectivo' : 'No registrado')}</div>
+      <div><strong>Pago:</strong> ${v.tipoPago === 'contado' ? 'Contado' : 'Crédito a ' + (v.plazo || 0) + ' días'} ·
+      <strong>Método:</strong> ${(v.metodoPago || 'sin registro') === 'transferencia' ? 'Transferencia' : (v.metodoPago === 'efectivo' ? 'Efectivo' : (v.metodoPago === 'pendiente' ? 'Pendiente' : 'No registrado'))}</div>
     </div>
-
+    <div class="grid-3" style="margin-bottom:14px;gap:10px">
+      <div class="kpi" style="border:1px solid var(--line-soft);box-shadow:none"><div class="kpi-label">Líneas vendidas</div><div class="kpi-value" style="font-size:22px">${items.length}</div><div class="hint">Cada renglón es una incorporación</div></div>
+      <div class="kpi" style="border:1px solid var(--line-soft);box-shadow:none"><div class="kpi-label">Unidades físicas</div><div class="kpi-value" style="font-size:22px">${unidadesFisicas}</div><div class="hint">Sin contar recargas</div></div>
+      <div class="kpi" style="border:1px solid var(--line-soft);box-shadow:none"><div class="kpi-label">Total de venta</div><div class="kpi-value is-success" style="font-size:22px">${money(v.total)}</div><div class="hint">Importe registrado</div></div>
+    </div>
+    <div style="font-weight:700;margin:0 0 8px">Detalle por producto / operación</div>
     <div class="table-wrap">
-      <table>
-        <thead>
-          <tr><th>Tipo / Producto</th><th class="num">Cantidad</th><th class="num">Precio Unit.</th><th class="num">Subtotal</th></tr>
-        </thead>
-        <tbody>
-          ${items.map(it => {
-            const tipo = it.esRecarga 
-              ? `<span class="badge badge-info">Recarga ${it.tipoRecarga === 'paquete' ? 'Paquete' : 'Al paso'}</span>` 
-              : `<span class="badge badge-neutral">Producto físico</span>`;
-            return `<tr>
-              <td>${tipo} <strong>${esc(it.nombre)}</strong></td>
-              <td class="num">${Number(it.cantidad)||1}</td>
-              <td class="num">${money(it.precioUnit)}</td>
-              <td class="num bold">${money(it.subtotal)}</td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-        <tfoot>
-          <tr style="border-top:2px solid var(--line)">
-            <td colspan="3" class="bold" style="text-align:right">TOTAL:</td>
-            <td class="num bold" style="font-size:16px">${money(v.total)}</td>
-          </tr>
-        </tfoot>
+      <table style="min-width:500px">
+        <thead><tr><th>#</th><th>Producto / tipo</th><th class="num">Cantidad</th><th class="num">Precio unitario</th><th class="num">Subtotal</th></tr></thead>
+        <tbody>${lineasDetalle || '<tr><td colspan="5" class="empty">Esta venta no tiene detalle de productos guardado.</td></tr>'}</tbody>
+        <tfoot><tr style="border-top:2px solid var(--line)"><td colspan="4" class="bold" style="text-align:right">TOTAL:</td><td class="num bold" style="font-size:16px">${money(v.total)}</td></tr></tfoot>
       </table>
     </div>
-
-    <div class="alert alert-warning" style="margin-top:16px;margin-bottom:0">
-      <div><strong>Resumen por tipo:</strong><br>
-      ${Object.entries(resumen).map(([tipo, data]) => 
-        `• ${tipo}: ${data.cantidad} unidad(es) — Total Bs ${data.total.toFixed(2)}`
-      ).join('<br>')}
-      </div>
+    <div class="alert alert-warning" style="margin-top:14px;margin-bottom:0">
+      <div><strong>Resumen por tipo:</strong><br>${Object.entries(resumen).map(([tipo, data]) => `• ${tipo}: ${data.lineas} línea(s), ${data.cantidad} unidad(es) — ${money(data.total)}`).join('<br>') || 'Sin líneas registradas.'}</div>
     </div>
-
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button>
-    </div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button></div>
   `;
 }
 
@@ -1862,7 +1878,7 @@ function modalAbrirTurno(){
 function modalCerrarTurno(turnoId){
   const t=state.turnos.find(x=>x.id===turnoId)||turnoAbiertoDe(usuarioActual.id);
   if(!t) return `<div class="modal-head"><div><div class="modal-title">No hay turno</div></div><button class="modal-close" onclick="cerrarModal()">×</button></div><div class="alert alert-info"><div>Sin turno abierto.</div></div><div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button></div>`;
-  const movs=state.caja.movimientos.filter(m=>m.usuarioId===t.usuarioId&&m.fecha>=t.fechaApertura); const teorico=num2(t.saldoInicial+movs.reduce((a,m)=>a+m.monto,0));
+  const movs=movimientosDelTurno(t); const teorico=saldoTeoricoTurno(t);
   return `<div class="modal-head"><div><div class="modal-title">Cerrar turno</div><div class="card-subtitle">${esc(t.usuarioNombre)}</div></div><button class="modal-close" onclick="cerrarModal()">×</button></div><div class="alert alert-info"><div>Inicial: <b>${money(t.saldoInicial)}</b><br>Movs: <b>${movs.length}</b><br>Teórico: <b>${money(teorico)}</b></div></div><div class="field"><label>Efectivo contado (Bs) *</label><div class="money-input-wrap"><input id="m-arqueo" type="text" inputmode="decimal" value="${teorico}"></div></div><div class="field"><label>Observaciones</label><input id="m-obs"></div><div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button><button class="btn btn-danger" onclick="confirmarCerrarTurno('${t.id}',${teorico})">Cerrar turno</button></div>`;
 }
 
@@ -2718,11 +2734,11 @@ function limpiarFiltrosMovimientos(){
 }
 function viewCaja(){
   const mov=movimientosVisibles().slice().reverse(); const movHoy=mov.filter(m=>m.fecha===HOY()); const ingHoy=num2(movHoy.filter(m=>m.monto>0).reduce((a,m)=>a+m.monto,0)); const egrHoy=num2(movHoy.filter(m=>m.monto<0).reduce((a,m)=>a+m.monto,0));
-  const miTurno=esAdmin()?null:turnoAbiertoDe(usuarioActual.id); const saldoMostrar=esAdmin()?saldoCaja():(miTurno?num2(miTurno.saldoInicial+movHoy.reduce((a,m)=>a+m.monto,0)):0);
+  const miTurno=esAdmin()?null:turnoAbiertoDe(usuarioActual.id); const saldoMostrar=esAdmin()?saldoCaja():(miTurno?saldoTeoricoTurno(miTurno):0);
   return `
   <div class="page-head"><div class="page-eyebrow">Tesorería</div><h1 class="page-title">${esAdmin()?'Caja':'Mi caja'}</h1></div>
   <div class="caja-hero">
-    <div><div class="caja-hero-label">${esAdmin()?'Saldo en caja':'Saldo de tu turno'}</div><div class="caja-hero-value" style="color:${saldoMostrar>=0?'#fff':'#ffb3b3'}">${money(saldoMostrar)}</div><div class="caja-hero-sub">${esAdmin()?`Inicial: ${money(state.caja.saldoInicial)} · Bolsas: ${money(saldoBolsasTotal())}`:(miTurno?`Inicial: ${money(miTurno.saldoInicial)}`:'Sin turno')}</div></div>
+    <div><div class="caja-hero-label">${esAdmin()?'Saldo en caja':'Saldo de tu turno'}</div><div class="caja-hero-value" style="color:${saldoMostrar>=0?'#fff':'#ffb3b3'}">${money(saldoMostrar)}</div><div class="caja-hero-sub">${esAdmin()?`Inicial: ${money(state.caja.saldoInicial)} · Bolsas: ${money(saldoBolsasTotal())}`:(miTurno?`Saldo inicial: ${money(miTurno.saldoInicial)} · Movimientos del turno: ${money(saldoTeoricoTurno(miTurno)-miTurno.saldoInicial)}`:'Sin turno')}</div></div>
     ${esAdmin()?`<div class="btn-row"><button class="btn btn-success" onclick="abrirModal('agregarDinero')">Agregar dinero</button><button class="btn btn-outline" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3);color:#fff" onclick="abrirModal('retirarDinero')">Retirar</button></div>`:`<div class="btn-row">${esUsarTurnos()?(miTurno?`<button class="btn btn-danger" onclick="abrirModal('cerrarTurno','${miTurno.id}')">Cerrar turno</button>`:`<button class="btn btn-success" onclick="abrirModal('abrirTurno')">Abrir turno</button>`):''}</div>`}
   </div>
   ${esAdmin()?`
@@ -2926,8 +2942,8 @@ function viewVentas(){
       <div class="kpi" style="border:1px solid var(--line-soft);box-shadow:none"><div class="kpi-label">Ganancia del periodo</div><div class="kpi-value" style="font-size:clamp(20px,2vw,28px)">${money(gananciaHistFiltrada)}</div><div class="hint">Según el costo registrado</div></div>
       <div class="kpi" style="border:1px solid var(--line-soft);box-shadow:none"><div class="kpi-label">Promedio por venta</div><div class="kpi-value" style="font-size:clamp(20px,2vw,28px)">${money(histFilt.length?totalHistFiltrado/histFilt.length:0)}</div><div class="hint">Total vendido ÷ cantidad de ventas</div></div>
     </div>
-    <div class="table-wrap"><table><thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Pago</th><th>Método</th>${esAdmin()?'<th>Usuario</th>':''}<th class="num">Total</th><th class="num">Ganancia</th><th class="num">Estado</th>${esAdmin()?'<th></th>':''}</tr></thead><tbody>
-      ${histFilt.map(v=>`<tr><td><span class="badge badge-neutral">${referenciaVentaVisible(v,mapaReferenciasHistoricas)}</span></td><td>${fFecha(v.fecha)}<br><span style="font-size:11.5px;color:var(--muted)">${v.hora}</span></td><td>${esc(v.clienteNombre)}</td><td>${v.tipoPago==='contado'?'<span class="badge badge-success">Contado</span>':`<span class="badge badge-warning">Créd ${v.plazo}d</span>`}</td><td><span class="badge ${((v.metodoPago||'sin_registro')==='transferencia')?'badge-info':((v.metodoPago||'sin_registro')==='pendiente'?'badge-warning':((v.metodoPago||'sin_registro')==='sin_registro'?'badge-neutral':'badge-success'))}">${(v.metodoPago||'sin_registro')==='transferencia'?'Transferencia':((v.metodoPago||'sin_registro')==='pendiente'?'Pendiente':((v.metodoPago||'sin_registro')==='sin_registro'?'No registrado':'Efectivo'))}</span></td>${esAdmin()?`<td><span class="badge badge-info">${esc(v.usuarioNombre||'—')}</span></td>`:''}<td class="num bold">${money(v.total)}</td><td class="num" style="color:var(--success);font-weight:600">${money(gananciaVenta(v))}</td><td class="num">${v.tipoPago==='credito'?`<span class="badge ${saldoVenta(v)<=0.001?'badge-success':'badge-danger'}">${saldoVenta(v)<=0.001?'Pagada':'Debe '+money(saldoVenta(v))}</span>`:'<span class="badge badge-neutral">Pagado</span>'}</td>${esAdmin()?`<td class="num" style="white-space:nowrap"><button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('detalleVenta','${v.id}')" title="Ver desglose de productos">👁 Detalle</button>${!mesCerrado(v.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('editarVenta','${v.id}')">Editar</button> <button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarVenta('${v.id}')">Eliminar</button>`:'<span class="badge badge-neutral">🔒 Mes cerrado</span>'}</td>`:''}</tr>`).join('')||`<tr><td colspan="${esAdmin()?10:8}" class="empty">Sin resultados.</td></tr>`}
+    <div class="table-wrap"><table><thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Pago</th><th>Método</th>${esAdmin()?'<th>Usuario</th>':''}<th class="num">Total</th><th class="num">Ganancia</th><th class="num">Estado</th><th>Detalle</th></tr></thead><tbody>
+      ${histFilt.map(v=>`<tr><td><span class="badge badge-neutral">${referenciaVentaVisible(v,mapaReferenciasHistoricas)}</span></td><td>${fFecha(v.fecha)}<br><span style="font-size:11.5px;color:var(--muted)">${v.hora}</span></td><td>${esc(v.clienteNombre)}</td><td>${v.tipoPago==='contado'?'<span class="badge badge-success">Contado</span>':`<span class="badge badge-warning">Créd ${v.plazo}d</span>`}</td><td><span class="badge ${((v.metodoPago||'sin_registro')==='transferencia')?'badge-info':((v.metodoPago||'sin_registro')==='pendiente'?'badge-warning':((v.metodoPago||'sin_registro')==='sin_registro'?'badge-neutral':'badge-success'))}">${(v.metodoPago||'sin_registro')==='transferencia'?'Transferencia':((v.metodoPago||'sin_registro')==='pendiente'?'Pendiente':((v.metodoPago||'sin_registro')==='sin_registro'?'No registrado':'Efectivo'))}</span></td>${esAdmin()?`<td><span class="badge badge-info">${esc(v.usuarioNombre||'—')}</span></td>`:''}<td class="num bold">${money(v.total)}</td><td class="num" style="color:var(--success);font-weight:600">${money(gananciaVenta(v))}</td><td class="num">${v.tipoPago==='credito'?`<span class="badge ${saldoVenta(v)<=0.001?'badge-success':'badge-danger'}">${saldoVenta(v)<=0.001?'Pagada':'Debe '+money(saldoVenta(v))}</span>`:'<span class="badge badge-neutral">Pagado</span>'}</td><td class="num" style="white-space:nowrap"><button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('detalleVenta','${v.id}')" title="Ver desglose de productos">👁 Detalle</button>${esAdmin()?(!mesCerrado(v.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('editarVenta','${v.id}')">Editar</button> <button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarVenta('${v.id}')">Eliminar</button>`:'<span class="badge badge-neutral">🔒 Mes cerrado</span>') : ''}</td></tr>`).join('')||`<tr><td colspan="${esAdmin()?10:9}" class="empty">Sin resultados.</td></tr>`}
     </tbody></table></div>
   </div>`;
 }
