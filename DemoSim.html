@@ -1008,19 +1008,25 @@ window.syncToCloud = function(stateArg){
       await subirStateASupabase(snapshot);
     }catch(e){
       console.error('[SIMGest] Error sincronizando:', e);
-      // Protección: conservar el último estado local si la nube falla.
-      // Esto no modifica ni elimina registros existentes en Supabase.
+
+      // Guardar copia local siempre para no perder datos
       try{
         localStorage.setItem('simgest_recovery_snapshot', JSON.stringify(snapshot));
-        console.warn('[SIMGest] Copia local de recuperación actualizada; los datos locales se conservaron.');
-      }catch(localErr){
-        console.warn('[SIMGest] No se pudo actualizar la copia de recuperación local:', localErr);
+      }catch(localErr){}
+
+      const detalle = String((e && e.message) || e || 'error').toLowerCase();
+      const esJwt = detalle.includes('jwt expired') || detalle.includes('session');
+      const esRed = e instanceof TypeError || /failed to fetch|networkerror|cors/i.test(detalle);
+
+      if (esJwt) {
+        // El mensaje ya lo muestra el flujo de refresco de sesión.
+        return;
       }
-      const detalle = String((e && e.message) || e || 'error');
-      const pareceRedOCors = e instanceof TypeError || /failed to fetch|networkerror|cors/i.test(detalle);
-      const aviso = pareceRedOCors
-        ? 'Guardado local conservado; Supabase no respondió (posible CORS o problema de red). No borres los datos del navegador y revisa el panel de Supabase.'
-        : 'No se pudo guardar en la nube: ' + detalle + '. La copia local se conservó.';
+
+      const aviso = esRed
+        ? 'Guardado local conservado; Supabase no respondió (posible problema de red).'
+        : 'No se pudo guardar en la nube: ' + (e.message || 'error') + '. La copia local se conservó.';
+
       if(typeof toast === 'function') toast(aviso, 'err');
     }
   }, 700);
@@ -1028,24 +1034,56 @@ window.syncToCloud = function(stateArg){
 
 async function subirStateASupabase(s){
   if(!sb || !sbNegocioId || !sbUser || modoLocal) return;
+
   const payload = {
     negocio_id: sbNegocioId,
     estado: s,
     actualizado_en: new Date().toISOString(),
     actualizado_por: sbUser.id
   };
-  const { error } = await sb.from('estado_app').upsert(payload, { onConflict: 'negocio_id' });
-  if(error) throw error;
-  console.info('[SIMGest] Estado guardado en Supabase:', payload.actualizado_en);
-}
 
-let estadoLocalPendienteSubida = null;
+  const guardar = async () => {
+    const { error } = await sb.from('estado_app').upsert(payload, { onConflict: 'negocio_id' });
+    if(error) throw error;
+    console.info('[SIMGest] Estado guardado en Supabase:', payload.actualizado_en);
+  };
 
-function toggleSyncRecovery(){
-  const body = document.getElementById('syncRecoveryBody');
-  const open = body.style.display !== 'none';
-  body.style.display = open ? 'none' : 'block';
-  document.getElementById('syncRecoveryChevron').textContent = open ? '＋' : '−';
+  try {
+    await guardar();
+  } catch (error) {
+    const mensaje = String(error?.message || '').toLowerCase();
+    const esJwtExpirado = mensaje.includes('jwt expired') || error?.code === 'PGRST301';
+
+    if (esJwtExpirado) {
+      console.warn('[SIMGest] JWT expirado. Intentando refrescar la sesión...');
+      try {
+        // Forzar refresco de la sesión
+        const { data: refreshData, error: refreshError } = await sb.auth.refreshSession();
+        if (refreshError || !refreshData?.session) throw refreshError || new Error('No se pudo refrescar la sesión');
+
+        // Actualizar usuario en memoria
+        sbUser = refreshData.session.user;
+        console.info('[SIMGest] Sesión refrescada correctamente.');
+
+        // Reintentar guardado
+        await guardar();
+      } catch (refreshErr) {
+        console.error('[SIMGest] Falló el refresco de sesión:', refreshErr);
+        if (typeof toast === 'function') toast('Tu sesión expiró. Vuelve a iniciar sesión para seguir sincronizando.', 'err');
+
+        // Forzar cierre de sesión tras un pequeño delay
+        setTimeout(() => {
+          if (confirm('Tu sesión de Supabase ha expirado. ¿Quieres volver a iniciar sesión ahora?')) {
+            sb.auth.signOut().finally(() => location.reload());
+          }
+        }, 300);
+
+        throw refreshErr;
+      }
+    } else {
+      throw error;
+    }
+  }
 }
 
 function mostrarEstadoRevision(texto, tipo='info'){
