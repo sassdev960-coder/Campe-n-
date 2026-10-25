@@ -1485,6 +1485,7 @@ function renderModal(){
   else if(tipo==='montoLibreRecarga') contenido=modalMontoLibreRecarga(id);
   else if(tipo==='editarVenta') contenido=modalEditarVenta(id);
     else if(tipo==='detalleVenta') contenido=modalDetalleVenta(id);
+  else if(tipo==='editarCompra') contenido=modalEditarCompra(id);
   
   root.innerHTML=`<div class="modal-overlay" onclick="if(event.target===this) cerrarModal()"><div class="modal${tipo==='confirmar'?' modal-alert':''}">${contenido}</div></div>`;
   
@@ -1531,6 +1532,61 @@ function modalEditarVenta(id){
     <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button><button class="btn btn-primary" onclick="guardarEdicionVenta('${esc(v.id)}')">Guardar cambios</button></div>`;
 }
 
+  function modalEditarCompra(id){
+  const c=state.compras.find(x=>x.id===id); if(!c) return '';
+  return `<div class="modal-head"><div><div class="modal-title">Editar compra ${esc(c.id)}</div><div class="card-subtitle">Corrige los datos y guarda los cambios</div></div><button class="modal-close" onclick="cerrarModal()">×</button></div>
+    <div class="alert alert-info"><div>Al cambiar el monto total, los costos unitarios de los productos se ajustarán proporcionalmente. El stock y el movimiento de caja se actualizarán automáticamente. Si necesitas cambiar la cantidad de productos, elimina esta compra y vuelve a crearla.</div></div>
+    <div class="grid-2"><div class="field"><label>Fecha *</label><input id="m-compra-fecha" type="date" value="${esc(c.fecha||HOY())}" required></div><div class="field"><label>Hora</label><input id="m-compra-hora" type="time" value="${esc(c.hora||'12:00')}"></div></div>
+    <div class="field"><label>Proveedor</label><select id="m-compra-prov"><option value="">Sin proveedor</option>${state.proveedores.map(p=>`<option value="${p.id}" ${c.proveedorId===p.id?'selected':''}>${esc(p.nombre)}</option>`).join('')}</select></div>
+    <div class="field"><label>Monto total (Bs) *</label><input id="m-compra-total" type="text" inputmode="decimal" value="${Number(c.total||0).toFixed(2)}" required></div>
+    <div class="field"><label>Nota / Factura</label><input id="m-compra-nota" value="${esc(c.nota||'')}"></div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Productos incluidos: ${(c.items||[]).map(i=>`${esc(i.nombre)} (x${i.cantidad})`).join(', ')}</div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button><button class="btn btn-primary" onclick="guardarEdicionCompra('${esc(c.id)}')">Guardar cambios</button></div>`;
+}
+  
+function guardarEdicionCompra(id){
+  if(!esAdmin()) return toast('Solo el administrador puede editar compras.','err');
+  const c=state.compras.find(x=>x.id===id); if(!c) return toast('No se encontró la compra.','err');
+  const fecha=$('m-compra-fecha')?.value;
+  const hora=$('m-compra-hora')?.value||'12:00';
+  const provId=$('m-compra-prov')?.value||null;
+  const total=parseNum($('m-compra-total')?.value);
+  const nota=$('m-compra-nota')?.value.trim()||'';
+  
+  if(!fecha) return toast('Selecciona la fecha.','err');
+  if(!(total>0)) return toast('El monto debe ser mayor a cero.','err');
+  if(bloquearMesCerrado(c.fecha,'Editar compra')) return;
+  if(bloquearMesCerrado(fecha,'Mover compra')) return;
+
+  // Prorratear costos de items según el nuevo total
+  const totalAnterior=num2(c.total||0); const ratio=total/totalAnterior;
+  if(Array.isArray(c.items)&&c.items.length){
+    let acumulado=0;
+    c.items.forEach((it,i)=>{
+      let subtotal;
+      if(i===c.items.length-1) subtotal=num2(total-acumulado);
+      else { subtotal=num2((Number(it.subtotal)||0)*ratio); acumulado=num2(acumulado+subtotal); }
+      it.subtotal=subtotal;
+      const cantidad=Number(it.cantidad)||1;
+      it.costoUnit=num2(subtotal/cantidad);
+    });
+  }
+
+  c.fecha=fecha; c.hora=hora;
+  c.proveedorId=provId;
+  c.proveedorNombre=provId?provById(provId)?.nombre:'Sin proveedor';
+  c.total=num2(total);
+  c.nota=nota;
+
+  // Reconstruir movimiento de caja (revertir el viejo y poner el nuevo)
+  eliminarMovimientosPorRef(c.id);
+  agregarMovimientoCaja('compra',-c.total,'Compra '+c.id+' · '+c.proveedorNombre,c.id,c.fecha,c.hora);
+
+  save();
+  toast('Compra actualizada correctamente.','ok');
+  cerrarModal(); render();
+}
+  
 function modalDetalleVenta(id){
   const v = state.ventas.find(x => x.id === id);
   if(!v) return '<div class="empty">Venta no encontrada</div>';
@@ -3103,7 +3159,7 @@ function viewCompras(){
     <div class="search-wrap"><input id="inpCompraHist" placeholder="Buscar proveedor o referencia..." value="${esc(qCompra)}" oninput="ui.buscarCompraHist=this.value; renderConservarFoco('inpCompraHist')"></div>
     <div class="grid-2" style="margin:10px 0 8px"><div class="field"><label>Fecha desde</label><input type="date" value="${esc(ui.fechaInicioCompras)}" max="${esc(ui.fechaFinCompras||'')}" onchange="ui.fechaInicioCompras=this.value"></div><div class="field"><label>Fecha hasta</label><input type="date" value="${esc(ui.fechaFinCompras)}" min="${esc(ui.fechaInicioCompras||'')}" onchange="ui.fechaFinCompras=this.value"></div></div>
     <div class="btn-row" style="margin-bottom:12px"><button class="btn btn-primary btn-sm" onclick="aplicarRangoCompras()">Buscar rango</button><button class="btn btn-outline btn-sm" onclick="limpiarRangoCompras()">Limpiar filtros</button><span class="hint">${(ui.fechaInicioComprasAplicada||ui.fechaFinComprasAplicada)?'Filtro aplicado: '+(ui.fechaInicioComprasAplicada||'inicio')+' a '+(ui.fechaFinComprasAplicada||'hoy'):'Selecciona las fechas y pulsa Buscar rango.'}</span></div>
-    <div class="table-wrap"><table><thead><tr><th>Ref.</th><th>Fecha</th><th>Proveedor</th><th class="num">Total</th><th></th></tr></thead><tbody>${comprasHist.map(c=>`<tr><td><span class="badge badge-neutral">${c.id}</span></td><td>${fFecha(c.fecha)}</td><td>${esc(c.proveedorNombre)}</td><td class="num bold">${money(c.total)}</td><td class="num">${!mesCerrado(c.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarCompra('${c.id}')">Eliminar</button>`:'🔒'}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">Sin compras en este rango</td></tr>'}</tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>Ref.</th><th>Fecha</th><th>Proveedor</th><th class="num">Total</th><th></th></tr></thead><tbody>${comprasHist.map(c=>`<tr><td><span class="badge badge-neutral">${c.id}</span></td><td>${fFecha(c.fecha)}</td><td>${esc(c.proveedorNombre)}</td><td class="num bold">${money(c.total)}</td><td class="num" style="white-space:nowrap">${!mesCerrado(c.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('editarCompra','${c.id}')">Editar</button><button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarCompra('${c.id}')">Eliminar</button>`:'<span class="badge badge-neutral">🔒 Mes cerrado</span>'}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">Sin compras en este rango</td></tr>'}</tbody></table></div>
   </div>`;
 }
 
