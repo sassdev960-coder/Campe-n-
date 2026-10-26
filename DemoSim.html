@@ -5167,7 +5167,508 @@ window.arrancarApp = async function(){
   }
 };
 
+  /* ================================================================
+   MIGRACIÓN: JSONB → TABLAS NORMALIZADAS (permanente en la app)
+   Idempotente. Se puede correr muchas veces sin duplicar.
+   ================================================================ */
+
+function asignarTurno(usuarioId, fecha, hora, turnoIdExplicito){
+  if(turnoIdExplicito) return turnoIdExplicito;
+  if(!usuarioId || !fecha) return null;
+  const ts = fecha + 'T' + (hora || '00:00') + ':00';
+  const cands = state.turnos.filter(t => {
+    if(String(t.usuarioId) !== String(usuarioId)) return false;
+    const ini = t.fechaApertura + 'T' + (t.horaApertura || '00:00') + ':00';
+    const fin = t.fechaCierre
+      ? t.fechaCierre + 'T' + (t.horaCierre || '23:59') + ':59'
+      : '9999-12-31T23:59:59';
+    return ts >= ini && ts <= fin;
+  });
+  if(!cands.length) return null;
+  cands.sort((a,b) =>
+    ((b.fechaApertura||'')+(b.horaApertura||'')).localeCompare(
+      (a.fechaApertura||'')+(a.horaApertura||'')
+    )
+  );
+  return cands[0].id;
+}
+
+function turnoDeVenta(v){
+  const m = state.caja.movimientos.find(x =>
+    x.tipo === 'venta' && String(x.referencia||'') === String(v.id)
+  );
+  return asignarTurno(v.usuarioId, v.fecha, v.hora, m?.turnoId);
+}
+
+async function findOrInsert(tabla, campoCodigo, codigo, datos, cache){
+  if(cache && cache[codigo]) return cache[codigo];
+  const { data: exist, error: errF } = await sb.from(tabla).select('id')
+    .eq('negocio_id', sbNegocioId).eq(campoCodigo, codigo).maybeSingle();
+  if(errF) throw new Error(`${tabla} (find ${codigo}): ${errF.message}`);
+  if(exist){ if(cache) cache[codigo] = exist.id; return exist.id; }
+  const { data, error } = await sb.from(tabla)
+    .insert({ negocio_id: sbNegocioId, [campoCodigo]: codigo, ...datos })
+    .select().single();
+  if(error) throw new Error(`${tabla} (insert ${codigo}): ${error.message}`);
+  if(cache) cache[codigo] = data.id;
+  return data.id;
+}
+
+async function insertBatch(tabla, rows){
+  for(let i = 0; i < rows.length; i += 200){
+    const chunk = rows.slice(i, i+200);
+    const { error } = await sb.from(tabla).insert(chunk);
+    if(error) throw new Error(`${tabla} (batch ${i}): ${error.message}`);
+  }
+}
+
+async function cargarExistentes(tabla, columna){
+  const { data, error } = await sb.from(tabla).select(columna)
+    .eq('negocio_id', sbNegocioId);
+  if(error) throw new Error(`${tabla} (cargar existentes): ${error.message}`);
+  return new Set((data||[]).map(r => r[columna]));
+}
+
+window.migrarATablas = async function(){
+  if(!sb || !sbNegocioId){ alert('❌ Sin conexión a Supabase'); return; }
+  if(!esAdmin()){ alert('❌ Solo admin'); return; }
+  if(!confirm('¿Sincronizar JSONB → tablas normalizadas?\n\nEs idempotente: correrlo 2 veces no duplica.\nTarda 1-3 minutos. NO cierres esta pestaña.')) return;
+
+  console.clear();
+  console.log('%c🔄 SYNC INICIADO', 'font-size:16px;font-weight:bold;color:#2d6a4f');
+  const T0 = performance.now();
+  const bar = (pct, msg) => console.log(`[${String(pct).padStart(3)}%] ${msg}`);
+
+  const map = {
+    usuarios:{}, categorias:{}, proveedores:{}, productos:{},
+    clientes:{}, turnos:{}, ventas:{}, compras:{}, bancos:{}
+  };
+  const stats = {
+    usuarios:0, categorias:0, proveedores:0, productos:0, clientes:0,
+    turnos:0, caja_mov:0, bancos:0, banco_mov:0,
+    ventas:0, venta_items:0, abonos:0, compras:0, compra_items:0,
+    gastos:0, ajustes:0, deudas_ini:0, bolsas_ini:0, errores:0
+  };
+  const errores = [];
+
+  try{
+    // 1. USUARIOS
+    bar(2, 'Usuarios...');
+    try {
+      const { data: uDB, error } = await sb.from('usuarios').select('id, codigo').eq('negocio_id', sbNegocioId);
+      if(error) throw error;
+      uDB.forEach(u => { map.usuarios[u.codigo] = u.id; });
+      for(const u of state.usuarios){
+        if(map.usuarios[u.id]) continue;
+        await findOrInsert('usuarios','codigo',u.id,{
+          nombre: u.nombre, rol: u.rol, activo: u.activo !== false,
+          color: u.color || '#1c3d5a', creado: u.creado || HOY()
+        }, map.usuarios);
+        stats.usuarios++;
+      }
+      console.log(`  ✅ Usuarios: ${stats.usuarios} nuevos (total ${Object.keys(map.usuarios).length})`);
+    } catch(e){ errores.push({bloque:'usuarios', msg:e.message}); stats.errores++; }
+
+    // 2. CATEGORIAS
+    bar(6, 'Categorías...');
+    try {
+      const exist = await cargarExistentes('categorias','codigo');
+      for(const c of state.categorias){
+        if(exist.has(c.id)){
+          const { data } = await sb.from('categorias').select('id').eq('negocio_id', sbNegocioId).eq('codigo', c.id).maybeSingle();
+          if(data) map.categorias[c.id] = data.id;
+          continue;
+        }
+        await findOrInsert('categorias','codigo',c.id,{ nombre: c.nombre }, map.categorias);
+        stats.categorias++;
+      }
+      console.log(`  ✅ Categorías: ${stats.categorias} nuevas`);
+    } catch(e){ errores.push({bloque:'categorias', msg:e.message}); stats.errores++; }
+
+    // 3. PROVEEDORES
+    bar(10, 'Proveedores...');
+    try {
+      const exist = await cargarExistentes('proveedores','codigo');
+      for(const p of state.proveedores){
+        if(exist.has(p.id)){
+          const { data } = await sb.from('proveedores').select('id').eq('negocio_id', sbNegocioId).eq('codigo', p.id).maybeSingle();
+          if(data) map.proveedores[p.id] = data.id;
+          continue;
+        }
+        await findOrInsert('proveedores','codigo',p.id,{ nombre: p.nombre, nota: p.nota || null }, map.proveedores);
+        stats.proveedores++;
+      }
+      console.log(`  ✅ Proveedores: ${stats.proveedores} nuevos`);
+    } catch(e){ errores.push({bloque:'proveedores', msg:e.message}); stats.errores++; }
+
+    // 4. PRODUCTOS
+    bar(15, 'Productos...');
+    try {
+      const exist = await cargarExistentes('productos','codigo');
+      for(const p of state.productos){
+        if(exist.has(p.id)){
+          const { data } = await sb.from('productos').select('id').eq('negocio_id', sbNegocioId).eq('codigo', p.id).maybeSingle();
+          if(data) map.productos[p.id] = data.id;
+          continue;
+        }
+        await findOrInsert('productos','codigo',p.id,{
+          nombre: p.nombre,
+          categoria_id: p.categoriaId ? map.categorias[p.categoriaId] : null,
+          proveedor_id: p.proveedorId ? map.proveedores[p.proveedorId] : null,
+          unidad: p.unidad || 'unidad',
+          es_recarga: !!p.esRecarga,
+          tipo_recarga: p.esRecarga ? (p.tipoRecarga || 'paso') : null,
+          costo: p.costo || 0, precio: p.precio || 0,
+          stock: p.stock || 0, stock_inicial: p.stockInicial || 0
+        }, map.productos);
+        stats.productos++;
+      }
+      console.log(`  ✅ Productos: ${stats.productos} nuevos`);
+    } catch(e){ errores.push({bloque:'productos', msg:e.message}); stats.errores++; }
+
+    // 5. CLIENTES
+    bar(22, 'Clientes...');
+    try {
+      const exist = await cargarExistentes('clientes','codigo');
+      for(const c of state.clientes){
+        if(exist.has(c.id)){
+          const { data } = await sb.from('clientes').select('id').eq('negocio_id', sbNegocioId).eq('codigo', c.id).maybeSingle();
+          if(data) map.clientes[c.id] = data.id;
+          continue;
+        }
+        await findOrInsert('clientes','codigo',c.id,{
+          nombre: c.nombre, tel: c.tel || null, comunidad: c.comunidad || null,
+          plazo: c.plazo || 15, limite: c.limite || 500, creado: c.creado || null
+        }, map.clientes);
+        stats.clientes++;
+      }
+      console.log(`  ✅ Clientes: ${stats.clientes} nuevos`);
+    } catch(e){ errores.push({bloque:'clientes', msg:e.message}); stats.errores++; }
+
+    // 6. TURNOS
+    bar(30, 'Turnos...');
+    try {
+      const exist = await cargarExistentes('turnos','codigo');
+      for(const t of state.turnos){
+        if(exist.has(t.id)){
+          const { data } = await sb.from('turnos').select('id').eq('negocio_id', sbNegocioId).eq('codigo', t.id).maybeSingle();
+          if(data) map.turnos[t.id] = data.id;
+          continue;
+        }
+        await findOrInsert('turnos','codigo',t.id,{
+          usuario_id: t.usuarioId ? map.usuarios[t.usuarioId] : null,
+          usuario_nombre: t.usuarioNombre || null,
+          fecha_apertura: t.fechaApertura, hora_apertura: t.horaApertura || '00:00',
+          saldo_inicial: t.saldoInicial || 0,
+          saldo_cierre: t.saldoCierre, fecha_cierre: t.fechaCierre, hora_cierre: t.horaCierre,
+          estado: t.estado || 'cerrado',
+          obs_apertura: t.obsApertura || null, obs_cierre: t.obsCierre || null,
+          diferencia: t.diferencia
+        }, map.turnos);
+        stats.turnos++;
+      }
+      console.log(`  ✅ Turnos: ${stats.turnos} nuevos`);
+    } catch(e){ errores.push({bloque:'turnos', msg:e.message}); stats.errores++; }
+
+    // 7. CAJA
+    bar(35, 'Caja...');
+    try {
+      await sb.from('caja').upsert({
+        negocio_id: sbNegocioId,
+        saldo_inicial: state.caja?.saldoInicial || 0
+      }, { onConflict: 'negocio_id' });
+      console.log('  ✅ Caja actualizada');
+    } catch(e){ errores.push({bloque:'caja', msg:e.message}); stats.errores++; }
+
+    // 8. CAJA_MOVIMIENTOS
+    bar(40, 'Movimientos de caja...');
+    try {
+      const exist = await cargarExistentes('caja_movimientos','codigo');
+      const rows = [];
+      for(const m of state.caja.movimientos){
+        if(exist.has(m.id)) continue;
+        const turnoCod = asignarTurno(m.usuarioId, m.fecha, m.hora, m.turnoId);
+        rows.push({
+          negocio_id: sbNegocioId, codigo: m.id,
+          fecha: m.fecha, hora: m.hora || '00:00',
+          tipo: m.tipo, monto: m.monto,
+          descripcion: m.descripcion || null,
+          referencia: m.referencia || null,
+          usuario_id: m.usuarioId ? map.usuarios[m.usuarioId] : null,
+          usuario_nombre: m.usuarioNombre || null,
+          turno_id: turnoCod ? map.turnos[turnoCod] : null
+        });
+      }
+      if(rows.length) await insertBatch('caja_movimientos', rows);
+      stats.caja_mov = rows.length;
+      console.log(`  ✅ Movs caja: ${stats.caja_mov} nuevos`);
+    } catch(e){ errores.push({bloque:'caja_movimientos', msg:e.message}); stats.errores++; }
+
+    // 9. BANCOS
+    bar(48, 'Bancos...');
+    try {
+      const exist = await cargarExistentes('bancos','codigo');
+      for(const b of state.bancos){
+        let bId;
+        if(exist.has(b.id)){
+          const { data } = await sb.from('bancos').select('id').eq('negocio_id', sbNegocioId).eq('codigo', b.id).maybeSingle();
+          bId = data?.id;
+          map.bancos[b.id] = bId;
+        } else {
+          bId = await findOrInsert('bancos','codigo',b.id,{
+            nombre: b.nombre, nota: b.nota || null, saldo_inicial: b.saldoInicial || 0
+          }, map.bancos);
+          stats.bancos++;
+        }
+        if(!bId) continue;
+        const { data: bmDB } = await sb.from('banco_movimientos').select('codigo').eq('negocio_id', sbNegocioId).eq('banco_id', bId);
+        const bmExist = new Set((bmDB||[]).map(m => m.codigo));
+        const bmRows = (b.movimientos||[]).filter(m => !bmExist.has(m.id)).map(m => ({
+          negocio_id: sbNegocioId, banco_id: bId,
+          codigo: m.id, fecha: m.fecha, hora: m.hora || '00:00',
+          monto: m.monto, descripcion: m.descripcion || null,
+          referencia: m.referencia || null,
+          usuario_id: m.usuarioId ? map.usuarios[m.usuarioId] : null,
+          usuario_nombre: m.usuarioNombre || null
+        }));
+        if(bmRows.length) await insertBatch('banco_movimientos', bmRows);
+        stats.banco_mov += bmRows.length;
+      }
+      console.log(`  ✅ Bancos: ${stats.bancos} nuevos, ${stats.banco_mov} movs`);
+    } catch(e){ errores.push({bloque:'bancos', msg:e.message}); stats.errores++; }
+
+    // 10. VENTAS + ITEMS
+    bar(58, 'Ventas...');
+    try {
+      const { data: vDB, error: eVDB } = await sb.from('ventas').select('id, codigo').eq('negocio_id', sbNegocioId);
+      if(eVDB) throw eVDB;
+      (vDB||[]).forEach(v => { map.ventas[v.codigo] = v.id; });
+      const vExist = new Set(Object.keys(map.ventas));
+
+      for(let i = 0; i < state.ventas.length; i++){
+        const v = state.ventas[i];
+        if(vExist.has(v.id)) continue;
+        const turnoCod = turnoDeVenta(v);
+        const { data: vRow, error: eV } = await sb.from('ventas').insert({
+          negocio_id: sbNegocioId, codigo: v.id,
+          fecha: v.fecha, hora: v.hora || '00:00',
+          cliente_id: v.clienteId ? map.clientes[v.clienteId] : null,
+          cliente_nombre: v.clienteNombre || 'Consumidor final',
+          tipo_pago: v.tipoPago, plazo: v.plazo || null,
+          vencimiento: v.vencimiento || null,
+          total: v.total, pagado: v.pagado || 0,
+          monto_recibido: v.montoRecibido, cambio: v.cambio,
+          usuario_id: v.usuarioId ? map.usuarios[v.usuarioId] : null,
+          usuario_nombre: v.usuarioNombre || null,
+          turno_id: turnoCod ? map.turnos[turnoCod] : null
+        }).select().single();
+        if(eV) throw new Error(`venta ${v.id}: ${eV.message}`);
+        map.ventas[v.id] = vRow.id;
+        stats.ventas++;
+
+        const items = (v.items||[]).map(it => ({
+          negocio_id: sbNegocioId, venta_id: vRow.id,
+          producto_id: it.productoId ? map.productos[it.productoId] : null,
+          nombre: it.nombre, unidad: it.unidad || null,
+          es_recarga: !!it.esRecarga,
+          tipo_recarga: it.esRecarga ? (it.tipoRecarga || null) : null,
+          proveedor_id: it.proveedorId ? map.proveedores[it.proveedorId] : null,
+          cantidad: it.cantidad, precio_unit: it.precioUnit,
+          costo_unit: it.costoUnit, subtotal: it.subtotal
+        }));
+        if(items.length){ await insertBatch('venta_items', items); stats.venta_items += items.length; }
+
+        if((i+1) % 25 === 0) console.log(`  ... ${i+1}/${state.ventas.length} ventas`);
+      }
+      console.log(`  ✅ Ventas: ${stats.ventas} nuevas, ${stats.venta_items} items`);
+    } catch(e){ errores.push({bloque:'ventas', msg:e.message}); stats.errores++; }
+
+    // 11. ABONOS
+    bar(72, 'Abonos...');
+    try {
+      const exist = await cargarExistentes('abonos','codigo');
+      const rows = (state.abonos||[]).filter(a => !exist.has(a.id)).map(a => {
+        const turnoCod = asignarTurno(a.usuarioId, a.fecha, a.hora, a.turnoId);
+        return {
+          negocio_id: sbNegocioId, codigo: a.id,
+          cliente_id: a.clienteId ? map.clientes[a.clienteId] : null,
+          venta_id: a.ventaId ? map.ventas[a.ventaId] : null,
+          fecha: a.fecha, hora: a.hora || '00:00',
+          monto: a.monto, entregado: a.entregado ?? a.monto, vuelta: a.vuelta || 0,
+          usuario_id: a.usuarioId ? map.usuarios[a.usuarioId] : null,
+          usuario_nombre: a.usuarioNombre || null,
+          turno_id: turnoCod ? map.turnos[turnoCod] : null
+        };
+      });
+      if(rows.length) await insertBatch('abonos', rows);
+      stats.abonos = rows.length;
+      console.log(`  ✅ Abonos: ${stats.abonos} nuevos`);
+    } catch(e){ errores.push({bloque:'abonos', msg:e.message}); stats.errores++; }
+
+    // 12. COMPRAS + ITEMS
+    bar(78, 'Compras...');
+    try {
+      const { data: cDB, error: eCDB } = await sb.from('compras').select('id, codigo').eq('negocio_id', sbNegocioId);
+      if(eCDB) throw eCDB;
+      (cDB||[]).forEach(c => { map.compras[c.codigo] = c.id; });
+      const cExist = new Set(Object.keys(map.compras));
+
+      for(const c of state.compras){
+        if(cExist.has(c.id)) continue;
+        const turnoCod = asignarTurno(c.usuarioId, c.fecha, c.hora, c.turnoId);
+        const { data: cRow, error: eC } = await sb.from('compras').insert({
+          negocio_id: sbNegocioId, codigo: c.id,
+          fecha: c.fecha, hora: c.hora || '00:00',
+          proveedor_id: c.proveedorId ? map.proveedores[c.proveedorId] : null,
+          proveedor_nombre: c.proveedorNombre || 'Sin proveedor',
+          total: c.total, nota: c.nota || null,
+          usuario_id: c.usuarioId ? map.usuarios[c.usuarioId] : null,
+          usuario_nombre: c.usuarioNombre || null,
+          turno_id: turnoCod ? map.turnos[turnoCod] : null
+        }).select().single();
+        if(eC) throw new Error(`compra ${c.id}: ${eC.message}`);
+        map.compras[c.id] = cRow.id;
+        stats.compras++;
+
+        const items = (c.items||[]).map(it => ({
+          negocio_id: sbNegocioId, compra_id: cRow.id,
+          producto_id: it.productoId ? map.productos[it.productoId] : null,
+          nombre: it.nombre, unidad: it.unidad || null,
+          cantidad: it.cantidad, costo_unit: it.costoUnit, subtotal: it.subtotal
+        }));
+        if(items.length){ await insertBatch('compra_items', items); stats.compra_items += items.length; }
+      }
+      console.log(`  ✅ Compras: ${stats.compras} nuevas, ${stats.compra_items} items`);
+    } catch(e){ errores.push({bloque:'compras', msg:e.message}); stats.errores++; }
+
+    // 13. GASTOS
+    bar(84, 'Gastos...');
+    try {
+      const exist = await cargarExistentes('gastos','codigo');
+      const rows = (state.gastos||[]).filter(g => !exist.has(g.id)).map(g => {
+        const turnoCod = asignarTurno(g.usuarioId, g.fecha, g.hora, g.turnoId);
+        return {
+          negocio_id: sbNegocioId, codigo: g.id,
+          fecha: g.fecha, hora: g.hora || '00:00',
+          categoria: g.categoria, monto: g.monto,
+          descripcion: g.descripcion || null,
+          usuario_id: g.usuarioId ? map.usuarios[g.usuarioId] : null,
+          usuario_nombre: g.usuarioNombre || null,
+          turno_id: turnoCod ? map.turnos[turnoCod] : null
+        };
+      });
+      if(rows.length) await insertBatch('gastos', rows);
+      stats.gastos = rows.length;
+      console.log(`  ✅ Gastos: ${stats.gastos} nuevos`);
+    } catch(e){ errores.push({bloque:'gastos', msg:e.message}); stats.errores++; }
+
+    // 14. AJUSTES_BOLSA
+    bar(88, 'Ajustes de bolsa...');
+    try {
+      const exist = await cargarExistentes('ajustes_bolsa','codigo');
+      const rows = (state.ajustesBolsa||[]).filter(a => !exist.has(a.id)).map(a => {
+        const turnoCod = asignarTurno(a.usuarioId, a.fecha, a.hora, a.turnoId);
+        return {
+          negocio_id: sbNegocioId, codigo: a.id,
+          fecha: a.fecha, hora: a.hora || '00:00',
+          proveedor_id: a.provId ? map.proveedores[a.provId] : null,
+          tipo: a.tipo, delta: a.delta,
+          motivo_tipo: a.motivoTipo, motivo: a.motivo || null,
+          saldo_antes: a.saldoAntes || 0, saldo_despues: a.saldoDespues || 0,
+          usuario_id: a.usuarioId ? map.usuarios[a.usuarioId] : null,
+          usuario_nombre: a.usuarioNombre || null,
+          turno_id: turnoCod ? map.turnos[turnoCod] : null
+        };
+      });
+      if(rows.length) await insertBatch('ajustes_bolsa', rows);
+      stats.ajustes = rows.length;
+      console.log(`  ✅ Ajustes: ${stats.ajustes} nuevos`);
+    } catch(e){ errores.push({bloque:'ajustes_bolsa', msg:e.message}); stats.errores++; }
+
+    // 15. DEUDAS INICIALES
+    bar(93, 'Deudas iniciales...');
+    try {
+      const { data: diDB } = await sb.from('capital_deudas_iniciales').select('cliente_id').eq('negocio_id', sbNegocioId);
+      const diExist = new Set((diDB||[]).map(d => d.cliente_id));
+      const rows = Object.entries(state.capital?.deudasInicialesPorCliente || {})
+        .filter(([cod, monto]) => monto > 0 && map.clientes[cod] && !diExist.has(map.clientes[cod]))
+        .map(([cod, monto]) => ({
+          negocio_id: sbNegocioId,
+          cliente_id: map.clientes[cod],
+          monto
+        }));
+      if(rows.length) await insertBatch('capital_deudas_iniciales', rows);
+      stats.deudas_ini = rows.length;
+      console.log(`  ✅ Deudas iniciales: ${stats.deudas_ini} nuevas`);
+    } catch(e){ errores.push({bloque:'deudas_ini', msg:e.message}); stats.errores++; }
+
+    // 16. BOLSAS INICIALES
+    bar(96, 'Bolsas iniciales...');
+    try {
+      const { data: biDB } = await sb.from('capital_bolsas_iniciales').select('proveedor_id, tipo').eq('negocio_id', sbNegocioId);
+      const biExist = new Set((biDB||[]).map(b => `${b.proveedor_id}:${b.tipo}`));
+      const rows = Object.entries(state.capital?.bolsasIniciales || {})
+        .map(([k, monto]) => {
+          const [provCod, tipo] = k.split(':');
+          const provId = map.proveedores[provCod];
+          if(!provId || monto <= 0) return null;
+          if(biExist.has(`${provId}:${tipo}`)) return null;
+          return { negocio_id: sbNegocioId, proveedor_id: provId, tipo, monto };
+        }).filter(Boolean);
+      if(rows.length) await insertBatch('capital_bolsas_iniciales', rows);
+      stats.bolsas_ini = rows.length;
+      console.log(`  ✅ Bolsas iniciales: ${stats.bolsas_ini} nuevas`);
+    } catch(e){ errores.push({bloque:'bolsas_ini', msg:e.message}); stats.errores++; }
+
+    // 17. UPDATE BOLSAS
+    bar(98, 'Actualizando saldos de bolsas...');
+    try {
+      for(const [k, b] of Object.entries(state.bolsas || {})){
+        const [provCod, tipo] = k.split(':');
+        const provId = map.proveedores[provCod];
+        if(!provId) continue;
+        await sb.from('bolsas')
+          .update({ saldo: b.saldo || 0, bonificaciones: b.bonificaciones || 0 })
+          .eq('negocio_id', sbNegocioId).eq('proveedor_id', provId).eq('tipo', tipo);
+      }
+      console.log('  ✅ Saldos de bolsas actualizados');
+    } catch(e){ errores.push({bloque:'bolsas_update', msg:e.message}); stats.errores++; }
+
+  } catch(e){
+    errores.push({bloque:'GLOBAL', msg:e.message});
+  }
+
+  const ms = Math.round(performance.now() - T0);
+  bar(100, `Completado en ${(ms/1000).toFixed(1)}s`);
+
+  console.log('%c📊 RESUMEN', 'font-size:14px;font-weight:bold;color:#1c3d5a');
+  console.table(stats);
+
+  if(errores.length > 0){
+    console.warn('%c⚠️ ERRORES:', 'color:#8b2b2b;font-weight:bold');
+    console.table(errores);
+    alert(
+      '⚠️ Sync con errores.\n\n' +
+      'Registros migrados: ' + (stats.ventas + stats.caja_mov + stats.clientes) + '\n' +
+      'Errores: ' + errores.length + '\n\n' +
+      'Revisá la consola. Es idempotente: podés corregir y volver a ejecutar.'
+    );
+  } else {
+    alert(
+      '✅ SYNC COMPLETO en ' + (ms/1000).toFixed(1) + 's\n\n' +
+      'Usuarios: ' + stats.usuarios + '\n' +
+      'Clientes: ' + stats.clientes + '\n' +
+      'Turnos: ' + stats.turnos + '\n' +
+      'Movs caja: ' + stats.caja_mov + '\n' +
+      'Ventas: ' + stats.ventas + ' (+ ' + stats.venta_items + ' items)\n' +
+      'Compras: ' + stats.compras + '\n' +
+      'Ajustes bolsa: ' + stats.ajustes
+    );
+  }
+};
+
 </script>
+  
 </body>
 </html>
   
