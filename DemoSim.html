@@ -1884,7 +1884,7 @@ function renderModal(){
   else if(tipo==='movimientoBanco') contenido=modalMovimientoBanco(id);
   else if(tipo==='montoLibreRecarga') contenido=modalMontoLibreRecarga(id);
   root.innerHTML=`<div class="modal-overlay" onclick="if(event.target===this) cerrarModal()"><div class="modal${tipo==='confirmar'?' modal-alert':''}">${contenido}</div></div>`;
-  if(tipo==='abono') setTimeout(()=>{const el=$('m-abono-monto'); if(el){el.focus(); el.select();}},50);
+  if(tipo==='abono') setTimeout(()=>{const el=$('m-abono-monto')||$('m-abono-entregado'); if(el){el.focus(); el.select();}},50);
   if(tipo==='agregarDinero'||tipo==='retirarDinero') setTimeout(()=>{const el=$('m-dinero-monto'); if(el) el.focus();},50);
   if(tipo==='abrirTurno'||tipo==='cerrarTurno') setTimeout(()=>{const el=$('m-arqueo'); if(el) el.focus();},50);
   if(tipo==='nuevoGasto') setTimeout(()=>{const el=$('m-gasto-monto'); if(el) el.focus();},50);
@@ -2587,17 +2587,37 @@ function modalAbono(clienteId){
     <div class="alert alert-success"><div>Sin deudas pendientes.</div></div>
     <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button></div>`;
 
-  // Modo por defecto: si solo hay una deuda, usar esa; si hay ambas, dividir
-  let modo = ui.abonoModo;
+  let modo=ui.abonoModo;
   if(!modo){
-    if(deudaIni > 0.001 && deudaVtas > 0.001) modo = 'dividir';
-    else if(deudaIni > 0.001) modo = 'capital';
-    else modo = 'ventas';
+    if(deudaIni>0.001 && deudaVtas>0.001) modo='dividir';
+    else if(deudaIni>0.001) modo='capital';
+    else modo='ventas';
   }
-  // Sanity: si eligió un modo no disponible, corregir
   if(modo==='capital' && deudaIni<=0.001) modo='ventas';
   if(modo==='ventas' && deudaVtas<=0.001) modo='capital';
-  if(modo==='dividir' && (deudaIni<=0.001 || deudaVtas<=0.001)) modo='auto';
+  if(modo==='dividir' && (deudaIni<=0.001 || deudaVtas<=0.001)) modo=deudaVtas>0.001?'ventas':'capital';
+  ui.abonoModo=modo;
+
+  const detalleVentas=pendientes.length?`
+    <div style="margin-top:12px;border:1px solid var(--line);border-radius:10px;overflow:hidden">
+      <div style="padding:10px 12px;background:var(--surface-soft);font-weight:650;font-size:13px">Selecciona exactamente qué ventas estás cobrando</div>
+      <div style="padding:0 12px">
+        ${pendientes.map((v,i)=>{
+          const saldo=num2(saldoVenta(v));
+          return `<div style="display:grid;grid-template-columns:24px minmax(0,1fr) 118px;gap:8px;align-items:center;padding:11px 0;border-bottom:${i===pendientes.length-1?'0':'1px solid var(--line-soft)'}">
+            <input type="checkbox" data-abono-venta-check="${i}" aria-label="Seleccionar venta ${esc(v.id)}" onchange="const x=document.getElementById('m-abono-venta-monto-${i}');if(x)x.disabled=!this.checked;actualizarAbonoSeleccionPreview('${clienteId}','${modo}')">
+            <div style="min-width:0">
+              <div style="font-size:12px;font-weight:650">${esc(v.id)} · ${fFecha(v.fecha)}</div>
+              <div style="font-size:11px;color:var(--muted)">Saldo pendiente: <b>${money(saldo)}</b></div>
+            </div>
+            <input id="m-abono-venta-monto-${i}" data-abono-venta-monto="${i}" type="number" min="0.01" max="${saldo}" step="0.01" value="${saldo}" disabled aria-label="Importe de la venta ${esc(v.id)}" style="width:100%;min-width:0;padding:8px 5px;text-align:right" oninput="actualizarAbonoSeleccionPreview('${clienteId}','${modo}')">
+          </div>`;
+        }).join('')}
+      </div>
+      <div id="abono-ventas-seleccion-total" style="padding:10px 12px;background:var(--surface-soft);font-size:13px">Seleccionado: <b>Bs 0,00</b></div>
+    </div>
+    <div class="hint" style="margin-top:7px">Marca cada venta que el cliente está pagando. Si hay varias ventas por el mismo importe, fíjate en la fecha y la referencia. No se aplicará dinero a ventas que no selecciones.</div>
+  `:`<div class="empty" style="padding:12px">No hay ventas a crédito pendientes.</div>`;
 
   return `
     <div class="modal-head">
@@ -2605,13 +2625,11 @@ function modalAbono(clienteId){
       <div class="card-subtitle">${esc(c.nombre)} · ${esc(c.comunidad)}</div></div>
       <button class="modal-close" onclick="cerrarModal()">×</button>
     </div>
-
     <div class="deuda-banner">
       <div><div class="deuda-banner-label">Deuda total</div>
         ${vencida>0?`<div class="deuda-banner-sub">${money(vencida)} vencido</div>`:`<div class="deuda-banner-sub">Sin vencidos</div>`}</div>
       <div class="deuda-banner-value">${money(deuda)}</div>
     </div>
-
     <div style="background:var(--surface-soft);border-radius:10px;padding:14px;margin-bottom:16px;border:1px solid var(--line-soft)">
       <div style="font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Composición de la deuda</div>
       <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line-soft)">
@@ -2619,85 +2637,99 @@ function modalAbono(clienteId){
         <b style="font-variant-numeric:tabular-nums;color:${deudaIni>0?'var(--accent)':'var(--muted)'}">${money(deudaIni)}</b>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0">
-        <span>Ventas a crédito (sistema)</span>
+        <span>Ventas a crédito pendientes</span>
         <b style="font-variant-numeric:tabular-nums;color:${deudaVtas>0?'var(--info)':'var(--muted)'}">${money(deudaVtas)}</b>
       </div>
     </div>
-
     <div class="field">
-      <label>¿A qué aplicar este cobro? *</label>
+      <label>¿Qué tipo de deuda vas a cobrar?</label>
       <div class="choice-row" style="grid-template-columns:1fr 1fr">
         <button type="button" class="choice ${modo==='capital'?'active':''}" onclick="ui.abonoModo='capital'; renderModal()" ${deudaIni<=0.001?'disabled':''}>
-          <span class="choice-title">Solo deuda vieja</span>
-          <span class="choice-desc">${deudaIni>0?money(deudaIni):'No tiene'}</span>
+          <span class="choice-title">Deuda vieja</span><span class="choice-desc">${deudaIni>0?money(deudaIni):'No tiene'}</span>
         </button>
         <button type="button" class="choice ${modo==='ventas'?'active':''}" onclick="ui.abonoModo='ventas'; renderModal()" ${deudaVtas<=0.001?'disabled':''}>
-          <span class="choice-title">Solo ventas a crédito</span>
-          <span class="choice-desc">${deudaVtas>0?money(deudaVtas):'No tiene'}</span>
+          <span class="choice-title">Ventas específicas</span><span class="choice-desc">${pendientes.length} pendiente(s)</span>
         </button>
       </div>
-      <div class="choice-row" style="grid-template-columns:1fr 1fr;margin-top:8px">
-        <button type="button" class="choice ${modo==='dividir'?'active':''}" onclick="ui.abonoModo='dividir'; renderModal()" ${(deudaIni<=0.001||deudaVtas<=0.001)?'disabled':''}>
-          <span class="choice-title">Dividir entre ambas</span>
-          <span class="choice-desc">Elegir cuánto a cada una</span>
-        </button>
-        <button type="button" class="choice ${modo==='auto'?'active':''}" onclick="ui.abonoModo='auto'; renderModal()">
-          <span class="choice-title">Automático</span>
-          <span class="choice-desc">Ventas primero, después vieja</span>
-        </button>
-      </div>
+      ${deudaIni>0.001&&deudaVtas>0.001?`<button type="button" class="choice ${modo==='dividir'?'active':''}" style="width:100%;margin-top:8px" onclick="ui.abonoModo='dividir'; renderModal()">
+        <span class="choice-title">Cobrar ventas y deuda vieja</span><span class="choice-desc">Seleccionar ventas y monto de capital</span>
+      </button>`:''}
     </div>
-
     ${modo==='capital'?`
       <div class="field">
-        <label>Monto a aplicar a deuda vieja (Bs) *</label>
-        <div class="money-input-wrap"><input type="number" step="0.01" min="0" placeholder="0.00" id="m-abono-monto" value="${deudaIni}"></div>
-        <div class="hint">Deuda vieja disponible: <b>${money(deudaIni)}</b>. Se asume pago exacto (sin vuelta).</div>
-      </div>
-    `:''}
-
-    ${modo==='ventas'?`
-      <div class="field">
-        <label>Monto a aplicar a ventas (Bs) *</label>
-        <div class="money-input-wrap"><input type="number" step="0.01" min="0" placeholder="0.00" id="m-abono-monto" value="${deudaVtas}"></div>
-        <div class="hint">Ventas pendientes: <b>${money(deudaVtas)}</b> (${pendientes.length} venta/s). Se asume pago exacto (sin vuelta).</div>
-      </div>
-    `:''}
-
-    ${modo==='dividir'?`
-      <div class="field">
-        <label>Monto a deuda vieja (Bs)</label>
-        <div class="money-input-wrap"><input type="number" step="0.01" min="0" placeholder="0.00" id="m-abono-capital" value="0" oninput="actualizarAbonoDividirPreview(${deudaIni}, ${deudaVtas})"></div>
-        <div class="hint">Disponible: <b>${money(deudaIni)}</b></div>
-      </div>
-      <div class="field">
-        <label>Monto a ventas a crédito (Bs)</label>
-        <div class="money-input-wrap"><input type="number" step="0.01" min="0" placeholder="0.00" id="m-abono-ventas" value="${deudaVtas}" oninput="actualizarAbonoDividirPreview(${deudaIni}, ${deudaVtas})"></div>
-        <div class="hint">Disponible: <b>${money(deudaVtas)}</b></div>
+        <label>Monto aplicado a deuda vieja (Bs) *</label>
+        <div class="money-input-wrap"><input type="number" step="0.01" min="0.01" max="${deudaIni}" placeholder="0.00" id="m-abono-monto" value="${deudaIni}" oninput="actualizarAbonoSeleccionPreview('${clienteId}','capital')"></div>
+        <div class="hint">Disponible: ${money(deudaIni)}.</div>
       </div>
       <div class="field">
         <label>Total que entrega el cliente (Bs) *</label>
-        <div class="money-input-wrap"><input type="number" step="0.01" min="0" placeholder="0.00" id="m-abono-entregado" value="${num2(deudaIni + deudaVtas)}" oninput="actualizarAbonoDividirPreview(${deudaIni}, ${deudaVtas})"></div>
-        <div class="hint">Debe ser igual o mayor a la suma aplicada.</div>
+        <div class="money-input-wrap"><input type="number" step="0.01" min="0.01" id="m-abono-entregado" value="${deudaIni}" oninput="actualizarAbonoSeleccionPreview('${clienteId}','capital')"></div>
       </div>
-      <div id="abono-preview"></div>
     `:''}
-
-    ${modo==='auto'?`
+    ${modo==='ventas'?`
+      ${detalleVentas}
+      <div class="field" style="margin-top:14px">
+        <label>Total que entrega el cliente (Bs) *</label>
+        <div class="money-input-wrap"><input type="number" step="0.01" min="0.01" placeholder="0.00" id="m-abono-entregado" value="0" oninput="actualizarAbonoSeleccionPreview('${clienteId}','ventas')"></div>
+        <div id="abono-preview"></div>
+      </div>
+    `:''}
+    ${modo==='dividir'?`
       <div class="field">
-        <label>Monto que entrega (Bs) *</label>
-        <div class="money-input-wrap"><input type="number" step="0.01" min="0" placeholder="0.00" id="m-abono-monto" value="${deuda}" oninput="actualizarAbonoPreview(${deuda})"></div>
-        <div class="hint">Se aplica primero a ventas a crédito y el resto a deuda vieja.</div>
+        <label>Monto a aplicar a deuda vieja (Bs)</label>
+        <div class="money-input-wrap"><input type="number" step="0.01" min="0" max="${deudaIni}" placeholder="0.00" id="m-abono-capital" value="0" oninput="actualizarAbonoSeleccionPreview('${clienteId}','dividir')"></div>
+        <div class="hint">Disponible: ${money(deudaIni)}</div>
       </div>
-      <div id="abono-preview"></div>
+      ${detalleVentas}
+      <div class="field" style="margin-top:14px">
+        <label>Total que entrega el cliente (Bs) *</label>
+        <div class="money-input-wrap"><input type="number" step="0.01" min="0.01" placeholder="0.00" id="m-abono-entregado" value="0" oninput="actualizarAbonoSeleccionPreview('${clienteId}','dividir')"></div>
+        <div id="abono-preview"></div>
+      </div>
     `:''}
-
+    <div id="abono-seleccion-resumen" class="hint" style="margin-top:8px"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
       <button class="btn btn-success" onclick="confirmarAbono('${clienteId}')">Registrar cobro</button>
     </div>`;
 }
 
+function leerVentasSeleccionadasAbono(clienteId){
+  const pendientes=ventasPendientesCliente(clienteId);
+  const seleccionadas=[];
+  for(let i=0;i<pendientes.length;i++){
+    const check=document.querySelector(`[data-abono-venta-check="${i}"]`);
+    if(!check?.checked) continue;
+    const input=document.querySelector(`[data-abono-venta-monto="${i}"]`);
+    const v=pendientes[i];
+    const monto=num2(Number(input?.value)||0);
+    const saldo=num2(saldoVenta(v));
+    if(!(monto>0.001)) return {error:`El importe de la venta ${v.id} debe ser mayor que cero.`};
+    if(monto>saldo+0.001) return {error:`El importe supera el saldo pendiente de la venta ${v.id} (${money(saldo)}).`};
+    seleccionadas.push({ventaId:v.id,monto});
+  }
+  return {seleccionadas,total:num2(seleccionadas.reduce((sum,x)=>sum+x.monto,0))};
+}
+
+function actualizarAbonoSeleccionPreview(clienteId,modo){
+  const lectura=leerVentasSeleccionadasAbono(clienteId);
+  const capEl=$('m-abono-capital')||$('m-abono-monto');
+  const aplicadoCapital=modo==='capital'||modo==='dividir'?num2(Number(capEl?.value)||0):0;
+  const aplicadoVentas=lectura.error?0:lectura.total;
+  const aplicado=num2(aplicadoCapital+aplicadoVentas);
+  const entregado=num2(Number($('m-abono-entregado')?.value)||0);
+  const totalEl=$('abono-ventas-seleccion-total');
+  if(totalEl) totalEl.innerHTML=`Seleccionado: <b>${money(aplicadoVentas)}</b> en ${lectura.error?'—':lectura.seleccionadas.length} venta(s)`;
+  const resumen=$('abono-seleccion-resumen');
+  if(resumen) resumen.innerHTML=lectura.error?`<span style="color:var(--danger)">${esc(lectura.error)}</span>`:`Aplicado: <b>${money(aplicado)}</b> · Entregado: <b>${money(entregado)}</b> · Vuelto: <b>${money(Math.max(0,entregado-aplicado))}</b>`;
+  const preview=$('abono-preview');
+  if(preview){
+    if(entregado+0.001<aplicado) preview.innerHTML=`<div class="cambio-box insuf"><span class="cambio-label">Falta por cubrir</span><span class="cambio-value">${money(aplicado-entregado)}</span></div>`;
+    else if(entregado>aplicado+0.001) preview.innerHTML=`<div class="cambio-box"><span class="cambio-label">Vuelta a devolver</span><span class="cambio-value">${money(entregado-aplicado)}</span></div>`;
+    else if(aplicado>0) preview.innerHTML=`<div class="cambio-box exacto"><span class="cambio-label">Pago exacto</span><span class="cambio-value">${money(aplicado)}</span></div>`;
+    else preview.innerHTML='';
+  }
+}
   
 function actualizarAbonoPreview(deuda){
   const el=$('m-abono-monto'); if(!el) return;
@@ -3229,124 +3261,88 @@ function accionAnularCobro(id){
 }
 
 function confirmarAbono(clienteId){
-  const modo = ui.abonoModo || 'auto';
-  const deudaIni = deudaInicialCliente(clienteId);
-  const deudaVtas = deudaVentasCliente(clienteId);
+  const modo=ui.abonoModo || (deudaInicialCliente(clienteId)>0.001?'capital':'ventas');
+  const deudaIni=deudaInicialCliente(clienteId);
+  let aplicadoCapital=0, aplicadoVentas=0, entregado=0;
+  let ventasAplicadas=[];
 
-  let aplicadoCapital = 0;
-  let aplicadoVentas = 0;
-  let entregado = 0;
-
-  if(modo === 'auto'){
-    const el = $('m-abono-monto'); if(!el) return;
-    entregado = Number(el.value) || 0;
-    if(!(entregado > 0)) return toast('Monto inválido','err');
-    const deuda = num2(deudaIni + deudaVtas);
-    const aplicado = Math.min(entregado, deuda);
-    // Primero ventas, después capital (comportamiento histórico)
-    aplicadoVentas = num2(Math.min(deudaVtas, aplicado));
-    aplicadoCapital = num2(Math.min(deudaIni, num2(aplicado - aplicadoVentas)));
-  }
-  else if(modo === 'capital'){
-    const el = $('m-abono-monto'); if(!el) return;
-    aplicadoCapital = Number(el.value) || 0;
-    if(!(aplicadoCapital > 0)) return toast('Monto inválido','err');
-    if(aplicadoCapital > deudaIni + 0.001) return toast(`Excede la deuda vieja (${money(deudaIni)})`,'err');
-    entregado = aplicadoCapital;
-  }
-  else if(modo === 'ventas'){
-    const el = $('m-abono-monto'); if(!el) return;
-    aplicadoVentas = Number(el.value) || 0;
-    if(!(aplicadoVentas > 0)) return toast('Monto inválido','err');
-    if(aplicadoVentas > deudaVtas + 0.001) return toast(`Excede ventas a crédito (${money(deudaVtas)})`,'err');
-    entregado = aplicadoVentas;
-  }
-  else if(modo === 'dividir'){
-    const capEl = $('m-abono-capital');
-    const venEl = $('m-abono-ventas');
-    const entEl = $('m-abono-entregado');
-    if(!capEl || !venEl || !entEl) return;
-    aplicadoCapital = Number(capEl.value) || 0;
-    aplicadoVentas  = Number(venEl.value) || 0;
-    entregado       = Number(entEl.value) || 0;
-    if(aplicadoCapital < 0 || aplicadoVentas < 0) return toast('Montos inválidos','err');
-    if(aplicadoCapital > deudaIni + 0.001) return toast(`Excede deuda vieja (${money(deudaIni)})`,'err');
-    if(aplicadoVentas > deudaVtas + 0.001) return toast(`Excede ventas a crédito (${money(deudaVtas)})`,'err');
-    if(aplicadoCapital + aplicadoVentas < 0.001) return toast('Debe aplicar al menos a una deuda','err');
-    if(entregado < aplicadoCapital + aplicadoVentas - 0.001) return toast('El monto entregado es menor a la suma aplicada','err');
-  }
-  else {
-    return toast('Modo de cobro desconocido','err');
+  if(modo==='capital'){
+    aplicadoCapital=num2(Number($('m-abono-monto')?.value)||0);
+    entregado=num2(Number($('m-abono-entregado')?.value)||0);
+    if(!(aplicadoCapital>0)) return toast('Monto aplicado a capital inválido','err');
+    if(aplicadoCapital>deudaIni+0.001) return toast(`Excede la deuda vieja (${money(deudaIni)})`,'err');
+  }else if(modo==='ventas'||modo==='dividir'){
+    const lectura=leerVentasSeleccionadasAbono(clienteId);
+    if(lectura.error) return toast(lectura.error,'err');
+    ventasAplicadas=lectura.seleccionadas;
+    aplicadoVentas=lectura.total;
+    entregado=num2(Number($('m-abono-entregado')?.value)||0);
+    if(modo==='dividir'){
+      aplicadoCapital=num2(Number($('m-abono-capital')?.value)||0);
+      if(aplicadoCapital<0) return toast('Monto de capital inválido','err');
+      if(aplicadoCapital>deudaIni+0.001) return toast(`Excede deuda vieja (${money(deudaIni)})`,'err');
+    }
+    if(aplicadoVentas<=0.001) return toast('Selecciona al menos una venta que el cliente está pagando.','err');
+  }else{
+    return toast('Selecciona deuda vieja, ventas específicas o ambas.','err');
   }
 
-  const aplicadoTotal = num2(aplicadoCapital + aplicadoVentas);
-  const vuelta = num2(entregado - aplicadoTotal);
+  const aplicadoTotal=num2(aplicadoCapital+aplicadoVentas);
+  if(aplicadoTotal<=0.001) return toast('Debe aplicar al menos a una deuda','err');
+  if(!(entregado>0)) return toast('Ingresa el total que entrega el cliente','err');
+  if(entregado<aplicadoTotal-0.001) return toast('El monto entregado es menor a la suma aplicada','err');
+  const vuelta=num2(entregado-aplicadoTotal);
 
-  // Preparar el reparto FIFO sin mutar ventas hasta comprobar que el importe encaja.
-  // Así, un dato inconsistente no deja cambios parciales si el cobro no puede guardarse.
-  const ventasAplicadas = [];
-  if(aplicadoVentas > 0.001){
-    let restante = aplicadoVentas;
-    const pend = ventasPendientesCliente(clienteId);
-    pend.forEach(v => {
-      if(restante <= 0.001) return;
-      const s = saldoVenta(v);
-      const apl = num2(Math.min(s, restante));
-      if(apl<=0.001) return;
-      ventasAplicadas.push({ventaId:v.id,monto:apl});
-      restante = num2(restante - apl);
-    });
-    if(restante>0.02) return toast('No se pudo distribuir todo el cobro entre las ventas pendientes. No se registró el cobro.','err');
-    ventasAplicadas.forEach(x=>{
-      const v=state.ventas.find(y=>y.id===x.ventaId);
-      if(v) v.pagado=num2((v.pagado||0)+x.monto);
-    });
+  // Validar todas las ventas seleccionadas antes de modificar cualquier saldo.
+  for(const x of ventasAplicadas){
+    const v=state.ventas.find(y=>y.id===x.ventaId && y.clienteId===clienteId && y.tipoPago==='credito');
+    if(!v || x.monto>saldoVenta(v)+0.001) return toast(`La venta ${x.ventaId} ya no tiene ese saldo disponible. Actualiza la pantalla e inténtalo otra vez.`,'err');
   }
+  ventasAplicadas.forEach(x=>{
+    const v=state.ventas.find(y=>y.id===x.ventaId);
+    if(v) v.pagado=num2((Number(v.pagado)||0)+x.monto);
+  });
 
-  // Aplicar a capital (deuda vieja)
-  if(aplicadoCapital > 0.001){
+  if(aplicadoCapital>0.001){
     if(state.capital?.deudasInicialesPorCliente?.[clienteId]){
-      const dIni = num2(state.capital.deudasInicialesPorCliente[clienteId]);
-      const apl = Math.min(dIni, aplicadoCapital);
-      state.capital.deudasInicialesPorCliente[clienteId] = num2(dIni - apl);
-      state.capital.cuentasPorCobrarIniciales = num2(Math.max(0, (state.capital.cuentasPorCobrarIniciales || 0) - apl));
+      const dIni=num2(state.capital.deudasInicialesPorCliente[clienteId]);
+      if(aplicadoCapital>dIni+0.001){
+        // Revertir la aplicación a ventas porque el capital cambió antes de confirmar.
+        ventasAplicadas.forEach(x=>{const v=state.ventas.find(y=>y.id===x.ventaId);if(v)v.pagado=num2(Math.max(0,(Number(v.pagado)||0)-x.monto));});
+        return toast('La deuda vieja cambió y ya no permite aplicar ese monto. Actualiza e inténtalo otra vez.','err');
+      }
+      state.capital.deudasInicialesPorCliente[clienteId]=num2(dIni-aplicadoCapital);
+      state.capital.cuentasPorCobrarIniciales=num2(Math.max(0,(Number(state.capital.cuentasPorCobrarIniciales)||0)-aplicadoCapital));
+    }else{
+      ventasAplicadas.forEach(x=>{const v=state.ventas.find(y=>y.id===x.ventaId);if(v)v.pagado=num2(Math.max(0,(Number(v.pagado)||0)-x.monto));});
+      return toast('No se encontró la deuda vieja para aplicar el monto. No se registró el cobro.','err');
     }
   }
 
-  const abonoId = 'A' + (state.seq.abono++);
-  const c = state.clientes.find(x => x.id === clienteId);
-
-  // Descripción enriquecida en caja
-  const partes = [];
-  if(aplicadoCapital > 0.001) partes.push(`capital ${money(aplicadoCapital)}`);
-  if(aplicadoVentas  > 0.001) partes.push(`ventas ${money(aplicadoVentas)}`);
-  const descMov = `Cobro de ${c?.nombre||''} (${partes.join(' + ')})`;
-
+  const abonoId='A'+(state.seq.abono++);
+  const c=state.clientes.find(x=>x.id===clienteId);
+  const partes=[];
+  if(aplicadoCapital>0.001) partes.push(`capital ${money(aplicadoCapital)}`);
+  if(aplicadoVentas>0.001) partes.push(`ventas seleccionadas ${money(aplicadoVentas)}`);
+  const descMov=`Cobro de ${c?.nombre||''} (${partes.join(' + ')})`;
   state.abonos.push({
-    id: abonoId, clienteId, ventaId: null,
-    fecha: HOY(), hora: horaActual(),
-    monto: aplicadoTotal,
-    entregado: num2(entregado),
-    vuelta,
-    aplicadoCapital: num2(aplicadoCapital),
-    aplicadoVentas: num2(aplicadoVentas),
-    ventasAplicadas,
-    modoCobro: modo,
-    anulado:false,
-    usuarioId: usuarioActual?.id || null,
-    usuarioNombre: usuarioActual?.nombre || '—'
+    id:abonoId,clienteId,ventaId:null,fecha:HOY(),hora:horaActual(),
+    monto:aplicadoTotal,entregado:num2(entregado),vuelta,
+    aplicadoCapital:num2(aplicadoCapital),aplicadoVentas:num2(aplicadoVentas),
+    ventasAplicadas:ventasAplicadas.map(x=>({ventaId:x.ventaId,monto:num2(x.monto)})),
+    modoCobro:modo,anulado:false,
+    usuarioId:usuarioActual?.id||null,usuarioNombre:usuarioActual?.nombre||'—'
   });
-
-  agregarMovimientoCaja('abono', aplicadoTotal, descMov, abonoId);
-
-  const partesMsg = [];
-  if(aplicadoCapital > 0.001) partesMsg.push(`capital ${money(aplicadoCapital)}`);
-  if(aplicadoVentas  > 0.001) partesMsg.push(`ventas ${money(aplicadoVentas)}`);
-  let msg = `Cobro ${money(aplicadoTotal)} (${partesMsg.join(' + ')})`;
-  if(vuelta > 0.001) msg += ` · Vuelta ${money(vuelta)}`;
-  toast(msg, 'ok');
-
-  ui.abonoModo = null;   // resetear para próximo cobro
+  agregarMovimientoCaja('abono',aplicadoTotal,descMov,abonoId);
+  const detalleVentas=ventasAplicadas.map(x=>{
+    const v=state.ventas.find(y=>y.id===x.ventaId);
+    return `${v?.id||x.ventaId} (${fFecha(v?.fecha||'')}) ${money(x.monto)}`;
+  });
+  let msg=`Cobro ${money(aplicadoTotal)}`;
+  if(detalleVentas.length) msg+=` · ${detalleVentas.join(', ')}`;
+  if(vuelta>0.001) msg+=` · Vuelta ${money(vuelta)}`;
+  toast(msg,'ok');
+  ui.abonoModo=null;
   cerrarModal();
   render();
 }
@@ -4778,7 +4774,10 @@ function viewClientes(){
                       ${(a.aplicadoVentas||0) > 0.001 ? `<span class="badge badge-info">Ventas ${money(a.aplicadoVentas)}</span>` : ''}
                     ` : `<span class="badge badge-neutral">${esc(a.modoCobro||'histórico')}</span>`}
                   </td>
-                  <td class="num bold" style="color:${a.anulado?'var(--muted)':'var(--success)'}">${a.anulado?`<span style="text-decoration:line-through">${money(a.monto)}</span>`:`+ ${money(a.monto)}`}</td>
+                  <td class="num bold" style="color:${a.anulado?'var(--muted)':'var(--success)'}">
+            ${a.anulado?`<span style="text-decoration:line-through">${money(a.monto)}</span>`:`+ ${money(a.monto)}`}
+            ${Array.isArray(a.ventasAplicadas)&&a.ventasAplicadas.length?`<div style="font-size:10.5px;font-weight:400;color:var(--muted);text-align:left;margin-top:4px">${a.ventasAplicadas.map(x=>{const v=state.ventas.find(y=>y.id===x.ventaId);return `<div>${esc(x.ventaId)} · ${fFecha(v?.fecha||'')} · ${money(x.monto)}</div>`}).join('')}</div>`:''}
+          </td>
                   <td class="num">${a.vuelta>0.001?money(a.vuelta):'—'}</td>
                 </tr>`;
               }).join('')}</tbody>
@@ -4869,7 +4868,10 @@ function viewCobranzas(){
           <td>${esc(c?.nombre||'—')}</td>
           ${esAdmin()?`<td><span class="badge badge-cobrador">${esc(a.usuarioNombre||'—')}</span></td>`:''}
           <td class="num">${a.anulado?`<span style="text-decoration:line-through">${money(a.entregado??a.monto)}</span>`:money(a.entregado??a.monto)}</td>
-          <td class="num bold" style="color:${a.anulado?'var(--muted)':'var(--success)'}">${a.anulado?`<span style="text-decoration:line-through">${money(a.monto)}</span>`:`+ ${money(a.monto)}`}</td>
+          <td class="num bold" style="color:${a.anulado?'var(--muted)':'var(--success)'}">
+            ${a.anulado?`<span style="text-decoration:line-through">${money(a.monto)}</span>`:`+ ${money(a.monto)}`}
+            ${Array.isArray(a.ventasAplicadas)&&a.ventasAplicadas.length?`<div style="font-size:10.5px;font-weight:400;color:var(--muted);text-align:left;margin-top:4px">${a.ventasAplicadas.map(x=>{const v=state.ventas.find(y=>y.id===x.ventaId);return `<div>${esc(x.ventaId)} · ${fFecha(v?.fecha||'')} · ${money(x.monto)}</div>`}).join('')}</div>`:''}
+          </td>
           <td class="num">${a.vuelta>0.001?money(a.vuelta):'—'}</td>
           <td>${a.anulado?'<span class="badge badge-danger">Revertido</span>':puedeAnular?`<button class="btn-ghost" style="padding:3px 8px;color:var(--danger);font-size:12px" onclick="accionAnularCobro('${a.id}')">Anular</button>`:mesCerrado(mesDe(a.fecha))?'<span class="badge badge-neutral">Mes cerrado</span>':'—'}</td>
         </tr>`;
