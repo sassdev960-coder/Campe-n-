@@ -1516,7 +1516,7 @@ const esCajero = () => usuarioActual?.rol === 'cajero';
 const esCobrador = () => usuarioActual?.rol === 'cobrador';
 
 const ui = {
-  ventaCarrito:[], ventaClienteId:'', ventaTipoPago:'contado',
+  ventaCarrito:[], ventaClienteId:'', ventaTipoPago:'contado', ventaFecha:HOY(),
   ventaPlazo:15, ventaPlazoCustom:'', ventaMontoRecibido:'',
   buscarCliente:'', mostrarBuscadorCliente:false,
   compraCarrito:[], compraProveedorId:'', compraNota:'', buscarProdCompra:'',
@@ -1606,8 +1606,8 @@ function bonifBolsasPorTipo(tipo){
 function saldoCaja(){ if(!state) return 0; return num2(state.caja.saldoInicial+state.caja.movimientos.reduce((a,m)=>a+m.monto,0)); }
 function saldoBanco(b){ return num2(b.saldoInicial+(b.movimientos||[]).reduce((a,m)=>a+m.monto,0)); }
 function saldoBancosTotal(){ return num2(state.bancos.reduce((a,b)=>a+saldoBanco(b),0)); }
-function agregarMovimientoCaja(tipo,monto,descripcion,referencia){
-  state.caja.movimientos.push({id:'M'+(state.seq.mov++),fecha:HOY(),hora:horaActual(),tipo,monto:num2(monto),descripcion,referencia:referencia||null,usuarioId:usuarioActual?.id||null,usuarioNombre:usuarioActual?.nombre||'—'});
+function agregarMovimientoCaja(tipo,monto,descripcion,referencia,fecha=HOY()){
+  state.caja.movimientos.push({id:'M'+(state.seq.mov++),fecha:fecha||HOY(),hora:horaActual(),tipo,monto:num2(monto),descripcion,referencia:referencia||null,usuarioId:usuarioActual?.id||null,usuarioNombre:usuarioActual?.nombre||'—'});
 }
 function eliminarMovimientosPorRef(ref){ state.caja.movimientos=state.caja.movimientos.filter(m=>m.referencia!==ref); }
 function agregarMovimientoBanco(bancoId,monto,descripcion,referencia){
@@ -3676,7 +3676,10 @@ function totalCarritoVenta(){ return num2(ui.ventaCarrito.reduce((a,i)=>a+i.subt
 function confirmarVenta(){
   if(!turnoRequerido()) return toast('Abre tu turno','err');
   if(ui.ventaCarrito.length===0) return toast('Carrito vacío','err');
-  if(mesCerrado(mesActual())) return toast(`El mes ${mesActual()} está cerrado`,'err');
+  const fechaVenta=ui.ventaFecha||HOY();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(fechaVenta) || Number.isNaN(Date.parse(fechaVenta+'T12:00:00'))) return toast('Selecciona una fecha válida','err');
+  if(fechaVenta>HOY()) return toast('La fecha de la venta no puede ser futura','err');
+  if(mesCerrado(fechaVenta.slice(0,7))) return toast(`El mes ${fechaVenta.slice(0,7)} está cerrado. No se puede registrar una venta en ese período.`,'err');
   for(const it of ui.ventaCarrito){
     const p=prodById(it.productoId);
     if(!p) return toast(`Producto eliminado: ${it.nombre}`,'err');
@@ -3688,7 +3691,7 @@ function confirmarVenta(){
   if(ui.ventaTipoPago==='credito'){
     plazo=ui.ventaPlazo==='custom'?Number(ui.ventaPlazoCustom):Number(ui.ventaPlazo);
     if(!(plazo>0)) return toast('Define un plazo','err');
-    vencimiento=addDias(HOY(),plazo);
+    vencimiento=addDias(fechaVenta,plazo);
   }
   const total=totalCarritoVenta();
   let montoRecibido=null,cambio=null;
@@ -3698,7 +3701,7 @@ function confirmarVenta(){
     cambio=num2(montoRecibido-total);
   }
   const venta={
-    id:'V'+(state.seq.venta++),fecha:HOY(),hora:horaActual(),
+    id:'V'+(state.seq.venta++),fecha:fechaVenta,hora:horaActual(),
     clienteId:cliente?cliente.id:null,
     clienteNombre:cliente?cliente.nombre:'Consumidor final',
     tipoPago:ui.ventaTipoPago,plazo,vencimiento,
@@ -3715,8 +3718,8 @@ function confirmarVenta(){
       if(b) b.saldo=num2((b.saldo||0)-it.subtotal);
     } else p.stock=num2(p.stock-it.cantidad);
   });
-  if(venta.tipoPago==='contado') agregarMovimientoCaja('venta',total,'Venta '+venta.id+' · '+venta.clienteNombre,venta.id);
-  ui.ventaCarrito=[]; ui.ventaClienteId=''; ui.ventaMontoRecibido='';
+  if(venta.tipoPago==='contado') agregarMovimientoCaja('venta',total,'Venta '+venta.id+' · '+venta.clienteNombre,venta.id,fechaVenta);
+  ui.ventaCarrito=[]; ui.ventaClienteId=''; ui.ventaMontoRecibido=''; ui.ventaFecha=HOY();
   ui.ventaTipoPago='contado'; ui.ventaPlazo=15; ui.ventaPlazoCustom='';
   const gan=gananciaVenta(venta);
   if(gan>0) toast(`Venta ${money(total)} · Ganancia ${money(gan)}${cambio>0.001?' · Cambio '+money(cambio):''}`,'ok');
@@ -4551,6 +4554,10 @@ function viewVentas(){
         <div class="cart-total"><span class="cart-total-label">Total</span><span class="cart-total-value">${money(total)}</span></div>
         ${ganCarrito>0?`<div style="text-align:right;font-size:12.5px;color:var(--success);font-weight:600;margin-top:4px">Ganancia física: ${money(ganCarrito)}</div>`:''}
         <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--line)">
+          <div class="field"><label>Fecha de la venta</label>
+            <input type="date" value="${esc(ui.ventaFecha||HOY())}" max="${HOY()}" onchange="ui.ventaFecha=this.value">
+            <div class="hint">Puedes registrar una venta de una fecha anterior. La caja y los reportes usarán esta fecha.</div>
+          </div>
           <div class="field" style="position:relative">
             <label>Cliente</label>
             ${cliente?`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--surface)">
