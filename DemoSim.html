@@ -2714,20 +2714,28 @@ function leerVentasSeleccionadasAbono(clienteId){
 function actualizarAbonoSeleccionPreview(clienteId,modo){
   const lectura=leerVentasSeleccionadasAbono(clienteId);
   const capEl=$('m-abono-capital')||$('m-abono-monto');
-  const aplicadoCapital=modo==='capital'||modo==='dividir'?num2(Number(capEl?.value)||0):0;
-  const aplicadoVentas=lectura.error?0:lectura.total;
-  const aplicado=num2(aplicadoCapital+aplicadoVentas);
+  const capitalSolicitado=modo==='capital'||modo==='dividir'?num2(Number(capEl?.value)||0):0;
+  const ventasSolicitadas=lectura.error?0:lectura.total;
+  const solicitado=num2(capitalSolicitado+ventasSolicitadas);
   const entregado=num2(Number($('m-abono-entregado')?.value)||0);
+  const aplicadoEfectivo=num2(Math.min(solicitado,entregado));
   const totalEl=$('abono-ventas-seleccion-total');
-  if(totalEl) totalEl.innerHTML=`Seleccionado: <b>${money(aplicadoVentas)}</b> en ${lectura.error?'—':lectura.seleccionadas.length} venta(s)`;
+  if(totalEl) totalEl.innerHTML=`Seleccionado: <b>${money(ventasSolicitadas)}</b> en ${lectura.error?'—':lectura.seleccionadas.length} venta(s)`;
   const resumen=$('abono-seleccion-resumen');
-  if(resumen) resumen.innerHTML=lectura.error?`<span style="color:var(--danger)">${esc(lectura.error)}</span>`:`Aplicado: <b>${money(aplicado)}</b> · Entregado: <b>${money(entregado)}</b> · Vuelto: <b>${money(Math.max(0,entregado-aplicado))}</b>`;
+  if(resumen){
+    if(lectura.error) resumen.innerHTML=`<span style="color:var(--danger)">${esc(lectura.error)}</span>`;
+    else if(entregado>0 && entregado+0.001<solicitado) resumen.innerHTML=`Se aplicará <b>${money(aplicadoEfectivo)}</b> de los ${money(solicitado)} seleccionados. El resto seguirá pendiente.`;
+    else resumen.innerHTML=`Aplicado: <b>${money(solicitado)}</b> · Entregado: <b>${money(entregado)}</b> · Vuelto: <b>${money(Math.max(0,entregado-solicitado))}</b>`;
+  }
   const preview=$('abono-preview');
   if(preview){
-    if(entregado+0.001<aplicado) preview.innerHTML=`<div class="cambio-box insuf"><span class="cambio-label">Falta por cubrir</span><span class="cambio-value">${money(aplicado-entregado)}</span></div>`;
-    else if(entregado>aplicado+0.001) preview.innerHTML=`<div class="cambio-box"><span class="cambio-label">Vuelta a devolver</span><span class="cambio-value">${money(entregado-aplicado)}</span></div>`;
-    else if(aplicado>0) preview.innerHTML=`<div class="cambio-box exacto"><span class="cambio-label">Pago exacto</span><span class="cambio-value">${money(aplicado)}</span></div>`;
-    else preview.innerHTML='';
+    if(entregado>0 && entregado+0.001<solicitado){
+      preview.innerHTML=`<div class="cambio-box exacto"><span class="cambio-label">Cobro parcial · se aplicará</span><span class="cambio-value">${money(aplicadoEfectivo)}</span><div style="font-size:12px;margin-top:4px">Quedará pendiente: ${money(solicitado-aplicadoEfectivo)}</div></div>`;
+    }else if(entregado>solicitado+0.001){
+      preview.innerHTML=`<div class="cambio-box"><span class="cambio-label">Vuelta a devolver</span><span class="cambio-value">${money(entregado-solicitado)}</span></div>`;
+    }else if(solicitado>0 && entregado>0){
+      preview.innerHTML=`<div class="cambio-box exacto"><span class="cambio-label">Pago exacto</span><span class="cambio-value">${money(solicitado)}</span></div>`;
+    }else preview.innerHTML='';
   }
 }
   
@@ -3274,7 +3282,7 @@ function confirmarAbono(clienteId){
   }else if(modo==='ventas'||modo==='dividir'){
     const lectura=leerVentasSeleccionadasAbono(clienteId);
     if(lectura.error) return toast(lectura.error,'err');
-    ventasAplicadas=lectura.seleccionadas;
+    ventasAplicadas=lectura.seleccionadas.map(x=>({...x}));
     aplicadoVentas=lectura.total;
     entregado=num2(Number($('m-abono-entregado')?.value)||0);
     if(modo==='dividir'){
@@ -3287,11 +3295,27 @@ function confirmarAbono(clienteId){
     return toast('Selecciona deuda vieja, ventas específicas o ambas.','err');
   }
 
+  if(!(entregado>0)) return toast('Ingresa el total que entrega el cliente','err');
+
+  // Permitir pagos parciales: se aplica solo lo entregado y el resto permanece como deuda.
+  // En modo combinado se cubre primero el monto de capital indicado y el remanente va a las ventas seleccionadas en el orden mostrado.
+  let disponibleAplicacion=entregado;
+  if(aplicadoCapital>0.001){
+    aplicadoCapital=num2(Math.min(aplicadoCapital,disponibleAplicacion));
+    disponibleAplicacion=num2(Math.max(0,disponibleAplicacion-aplicadoCapital));
+  }
+  const ventasAjustadas=[];
+  for(const x of ventasAplicadas){
+    if(disponibleAplicacion<=0.001) break;
+    const montoAplicar=num2(Math.min(Number(x.monto)||0,disponibleAplicacion));
+    if(montoAplicar>0.001) ventasAjustadas.push({ventaId:x.ventaId,monto:montoAplicar});
+    disponibleAplicacion=num2(Math.max(0,disponibleAplicacion-montoAplicar));
+  }
+  ventasAplicadas=ventasAjustadas;
+  aplicadoVentas=num2(ventasAplicadas.reduce((sum,x)=>sum+x.monto,0));
   const aplicadoTotal=num2(aplicadoCapital+aplicadoVentas);
   if(aplicadoTotal<=0.001) return toast('Debe aplicar al menos a una deuda','err');
-  if(!(entregado>0)) return toast('Ingresa el total que entrega el cliente','err');
-  if(entregado<aplicadoTotal-0.001) return toast('El monto entregado es menor a la suma aplicada','err');
-  const vuelta=num2(entregado-aplicadoTotal);
+  const vuelta=num2(Math.max(0,entregado-aplicadoTotal));
 
   // Validar todas las ventas seleccionadas antes de modificar cualquier saldo.
   for(const x of ventasAplicadas){
