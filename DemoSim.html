@@ -3028,6 +3028,18 @@ function confirmarCerrarTurno(turnoId,teorico){
       t.saldoCierre=num2(saldo); t.fechaCierre=HOY(); t.horaCierre=horaActual();
       t.estado='cerrado'; t.obsCierre=obs; t.diferencia=dif;
       toast('Turno cerrado','ok'); cerrarModal(); render();
+      // 🔄 Auto-sync a tablas normalizadas (silencioso, no bloquea)
+      setTimeout(async () => {
+        try {
+          if(typeof migrarATablas === 'function' && sb && sbNegocioId){
+            console.log('[auto-sync] Sincronizando tablas tras cierre de turno...');
+            await migrarATablas();
+            console.log('[auto-sync] OK');
+          }
+        } catch(e){
+          console.warn('[auto-sync] Error (no bloquea):', e.message);
+        }
+      }, 1500);
     }
   });
 }
@@ -3773,6 +3785,18 @@ function viewConfig(){
       <button class="btn btn-outline" onclick="exportarDatos()">Descargar copia (JSON)</button>
       <button class="btn btn-danger" onclick="restablecerSistema()">Restablecer todo</button>
     </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div>
+      <div class="card-title">Sincronizar tablas normalizadas</div>
+      <div class="card-subtitle">Copia ventas/movs nuevos del JSONB a las tablas de Supabase</div>
+    </div></div>
+    <div class="alert alert-info" style="margin-bottom:14px">
+      <div>Es idempotente: solo migra registros nuevos, no duplica. Tarda 1–3 minutos.</div>
+    </div>
+    <button class="btn btn-primary" onclick="migrarATablas()">
+      🔄 Sincronizar ahora
+    </button>
   </div>`;
 }
 function exportarDatos(){
@@ -5143,6 +5167,40 @@ window.arrancarApp = async function(){
     $('avatarIni').style.background=usuarioActual.color||'#8a6d3b';
     $('rolLbl').textContent=usuarioActual.rol==='admin'?'Administrador':usuarioActual.rol==='cajero'?'Cajero':'Cobrador';
 
+    // 🛡️ SANITY CHECK: nunca operar con state vacío si hay backup disponible
+    if((state.ventas?.length || 0) === 0 && (state.caja?.movimientos?.length || 0) === 0){
+      const tieneRescate = window.SIMGEST_ESTADO_RESCATE?.ventas?.length > 0;
+      if(tieneRescate){
+        const ok = confirm(
+          '⚠️ ALERTA: el estado cargado está vacío (0 ventas, 0 movimientos).\n\n' +
+          'Hay un backup interno con ' + window.SIMGEST_ESTADO_RESCATE.ventas.length + ' ventas.\n\n' +
+          '¿Querés restaurar el backup? (Recomendado: SÍ)'
+        );
+        if(ok){
+          const r = window.SIMGEST_ESTADO_RESCATE;
+          state.ventas = r.ventas || [];
+          state.caja = r.caja || state.caja;
+          state.turnos = r.turnos || [];
+          state.abonos = r.abonos || [];
+          state.compras = r.compras || [];
+          state.ajustesBolsa = r.ajustesBolsa || [];
+          state.clientes = state.clientes?.length ? state.clientes : (r.clientes || []);
+          state.productos = state.productos?.length ? state.productos : (r.productos || []);
+          state.categorias = state.categorias?.length ? state.categorias : (r.categorias || []);
+          state.proveedores = state.proveedores?.length ? state.proveedores : (r.proveedores || []);
+          state.bancos = r.bancos || state.bancos;
+          state.bolsas = r.bolsas || state.bolsas;
+          state.capital = r.capital || state.capital;
+          state.config = r.config || state.config;
+          state.seq = r.seq || state.seq;
+          if(typeof reconciliarMovimientosVentasCaja === 'function') reconciliarMovimientosVentasCaja();
+          console.warn('[SIMGest] 🛡️ Estado restaurado automáticamente desde backup interno.');
+        } else {
+          console.warn('[SIMGest] 🛡️ Usuario decidió NO restaurar. Cualquier operación sobrescribirá el cloud.');
+        }
+      }
+    }
+
     save(); render();
     try {
       const conteoVentas={};
@@ -5167,7 +5225,9 @@ window.arrancarApp = async function(){
   }
 };
 
-  /* ================================================================
+
+
+/* ================================================================
    MIGRACIÓN: JSONB → TABLAS NORMALIZADAS (permanente en la app)
    Idempotente. Se puede correr muchas veces sin duplicar.
    ================================================================ */
@@ -5668,7 +5728,6 @@ window.migrarATablas = async function(){
 };
 
 </script>
-  
 </body>
 </html>
   
