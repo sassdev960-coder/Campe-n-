@@ -1862,6 +1862,13 @@ function renderModal(){
   const {tipo,id,extra}=ui.modal;
   let contenido='';
   if(tipo==='confirmar') contenido=modalConfirmar(ui.modal.data);
+  else if(tipo==='detalleVenta') contenido=modalDetalleVenta(id);
+  else if(tipo==='editarVenta') contenido=modalEditarVenta(id);
+  else if(tipo==='detalleCompra') contenido=modalDetalleCompra(id);
+  else if(tipo==='editarCompra') contenido=modalEditarCompra(id);
+  else if(tipo==='editarGasto') contenido=modalEditarGasto(id);
+  else if(tipo==='editarMovimientoCaja') contenido=modalEditarMovimientoCaja(id);
+  else if(tipo==='detalleAbono') contenido=modalDetalleAbono(id);
   else if(tipo==='nuevoProducto'||tipo==='editarProducto') contenido=modalProducto(id);
   else if(tipo==='nuevaCategoria'||tipo==='editarCategoria') contenido=modalCategoria(id);
   else if(tipo==='nuevoProveedor'||tipo==='editarProveedor') contenido=modalProveedor(id);
@@ -4353,7 +4360,11 @@ function viewCaja(){
           ${esAdmin()?`<td>${esc(m.usuarioNombre||'—')}</td>`:''}
           <td>${esc(m.descripcion)}</td>
           <td class="num bold" style="color:${m.monto>0?'var(--success)':'var(--danger)'}">${m.monto>0?'+':''}${money(m.monto)}</td>
-          ${esAdmin()?`<td class="num">${puede?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarMovimiento('${m.id}')">Eliminar</button>`:''}</td>`:''}
+          <td class="num" style="white-space:nowrap">
+  <button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModalDetalleMovimientoCaja('${m.id}')">Detalle</button>
+  ${esAdmin()&&!m.referencia&&!mesCerrado(m.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--primary)" onclick="abrirModal('editarMovimientoCaja','${m.id}')">Editar</button>`:''}
+  ${esAdmin()&&puede?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarMovimiento('${m.id}')">Eliminar</button>`:''}
+</td>
         </tr>`;
       }).join('')||`<tr><td colspan="${esAdmin()?6:4}" class="empty">Sin movimientos.</td></tr>`}
       </tbody>
@@ -4402,7 +4413,11 @@ function viewGastos(){
         <td>${esc(g.descripcion)}</td>
         <td><span class="badge badge-info">${esc(g.usuarioNombre||'—')}</span></td>
         <td class="num bold" style="color:var(--danger)">− ${money(g.monto)}</td>
-        <td class="num">${esAdmin()&&!mesCerrado(g.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarGasto('${g.id}')">Eliminar</button>`:''}</td>
+        <td class="num" style="white-space:nowrap">
+  <button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModalDetalleGasto('${g.id}')">Detalle</button>
+  ${esAdmin()&&!mesCerrado(g.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--primary)" onclick="abrirModal('editarGasto','${g.id}')">Editar</button>`:''}
+  ${esAdmin()&&!mesCerrado(g.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarGasto('${g.id}')">Eliminar</button>`:''}
+</td>
       </tr>`).join('')||'<tr><td colspan="6" class="empty">Sin resultados.</td></tr>'}
       </tbody>
     </table></div>
@@ -4601,7 +4616,7 @@ function viewVentas(){
     <div class="card-subtitle">${histFilt.length} de ${misVentas.length}</div></div></div>
     <div class="search-wrap"><input id="inpVentaHist" placeholder="Buscar..." value="${esc(ui.buscarVentaHist)}" oninput="ui.buscarVentaHist=this.value; renderConservarFoco('inpVentaHist')"></div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Pago</th>${esAdmin()?'<th>Usuario</th>':''}<th class="num">Total</th><th class="num">Ganancia</th><th class="num">Estado</th>${esAdmin()?'<th></th>':''}</tr></thead>
+      <thead><tr><th>Ref.</th><th>Fecha</th><th>Cliente</th><th>Pago</th>${esAdmin()?'<th>Usuario</th>':''}<th class="num">Total</th><th class="num">Ganancia</th><th class="num">Estado</th><th></th></tr></thead>
       <tbody>
       ${histFilt.map(v=>`<tr>
         <td><span class="badge badge-neutral">${v.id}</span></td>
@@ -4612,7 +4627,11 @@ function viewVentas(){
         <td class="num bold">${money(v.total)}</td>
         <td class="num" style="color:var(--success);font-weight:600">${money(gananciaVenta(v))}</td>
         <td class="num">${v.tipoPago==='credito'?`<span class="badge ${saldoVenta(v)<=0.001?'badge-success':'badge-danger'}">${saldoVenta(v)<=0.001?'Pagada':'Debe '+money(saldoVenta(v))}</span>`:'<span class="badge badge-neutral">Pagado</span>'}</td>
-        ${esAdmin()?`<td class="num">${!mesCerrado(v.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarVenta('${v.id}')">Eliminar</button>`:'<span class="badge badge-neutral">🔒</span>'}</td>`:''}
+        <td class="num" style="white-space:nowrap">
+  <button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('detalleVenta','${v.id}')">Detalle</button>
+  ${esAdmin()&&!mesCerrado(v.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--primary)" onclick="abrirModal('editarVenta','${v.id}')">Editar</button>`:''}
+  ${esAdmin()&&!mesCerrado(v.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarVenta('${v.id}')">Eliminar</button>`:'<span class="badge badge-neutral">🔒</span>'}
+</td>
       </tr>`).join('')||`<tr><td colspan="${esAdmin()?9:7}" class="empty">Sin resultados.</td></tr>`}
       </tbody>
     </table></div>
@@ -4897,7 +4916,10 @@ function viewCobranzas(){
             ${Array.isArray(a.ventasAplicadas)&&a.ventasAplicadas.length?`<div style="font-size:10.5px;font-weight:400;color:var(--muted);text-align:left;margin-top:4px">${a.ventasAplicadas.map(x=>{const v=state.ventas.find(y=>y.id===x.ventaId);return `<div>${esc(x.ventaId)} · ${fFecha(v?.fecha||'')} · ${money(x.monto)}</div>`}).join('')}</div>`:''}
           </td>
           <td class="num">${a.vuelta>0.001?money(a.vuelta):'—'}</td>
-          <td>${a.anulado?'<span class="badge badge-danger">Revertido</span>':puedeAnular?`<button class="btn-ghost" style="padding:3px 8px;color:var(--danger);font-size:12px" onclick="accionAnularCobro('${a.id}')">Anular</button>`:mesCerrado(mesDe(a.fecha))?'<span class="badge badge-neutral">Mes cerrado</span>':'—'}</td>
+          <td style="white-space:nowrap">
+  <button class="btn-ghost" style="padding:3px 8px;font-size:12px" onclick="abrirModal('detalleAbono','${a.id}')">Detalle</button>
+  ${a.anulado?'<span class="badge badge-danger">Revertido</span>':puedeAnular?`<button class="btn-ghost" style="padding:3px 8px;color:var(--danger);font-size:12px" onclick="accionAnularCobro('${a.id}')">Anular</button>`:mesCerrado(mesDe(a.fecha))?'<span class="badge badge-neutral">Mes cerrado</span>':'—'}
+</td>
         </tr>`;
       }).join('')||`<tr><td colspan="${esAdmin()?8:7}" class="empty">Sin resultados.</td></tr>`}
       </tbody>
@@ -4975,7 +4997,11 @@ function viewCompras(){
         <td>${esc(c.proveedorNombre)}</td>
         <td style="max-width:280px">${c.items.map(i=>`<div style="font-size:12px">${esc(i.nombre)} × ${i.cantidad}</div>`).join('')}</td>
         <td class="num bold">${money(c.total)}</td>
-        <td class="num">${!mesCerrado(c.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarCompra('${c.id}')">Eliminar</button>`:'<span class="badge badge-neutral">🔒</span>'}</td>
+        <td class="num" style="white-space:nowrap">
+  <button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('detalleCompra','${c.id}')">Detalle</button>
+  ${!mesCerrado(c.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--primary)" onclick="abrirModal('editarCompra','${c.id}')">Editar</button>`:''}
+  ${!mesCerrado(c.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarCompra('${c.id}')">Eliminar</button>`:'<span class="badge badge-neutral">🔒</span>'}
+</td>
       </tr>`).join('')||'<tr><td colspan="6" class="empty">Sin compras</td></tr>'}
       </tbody>
     </table></div>
@@ -6111,6 +6137,660 @@ window.migrarATablas = async function(){
   }
 };
 
+
+
+/* ================================================================
+   DETALLES Y EDICIÓN — VENTAS, COMPRAS, GASTOS, CAJA, ABONOS
+   ================================================================ */
+
+/* ---------- VENTA: DETALLE ---------- */
+function modalDetalleVenta(id){
+  const v = state.ventas.find(x=>x.id===id);
+  if(!v) return '<div class="empty">Venta no encontrada</div>';
+  const cliente = v.clienteId ? state.clientes.find(c=>c.id===v.clienteId) : null;
+  const abonosAsoc = state.abonos.filter(a=>!a.anulado && Array.isArray(a.ventasAplicadas) && a.ventasAplicadas.some(x=>x.ventaId===v.id));
+  return `
+    <div class="modal-head">
+      <div><div class="modal-title">Detalle de venta ${esc(v.id)}</div>
+        <div class="card-subtitle">${fFecha(v.fecha)} · ${v.hora||''}</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="background:var(--surface-soft);padding:12px;border-radius:10px;border:1px solid var(--line-soft)">
+        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600">Cliente</div>
+        <div style="font-weight:600;margin-top:4px">${esc(v.clienteNombre||'Consumidor final')}</div>
+        ${cliente?`<div style="font-size:11.5px;color:var(--muted)">${esc(cliente.comunidad||'')} ${cliente.tel?'· '+esc(cliente.tel):''}</div>`:''}
+      </div>
+      <div style="background:var(--surface-soft);padding:12px;border-radius:10px;border:1px solid var(--line-soft)">
+        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600">Registrado por</div>
+        <div style="font-weight:600;margin-top:4px">${esc(v.usuarioNombre||'—')}</div>
+        <div style="font-size:11.5px;color:var(--muted)">${fFecha(v.fecha)} · ${v.hora||''}</div>
+      </div>
+      <div style="background:var(--surface-soft);padding:12px;border-radius:10px;border:1px solid var(--line-soft)">
+        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600">Forma de pago</div>
+        <div style="font-weight:600;margin-top:4px">${v.tipoPago==='contado'?'Contado':'Crédito'}</div>
+        ${v.tipoPago==='credito'?`<div style="font-size:11.5px;color:var(--muted)">Plazo ${v.plazo||0}d · Vence ${fFecha(v.vencimiento)}</div>`:''}
+      </div>
+      <div style="background:var(--surface-soft);padding:12px;border-radius:10px;border:1px solid var(--line-soft)">
+        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600">Estado</div>
+        <div style="font-weight:600;margin-top:4px">${v.tipoPago==='credito'?(saldoVenta(v)<=0.001?'Pagada':'Debe '+money(saldoVenta(v))):'Pagado'}</div>
+        ${v.tipoPago==='contado'?`<div style="font-size:11.5px;color:var(--muted)">Recibido ${money(v.montoRecibido||0)} · Cambio ${money(v.cambio||0)}</div>`:''}
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Productos (${v.items.length})</div>
+    <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px">
+      <table style="width:100%;margin:0">
+        <thead style="background:var(--surface-soft)"><tr>
+          <th style="text-align:left;padding:8px 12px;font-size:10.5px;letter-spacing:.5px">Producto</th>
+          <th style="text-align:right;padding:8px 12px;font-size:10.5px;letter-spacing:.5px">Cant.</th>
+          <th style="text-align:right;padding:8px 12px;font-size:10.5px;letter-spacing:.5px">P.Unit</th>
+          <th style="text-align:right;padding:8px 12px;font-size:10.5px;letter-spacing:.5px">Subtotal</th>
+        </tr></thead>
+        <tbody>
+          ${v.items.map(it=>`
+            <tr style="border-top:1px solid var(--line-soft)">
+              <td style="padding:8px 12px"><div style="font-weight:500">${esc(it.nombre)}</div>
+                ${it.esRecarga?`<div style="font-size:11px;color:var(--accent)">Recarga · ${TIPOS_BOLSA[it.tipoRecarga]||''}</div>`:''}</td>
+              <td style="padding:8px 12px;text-align:right">${it.cantidad}</td>
+              <td style="padding:8px 12px;text-align:right">${money(it.precioUnit)}</td>
+              <td style="padding:8px 12px;text-align:right;font-weight:600">${money(it.subtotal)}</td>
+            </tr>`).join('')}
+        </tbody>
+        <tfoot>
+          <tr style="border-top:1px solid var(--line)">
+            <td colspan="3" style="padding:10px 12px;text-align:right;font-weight:600">Total</td>
+            <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:15px">${money(v.total)}</td>
+          </tr>
+          <tr><td colspan="3" style="padding:6px 12px;text-align:right;font-size:12px;color:var(--muted)">Ganancia física</td>
+            <td style="padding:6px 12px;text-align:right;color:var(--success);font-weight:600">${money(gananciaVenta(v))}</td></tr>
+        </tfoot>
+      </table>
+    </div>
+    ${abonosAsoc.length>0?`
+      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Cobros aplicados a esta venta</div>
+      <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px">
+        <table style="width:100%;margin:0">
+          <thead style="background:var(--surface-soft)"><tr>
+            <th style="text-align:left;padding:8px 12px;font-size:10.5px">Fecha</th>
+            <th style="text-align:left;padding:8px 12px;font-size:10.5px">Cobrador</th>
+            <th style="text-align:right;padding:8px 12px;font-size:10.5px">Aplicado</th>
+          </tr></thead>
+          <tbody>${abonosAsoc.map(a=>{
+            const montoAplicado = a.ventasAplicadas.filter(x=>x.ventaId===v.id).reduce((sum,x)=>sum+num2(x.monto),0);
+            return `<tr style="border-top:1px solid var(--line-soft)">
+              <td style="padding:8px 12px">${fFecha(a.fecha)} ${a.hora||''}</td>
+              <td style="padding:8px 12px">${esc(a.usuarioNombre||'—')}</td>
+              <td style="padding:8px 12px;text-align:right;font-weight:600;color:var(--success)">+ ${money(montoAplicado)}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>
+    `:''}
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button>
+      ${esAdmin()&&!mesCerrado(v.fecha)?`<button class="btn btn-primary" onclick="cerrarModal(); setTimeout(()=>abrirModal('editarVenta','${v.id}'),100)">Editar</button>`:''}
+    </div>`;
+}
+
+/* ---------- VENTA: EDITAR ---------- */
+function modalEditarVenta(id){
+  const v = state.ventas.find(x=>x.id===id);
+  if(!v) return '<div class="empty">Venta no encontrada</div>';
+  if(mesCerrado(v.fecha)) return `<div class="modal"><div class="alert alert-warning"><div>El mes ${nombreMes(mesDe(v.fecha))} está cerrado. No se puede editar.</div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button></div></div>`;
+  const clientes = state.clientes.slice().sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  return `
+    <div class="modal-head">
+      <div><div class="modal-title">Editar venta ${esc(v.id)}</div>
+        <div class="card-subtitle">${fFecha(v.fecha)} · ${v.hora||''}</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="alert alert-warning"><div>
+      <strong>Cambios impactan automáticamente:</strong> stock, saldo de bolsas, caja y deuda del cliente. La venta no cambia de fecha ni de número.
+    </div></div>
+    <div class="field"><label>Cliente</label>
+      <select id="mev-cliente">
+        <option value="">Consumidor final</option>
+        ${clientes.map(c=>`<option value="${c.id}" ${v.clienteId===c.id?'selected':''}>${esc(c.nombre)}${c.comunidad?' · '+esc(c.comunidad):''}</option>`).join('')}
+      </select>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label>Forma de pago</label>
+        <select id="mev-tipo" onchange="toggleEditVentaPlazo()">
+          <option value="contado" ${v.tipoPago==='contado'?'selected':''}>Contado</option>
+          <option value="credito" ${v.tipoPago==='credito'?'selected':''}>Crédito</option>
+        </select>
+      </div>
+      <div class="field"><label>Plazo (días)</label>
+        <input id="mev-plazo" type="number" min="1" value="${v.plazo||15}" ${v.tipoPago==='contado'?'disabled':''}>
+      </div>
+    </div>
+    <div class="field"><label>Items (${v.items.length})</label>
+      <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden">
+        ${v.items.map((it,ix)=>`
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 70px 90px 90px 28px;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line-soft)">
+            <div style="min-width:0">
+              <div style="font-weight:500;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.nombre)}</div>
+              <div style="font-size:10.5px;color:var(--muted)">${it.esRecarga?'Recarga':'Físico'}</div>
+            </div>
+            <input type="number" step="0.01" min="0.01" value="${it.cantidad}" data-mev-cant="${ix}" oninput="recalcEdicionVentaUI('${v.id}')" style="text-align:right;font-size:12px;padding:5px 6px">
+            <input type="number" step="0.01" min="0" value="${it.precioUnit}" data-mev-precio="${ix}" oninput="recalcEdicionVentaUI('${v.id}')" style="text-align:right;font-size:12px;padding:5px 6px">
+            <div style="text-align:right;font-weight:600;font-size:12px" data-mev-subtotal="${ix}">${money(it.subtotal)}</div>
+            <button type="button" class="btn-ghost" style="color:var(--danger);padding:2px 4px;font-size:14px" onclick="quitarItemEdicionVenta('${v.id}',${ix})" title="Quitar item">×</button>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div style="background:var(--surface-soft);padding:14px;border-radius:10px;display:flex;justify-content:space-between;align-items:baseline;border:1px solid var(--line-soft)">
+      <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Total nuevo</span>
+      <span style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums" id="mev-total">${money(v.total)}</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEdicionVenta('${v.id}')">Guardar cambios</button>
+    </div>`;
+}
+
+function toggleEditVentaPlazo(){
+  const tipo = $('mev-tipo')?.value;
+  const inp = $('mev-plazo');
+  if(inp) inp.disabled = tipo==='contado';
+}
+
+function recalcEdicionVentaUI(ventaId){
+  const v = state.ventas.find(x=>x.id===ventaId); if(!v) return;
+  let total = 0;
+  v.items.forEach((it,ix)=>{
+    const cant = num2(Number(document.querySelector(`[data-mev-cant="${ix}"]`)?.value)||0);
+    const precio = num2(Number(document.querySelector(`[data-mev-precio="${ix}"]`)?.value)||0);
+    const sub = num2(cant*precio);
+    const subEl = document.querySelector(`[data-mev-subtotal="${ix}"]`);
+    if(subEl) subEl.textContent = money(sub);
+    total = num2(total+sub);
+  });
+  const totEl = $('mev-total');
+  if(totEl) totEl.textContent = money(total);
+}
+
+function quitarItemEdicionVenta(ventaId, ix){
+  ui.ventaEliminarItems = ui.ventaEliminarItems || {};
+  ui.ventaEliminarItems[ventaId] = ui.ventaEliminarItems[ventaId] || new Set();
+  ui.ventaEliminarItems[ventaId].add(ix);
+  // Hide the row visually
+  const el = document.querySelector(`[data-mev-cant="${ix}"]`)?.closest('div[style*="grid-template-columns"]');
+  if(el){ el.style.opacity = '.35'; el.style.textDecoration = 'line-through'; el.style.pointerEvents = 'none'; }
+  recalcEdicionVentaUI(ventaId);
+}
+
+function guardarEdicionVenta(id){
+  const v = state.ventas.find(x=>x.id===id);
+  if(!v) return toast('Venta no encontrada','err');
+  if(mesCerrado(v.fecha)) return toast('Mes cerrado','err');
+  if(!esAdmin()) return toast('Solo admin','err');
+
+  const nuevoClienteId = $('mev-cliente').value || null;
+  const nuevoTipo = $('mev-tipo').value;
+  const nuevoPlazo = nuevoTipo==='credito' ? (Number($('mev-plazo').value)||15) : null;
+
+  const eliminados = ui.ventaEliminarItems?.[id] || new Set();
+  const itemsNuevos = [];
+  v.items.forEach((it,ix)=>{
+    if(eliminados.has(ix)) return;
+    const cant = num2(Number(document.querySelector(`[data-mev-cant="${ix}"]`)?.value)||0);
+    const precio = num2(Number(document.querySelector(`[data-mev-precio="${ix}"]`)?.value)||0);
+    if(!(cant>0.001)) return;
+    if(precio<0) return;
+    itemsNuevos.push({...it, cantidad:cant, precioUnit:precio, subtotal:num2(cant*precio)});
+  });
+  if(itemsNuevos.length===0) return toast('La venta debe tener al menos un item','err');
+
+  const nuevoTotal = num2(itemsNuevos.reduce((a,i)=>a+i.subtotal,0));
+  if(nuevoTotal<=0.001) return toast('Total inválido','err');
+
+  // 1) Revertir efecto de items viejos (stock + bolsa)
+  v.items.forEach(it=>{
+    const p = prodById(it.productoId);
+    if(!p) return;
+    if(esProductoRecarga(p)){
+      const b = p.proveedorId ? bolsaDe(p.proveedorId, tipoBolsaDeProducto(p)) : null;
+      if(b) b.saldo = num2((b.saldo||0) + it.subtotal);
+    } else {
+      p.stock = num2(p.stock + it.cantidad);
+    }
+  });
+
+  // 2) Quitar movimiento de caja viejo (solo si era contado)
+  eliminarMovimientosPorRef(id);
+
+  // 3) Aplicar efecto de items nuevos (stock + bolsa)
+  for(const it of itemsNuevos){
+    const p = prodById(it.productoId);
+    if(!p) continue;
+    if(esProductoRecarga(p)){
+      const tipo = it.tipoRecarga || tipoBolsaDeProducto(p);
+      const b = p.proveedorId ? bolsaDe(p.proveedorId, tipo) : null;
+      if(b) b.saldo = num2((b.saldo||0) - it.subtotal);
+    } else {
+      p.stock = num2(p.stock - it.cantidad);
+    }
+  }
+
+  // 4) Actualizar datos de la venta
+  const nuevoCliente = nuevoClienteId ? state.clientes.find(c=>c.id===nuevoClienteId) : null;
+  v.clienteId = nuevoClienteId;
+  v.clienteNombre = nuevoCliente ? nuevoCliente.nombre : 'Consumidor final';
+  v.tipoPago = nuevoTipo;
+  v.plazo = nuevoPlazo;
+  v.vencimiento = nuevoTipo==='credito' ? addDias(v.fecha, nuevoPlazo) : null;
+  v.items = itemsNuevos;
+  v.total = nuevoTotal;
+
+  // 5) Ajustar pagado/montoRecibido/cambio y caja según tipo
+  if(nuevoTipo==='contado'){
+    v.pagado = nuevoTotal;
+    v.montoRecibido = nuevoTotal;
+    v.cambio = 0;
+    agregarMovimientoCaja('venta', nuevoTotal, `Venta ${id} · ${v.clienteNombre}`, id);
+  } else {
+    // Crédito: conservar lo ya pagado, tope al nuevo total
+    v.pagado = num2(Math.min(Number(v.pagado)||0, nuevoTotal));
+    v.montoRecibido = null;
+    v.cambio = null;
+  }
+
+  // Limpiar estado de edición
+  if(ui.ventaEliminarItems?.[id]) delete ui.ventaEliminarItems[id];
+
+  toast('Venta actualizada','ok');
+  cerrarModal();
+  render();
+}
+
+/* ---------- COMPRA: DETALLE ---------- */
+function modalDetalleCompra(id){
+  const c = state.compras.find(x=>x.id===id);
+  if(!c) return '<div class="empty">Compra no encontrada</div>';
+  return `
+    <div class="modal-head">
+      <div><div class="modal-title">Detalle de compra ${esc(c.id)}</div>
+        <div class="card-subtitle">${fFecha(c.fecha)} · ${c.hora||''}</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="background:var(--surface-soft);padding:12px;border-radius:10px;border:1px solid var(--line-soft)">
+        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600">Proveedor</div>
+        <div style="font-weight:600;margin-top:4px">${esc(c.proveedorNombre||'Sin proveedor')}</div>
+      </div>
+      <div style="background:var(--surface-soft);padding:12px;border-radius:10px;border:1px solid var(--line-soft)">
+        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600">Registrado por</div>
+        <div style="font-weight:600;margin-top:4px">${esc(c.usuarioNombre||'—')}</div>
+        <div style="font-size:11.5px;color:var(--muted)">${fFecha(c.fecha)} · ${c.hora||''}</div>
+      </div>
+    </div>
+    ${c.nota?`<div style="background:var(--info-soft);padding:10px 12px;border-radius:10px;margin-bottom:14px;font-size:12.5px;color:#183a56"><b>Nota:</b> ${esc(c.nota)}</div>`:''}
+    <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Productos (${c.items.length})</div>
+    <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden">
+      <table style="width:100%;margin:0">
+        <thead style="background:var(--surface-soft)"><tr>
+          <th style="text-align:left;padding:8px 12px;font-size:10.5px">Producto</th>
+          <th style="text-align:right;padding:8px 12px;font-size:10.5px">Cant.</th>
+          <th style="text-align:right;padding:8px 12px;font-size:10.5px">Costo</th>
+          <th style="text-align:right;padding:8px 12px;font-size:10.5px">Subtotal</th>
+        </tr></thead>
+        <tbody>${c.items.map(it=>`
+          <tr style="border-top:1px solid var(--line-soft)">
+            <td style="padding:8px 12px">${esc(it.nombre)}</td>
+            <td style="padding:8px 12px;text-align:right">${it.cantidad}</td>
+            <td style="padding:8px 12px;text-align:right">${money(it.costoUnit)}</td>
+            <td style="padding:8px 12px;text-align:right;font-weight:600">${money(it.subtotal)}</td>
+          </tr>`).join('')}</tbody>
+        <tfoot><tr style="border-top:1px solid var(--line)">
+          <td colspan="3" style="padding:10px 12px;text-align:right;font-weight:600">Total</td>
+          <td style="padding:10px 12px;text-align:right;font-weight:700;font-size:15px">${money(c.total)}</td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button>
+      ${esAdmin()&&!mesCerrado(c.fecha)?`<button class="btn btn-primary" onclick="cerrarModal(); setTimeout(()=>abrirModal('editarCompra','${c.id}'),100)">Editar</button>`:''}
+    </div>`;
+}
+
+/* ---------- COMPRA: EDITAR ---------- */
+function modalEditarCompra(id){
+  const c = state.compras.find(x=>x.id===id);
+  if(!c) return '<div class="empty">Compra no encontrada</div>';
+  if(mesCerrado(c.fecha)) return `<div class="modal"><div class="alert alert-warning"><div>Mes cerrado. No se puede editar.</div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button></div></div>`;
+  return `
+    <div class="modal-head">
+      <div><div class="modal-title">Editar compra ${esc(c.id)}</div>
+        <div class="card-subtitle">${fFecha(c.fecha)} · ${c.hora||''}</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="alert alert-warning"><div>Cambios ajustan stock y caja automáticamente.</div></div>
+    <div class="field"><label>Proveedor</label>
+      <select id="mec-prov">
+        <option value="">Sin proveedor</option>
+        ${state.proveedores.map(p=>`<option value="${p.id}" ${c.proveedorId===p.id?'selected':''}>${esc(p.nombre)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field"><label>Nota / factura</label>
+      <input id="mec-nota" value="${esc(c.nota||'')}" placeholder="Ej: Factura 0021">
+    </div>
+    <div class="field"><label>Items (${c.items.length})</label>
+      <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden">
+        ${c.items.map((it,ix)=>`
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 70px 90px 90px 28px;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line-soft)">
+            <div style="min-width:0"><div style="font-weight:500;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.nombre)}</div></div>
+            <input type="number" step="0.01" min="0.01" value="${it.cantidad}" data-mec-cant="${ix}" oninput="recalcEdicionCompraUI('${id}')" style="text-align:right;font-size:12px;padding:5px 6px">
+            <input type="number" step="0.01" min="0" value="${it.costoUnit}" data-mec-costo="${ix}" oninput="recalcEdicionCompraUI('${id}')" style="text-align:right;font-size:12px;padding:5px 6px">
+            <div style="text-align:right;font-weight:600;font-size:12px" data-mec-subtotal="${ix}">${money(it.subtotal)}</div>
+            <button type="button" class="btn-ghost" style="color:var(--danger);padding:2px 4px;font-size:14px" onclick="quitarItemEdicionCompra('${id}',${ix})">×</button>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div style="background:var(--surface-soft);padding:14px;border-radius:10px;display:flex;justify-content:space-between;align-items:baseline;border:1px solid var(--line-soft)">
+      <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Total nuevo</span>
+      <span style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums" id="mec-total">${money(c.total)}</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEdicionCompra('${id}')">Guardar cambios</button>
+    </div>`;
+}
+
+function recalcEdicionCompraUI(compraId){
+  const c = state.compras.find(x=>x.id===compraId); if(!c) return;
+  let total = 0;
+  c.items.forEach((it,ix)=>{
+    const cant = num2(Number(document.querySelector(`[data-mec-cant="${ix}"]`)?.value)||0);
+    const costo = num2(Number(document.querySelector(`[data-mec-costo="${ix}"]`)?.value)||0);
+    const sub = num2(cant*costo);
+    const subEl = document.querySelector(`[data-mec-subtotal="${ix}"]`);
+    if(subEl) subEl.textContent = money(sub);
+    total = num2(total+sub);
+  });
+  const t = $('mec-total'); if(t) t.textContent = money(total);
+}
+
+function quitarItemEdicionCompra(compraId, ix){
+  ui.compraEliminarItems = ui.compraEliminarItems || {};
+  ui.compraEliminarItems[compraId] = ui.compraEliminarItems[compraId] || new Set();
+  ui.compraEliminarItems[compraId].add(ix);
+  const el = document.querySelector(`[data-mec-cant="${ix}"]`)?.closest('div[style*="grid-template-columns"]');
+  if(el){ el.style.opacity='.35'; el.style.textDecoration='line-through'; el.style.pointerEvents='none'; }
+  recalcEdicionCompraUI(compraId);
+}
+
+function guardarEdicionCompra(id){
+  const c = state.compras.find(x=>x.id===id);
+  if(!c) return toast('Compra no encontrada','err');
+  if(mesCerrado(c.fecha)) return toast('Mes cerrado','err');
+  if(!esAdmin()) return toast('Solo admin','err');
+
+  const elim = ui.compraEliminarItems?.[id] || new Set();
+  const itemsNuevos = [];
+  c.items.forEach((it,ix)=>{
+    if(elim.has(ix)) return;
+    const cant = num2(Number(document.querySelector(`[data-mec-cant="${ix}"]`)?.value)||0);
+    const costo = num2(Number(document.querySelector(`[data-mec-costo="${ix}"]`)?.value)||0);
+    if(!(cant>0.001)) return;
+    if(costo<0) return;
+    itemsNuevos.push({...it, cantidad:cant, costoUnit:costo, subtotal:num2(cant*costo)});
+  });
+  if(itemsNuevos.length===0) return toast('Debe haber al menos un item','err');
+
+  const nuevoTotal = num2(itemsNuevos.reduce((a,i)=>a+i.subtotal,0));
+
+  // Revertir stock viejo
+  c.items.forEach(it=>{
+    const p = prodById(it.productoId);
+    if(p) p.stock = num2((p.stock||0) - it.cantidad);
+  });
+  eliminarMovimientosPorRef(id);
+
+  // Aplicar stock nuevo
+  itemsNuevos.forEach(it=>{
+    const p = prodById(it.productoId);
+    if(p) p.stock = num2((p.stock||0) + it.cantidad);
+  });
+
+  const nuevoProvId = $('mec-prov').value || null;
+  const nuevaNota = $('mec-nota').value.trim();
+  const nuevoProv = nuevoProvId ? provById(nuevoProvId) : null;
+
+  c.proveedorId = nuevoProvId;
+  c.proveedorNombre = nuevoProv ? nuevoProv.nombre : 'Sin proveedor';
+  c.nota = nuevaNota;
+  c.items = itemsNuevos;
+  c.total = nuevoTotal;
+
+  agregarMovimientoCaja('compra', -nuevoTotal, `Compra ${id} · ${c.proveedorNombre}`, id);
+
+  if(ui.compraEliminarItems?.[id]) delete ui.compraEliminarItems[id];
+
+  toast('Compra actualizada','ok');
+  cerrarModal();
+  render();
+}
+
+/* ---------- GASTO: EDITAR ---------- */
+function modalEditarGasto(id){
+  const g = state.gastos.find(x=>x.id===id);
+  if(!g) return '<div class="empty">Gasto no encontrado</div>';
+  if(mesCerrado(g.fecha)) return `<div class="modal"><div class="alert alert-warning"><div>Mes cerrado. No se puede editar.</div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button></div></div>`;
+  return `
+    <div class="modal-head">
+      <div><div class="modal-title">Editar gasto ${esc(g.id)}</div>
+        <div class="card-subtitle">Registrado por ${esc(g.usuarioNombre||'—')} · ${fFecha(g.fecha)} ${g.hora||''}</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="alert alert-warning"><div>El movimiento de caja se actualiza automáticamente.</div></div>
+    <div class="field"><label>Categoría *</label>
+      <select id="meg-cat">
+        ${state.categoriasGastos.map(c=>`<option value="${esc(c)}" ${g.categoria===c?'selected':''}>${esc(c)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field"><label>Monto (Bs) *</label>
+      <div class="money-input-wrap"><input id="meg-monto" type="number" step="0.01" min="0.01" value="${g.monto}"></div>
+    </div>
+    <div class="field"><label>Descripción</label>
+      <input id="meg-desc" value="${esc(g.descripcion||'')}">
+    </div>
+    <div class="field"><label>Fecha</label>
+      <input id="meg-fecha" type="date" value="${g.fecha}" max="${HOY()}">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEdicionGasto('${id}')">Guardar cambios</button>
+    </div>`;
+}
+
+function guardarEdicionGasto(id){
+  const g = state.gastos.find(x=>x.id===id);
+  if(!g) return toast('Gasto no encontrado','err');
+  if(mesCerrado(g.fecha)) return toast('Mes cerrado','err');
+  if(!esAdmin()) return toast('Solo admin','err');
+
+  const cat = $('meg-cat').value;
+  const monto = num2(Number($('meg-monto').value)||0);
+  const desc = $('meg-desc').value.trim();
+  const fecha = $('meg-fecha').value || g.fecha;
+  if(!(monto>0)) return toast('Monto inválido','err');
+  if(bloquearMesCerrado(fecha,'Editar gasto')) return;
+
+  eliminarMovimientosPorRef(id);
+  g.fecha = fecha;
+  g.categoria = cat;
+  g.monto = monto;
+  g.descripcion = desc || cat;
+  agregarMovimientoCaja('gasto', -monto, 'Gasto · '+cat+(desc?' · '+desc:''), id);
+
+  toast('Gasto actualizado','ok');
+  cerrarModal(); render();
+}
+
+/* ---------- MOVIMIENTO DE CAJA MANUAL: EDITAR ---------- */
+function modalEditarMovimientoCaja(id){
+  const m = state.caja.movimientos.find(x=>x.id===id);
+  if(!m) return '<div class="empty">Movimiento no encontrado</div>';
+  if(m.referencia) return `<div class="modal"><div class="alert alert-warning"><div>Este movimiento está vinculado a una venta/compra/abono. Editalo desde esa sección.</div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button></div></div>`;
+  if(mesCerrado(m.fecha)) return `<div class="modal"><div class="alert alert-warning"><div>Mes cerrado. No se puede editar.</div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button></div></div>`;
+  const tipos = [
+    {v:'aporte', label:'Aporte (entra)'},
+    {v:'retiro', label:'Retiro (sale)'},
+    {v:'gasto', label:'Gasto (sale)'},
+    {v:'pago_cuenta', label:'Pago cuenta (sale)'},
+    {v:'recarga_reposicion', label:'Reponer bolsa (sale)'},
+  ];
+  return `
+    <div class="modal-head">
+      <div><div class="modal-title">Editar movimiento ${esc(m.id)}</div>
+        <div class="card-subtitle">Registrado por ${esc(m.usuarioNombre||'—')} · ${fFecha(m.fecha)} ${m.hora||''}</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="alert alert-warning"><div>Solo movimientos manuales (sin referencia a venta/compra/abono).</div></div>
+    <div class="field"><label>Tipo</label>
+      <select id="mem-tipo">
+        ${tipos.map(t=>`<option value="${t.v}" ${m.tipo===t.v?'selected':''}>${t.label}</option>`).join('')}
+      </select>
+    </div>
+    <div class="field"><label>Monto (Bs)</label>
+      <div class="money-input-wrap"><input id="mem-monto" type="number" step="0.01" min="0.01" value="${Math.abs(m.monto)}"></div>
+    </div>
+    <div class="field"><label>Descripción</label>
+      <input id="mem-desc" value="${esc(m.descripcion||'')}">
+    </div>
+    <div class="field"><label>Fecha</label>
+      <input id="mem-fecha" type="date" value="${m.fecha}" max="${HOY()}">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarEdicionMovimientoCaja('${id}')">Guardar cambios</button>
+    </div>`;
+}
+
+function guardarEdicionMovimientoCaja(id){
+  const m = state.caja.movimientos.find(x=>x.id===id);
+  if(!m) return toast('Movimiento no encontrado','err');
+  if(m.referencia) return toast('Usá la sección de origen','err');
+  if(mesCerrado(m.fecha)) return toast('Mes cerrado','err');
+  if(!esAdmin()) return toast('Solo admin','err');
+
+  const tipo = $('mem-tipo').value;
+  const monto = num2(Number($('mem-monto').value)||0);
+  const desc = $('mem-desc').value.trim();
+  const fecha = $('mem-fecha').value || m.fecha;
+  if(!(monto>0)) return toast('Monto inválido','err');
+
+  const signos = {
+    aporte: 1, retiro: -1, gasto: -1, pago_cuenta: -1, recarga_reposicion: -1,
+  };
+  m.tipo = tipo;
+  m.fecha = fecha;
+  m.monto = num2(monto * (signos[tipo]||1));
+  m.descripcion = desc || m.descripcion;
+
+  toast('Movimiento actualizado','ok');
+  cerrarModal(); render();
+}
+
+/* ---------- ABONO: DETALLE ---------- */
+function modalDetalleAbono(id){
+  const a = state.abonos.find(x=>x.id===id);
+  if(!a) return '<div class="empty">Cobro no encontrado</div>';
+  const c = state.clientes.find(x=>x.id===a.clienteId);
+  return `
+    <div class="modal-head">
+      <div><div class="modal-title">Detalle de cobro ${esc(a.id)}</div>
+        <div class="card-subtitle">${fFecha(a.fecha)} · ${a.hora||''}${a.anulado?' · ANULADO':''}</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="background:var(--surface-soft);padding:12px;border-radius:10px;border:1px solid var(--line-soft)">
+        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600">Cliente</div>
+        <div style="font-weight:600;margin-top:4px">${esc(c?.nombre||'—')}</div>
+        ${c?`<div style="font-size:11.5px;color:var(--muted)">${esc(c.comunidad||'')}</div>`:''}
+      </div>
+      <div style="background:var(--surface-soft);padding:12px;border-radius:10px;border:1px solid var(--line-soft)">
+        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600">Cobrado por</div>
+        <div style="font-weight:600;margin-top:4px">${esc(a.usuarioNombre||'—')}</div>
+      </div>
+    </div>
+    <div style="background:var(--surface-soft);padding:14px;border-radius:10px;border:1px solid var(--line-soft);margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>Entregado por el cliente</span><b>${money(a.entregado??a.monto)}</b></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>Aplicado a deuda</span><b style="color:var(--success)">+ ${money(a.monto)}</b></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>Vuelta</span><b>${a.vuelta>0.001?money(a.vuelta):'—'}</b></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-top:1px solid var(--line);margin-top:6px;padding-top:8px"><span>Deuda vieja cobrada</span><b>${money(a.aplicadoCapital||0)}</b></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0"><span>Ventas cobradas</span><b>${money(a.aplicadoVentas||0)}</b></div>
+    </div>
+    ${Array.isArray(a.ventasAplicadas)&&a.ventasAplicadas.length>0?`
+      <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Ventas aplicadas</div>
+      <div style="border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:14px">
+        <table style="width:100%;margin:0">
+          <thead style="background:var(--surface-soft)"><tr>
+            <th style="text-align:left;padding:8px 12px;font-size:10.5px">Venta</th>
+            <th style="text-align:left;padding:8px 12px;font-size:10.5px">Fecha</th>
+            <th style="text-align:right;padding:8px 12px;font-size:10.5px">Aplicado</th>
+          </tr></thead>
+          <tbody>${a.ventasAplicadas.map(x=>{
+            const v = state.ventas.find(y=>y.id===x.ventaId);
+            return `<tr style="border-top:1px solid var(--line-soft)">
+              <td style="padding:8px 12px">${esc(x.ventaId)}</td>
+              <td style="padding:8px 12px">${fFecha(v?.fecha||'')}</td>
+              <td style="padding:8px 12px;text-align:right;font-weight:600">${money(x.monto)}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>
+    `:''}
+    ${a.anulado?`<div class="alert alert-danger"><div><b>Anulado</b> por ${esc(a.anuladoPorNombre||'—')} el ${fFecha(a.anuladoFecha)} ${a.anuladoHora||''}. La deuda fue restaurada.</div></div>`:''}
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button>
+      ${!a.anulado&&(esAdmin()||a.usuarioId===usuarioActual?.id)&&!mesCerrado(mesDe(a.fecha))?`<button class="btn btn-danger" onclick="cerrarModal(); setTimeout(()=>accionAnularCobro('${a.id}'),100)">Anular cobro</button>`:''}
+    </div>`;
+}
+
+function abrirModalDetalleGasto(id){
+  const g = state.gastos.find(x=>x.id===id); if(!g) return;
+  ui.modal={tipo:'confirmar',data:{
+    criticidad:'info',
+    titulo:'Detalle de gasto '+g.id,
+    mensaje:'',
+    detalle:`
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12.5px;margin-top:8px">
+        <div><b>Fecha:</b> ${fFecha(g.fecha)} ${g.hora||''}</div>
+        <div><b>Categoría:</b> ${esc(g.categoria)}</div>
+        <div><b>Monto:</b> ${money(g.monto)}</div>
+        <div><b>Registrado por:</b> ${esc(g.usuarioNombre||'—')}</div>
+        <div style="grid-column:1/-1"><b>Descripción:</b> ${esc(g.descripcion||'—')}</div>
+      </div>`,
+    textoBoton:'Cerrar',
+    textoCancelar:'Cerrar',
+    onConfirm:cerrarModal,
+  }};
+  renderModal();
+}
+
+function abrirModalDetalleMovimientoCaja(id){
+  const m = state.caja.movimientos.find(x=>x.id===id); if(!m) return;
+  ui.modal={tipo:'confirmar',data:{
+    criticidad:'info', titulo:'Detalle de movimiento '+m.id, mensaje:'',
+    detalle:`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12.5px;margin-top:8px">
+      <div><b>Fecha:</b> ${fFecha(m.fecha)} ${m.hora||''}</div>
+      <div><b>Tipo:</b> ${esc(m.tipo)}</div>
+      <div><b>Monto:</b> ${money(m.monto)}</div>
+      <div><b>Registrado por:</b> ${esc(m.usuarioNombre||'—')}</div>
+      <div style="grid-column:1/-1"><b>Descripción:</b> ${esc(m.descripcion||'—')}</div>
+      ${m.referencia?`<div style="grid-column:1/-1"><b>Referencia:</b> ${esc(m.referencia)}</div>`:''}
+    </div>`,
+    textoBoton:'Cerrar', textoCancelar:'Cerrar', onConfirm:cerrarModal,
+  }};
+  renderModal();
+}
 </script>
 </body>
 </html>
