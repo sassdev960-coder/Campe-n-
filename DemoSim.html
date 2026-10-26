@@ -1064,7 +1064,15 @@ async function cargarStateDesdeSupabase(){
 
   const estadoGuardado = negocioSnapshot?.config?.__simgest_state;
   if(estadoGuardado && typeof estadoGuardado === 'object'){
-    localStorage.setItem('simgest_v18', JSON.stringify(estadoGuardado));
+    // El JSONB es la fuente de datos compartidos del negocio. Clonamos para no
+    // modificar el objeto recibido y restauramos la sesión elegida en ESTE equipo.
+    const estadoLocal = JSON.parse(JSON.stringify(estadoGuardado));
+    const claveUsuarioLocal = USER_SESSION_KEY_PREFIX + negId;
+    const usuarioLocalId = localStorage.getItem(claveUsuarioLocal);
+    if(usuarioLocalId && Array.isArray(estadoLocal.usuarios) && estadoLocal.usuarios.some(u => String(u.id) === String(usuarioLocalId))){
+      estadoLocal.usuarioActualId = usuarioLocalId;
+    }
+    localStorage.setItem(LS_KEY, JSON.stringify(estadoLocal));
     return;
   }
 
@@ -1285,8 +1293,12 @@ async function cargarStateDesdeSupabase(){
   s.seq.banco = maxCod(bancosQ.data, 'B');
   s.seq.ajusteBolsa = maxCod(ajustesQ.data, 'AB');
 
-  // Guardar en localStorage con la clave actual
-  localStorage.setItem('simgest_v18', JSON.stringify(s));
+  // Guardar en localStorage con la clave actual, respetando la sesión local de este equipo.
+  const claveUsuarioLocal = USER_SESSION_KEY_PREFIX + negId;
+  const usuarioLocalId = localStorage.getItem(claveUsuarioLocal);
+  if(usuarioLocalId && s.usuarios.some(u => String(u.id) === String(usuarioLocalId))) s.usuarioActualId = usuarioLocalId;
+  else if(s.usuarioActualId && s.usuarios.some(u => String(u.id) === String(s.usuarioActualId))) localStorage.setItem(claveUsuarioLocal, String(s.usuarioActualId));
+  localStorage.setItem(LS_KEY, JSON.stringify(s));
 }
 
 /* ---------- SYNC (localStorage → Supabase) ---------- */
@@ -1311,9 +1323,13 @@ async function subirStateASupabase(s){
 
   // Guardar copia íntegra del estado en el JSONB config del negocio.
   // No se borran ni se reemplazan las tablas relacionales existentes.
+  // No compartir el usuario seleccionado: cada PC/cajero mantiene su propia sesión.
+  // El resto del estado (usuarios internos, ventas, caja y movimientos) sí se comparte íntegro.
+  const estadoCompartido = JSON.parse(JSON.stringify(s));
+  delete estadoCompartido.usuarioActualId;
   const configGuardada = {
     ...(s.config || {}),
-    __simgest_state: s
+    __simgest_state: estadoCompartido
   };
 
   const { error } = await sb
@@ -1352,6 +1368,8 @@ function traducirError(msg){
 const UNIDADES = ['unidad','kg','litro','gramo','ml','caja','paquete','docena','metro','bolivianos'];
 const CATEGORIAS_GASTOS_DEFAULT = ['Alquiler','Servicios (luz/agua/internet)','Transporte','Sueldos','Mantenimiento','Insumos de oficina','Impuestos','Otros'];
 const LS_KEY = 'simgest_v18';
+// La identidad seleccionada es local por dispositivo; nunca debe compartirse en el JSONB del negocio.
+const USER_SESSION_KEY_PREFIX = 'simgest_usuario_actual_v18:';
 const MAX_CAJEROS = 8;
 const MAX_COBRADORES = 8;
 const CLIENTES_POR_PAGINA = 15;
@@ -1688,6 +1706,7 @@ function renderUsuarioSelector(){
 function cambiarUsuario(id){
   const u=userById(id); if(!u) return;
   usuarioActual=u; state.usuarioActualId=u.id;
+  try{ localStorage.setItem(USER_SESSION_KEY_PREFIX + (sbNegocioId || 'local'), String(u.id)); }catch(e){}
   const disponibles=tabsDisponibles().map(t=>t.id);
   if(!disponibles.includes(vista)) vista=disponibles[0];
   ui.ventaCarrito=[]; ui.compraCarrito=[]; ui.clienteAbierto=null;
@@ -4939,15 +4958,23 @@ window.arrancarApp = async function(){
       }
     });
     state.usuarios.forEach(u=>{ if(!['admin','cajero','cobrador'].includes(u.rol)) u.rol='cajero'; });
-    // Al terminar de cargar el estado local/snapshot, sincronizar perfiles a la tabla relacional.
-    await sincronizarUsuariosRelacionales();
+    // Los usuarios internos y sus movimientos se leen del JSONB __simgest_state.
+    // No dependemos de public.usuarios para reconstruir ni sobrescribir esos perfiles.
     state.bancos.forEach(b=>{ if(!b.movimientos) b.movimientos=[]; });
 
     migrarDatosViejos();
     state.proveedores.forEach(p=>{ bolsaDe(p.id,'paso'); bolsaDe(p.id,'paquete'); });
 
-    usuarioActual=userById(state.usuarioActualId)||state.usuarios[0];
+    const claveUsuarioLocal = USER_SESSION_KEY_PREFIX + (sbNegocioId || 'local');
+    const usuarioLocalId = localStorage.getItem(claveUsuarioLocal);
+    // En un dispositivo nuevo, iniciar como administrador para poder revisar todo;
+    // cada cajero puede elegir su perfil y esa selección queda guardada solo en ese equipo.
+    usuarioActual=userById(usuarioLocalId)||state.usuarios.find(u=>u.rol==='admin')||state.usuarios[0];
     state.usuarioActualId=usuarioActual.id;
+    localStorage.setItem(claveUsuarioLocal, String(usuarioActual.id));
+    // Repara movimientos de ventas existentes usando el usuario de la venta asociada.
+    // Ejemplo detectado: V137 pertenece a U3, pero su movimiento M67 tenía U1.
+    reconciliarMovimientosVentasCaja();
     $('avatarIni').textContent=iniciales(usuarioActual.nombre);
     $('avatarIni').style.background=usuarioActual.color||'#8a6d3b';
     $('rolLbl').textContent=usuarioActual.rol==='admin'?'Administrador':usuarioActual.rol==='cajero'?'Cajero':'Cobrador';
