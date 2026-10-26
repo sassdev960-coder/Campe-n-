@@ -1485,6 +1485,7 @@ function renderModal(){
   else if(tipo==='montoLibreRecarga') contenido=modalMontoLibreRecarga(id);
   else if(tipo==='editarVenta') contenido=modalEditarVenta(id);
     else if(tipo==='detalleVenta') contenido=modalDetalleVenta(id);
+  else if(tipo==='detalleCompra') contenido=modalDetalleCompra(id);
   else if(tipo==='editarCompra') contenido=modalEditarCompra(id);
   
   root.innerHTML=`<div class="modal-overlay" onclick="if(event.target===this) cerrarModal()"><div class="modal${tipo==='confirmar'?' modal-alert':''}">${contenido}</div></div>`;
@@ -1530,6 +1531,59 @@ function modalEditarVenta(id){
     <div class="field"><label>Método de pago</label><select id="m-editar-venta-metodo"><option value="efectivo" ${metodo==='efectivo'?'selected':''}>Efectivo</option><option value="transferencia" ${metodo==='transferencia'?'selected':''}>Transferencia</option><option value="pendiente" ${metodo==='pendiente'?'selected':''}>Pendiente / aún no pagado</option><option value="sin_registro" ${metodo==='sin_registro'?'selected':''}>No registrado</option></select></div>
     <div class="hint" style="margin:8px 0 14px">Tipo de venta: <strong>${v.tipoPago==='contado'?'Contado':'Crédito'}</strong>. El cliente de una venta a crédito debe corresponder a un cliente registrado para mantener correctamente su deuda.</div>
     <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button><button class="btn btn-primary" onclick="guardarEdicionVenta('${esc(v.id)}')">Guardar cambios</button></div>`;
+}
+
+function modalDetalleCompra(id){
+  const c = state.compras.find(x => String(x.id) === String(id));
+  if(!c) return `<div class="modal-head"><div class="modal-title">Compra no encontrada</div><button class="modal-close" onclick="cerrarModal()">×</button></div><div class="empty">No se encontró el registro de compra solicitado.</div>`;
+  const items = Array.isArray(c.items) ? c.items : [];
+  const lineas = items.map((it, ix) => {
+    const cantidad = Number(it.cantidad) || 0;
+    const costoUnit = it.costoUnit != null ? Number(it.costoUnit) : (cantidad ? Number(it.subtotal || 0) / cantidad : 0);
+    const subtotal = it.subtotal != null ? Number(it.subtotal) : cantidad * costoUnit;
+    return `<tr>
+      <td style="color:var(--muted)">${ix + 1}</td>
+      <td><strong>${esc(it.nombre || 'Producto sin nombre')}</strong>${it.unidad ? `<div style="font-size:11px;color:var(--muted)">Unidad: ${esc(it.unidad)}</div>` : ''}</td>
+      <td class="num">${cantidad}</td>
+      <td class="num">${money(costoUnit)}</td>
+      <td class="num bold">${money(subtotal)}</td>
+    </tr>`;
+  }).join('');
+  const totalUnidades = items.reduce((sum, it) => sum + (Number(it.cantidad) || 0), 0);
+  const proveedor = c.proveedorNombre || (c.proveedorId ? (provById(c.proveedorId)?.nombre || 'Proveedor no disponible') : 'Sin proveedor');
+  const fechaHora = `${fFecha(c.fecha)}${c.hora ? ' · ' + esc(c.hora) : ''}`;
+  return `
+    <div class="modal-head">
+      <div>
+        <div class="modal-title">Detalle de la compra ${esc(c.id)}</div>
+        <div class="card-subtitle">${fechaHora} · ${esc(proveedor)}</div>
+      </div>
+      <button class="modal-close" aria-label="Cerrar detalles" onclick="cerrarModal()">×</button>
+    </div>
+    <div class="alert alert-info" style="margin-bottom:14px">
+      <div><strong>Referencia:</strong> ${esc(c.id)}<br>
+      <strong>Proveedor:</strong> ${esc(proveedor)}<br>
+      <strong>Fecha y hora:</strong> ${fechaHora}<br>
+      <strong>Registrado por:</strong> ${esc(c.usuarioNombre || 'No registrado')}</div>
+    </div>
+    <div class="grid-3" style="margin-bottom:14px;gap:10px">
+      <div class="kpi" style="border:1px solid var(--line-soft);box-shadow:none"><div class="kpi-label">Productos / líneas</div><div class="kpi-value" style="font-size:22px">${items.length}</div><div class="hint">Renglones de esta compra</div></div>
+      <div class="kpi" style="border:1px solid var(--line-soft);box-shadow:none"><div class="kpi-label">Unidades compradas</div><div class="kpi-value" style="font-size:22px">${totalUnidades}</div><div class="hint">Suma de las cantidades</div></div>
+      <div class="kpi" style="border:1px solid var(--line-soft);box-shadow:none"><div class="kpi-label">Total de compra</div><div class="kpi-value" style="font-size:22px">${money(c.total)}</div><div class="hint">Importe registrado</div></div>
+    </div>
+    <div style="font-weight:700;margin:0 0 8px">Productos incluidos en la compra</div>
+    <div class="table-wrap">
+      <table style="min-width:520px">
+        <thead><tr><th>#</th><th>Producto</th><th class="num">Cantidad</th><th class="num">Costo unitario</th><th class="num">Subtotal</th></tr></thead>
+        <tbody>${lineas || '<tr><td colspan="5" class="empty">Esta compra no tiene productos detallados guardados.</td></tr>'}</tbody>
+        <tfoot><tr style="border-top:2px solid var(--line)"><td colspan="4" class="bold" style="text-align:right">TOTAL DE LA COMPRA:</td><td class="num bold" style="font-size:16px">${money(c.total)}</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="alert alert-warning" style="margin-top:14px;margin-bottom:0">
+      <div><strong>Nota / factura:</strong><br>${c.nota ? esc(c.nota) : 'No se registró ninguna nota ni número de factura.'}</div>
+    </div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button></div>
+  `;
 }
 
   function modalEditarCompra(id){
@@ -3159,7 +3213,7 @@ function viewCompras(){
     <div class="search-wrap"><input id="inpCompraHist" placeholder="Buscar proveedor o referencia..." value="${esc(qCompra)}" oninput="ui.buscarCompraHist=this.value; renderConservarFoco('inpCompraHist')"></div>
     <div class="grid-2" style="margin:10px 0 8px"><div class="field"><label>Fecha desde</label><input type="date" value="${esc(ui.fechaInicioCompras)}" max="${esc(ui.fechaFinCompras||'')}" onchange="ui.fechaInicioCompras=this.value"></div><div class="field"><label>Fecha hasta</label><input type="date" value="${esc(ui.fechaFinCompras)}" min="${esc(ui.fechaInicioCompras||'')}" onchange="ui.fechaFinCompras=this.value"></div></div>
     <div class="btn-row" style="margin-bottom:12px"><button class="btn btn-primary btn-sm" onclick="aplicarRangoCompras()">Buscar rango</button><button class="btn btn-outline btn-sm" onclick="limpiarRangoCompras()">Limpiar filtros</button><span class="hint">${(ui.fechaInicioComprasAplicada||ui.fechaFinComprasAplicada)?'Filtro aplicado: '+(ui.fechaInicioComprasAplicada||'inicio')+' a '+(ui.fechaFinComprasAplicada||'hoy'):'Selecciona las fechas y pulsa Buscar rango.'}</span></div>
-    <div class="table-wrap"><table><thead><tr><th>Ref.</th><th>Fecha</th><th>Proveedor</th><th class="num">Total</th><th></th></tr></thead><tbody>${comprasHist.map(c=>`<tr><td><span class="badge badge-neutral">${c.id}</span></td><td>${fFecha(c.fecha)}</td><td>${esc(c.proveedorNombre)}</td><td class="num bold">${money(c.total)}</td><td class="num" style="white-space:nowrap">${!mesCerrado(c.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('editarCompra','${c.id}')">Editar</button><button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarCompra('${c.id}')">Eliminar</button>`:'<span class="badge badge-neutral">🔒 Mes cerrado</span>'}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">Sin compras en este rango</td></tr>'}</tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>Ref.</th><th>Fecha</th><th>Proveedor</th><th class="num">Total</th><th></th></tr></thead><tbody>${comprasHist.map(c=>`<tr><td><span class="badge badge-neutral">${c.id}</span></td><td>${fFecha(c.fecha)}</td><td>${esc(c.proveedorNombre)}</td><td class="num bold">${money(c.total)}</td><td class="num" style="white-space:nowrap"><button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('detalleCompra','${c.id}')">Ver detalles</button>${!mesCerrado(c.fecha)?`<button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('editarCompra','${c.id}')">Editar</button><button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarCompra('${c.id}')">Eliminar</button>`:'<span class="badge badge-neutral">🔒 Mes cerrado</span>'}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">Sin compras en este rango</td></tr>'}</tbody></table></div>
   </div>`;
 }
 
