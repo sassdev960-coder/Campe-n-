@@ -3584,18 +3584,22 @@ function confirmarCerrarTurno(turnoId,teorico){
       t.saldoCierre=num2(saldo); t.fechaCierre=HOY(); t.horaCierre=horaActual();
       t.estado='cerrado'; t.obsCierre=obs; t.diferencia=dif;
       toast('Turno cerrado','ok'); cerrarModal(); render();
-      // 🔄 Auto-sync a tablas normalizadas (silencioso, no bloquea)
-      setTimeout(async () => {
-        try {
-          if(typeof migrarATablas === 'function' && sb && sbNegocioId){
-            console.log('[auto-sync] Sincronizando tablas tras cierre de turno...');
-            await migrarATablas();
-            console.log('[auto-sync] OK');
+
+      // Auto-sync a tablas normalizadas SOLO si es admin y sin diálogo.
+      // Los cajeros ya sincronizan por syncToCloud → JSONB (negocios.estado).
+      if(esAdmin()){
+        setTimeout(async () => {
+          try {
+            if(typeof migrarATablas === 'function' && sb && sbNegocioId){
+              console.log('[auto-sync] Sincronizando tablas tras cierre de turno...');
+              await migrarATablas(true);   // true = modo silencioso
+              console.log('[auto-sync] OK');
+            }
+          } catch(e){
+            console.warn('[auto-sync] Error (no bloquea):', e.message);
           }
-        } catch(e){
-          console.warn('[auto-sync] Error (no bloquea):', e.message);
-        }
-      }, 1500);
+        }, 1500);
+      }
     }
   });
 }
@@ -6030,10 +6034,10 @@ async function cargarExistentes(tabla, columna){
   return new Set((data||[]).map(r => r[columna]));
 }
 
-window.migrarATablas = async function(){
-  if(!sb || !sbNegocioId){ alert('❌ Sin conexión a Supabase'); return; }
-  if(!esAdmin()){ alert('❌ Solo admin'); return; }
-  if(!confirm('¿Sincronizar JSONB → tablas normalizadas?\n\nEs idempotente: correrlo 2 veces no duplica.\nTarda 1-3 minutos. NO cierres esta pestaña.')) return;
+  window.migrarATablas = async function(silencioso){
+  if(!sb || !sbNegocioId){ if(!silencioso) alert('❌ Sin conexión a Supabase'); return; }
+  if(!esAdmin()){ if(!silencioso) alert('❌ Solo admin'); return; }
+  if(!silencioso && !confirm('¿Sincronizar JSONB → tablas normalizadas?\n\nEs idempotente: correrlo 2 veces no duplica.\nTarda 1-3 minutos. NO cierres esta pestaña.')) return;
 
   console.clear();
   console.log('%c🔄 SYNC INICIADO', 'font-size:16px;font-weight:bold;color:#2d6a4f');
