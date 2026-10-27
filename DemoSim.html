@@ -1888,8 +1888,10 @@ function renderModal(){
   else if(tipo==='configurarCapital') contenido=modalConfigurarCapital();
   else if(tipo==='editarCapital') contenido=modalEditarCapital();
   else if(tipo==='nuevoBanco'||tipo==='editarBanco') contenido=modalBanco(id);
+    
   else if(tipo==='movimientoBanco') contenido=modalMovimientoBanco(id);
   else if(tipo==='montoLibreRecarga') contenido=modalMontoLibreRecarga(id);
+  else if(tipo==='cantidadProducto') contenido=modalCantidadProducto(id);   // ← NUEVA
   root.innerHTML=`<div class="modal-overlay" onclick="if(event.target===this) cerrarModal()"><div class="modal${tipo==='confirmar'?' modal-alert':''}">${contenido}</div></div>`;
   if(tipo==='abono') setTimeout(()=>{const el=$('m-abono-monto')||$('m-abono-entregado'); if(el){el.focus(); el.select();}},50);
   if(tipo==='agregarDinero'||tipo==='retirarDinero') setTimeout(()=>{const el=$('m-dinero-monto'); if(el) el.focus();},50);
@@ -1898,6 +1900,7 @@ function renderModal(){
   if(tipo==='nuevaCuentaPagar'||tipo==='pagarCuenta') setTimeout(()=>{const el=$('m-cuenta-monto'); if(el) el.focus();},50);
   if(tipo==='registrarBonificacion'||tipo==='ajustarSaldo') setTimeout(()=>{const el=$('m-bonif-monto'); if(el) el.focus();},50);
   if(tipo==='montoLibreRecarga') setTimeout(()=>{const el=$('m-monto-libre'); if(el){el.focus(); el.select();}},50);
+  if(tipo==='cantidadProducto')  setTimeout(()=>{const el=$('m-cantidad-prod'); if(el){el.focus(); el.select();}},50);  // ← NUEVA
   if(tipo==='configurarCapital'||tipo==='editarCapital'){ setTimeout(()=>{const el=$('m-cap-efectivo'); if(el) el.focus();},50); recalcularCapitalTotal(); }
 }
 function modalConfirmar(d){
@@ -2899,6 +2902,76 @@ function modalMontoLibreRecarga(productoId){
     </div>`;
 }
 
+  function modalCantidadProducto(productoId){
+  const p = prodById(productoId); if(!p) return '';
+  const enCarrito = ui.ventaCarrito.filter(i=>i.productoId===productoId).reduce((a,i)=>a+i.cantidad,0);
+  const disponible = num2(p.stock - enCarrito);
+
+  if(disponible <= 0) return `
+    <div class="modal-head"><div><div class="modal-title">${esc(p.nombre)}</div></div>
+    <button class="modal-close" onclick="cerrarModal()">×</button></div>
+    <div class="alert alert-danger"><div><b>Sin stock disponible.</b><br>Ya tienes ${enCarrito} en el carrito de ${p.stock} disponible(s).</div></div>
+    <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button></div>`;
+
+  const rapidos = [1,5,10,20,50,100].filter(n=>n<=disponible);
+
+  return `
+    <div class="modal-head">
+      <div><div class="modal-title">${esc(p.nombre)}</div>
+        <div class="card-subtitle">Precio ${money(p.precio)} · Stock ${p.stock} ${unidadAbrev(p.unidad)}${enCarrito>0?` · En carrito: ${enCarrito}`:''}</div></div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
+    ${rapidos.length>1?`
+      <div class="field" style="margin-bottom:10px">
+        <label>Cantidad rápida</label>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          ${rapidos.map(n=>`<button type="button" class="filter-tab"
+            onclick="document.getElementById('m-cantidad-prod').value=${n}; previewCantidadProducto('${productoId}')">${n}</button>`).join('')}
+        </div>
+      </div>`:''}
+    <div class="field">
+      <label>Cantidad a vender *</label>
+      <input id="m-cantidad-prod" type="number" step="0.01" min="0.01" max="${disponible}" value="1"
+        oninput="previewCantidadProducto('${productoId}')"
+        onkeydown="if(event.key==='Enter'){event.preventDefault(); confirmarCantidadProducto('${productoId}')}">
+      <div class="hint">Disponible para vender: <b>${disponible} ${unidadAbrev(p.unidad)}</b></div>
+    </div>
+    <div id="preview-cantidad-prod"
+      style="background:var(--surface-soft);padding:14px;border-radius:10px;display:flex;justify-content:space-between;align-items:baseline;border:1px solid var(--line-soft)">
+      <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Subtotal</span>
+      <span style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums">${money(p.precio)}</span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-success" onclick="confirmarCantidadProducto('${productoId}')">Agregar al carrito</button>
+    </div>`;
+}
+
+function previewCantidadProducto(productoId){
+  const p = prodById(productoId); if(!p) return;
+  const el = $('m-cantidad-prod'); if(!el) return;
+  const prev = $('preview-cantidad-prod'); if(!prev) return;
+  const cant = num2(Number(el.value)||0);
+  const enCarrito = ui.ventaCarrito.filter(i=>i.productoId===productoId).reduce((a,i)=>a+i.cantidad,0);
+  const disponible = num2(p.stock - enCarrito);
+  const excede = cant > disponible + 0.001;
+  prev.innerHTML = `
+    <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:${excede?'var(--danger)':'var(--muted)'}">${excede?'Excede stock':'Subtotal'}</span>
+    <span style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:${excede?'var(--danger)':'inherit'}">${money(num2(cant*p.precio))}</span>`;
+  el.classList.toggle('money-bad', excede);
+}
+
+function confirmarCantidadProducto(productoId){
+  const p = prodById(productoId); if(!p) return;
+  const cant = num2(Number($('m-cantidad-prod')?.value)||0);
+  if(!(cant>0)) return toast('Cantidad inválida','err');
+  const enCarrito = ui.ventaCarrito.filter(i=>i.productoId===productoId).reduce((a,i)=>a+i.cantidad,0);
+  const disponible = num2(p.stock - enCarrito);
+  if(cant > disponible + 0.001) return toast(`Stock insuficiente. Disponible: ${disponible}`,'err');
+  cerrarModal();
+  setTimeout(()=>agregarAlCarritoVenta(productoId, cant), 50);
+}
+
   /* ================================================================
    ACCIONES
    ================================================================ */
@@ -3652,11 +3725,12 @@ function confirmarMontoLibreRecarga(productoId){
 function iniciarVentaProducto(productoId){
   const p=prodById(productoId); if(!p) return;
   if(!turnoRequerido()) return toast('Primero abre tu turno','err');
-  if(esProductoRecarga(p)){ abrirModal('montoLibreRecarga',productoId); }
-  else agregarAlCarritoVenta(productoId, 1);
+  if(esProductoRecarga(p)){ abrirModal('montoLibreRecarga', productoId); }
+  else abrirModal('cantidadProducto', productoId);   // ← antes: agregarAlCarritoVenta(productoId,1)
 }
-function actualizarLineaCarrito(ix,campo,valor){
+  function actualizarLineaCarrito(ix,campo,valor){
   const it=ui.ventaCarrito[ix]; if(!it) return;
+
   if(it.esRecarga && campo==='precioUnit'){
     const p=prodById(it.productoId);
     const b=p?.proveedorId?bolsaDe(p.proveedorId, it.tipoRecarga):null;
@@ -3666,8 +3740,24 @@ function actualizarLineaCarrito(ix,campo,valor){
     if(nuevo<=0) return toast('Monto inválido','err');
     if(disp<otros+nuevo) return toast(`Saldo insuficiente (${money(disp)})`,'err');
     it.precioUnit=nuevo; it.costoUnit=nuevo;
-  } else if(campo==='precioUnit'){ it.precioUnit=num2(valor); }
-  else if(campo==='cantidad'){ const v=num2(valor); if(v<=0) return toast('Cantidad inválida','err'); it.cantidad=v; }
+  }
+  else if(campo==='precioUnit'){
+    it.precioUnit=num2(valor);
+  }
+  else if(campo==='cantidad'){
+    const v=num2(valor);
+    if(v<=0) return toast('Cantidad inválida','err');
+    const p=prodById(it.productoId);
+    if(p && !esProductoRecarga(p)){
+      const otros=ui.ventaCarrito
+        .filter((_,i)=>i!==ix && _.productoId===it.productoId)
+        .reduce((a,i)=>a+i.cantidad,0);
+      if(p.stock < otros + v)
+        return toast(`Stock insuficiente (${p.stock})`, 'err');
+    }
+    it.cantidad = v;
+  }
+
   it.subtotal=num2(it.cantidad*it.precioUnit);
   render();
 }
