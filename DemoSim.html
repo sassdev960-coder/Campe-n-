@@ -2904,21 +2904,29 @@ function modalMontoLibreRecarga(productoId){
 
   function modalCantidadProducto(productoId){
   const p = prodById(productoId); if(!p) return '';
-  const enCarrito = ui.ventaCarrito.filter(i=>i.productoId===productoId).reduce((a,i)=>a+i.cantidad,0);
+  const enCarrito = ui.ventaCarrito
+    .filter(i=>i.productoId===productoId && !i.esRecarga)
+    .reduce((a,i)=>a+i.cantidad,0);
   const disponible = num2(p.stock - enCarrito);
 
   if(disponible <= 0) return `
     <div class="modal-head"><div><div class="modal-title">${esc(p.nombre)}</div></div>
     <button class="modal-close" onclick="cerrarModal()">×</button></div>
-    <div class="alert alert-danger"><div><b>Sin stock disponible.</b><br>Ya tienes ${enCarrito} en el carrito de ${p.stock} disponible(s).</div></div>
+    <div class="alert alert-danger"><div><b>Sin stock disponible.</b><br>
+      Ya tienes ${enCarrito} de ${p.stock} ${unidadAbrev(p.unidad)} en el carrito.</div></div>
     <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button></div>`;
 
-  const rapidos = [1,5,10,20,50,100].filter(n=>n<=disponible);
+  const rapidos = [1,5,10,20,50,100,300].filter(n=>n<=disponible);
+  const yaExiste = enCarrito > 0;
+  const hayMismoPrecio = ui.ventaCarrito.some(i =>
+    i.productoId===productoId && !i.esRecarga &&
+    Math.abs(i.precioUnit - p.precio) < 0.001
+  );
 
   return `
     <div class="modal-head">
       <div><div class="modal-title">${esc(p.nombre)}</div>
-        <div class="card-subtitle">Precio ${money(p.precio)} · Stock ${p.stock} ${unidadAbrev(p.unidad)}${enCarrito>0?` · En carrito: ${enCarrito}`:''}</div></div>
+        <div class="card-subtitle">Stock ${p.stock} ${unidadAbrev(p.unidad)}${yaExiste?` · En carrito: ${enCarrito}`:''}</div></div>
       <button class="modal-close" onclick="cerrarModal()">×</button>
     </div>
     ${rapidos.length>1?`
@@ -2929,18 +2937,39 @@ function modalMontoLibreRecarga(productoId){
             onclick="document.getElementById('m-cantidad-prod').value=${n}; previewCantidadProducto('${productoId}')">${n}</button>`).join('')}
         </div>
       </div>`:''}
-    <div class="field">
-      <label>Cantidad a vender *</label>
-      <input id="m-cantidad-prod" type="number" step="0.01" min="0.01" max="${disponible}" value="1"
-        oninput="previewCantidadProducto('${productoId}')"
-        onkeydown="if(event.key==='Enter'){event.preventDefault(); confirmarCantidadProducto('${productoId}')}">
-      <div class="hint">Disponible para vender: <b>${disponible} ${unidadAbrev(p.unidad)}</b></div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Cantidad *</label>
+        <input id="m-cantidad-prod" type="number" step="0.01" min="0.01" max="${disponible}" value="1"
+          oninput="previewCantidadProducto('${productoId}')"
+          onkeydown="if(event.key==='Enter'){event.preventDefault(); confirmarCantidadProducto('${productoId}')}">
+      </div>
+      <div class="field">
+        <label>Precio unitario (Bs) *</label>
+        <div class="money-input-wrap sm">
+          <input id="m-precio-prod" type="number" step="0.01" min="0" value="${p.precio}"
+            oninput="previewCantidadProducto('${productoId}')">
+        </div>
+        <div class="hint">Precio de lista: <b>${money(p.precio)}</b></div>
+      </div>
     </div>
     <div id="preview-cantidad-prod"
       style="background:var(--surface-soft);padding:14px;border-radius:10px;display:flex;justify-content:space-between;align-items:baseline;border:1px solid var(--line-soft)">
       <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Subtotal</span>
       <span style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums">${money(p.precio)}</span>
     </div>
+    ${yaExiste ? `
+      <div class="alert alert-info" style="margin-top:14px">
+        <div><strong>Ya tenés ${enCarrito} de este producto.</strong>
+        ${hayMismoPrecio
+          ? 'Si el precio es el mismo se sumará al lote existente. Si cambiaste el precio, se creará un lote nuevo automáticamente.'
+          : 'Con este precio se creará un <b>lote separado</b>.'}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;background:var(--surface-soft);border-radius:9px;border:1px solid var(--line-soft)">
+        <input type="checkbox" id="m-forzar-nueva-linea" style="width:auto">
+        <label for="m-forzar-nueva-linea" style="font-size:12.5px;cursor:pointer;margin:0">Forzar lote separado aunque el precio sea igual</label>
+      </div>
+    ` : ''}
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
       <button class="btn btn-success" onclick="confirmarCantidadProducto('${productoId}')">Agregar al carrito</button>
@@ -2949,27 +2978,37 @@ function modalMontoLibreRecarga(productoId){
 
 function previewCantidadProducto(productoId){
   const p = prodById(productoId); if(!p) return;
-  const el = $('m-cantidad-prod'); if(!el) return;
-  const prev = $('preview-cantidad-prod'); if(!prev) return;
-  const cant = num2(Number(el.value)||0);
-  const enCarrito = ui.ventaCarrito.filter(i=>i.productoId===productoId).reduce((a,i)=>a+i.cantidad,0);
+  const cantEl = $('m-cantidad-prod');
+  const precEl = $('m-precio-prod');
+  const prev = $('preview-cantidad-prod');
+  if(!cantEl || !precEl || !prev) return;
+  const cant = num2(Number(cantEl.value)||0);
+  const precio = num2(Number(precEl.value)||0);
+  const enCarrito = ui.ventaCarrito
+    .filter(i=>i.productoId===productoId && !i.esRecarga)
+    .reduce((a,i)=>a+i.cantidad,0);
   const disponible = num2(p.stock - enCarrito);
   const excede = cant > disponible + 0.001;
   prev.innerHTML = `
     <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:${excede?'var(--danger)':'var(--muted)'}">${excede?'Excede stock':'Subtotal'}</span>
-    <span style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:${excede?'var(--danger)':'inherit'}">${money(num2(cant*p.precio))}</span>`;
-  el.classList.toggle('money-bad', excede);
+    <span style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:${excede?'var(--danger)':'inherit'}">${money(num2(cant*precio))}</span>`;
+  cantEl.classList.toggle('money-bad', excede);
 }
 
 function confirmarCantidadProducto(productoId){
   const p = prodById(productoId); if(!p) return;
   const cant = num2(Number($('m-cantidad-prod')?.value)||0);
+  const precio = num2(Number($('m-precio-prod')?.value)||0);
+  const forzar = $('m-forzar-nueva-linea')?.checked === true;
   if(!(cant>0)) return toast('Cantidad inválida','err');
-  const enCarrito = ui.ventaCarrito.filter(i=>i.productoId===productoId).reduce((a,i)=>a+i.cantidad,0);
+  if(precio<0) return toast('Precio inválido','err');
+  const enCarrito = ui.ventaCarrito
+    .filter(i=>i.productoId===productoId && !i.esRecarga)
+    .reduce((a,i)=>a+i.cantidad,0);
   const disponible = num2(p.stock - enCarrito);
   if(cant > disponible + 0.001) return toast(`Stock insuficiente. Disponible: ${disponible}`,'err');
   cerrarModal();
-  setTimeout(()=>agregarAlCarritoVenta(productoId, cant), 50);
+  setTimeout(()=>agregarAlCarritoVenta(productoId, cant, precio, forzar), 50);
 }
 
   /* ================================================================
@@ -3685,17 +3724,18 @@ function turnoRequerido(){
   if(esAdmin()) return true;
   return !!turnoAbiertoDe(usuarioActual.id);
 }
-function agregarAlCarritoVenta(productoId, montoLibre){
+  function agregarAlCarritoVenta(productoId, cantidad, precioUnit, forzarNuevaLinea){
   if(!turnoRequerido()) return toast('Primero abre tu turno','err');
-  const p=prodById(productoId); if(!p) return;
+  const p = prodById(productoId); if(!p) return;
+
   if(esProductoRecarga(p)){
-    const tipo=tipoBolsaDeProducto(p);
-    const monto=Number(montoLibre)||0;
+    const tipo = tipoBolsaDeProducto(p);
+    const monto = Number(cantidad)||0;
     if(!(monto>0)) return toast('Monto inválido','err');
-    const b=p.proveedorId?bolsaDe(p.proveedorId,tipo):null;
-    const disp=b?(b.saldo||0):0;
-    const enCarrito=ui.ventaCarrito.filter(i=>i.productoId===productoId).reduce((a,i)=>a+i.subtotal,0);
-    if(disp<enCarrito+monto) return toast(`Saldo insuficiente en bolsa (${money(disp)})`,'err');
+    const b = p.proveedorId?bolsaDe(p.proveedorId,tipo):null;
+    const disp = b?(b.saldo||0):0;
+    const enCarrito = ui.ventaCarrito.filter(i=>i.productoId===productoId).reduce((a,i)=>a+i.subtotal,0);
+    if(disp < enCarrito + monto) return toast(`Saldo insuficiente en bolsa (${money(disp)})`,'err');
     ui.ventaCarrito.push({
       productoId, nombre:p.nombre, unidad:'bolivianos',
       esRecarga:true, tipoRecarga:tipo,
@@ -3703,15 +3743,42 @@ function agregarAlCarritoVenta(productoId, montoLibre){
       cantidad:1, precioUnit:num2(monto), costoUnit:num2(monto),
       subtotal:num2(monto)
     });
-  }else{
-    let cantidad=Number(montoLibre)||1;
-    if(cantidad<=0) return toast('Cantidad inválida','err');
-    if(p.stock<cantidad) return toast(`Stock insuficiente (${p.stock})`,'err');
-    const enCarrito=ui.ventaCarrito.filter(i=>i.productoId===productoId).reduce((a,i)=>a+i.cantidad,0);
-    if(p.stock<enCarrito+cantidad) return toast(`Ya tienes ${enCarrito} en carrito`,'err');
-    const existe=ui.ventaCarrito.find(i=>i.productoId===productoId&&!i.esRecarga);
-    if(existe){ existe.cantidad=num2(existe.cantidad+cantidad); existe.subtotal=num2(existe.cantidad*existe.precioUnit); }
-    else ui.ventaCarrito.push({productoId,nombre:p.nombre,unidad:p.unidad,esRecarga:false,proveedorId:p.proveedorId||null,cantidad:num2(cantidad),precioUnit:p.precio,costoUnit:p.costo,subtotal:num2(cantidad*p.precio)});
+    render();
+    return;
+  }
+
+  const cant = num2(Number(cantidad)||0);
+  if(!(cant>0)) return toast('Cantidad inválida','err');
+  if(p.stock < cant) return toast(`Stock insuficiente (${p.stock})`,'err');
+
+  const enCarrito = ui.ventaCarrito
+    .filter(i=>i.productoId===productoId && !i.esRecarga)
+    .reduce((a,i)=>a+i.cantidad,0);
+  if(p.stock < enCarrito + cant) return toast(`Ya tienes ${enCarrito} en carrito`,'err');
+
+  const precio = num2(precioUnit ?? p.precio);
+  if(precio < 0) return toast('Precio inválido','err');
+
+  // Fusión SOLO si producto + precio + costo coinciden. Si el precio cambia, línea nueva automática.
+  const existente = !forzarNuevaLinea
+    ? ui.ventaCarrito.find(i =>
+        i.productoId === productoId &&
+        !i.esRecarga &&
+        Math.abs(i.precioUnit - precio) < 0.001 &&
+        Math.abs(i.costoUnit  - p.costo)  < 0.001
+      )
+    : null;
+
+  if(existente){
+    existente.cantidad = num2(existente.cantidad + cant);
+    existente.subtotal = num2(existente.cantidad * existente.precioUnit);
+  } else {
+    ui.ventaCarrito.push({
+      productoId, nombre:p.nombre, unidad:p.unidad,
+      esRecarga:false, proveedorId:p.proveedorId||null,
+      cantidad:cant, precioUnit:precio, costoUnit:num2(p.costo),
+      subtotal:num2(cant * precio)
+    });
   }
   render();
 }
@@ -4665,7 +4732,7 @@ function viewVentas(){
           ${ui.ventaCarrito.map((i,ix)=>`
             <div class="cart-line">
               <div class="cart-info">
-                <div class="cart-name">${esc(i.nombre)} ${i.esRecarga?`<span class="badge badge-accent">${TIPOS_BOLSA[i.tipoRecarga]||'Recarga'}</span>`:''}</div>
+                <div class="cart-name">   ${esc(i.nombre)}   ${i.esRecarga     ? `<span class="badge badge-accent">${TIPOS_BOLSA[i.tipoRecarga]||'Recarga'}</span>`     : (()=>{         const lineasMismoProd = ui.ventaCarrito           .map((x,idx)=>({x,idx}))           .filter(o=>o.x.productoId===i.productoId && !o.x.esRecarga);         if(lineasMismoProd.length <= 1) return '';         const orden = lineasMismoProd.findIndex(o=>o.idx===ix) + 1;         return `<span class="badge badge-neutral" style="margin-left:6px">Lote ${orden}</span>`;       })()   } </div>
                 <div class="cart-meta">${i.esRecarga?money(i.precioUnit):(money(i.precioUnit)+' × '+i.cantidad)}${!i.esRecarga?' · <span style="color:var(--success);font-weight:600">Gan '+money(gananciaItem(i))+'</span>':''}</div>
               </div>
               ${i.esRecarga?`
