@@ -3883,6 +3883,52 @@ function confirmarVenta(){
   else toast(`Venta ${money(total)}${cambio>0.001?' · Cambio '+money(cambio):''}`,'ok');
   render();
 }
+
+ function actualizarMontoRecibido(input){
+  ui.ventaMontoRecibido = input.value;
+
+  const total = totalCarritoVenta();
+  const recibido = Number(ui.ventaMontoRecibido)||0;
+  const cambio = num2(recibido - total);
+  const cambioOk = recibido >= total;
+
+  // 1) Clases del input (verde/rojo) sin re-renderizar
+  input.classList.remove('money-ok','money-bad');
+  if(recibido > 0) input.classList.add(cambioOk ? 'money-ok' : 'money-bad');
+
+  // 2) Bloque de cambio/falta
+  const cont = $('cambio-render');
+  if(cont){
+    if(recibido <= 0){
+      cont.innerHTML = '';
+      cont.style.display = 'none';
+    } else {
+      cont.style.display = 'block';
+      let cls, label, valor;
+      if(!cambioOk){
+        cls='insuf'; label='Falta'; valor = money(num2(total - recibido));
+      } else if(cambio > 0.001){
+        cls=''; label='Cambio'; valor = money(cambio);
+      } else {
+        cls='exacto'; label='Exacto'; valor = money(total);
+      }
+      cont.innerHTML = `<div class="cambio-box ${cls}">
+        <span class="cambio-label">${label}</span>
+        <span class="cambio-value">${valor}</span>
+      </div>`;
+    }
+  }
+
+  // 3) Habilitar/deshabilitar el botón confirmar
+  const btn = $('btn-confirmar-venta');
+  if(btn){
+    const cliente = ui.ventaClienteId ? state.clientes.find(c=>c.id===ui.ventaClienteId) : null;
+    const deshabilitar =
+      (ui.ventaTipoPago==='contado' && !cambioOk) ||
+      (ui.ventaTipoPago==='credito' && !cliente);
+    btn.disabled = deshabilitar;
+  }
+} 
 function buscarProductos(query,excluirRecargas){
   const q=normalizar(query);
   return state.productos
@@ -4793,23 +4839,25 @@ function viewVentas(){
             </div>
             ${!cliente?'<div class="alert alert-warning" style="margin-bottom:10px"><div>Selecciona un cliente.</div></div>':''}
           `:''}
-          ${ui.ventaTipoPago==='contado'?`
-            <div class="field"><label>Monto recibido (Bs) *</label>
-              <div class="money-input-wrap">
-                <input type="number" step="0.01" min="0" placeholder="0.00" value="${ui.ventaMontoRecibido}"
-                  oninput="ui.ventaMontoRecibido=this.value; render(); this.focus()"
-                  class="${recibido>0?(cambioOk?'money-ok':'money-bad'):''}">
-              </div>
-            </div>
-            ${recibido>0?`<div class="cambio-box ${cambioOk?(cambio>0.001?'':'exacto'):'insuf'}">
-              <span class="cambio-label">${cambioOk?(cambio>0.001?'Cambio':'Exacto'):'Falta'}</span>
-              <span class="cambio-value">${money(cambioOk?Math.abs(cambio):(total-recibido))}</span>
-            </div>`:''}
-          `:''}
-          <button class="btn btn-success btn-block" style="margin-top:16px" onclick="confirmarVenta()"
-            ${(ui.ventaTipoPago==='contado'&&!cambioOk)||(ui.ventaTipoPago==='credito'&&!cliente)?'disabled':''}>
-            Confirmar venta · ${money(total)}
-          </button>
+         ${ui.ventaTipoPago==='contado'?`
+  <div class="field"><label>Monto recibido (Bs) *</label>
+    <div class="money-input-wrap">
+      <input type="number" step="0.01" min="0" placeholder="0.00" value="${ui.ventaMontoRecibido}"
+        oninput="actualizarMontoRecibido(this)"
+        class="${recibido>0?(cambioOk?'money-ok':'money-bad'):''}">
+    </div>
+  </div>
+  <div id="cambio-render" style="${recibido>0?'':'display:none'}">
+    ${recibido>0?`<div class="cambio-box ${cambioOk?(cambio>0.001?'':'exacto'):'insuf'}">
+      <span class="cambio-label">${cambioOk?(cambio>0.001?'Cambio':'Exacto'):'Falta'}</span>
+      <span class="cambio-value">${money(cambioOk?Math.abs(cambio):(total-recibido))}</span>
+    </div>`:''}
+  </div>
+`:''}
+         <button id="btn-confirmar-venta" class="btn btn-success btn-block" style="margin-top:16px" onclick="confirmarVenta()"
+  ${(ui.ventaTipoPago==='contado'&&!cambioOk)||(ui.ventaTipoPago==='credito'&&!cliente)?'disabled':''}>
+  Confirmar venta · ${money(total)}
+</button>
         </div>`}
     </div>
   </div>
