@@ -1519,7 +1519,7 @@ const ui = {
   ventaCarrito:[], ventaClienteId:'', ventaTipoPago:'contado', ventaFecha:HOY(),
   ventaPlazo:15, ventaPlazoCustom:'', ventaMontoRecibido:'',
   buscarCliente:'', mostrarBuscadorCliente:false,
-  compraCarrito:[], compraProveedorId:'', compraNota:'', buscarProdCompra:'',
+  compraCarrito:[], compraProveedorId:'', compraFecha: HOY(), compraNota:'', buscarProdCompra:'',
   modal:null, filtroInv:'Todas', clienteAbierto:null, cierreMes:mesActual(),
   buscarClienteLista:'', filtroClientesCobrador:'con_deuda',
   clientesMostrar: CLIENTES_POR_PAGINA,
@@ -3766,20 +3766,58 @@ function quitarDelCarritoCompra(ix){ ui.compraCarrito.splice(ix,1); render(); }
 function totalCarritoCompra(){ return num2(ui.compraCarrito.reduce((a,i)=>a+i.subtotal,0)); }
 function confirmarCompra(){
   if(ui.compraCarrito.length===0) return toast('Carrito vacío','err');
-  if(mesCerrado(mesActual())) return toast(`El mes ${mesActual()} está cerrado`,'err');
+
+  // Validar fecha seleccionada
+  const fechaCompra = ui.compraFecha || HOY();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(fechaCompra) || Number.isNaN(Date.parse(fechaCompra+'T12:00:00')))
+    return toast('Selecciona una fecha válida','err');
+  if(fechaCompra > HOY())
+    return toast('La fecha de la compra no puede ser futura','err');
+  if(mesCerrado(fechaCompra.slice(0,7)))
+    return toast(`El mes ${nombreMes(fechaCompra.slice(0,7))} está cerrado. No se puede registrar una compra en ese período.`,'err');
+
   const total=totalCarritoCompra();
   const prov=ui.compraProveedorId?provById(ui.compraProveedorId):null;
+
   const ejecutar=()=>{
-    const compra={id:'P'+(state.seq.compra++),fecha:HOY(),hora:horaActual(),proveedorId:prov?prov.id:null,proveedorNombre:prov?prov.nombre:'Sin proveedor',items:ui.compraCarrito.map(i=>({...i})),total,nota:ui.compraNota.trim(),usuarioId:usuarioActual?.id||null,usuarioNombre:usuarioActual?.nombre||'—'};
+    const compra={
+      id:'P'+(state.seq.compra++),
+      fecha:fechaCompra,                    // ← fecha elegida, no HOY()
+      hora:horaActual(),
+      proveedorId:prov?prov.id:null,
+      proveedorNombre:prov?prov.nombre:'Sin proveedor',
+      items:ui.compraCarrito.map(i=>({...i})),
+      total,
+      nota:ui.compraNota.trim(),
+      usuarioId:usuarioActual?.id||null,
+      usuarioNombre:usuarioActual?.nombre||'—'
+    };
     state.compras.push(compra);
     compra.items.forEach(it=>{ const p=prodById(it.productoId); if(p) p.stock=num2(p.stock+it.cantidad); });
-    agregarMovimientoCaja('compra',-total,'Compra '+compra.id+' · '+compra.proveedorNombre,compra.id);
-    ui.compraCarrito=[]; ui.compraProveedorId=''; ui.compraNota='';
-    toast('Compra '+money(total),'ok'); render();
+
+    // El movimiento de caja hereda la misma fecha para que reportes y cierre mensual cuadren
+    agregarMovimientoCaja('compra',-total,
+      'Compra '+compra.id+' · '+compra.proveedorNombre,
+      compra.id,
+      fechaCompra);                         // ← 5to parámetro = fecha
+
+    ui.compraCarrito=[];
+    ui.compraProveedorId='';
+    ui.compraNota='';
+    ui.compraFecha=HOY();                    // ← reset
+    toast('Compra '+money(total),'ok');
+    render();
   };
+
   if(total>saldoCaja()){
-    pedirConfirmacion({criticidad:'advertencia',titulo:'Saldo insuficiente',mensaje:`El total (${money(total)}) supera la caja (${money(saldoCaja())}).`,textoBoton:'Continuar',onConfirm:ejecutar});
-  }else ejecutar();
+    pedirConfirmacion({
+      criticidad:'advertencia',
+      titulo:'Saldo insuficiente',
+      mensaje:`El total (${money(total)}) supera la caja (${money(saldoCaja())}).`,
+      textoBoton:'Continuar',
+      onConfirm:ejecutar
+    });
+  } else ejecutar();
 }
 
 /* ================================================================
@@ -4976,6 +5014,12 @@ function viewCompras(){
         </div>
         <div class="cart-total"><span class="cart-total-label">Total</span><span class="cart-total-value">${money(total)}</span></div>
         <div style="margin-top:18px;padding-top:18px;border-top:1px solid var(--line)">
+          <div class="field">
+    <label>Fecha de la compra</label>
+    <input type="date" value="${esc(ui.compraFecha||HOY())}" max="${HOY()}"
+           onchange="ui.compraFecha=this.value">
+    <div class="hint">Puedes registrar una compra de una fecha anterior. La caja y los reportes usarán esta fecha.</div>
+  </div>
           <div class="field"><label>Proveedor</label>
             <select onchange="ui.compraProveedorId=this.value; render()">
               <option value="">Sin proveedor</option>
