@@ -1606,8 +1606,23 @@ function bonifBolsasPorTipo(tipo){
 function saldoCaja(){ if(!state) return 0; return num2(state.caja.saldoInicial+state.caja.movimientos.reduce((a,m)=>a+m.monto,0)); }
 function saldoBanco(b){ return num2(b.saldoInicial+(b.movimientos||[]).reduce((a,m)=>a+m.monto,0)); }
 function saldoBancosTotal(){ return num2(state.bancos.reduce((a,b)=>a+saldoBanco(b),0)); }
-function agregarMovimientoCaja(tipo,monto,descripcion,referencia,fecha=HOY()){
-  state.caja.movimientos.push({id:'M'+(state.seq.mov++),fecha:fecha||HOY(),hora:horaActual(),tipo,monto:num2(monto),descripcion,referencia:referencia||null,usuarioId:usuarioActual?.id||null,usuarioNombre:usuarioActual?.nombre||'—'});
+
+  function agregarMovimientoCaja(tipo,monto,descripcion,referencia,fecha=HOY()){
+  // Asignar el turno abierto del usuario al momento de crear el movimiento.
+  // Así una venta retroactiva (fecha de ayer) cuenta en el turno en que fue registrada.
+  const miTurno = turnoAbiertoDe(usuarioActual?.id);
+  state.caja.movimientos.push({
+    id:'M'+(state.seq.mov++),
+    fecha:fecha||HOY(),
+    hora:horaActual(),
+    tipo,
+    monto:num2(monto),
+    descripcion,
+    referencia:referencia||null,
+    usuarioId:usuarioActual?.id||null,
+    usuarioNombre:usuarioActual?.nombre||'—',
+    turnoId: miTurno ? miTurno.id : null
+  });
 }
 function eliminarMovimientosPorRef(ref){ state.caja.movimientos=state.caja.movimientos.filter(m=>m.referencia!==ref); }
 function agregarMovimientoBanco(bancoId,monto,descripcion,referencia){
@@ -1676,6 +1691,29 @@ function ultimoTurno(){
   const cerrados=state.turnos.filter(t=>t.estado==='cerrado').sort((a,b)=>{const fa=(a.fechaCierre||'')+(a.horaCierre||'');const fb=(b.fechaCierre||'')+(b.horaCierre||'');return fb.localeCompare(fa);});
   return cerrados[0]||null;
 }
+
+
+  function movimientosDelTurno(t){
+  if(!t) return [];
+  const tsIni = t.fechaApertura + 'T' + (t.horaApertura||'00:00') + ':00';
+  const tsFin = t.fechaCierre
+    ? t.fechaCierre + 'T' + (t.horaCierre||'23:59') + ':59'
+    : '9999-12-31T23:59:59';
+
+  return state.caja.movimientos.filter(m=>{
+    // Solo movimientos del mismo usuario
+    if(String(m.usuarioId)!==String(t.usuarioId)) return false;
+
+    // Prioridad 1: si el movimiento tiene turnoId, usar ESE turno (evita duplicación)
+    if(m.turnoId){
+      return String(m.turnoId)===String(t.id);
+    }
+
+    // Fallback para movimientos históricos sin turnoId: rango fecha + hora
+    const ts = (m.fecha||'') + 'T' + (m.hora||'00:00') + ':00';
+    return ts >= tsIni && ts <= tsFin;
+  });
+}
 function saldoEsperadoApertura(){
   const u=ultimoTurno();
   if(u&&typeof u.saldoCierre==='number') return num2(u.saldoCierre);
@@ -1718,16 +1756,53 @@ function reconciliarMovimientosVentasCaja(){
       continue;
     }
 
+    // Buscar el turno que corresponde por timestamp (usuario + fecha/hora de la venta)
+    const tsVenta = (venta.fecha||HOY()) + 'T' + (venta.hora||'00:00') + ':00';
+    const turnoCands = state.turnos.filter(t=>{
+      if(String(t.usuarioId)!==String(venta.usuarioId)) return false;
+      const ini = t.fechaApertura + 'T' + (t.horaApertura||'00:00') + ':00';
+      const fin = t.fechaCierre
+        ? t.fechaCierre + 'T' + (t.horaCierre||'23:59') + ':59'
+        : '9999-12-31T23:59:59';
+      return tsVenta >= ini && tsVenta <= fin;
+    });
+    turnoCands.sort((a,b)=>((b.fechaApertura||'')+(b.horaApertura||'')).localeCompare((a.fechaApertura||'')+(a.horaApertura||'')));
+
     state.caja.movimientos.push({
       id:'M'+(state.seq.mov++), fecha:venta.fecha||HOY(), hora:venta.hora||'00:00',
       tipo:'venta', monto:num2(venta.total),
       descripcion:'Venta '+venta.id+' · '+(venta.clienteNombre||'Consumidor final'),
-      referencia:venta.id, usuarioId:venta.usuarioId||null, usuarioNombre:nombreUsuario
+      referencia:venta.id, usuarioId:venta.usuarioId||null, usuarioNombre:nombreUsuario,
+      turnoId: turnoCands[0]?.id || null
     });
   }
 }
 function movimientosVisibles(){
   reconciliarMovimientosVentasCaja();
+      // MIGRACIÓN: asignar turnoId a movimientos históricos sin él.
+    // Evita que al cerrar turnos del mismo día se dupliquen movimientos.
+    (function migrarTurnoIdMovimientos(){
+      let asignados = 0;
+      state.caja.movimientos.forEach(m=>{
+        if(m.turnoId) return;
+        if(!m.usuarioId || !m.fecha) return;
+        const ts = m.fecha + 'T' + (m.hora||'00:00') + ':00';
+        const cands = state.turnos.filter(t=>{
+          if(String(t.usuarioId)!==String(m.usuarioId)) return false;
+          const ini = t.fechaApertura + 'T' + (t.horaApertura||'00:00') + ':00';
+          const fin = t.fechaCierre
+            ? t.fechaCierre + 'T' + (t.horaCierre||'23:59') + ':59'
+            : '9999-12-31T23:59:59';
+          return ts >= ini && ts <= fin;
+        });
+        if(cands.length){
+          cands.sort((a,b)=>((b.fechaApertura||'')+(b.horaApertura||'')).localeCompare((a.fechaApertura||'')+(a.horaApertura||'')));
+          m.turnoId = cands[0].id;
+          asignados++;
+        }
+      });
+      if(asignados) console.info('[SIMGest] turnoId asignado a', asignados, 'movimientos históricos.');
+    })();
   return esAdmin()?state.caja.movimientos:state.caja.movimientos.filter(m=>m.usuarioId===usuarioActual?.id);
 }
 function abonosVisibles(){ return esAdmin()?state.abonos:state.abonos.filter(a=>a.usuarioId===usuarioActual?.id); }
@@ -2826,7 +2901,7 @@ function modalCerrarTurno(turnoId){
     <button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="alert alert-info"><div>Sin turno abierto.</div></div>
     <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button></div>`;
-  const movs=state.caja.movimientos.filter(m=>m.usuarioId===t.usuarioId&&m.fecha>=t.fechaApertura);
+    const movs=movimientosDelTurno(t);
   const teorico=num2(t.saldoInicial+movs.reduce((a,m)=>a+m.monto,0));
   return `
     <div class="modal-head"><div><div class="modal-title">Cerrar turno</div>
