@@ -6368,11 +6368,13 @@ async function cargarExistentes(tabla, columna){
         if(exist.has(m.id)) continue;
         const turnoCod = asignarTurno(m.usuarioId, m.fecha, m.hora, m.turnoId);
         rows.push({
+                  rows.push({
           negocio_id: sbNegocioId, codigo: m.id,
           fecha: m.fecha, hora: m.hora || '00:00',
           tipo: m.tipo, monto: m.monto,
           descripcion: m.descripcion || null,
           referencia: m.referencia || null,
+          metodo_pago: m.metodoPago || 'efectivo',
           usuario_id: m.usuarioId ? map.usuarios[m.usuarioId] : null,
           usuario_nombre: m.usuarioNombre || null,
           turno_id: turnoCod ? map.turnos[turnoCod] : null
@@ -6428,7 +6430,7 @@ async function cargarExistentes(tabla, columna){
         const v = state.ventas[i];
         if(vExist.has(v.id)) continue;
         const turnoCod = turnoDeVenta(v);
-        const { data: vRow, error: eV } = await sb.from('ventas').insert({
+               const { data: vRow, error: eV } = await sb.from('ventas').insert({
           negocio_id: sbNegocioId, codigo: v.id,
           fecha: v.fecha, hora: v.hora || '00:00',
           cliente_id: v.clienteId ? map.clientes[v.clienteId] : null,
@@ -6437,6 +6439,7 @@ async function cargarExistentes(tabla, columna){
           vencimiento: v.vencimiento || null,
           total: v.total, pagado: v.pagado || 0,
           monto_recibido: v.montoRecibido, cambio: v.cambio,
+          metodo_pago: v.tipoPago === 'credito' ? 'pendiente' : (v.metodoPago || 'efectivo'),
           usuario_id: v.usuarioId ? map.usuarios[v.usuarioId] : null,
           usuario_nombre: v.usuarioNombre || null,
           turno_id: turnoCod ? map.turnos[turnoCod] : null
@@ -6466,7 +6469,7 @@ async function cargarExistentes(tabla, columna){
     bar(72, 'Abonos...');
     try {
       const exist = await cargarExistentes('abonos','codigo');
-      const rows = (state.abonos||[]).filter(a => !exist.has(a.id)).map(a => {
+            const rows = (state.abonos||[]).filter(a => !exist.has(a.id)).map(a => {
         const turnoCod = asignarTurno(a.usuarioId, a.fecha, a.hora, a.turnoId);
         return {
           negocio_id: sbNegocioId, codigo: a.id,
@@ -6474,6 +6477,7 @@ async function cargarExistentes(tabla, columna){
           venta_id: a.ventaId ? map.ventas[a.ventaId] : null,
           fecha: a.fecha, hora: a.hora || '00:00',
           monto: a.monto, entregado: a.entregado ?? a.monto, vuelta: a.vuelta || 0,
+          metodo_pago: a.metodoPago || 'efectivo',
           usuario_id: a.usuarioId ? map.usuarios[a.usuarioId] : null,
           usuario_nombre: a.usuarioNombre || null,
           turno_id: turnoCod ? map.turnos[turnoCod] : null
