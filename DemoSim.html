@@ -1693,27 +1693,40 @@ function ultimoTurno(){
 }
 
 
-  function movimientosDelTurno(t){
+function movimientosDelTurno(t){
   if(!t) return [];
   const tsIni = t.fechaApertura + 'T' + (t.horaApertura||'00:00') + ':00';
   const tsFin = t.fechaCierre
     ? t.fechaCierre + 'T' + (t.horaCierre||'23:59') + ':59'
     : '9999-12-31T23:59:59';
 
+  // Delimitar el inicio del hueco: cierre del turno anterior del mismo usuario
+  // (para no robarle movimientos huérfanos al turno anterior)
+  let anteriorCierre = null;
+  state.turnos.forEach(x=>{
+    if(String(x.usuarioId)!==String(t.usuarioId)) return;
+    if(x.id===t.id) return;
+    if(!x.fechaCierre) return;
+    const tsX = x.fechaCierre+'T'+(x.horaCierre||'23:59')+':59';
+    if(tsX < tsIni && (!anteriorCierre || tsX > anteriorCierre)) anteriorCierre = tsX;
+  });
+
   return state.caja.movimientos.filter(m=>{
-    // Solo movimientos del mismo usuario
     if(String(m.usuarioId)!==String(t.usuarioId)) return false;
 
-    // Prioridad 1: si el movimiento tiene turnoId, usar ESE turno (evita duplicación)
+    // Caso 1: turnoId explícito → manda ese turno
     if(m.turnoId){
       return String(m.turnoId)===String(t.id);
     }
 
-    // Fallback para movimientos históricos sin turnoId: rango fecha + hora
+    // Caso 2: huérfano → incluir si está dentro del rango del turno
     const ts = (m.fecha||'') + 'T' + (m.hora||'00:00') + ':00';
-    return ts >= tsIni && ts <= tsFin;
+    if(ts < tsIni || ts > tsFin) return false;
+    if(anteriorCierre && ts <= anteriorCierre) return false;
+    return true;
   });
 }
+  
 function saldoEsperadoApertura(){
   const u=ultimoTurno();
   if(u&&typeof u.saldoCierre==='number') return num2(u.saldoCierre);
@@ -2895,27 +2908,107 @@ function modalAbrirTurno(){
 }
 
   
+
 function modalCerrarTurno(turnoId){
   const t=state.turnos.find(x=>x.id===turnoId)||turnoAbiertoDe(usuarioActual.id);
   if(!t) return `<div class="modal-head"><div><div class="modal-title">No hay turno</div></div>
     <button class="modal-close" onclick="cerrarModal()">×</button></div>
     <div class="alert alert-info"><div>Sin turno abierto.</div></div>
     <div class="modal-actions"><button class="btn btn-outline" onclick="cerrarModal()">Cerrar</button></div>`;
-    const movs=movimientosDelTurno(t);
-  const teorico=num2(t.saldoInicial+movs.reduce((a,m)=>a+m.monto,0));
+
+  // Reparar turnoId ANTES de calcular (auto-repara movimientos huérfanos en el rango)
+  if(typeof repararTurnoIdAlCerrar === 'function') repararTurnoIdAlCerrar(t);
+
+  const movs=movimientosDelTurno(t);
+  const sumaMovs=num2(movs.reduce((a,m)=>a+m.monto,0));
+  const teorico=num2(t.saldoInicial+sumaMovs);
+  const ventas = movs.filter(m=>m.tipo==='venta');
+  const gastos = movs.filter(m=>m.tipo==='gasto');
+  const otros  = movs.filter(m=>!['venta','gasto'].includes(m.tipo));
+  const huerfanos = movs.filter(m=>!m.turnoId);
+  const sumaHuerfanos = num2(huerfanos.reduce((a,m)=>a+m.monto,0));
+
+  const sinMovs = movs.length === 0;
+  const sinVentas = ventas.length === 0;
+
   return `
     <div class="modal-head"><div><div class="modal-title">Cerrar turno</div>
-    <div class="card-subtitle">${esc(t.usuarioNombre)}</div></div>
+    <div class="card-subtitle">${esc(t.usuarioNombre)} · ${fFecha(t.fechaApertura)} ${t.horaApertura||''}</div></div>
       <button class="modal-close" onclick="cerrarModal()">×</button></div>
-    <div class="alert alert-info"><div>Inicial: <b>${money(t.saldoInicial)}</b><br>Movs: <b>${movs.length}</b><br>Teórico: <b>${money(teorico)}</b></div></div>
+
+    ${sinMovs ? `
+      <div class="alert alert-warning">
+        <div>
+          <div class="alert-title">⚠️ Este turno no tiene movimientos registrados</div>
+          Si hubo ventas durante este turno, algo no se está asociando correctamente.
+        </div>
+      </div>
+    ` : sinVentas ? `
+      <div class="alert alert-warning">
+        <div>
+          <div class="alert-title">⚠️ Este turno tiene movimientos pero ninguna venta</div>
+          Verificá si hubo ventas que no se registraron como movimientos de caja.
+        </div>
+      </div>
+    ` : ''}
+
+    ${huerfanos.length > 0 ? `
+      <div class="alert alert-warning" style="margin-bottom:14px">
+        <div>
+          <div class="alert-title">⚠️ ${huerfanos.length} movimiento(s) sin turno asignado</div>
+          Se incluirán en este cierre por ${money(sumaHuerfanos)}. Son ventas registradas cuando no había turno abierto.<br>
+          <span style="font-size:11.5px;color:var(--muted)">${huerfanos.map(m=>`${m.id} (${fFecha(m.fecha)} ${m.hora||''} · ${money(m.monto)})`).join(' · ')}</span>
+        </div>
+      </div>
+    ` : ''}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="background:var(--surface-soft);padding:12px;border-radius:10px;border:1px solid var(--line-soft)">
+        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600">Saldo inicial</div>
+        <div style="font-size:20px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums">${money(t.saldoInicial)}</div>
+      </div>
+      <div style="background:var(--surface-soft);padding:12px;border-radius:10px;border:1px solid var(--line-soft)">
+        <div style="font-size:10.5px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);font-weight:600">Suma de movimientos</div>
+        <div style="font-size:20px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums;color:${sumaMovs>=0?'var(--success)':'var(--danger)'}">${sumaMovs>=0?'+':''}${money(sumaMovs)}</div>
+      </div>
+    </div>
+
+    <div style="background:var(--surface-soft);padding:12px;border-radius:10px;border:1px solid var(--line-soft);margin-bottom:14px;font-size:12.5px">
+      <div style="font-weight:600;margin-bottom:8px">Desglose de ${movs.length} movimiento(s):</div>
+      ${movs.length===0 ? '<div style="color:var(--danger);font-weight:600">Sin movimientos asociados a este turno.</div>' : `
+        <div style="display:flex;justify-content:space-between;padding:3px 0">
+          <span>Ventas (${ventas.length})</span>
+          <b style="color:var(--success)">${money(num2(ventas.reduce((a,m)=>a+m.monto,0)))}</b>
+        </div>
+        ${gastos.length ? `<div style="display:flex;justify-content:space-between;padding:3px 0">
+          <span>Gastos (${gastos.length})</span>
+          <b style="color:var(--danger)">${money(num2(gastos.reduce((a,m)=>a+m.monto,0)))}</b>
+        </div>` : ''}
+        ${otros.length ? `<div style="display:flex;justify-content:space-between;padding:3px 0">
+          <span>Otros (${otros.length})</span>
+          <b>${money(num2(otros.reduce((a,m)=>a+m.monto,0)))}</b>
+        </div>` : ''}
+      `}
+    </div>
+
+    <div style="background:var(--surface-soft);padding:14px;border-radius:10px;border:1px solid var(--line);margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Teórico en caja</span>
+        <span style="font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--primary)">${money(teorico)}</span>
+      </div>
+    </div>
+
     <div class="field"><label>Efectivo contado (Bs) *</label>
-      <div class="money-input-wrap"><input id="m-arqueo" type="number" step="0.01" min="0" value="${teorico}"></div></div>
+      <div class="money-input-wrap"><input id="m-arqueo" type="number" step="0.01" min="0" value="${teorico}"></div>
+      <div class="hint">Ajustá este valor al efectivo real contado en caja.</div>
+    </div>
     <div class="field"><label>Observaciones</label><input id="m-obs"></div>
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
       <button class="btn btn-danger" onclick="confirmarCerrarTurno('${t.id}',${teorico})">Cerrar turno</button>
     </div>`;
 }
+  
 function modalBanco(id){
   const b=id?bancoById(id):null;
   return `
