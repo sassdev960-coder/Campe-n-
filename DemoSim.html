@@ -6367,7 +6367,7 @@ async function cargarExistentes(tabla, columna){
       for(const m of state.caja.movimientos){
         if(exist.has(m.id)) continue;
         const turnoCod = asignarTurno(m.usuarioId, m.fecha, m.hora, m.turnoId);
-        rows.push({
+        
                   rows.push({
           negocio_id: sbNegocioId, codigo: m.id,
           fecha: m.fecha, hora: m.hora || '00:00',
