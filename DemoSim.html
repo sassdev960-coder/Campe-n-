@@ -2377,18 +2377,38 @@ function modalCategoria(id){
     </div>`;
 }
 function modalProveedor(id){
-  const p=id?provById(id):null;
+  const p = id ? provById(id) : null;
+  const nProd = p ? state.productos.filter(x=>x.proveedorId===p.id).length : 0;
+  const nCompras = p ? state.compras.filter(x=>x.proveedorId===p.id).length : 0;
+  const bPaso = p ? bolsaDe(p.id,'paso') : null;
+  const bPaq = p ? bolsaDe(p.id,'paquete') : null;
   return `
-    <div class="modal-head"><div><div class="modal-title">${p?'Editar operador':'Nuevo operador'}</div></div>
-    <button class="modal-close" onclick="cerrarModal()">×</button></div>
+    <div class="modal-head">
+      <div><div class="modal-title">${p?'Editar operador':'Nuevo operador'}</div>
+      ${p?`<div class="card-subtitle">${esc(p.nombre)}</div>`:''}</div>
+      <button class="modal-close" onclick="cerrarModal()">×</button>
+    </div>
     <div class="field"><label>Nombre *</label>
-      <input id="m-prov-nombre" value="${p?esc(p.nombre):''}" placeholder="Ej: Entel"></div>
+      <input id="m-prov-nombre" value="${p?esc(p.nombre):''}" placeholder="Ej: Entel" autofocus>
+      <div class="hint">Podés cambiar el nombre cuando quieras. Los productos y compras asociados se mantienen.</div></div>
     <div class="field"><label>Notas</label>
-      <input id="m-prov-nota" value="${p?esc(p.nota||''):''}"></div>
+      <input id="m-prov-nota" value="${p?esc(p.nota||''):''}" placeholder="Opcional"></div>
+    ${p?`
+      <div style="background:var(--surface-soft);padding:12px 14px;border-radius:10px;border:1px solid var(--line-soft);margin-bottom:14px;font-size:12.5px">
+        <div style="font-size:10.5px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Datos asociados</div>
+        <div style="display:flex;justify-content:space-between;padding:3px 0"><span>Productos</span><b>${nProd}</b></div>
+        <div style="display:flex;justify-content:space-between;padding:3px 0"><span>Compras</span><b>${nCompras}</b></div>
+        <div style="display:flex;justify-content:space-between;padding:3px 0"><span>Bolsa paso</span><b>${money(bPaso?.saldo||0)}</b></div>
+        <div style="display:flex;justify-content:space-between;padding:3px 0"><span>Bolsa paquetes</span><b>${money(bPaq?.saldo||0)}</b></div>
+      </div>
+    `:''}
     <div class="alert alert-info"><div>La bonificación de recargas se registra desde <b>Caja → Bolsas → Registrar bonificación</b> cuando el operador te avisa por SMS.</div></div>
-    <div class="modal-actions">
-      <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="guardarProveedor(${p?`'${p.id}'`:'null'})">${p?'Guardar':'Crear'}</button>
+    <div class="modal-actions" style="justify-content:space-between">
+      ${p?`<button class="btn btn-outline" style="color:var(--danger);border-color:#ecd1d1" onclick="cerrarModal(); setTimeout(()=>accionEliminarProveedor('${p.id}'),80)">Eliminar operador</button>`:'<div></div>'}
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="cerrarModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarProveedor(${p?`'${p.id}'`:'null'})">${p?'Guardar cambios':'Crear operador'}</button>
+      </div>
     </div>`;
 }
 function modalCliente(id){
@@ -3228,18 +3248,38 @@ function guardarCategoria(id){
   cerrarModal(); render();
 }
 function guardarProveedor(id){
-  const n=$('m-prov-nombre').value.trim();
-  const nota=$('m-prov-nota').value.trim();
-  if(!n) return toast('Ingresa nombre','err');
-  if(state.proveedores.some(p=>normalizar(p.nombre)===normalizar(n)&&p.id!==id)) return toast('Ya existe','err');
-  if(id){ const p=provById(id); p.nombre=n; p.nota=nota; toast('Actualizado','ok'); }
-  else{
-    const nuevo={id:'PV'+(state.seq.proveedor++),nombre:n,nota};
+  const inputNombre = $('m-prov-nombre');
+  const inputNota   = $('m-prov-nota');
+  if(!inputNombre) return toast('Formulario no disponible','err');
+  const nombre = inputNombre.value.trim();
+  const nota   = inputNota ? inputNota.value.trim() : '';
+  if(!nombre) return toast('Ingresá un nombre','err');
+
+  const duplicado = state.proveedores.some(x =>
+    normalizar(x.nombre) === normalizar(nombre) && x.id !== id
+  );
+  if(duplicado) return toast('Ya existe otro operador con ese nombre','err');
+
+  if(id){
+    const p = provById(id);
+    if(!p) return toast('Operador no encontrado','err');
+    const anterior = p.nombre;
+    p.nombre = nombre;
+    p.nota   = nota;
+    if(anterior !== nombre){
+      toast(`"${anterior}" → "${nombre}" actualizado`,'ok');
+    } else {
+      toast('Cambios guardados','ok');
+    }
+  } else {
+    const nuevo = {id:'PV'+(state.seq.proveedor++), nombre, nota};
     state.proveedores.push(nuevo);
-    bolsaDe(nuevo.id,'paso'); bolsaDe(nuevo.id,'paquete');
-    toast('Creado','ok');
+    bolsaDe(nuevo.id,'paso');
+    bolsaDe(nuevo.id,'paquete');
+    toast(`Operador "${nombre}" creado`,'ok');
   }
-  cerrarModal(); render();
+  cerrarModal();
+  render();
 }
 function guardarCliente(id){
   const n=$('m-cli-nombre').value.trim();
@@ -3812,23 +3852,59 @@ function accionEliminarCategoria(id){
   });
 }
 function accionEliminarProveedor(id){
-  const p=provById(id);
-  if(state.productos.some(x=>x.proveedorId===id)||state.compras.some(x=>x.proveedorId===id)) return toast('No se puede: está en uso','err');
-  const bPaso=bolsaDe(id,'paso');
-  const bPaq=bolsaDe(id,'paquete');
-  const tiene=(bPaso.saldo>0.001)||(bPaq.saldo>0.001);
+  const p = provById(id);
+  if(!p) return toast('Operador no encontrado','err');
+
+  const nProd    = state.productos.filter(x=>x.proveedorId===id).length;
+  const nCompras = state.compras.filter(x=>x.proveedorId===id).length;
+  const nAjustes = (state.ajustesBolsa||[]).filter(a=>a.provId===id).length;
+  const bPaso = bolsaDe(id,'paso');
+  const bPaq  = bolsaDe(id,'paquete');
+  const saldoTotal = num2((bPaso?.saldo||0) + (bPaq?.saldo||0));
+  const tieneUso   = nProd > 0 || nCompras > 0 || nAjustes > 0;
+  const tieneSaldo = saldoTotal > 0.001;
+
+  let advertencia = '';
+  if(tieneUso && tieneSaldo){
+    advertencia = 'Tiene productos, compras o ajustes asociados Y saldo en bolsa. Los productos y compras se mantendrán (sin operador asignado), pero el saldo de bolsa se perderá.';
+  } else if(tieneUso){
+    advertencia = 'Tiene productos, compras o ajustes asociados. Los productos y compras se mantendrán, pero sin operador asignado.';
+  } else if(tieneSaldo){
+    advertencia = `El saldo de bolsa (${money(saldoTotal)}) se perderá al eliminar el operador.`;
+  }
+
   pedirConfirmacion({
-    criticidad:tiene?'critico':'advertencia',
-    titulo:'Eliminar operador',
-    mensaje:`¿Eliminar "${esc(p.nombre)}"?`,
-    detalle:`<div><strong>Bolsa paso:</strong> ${money(bPaso.saldo||0)}</div><div><strong>Bolsa paquete:</strong> ${money(bPaq.saldo||0)}</div>`,
-    advertencia:tiene?'Los saldos se perderán.':'',
-    textoBoton:'Sí, eliminar',
-    onConfirm:()=>{
-      state.proveedores=state.proveedores.filter(x=>x.id!==id);
+    criticidad: (tieneUso || tieneSaldo) ? 'critico' : 'advertencia',
+    titulo: 'Eliminar operador',
+    mensaje: `¿Eliminar al operador <b>${esc(p.nombre)}</b>?`,
+    detalle: `
+      <div><strong>Productos:</strong> ${nProd}</div>
+      <div><strong>Compras:</strong> ${nCompras}</div>
+      <div><strong>Ajustes:</strong> ${nAjustes}</div>
+      <div><strong>Bolsa paso:</strong> ${money(bPaso?.saldo||0)}</div>
+      <div><strong>Bolsa paquete:</strong> ${money(bPaq?.saldo||0)}</div>
+    `,
+    advertencia,
+    textoBoton: 'Sí, eliminar operador',
+    onConfirm: () => {
+      // Desasociar (no borrar) los datos históricos
+      state.productos.forEach(prod => {
+        if(prod.proveedorId === id) prod.proveedorId = null;
+      });
+      state.compras.forEach(c => {
+        if(c.proveedorId === id) c.proveedorId = null;
+      });
+      if(Array.isArray(state.ajustesBolsa)){
+        state.ajustesBolsa.forEach(a => {
+          if(a.provId === id) a.provId = null;
+        });
+      }
+      // Eliminar operador y sus bolsas
+      state.proveedores = state.proveedores.filter(x => x.id !== id);
       delete state.bolsas[bolsaKey(id,'paso')];
       delete state.bolsas[bolsaKey(id,'paquete')];
-      toast('Eliminado','ok'); render();
+      toast(`Operador "${p.nombre}" eliminado`,'ok');
+      render();
     }
   });
 }
@@ -5607,8 +5683,10 @@ function viewProveedores(){
           <td class="num" style="font-weight:600;color:var(--primary)">${money(bPaq.saldo||0)}</td>
           <td class="num">${nProd}</td>
           <td class="num">
-            <button class="btn-ghost" style="padding:2px 8px;font-size:12px" onclick="abrirModal('editarProveedor','${p.id}')">Editar</button>
-            <button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarProveedor('${p.id}')">Eliminar</button>
+            <td class="num" style="white-space:nowrap">
+  <button class="btn btn-outline btn-sm" onclick="abrirModal('editarProveedor','${p.id}')">Editar</button>
+  <button class="btn-ghost" style="padding:2px 8px;font-size:12px;color:var(--danger)" onclick="accionEliminarProveedor('${p.id}')">Eliminar</button>
+</td>
           </td></tr>`;
       }).join('')||'<tr><td colspan="6" class="empty">Sin resultados.</td></tr>'}</tbody>
     </table></div>
