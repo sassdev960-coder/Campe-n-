@@ -887,10 +887,12 @@ async function loadFromSupabase(){
 
 let syncTimer = null;
 let syncInFlight = false;
+let syncPending = false;
 async function syncToSupabase(){
   if(!sb) return;
-  if(syncInFlight) return;
+  if(syncInFlight){ syncPending = true; return; }
   syncInFlight = true;
+  syncPending = false;
   setSyncStatus('syncing', 'Guardando...');
   try {
     const tasks = [];
@@ -909,12 +911,17 @@ async function syncToSupabase(){
   } catch(e) {
     console.error('❌ syncToSupabase:', e);
     setSyncStatus('offline', '✕ Error al guardar');
-  } finally {
+   } finally {
     syncInFlight = false;
+    if(syncPending){
+      syncPending = false;
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(syncToSupabase, 100);
+    }
   }
 }
 
-async function supaDelete(table, filters){
+async function supaDelete(table, filters, retries = 2){
   if(!sb) return;
   try {
     let q = sb.from(table).delete();
@@ -922,7 +929,12 @@ async function supaDelete(table, filters){
     const { error } = await q;
     if(error) throw error;
   } catch(e) {
-    console.error(`❌ supaDelete ${table}:`, e);
+    console.error(`❌ supaDelete ${table} (intento ${3 - retries}/3):`, e);
+    if(retries > 0){
+      await new Promise(r => setTimeout(r, 1000 * (3 - retries)));
+      return supaDelete(table, filters, retries - 1);
+    }
+    setSyncStatus('offline', '✕ Error al borrar');
   }
 }
 
@@ -1285,16 +1297,20 @@ function stateFor(r){
   if(!r || r.status === 'libre') return { phase: 'libre' };
   if(!r.mode) return { phase: 'libre' };
   const now = Date.now();
-  if(r.mode === 'paquete'){
-    const endToday = new Date();
+   if(r.mode === 'paquete'){
+    let endTs;
     if(r.packageEndTime){
       const [hh, mm] = r.packageEndTime.split(':').map(Number);
-      endToday.setHours(hh, mm, 0, 0);
-      if(endToday.getTime() < new Date(r.checkIn).getTime()) endToday.setDate(endToday.getDate() + 1);
+      const ci = new Date(r.checkIn);
+      endTs = new Date(ci.getFullYear(), ci.getMonth(), ci.getDate(), hh, mm, 0, 0);
+      if(endTs.getTime() <= ci.getTime()) endTs.setDate(endTs.getDate() + 1);
+    } else {
+      endTs = new Date(new Date(r.checkIn).getTime() + 9 * 3600000);
     }
-    const remaining = endToday.getTime() - now;
-    const isUrgent = remaining < 30 * 60000 && remaining > 0;
-    return { phase: r.checkOut ? 'finished' : 'running', mode: 'paquete', remaining, urgent: isUrgent, endTime: r.packageEndTime };
+    const remaining = endTs.getTime() - now;
+    const isExpired = remaining <= 0;
+    const isUrgent = remaining > 0 && remaining < 30 * 60000;
+    return { phase: r.checkOut ? 'finished' : 'running', mode: 'paquete', remaining, urgent: isUrgent, expired: isExpired, endTs: endTs.getTime(), endTime: r.packageEndTime };
   }
   if(r.mode === 'corrida'){
     const entry = new Date(r.checkIn).getTime();
@@ -1374,10 +1390,11 @@ function cardRoom(r){
         </div>`;
     }
 
-    const badge = s.urgent ? 'urgent' : 'package';
-    const badgeTxt = s.urgent ? '● Por vencer' : 'Paquete';
+       const isCrit = s.expired || s.urgent;
+    const badge = isCrit ? 'urgent' : 'package';
+    const badgeTxt = s.expired ? '● Vencido' : (s.urgent ? '● Por vencer' : 'Paquete');
     return `
-      <div class="card-room package ${s.urgent ? 'urgent' : ''}">
+      <div class="card-room package ${isCrit ? 'urgent' : ''}">
         <div class="cr-top">
           <div class="cr-pieza">PIEZA <span class="num">${r.num}</span> <span class="mode-tag">🌙 Paquete nocturno</span></div>
           <span class="cr-badge ${badge}">${badgeTxt}</span>
@@ -2022,6 +2039,19 @@ function savePeriodObservation(){
   toast('Observación guardada');
 }
 
+  function logHourEdit(r, field, fromVal, toVal){
+  if(!r) return;
+  if(!Array.isArray(r.hourEdits)) r.hourEdits = [];
+  r.hourEdits.push({
+    field,
+    from: fromVal,
+    to: toVal,
+    at: new Date().toISOString(),
+    userId: currentUser?.id || null,
+    observation: (co ? ($('#coObservation')?.value || '').trim() : '')
+  });
+}
+
 function updateCoTimeAndPay() {
   const r = db.rooms.find(x => x.id === co.id);
   if(!r) return;
@@ -2044,7 +2074,9 @@ function editEntryDate(val) {
   const [y, m, d] = val.split('-').map(Number);
   const newDate = new Date(r.checkIn);
   newDate.setFullYear(y, m - 1, d);
+  const before = r.checkIn;
   r.checkIn = newDate.toISOString();
+  logHourEdit(r, 'Ingreso (fecha)', fmtDT(before), fmtDT(r.checkIn));
   co.entryDate = val;
   updateCoTimeAndPay();
 }
@@ -2057,7 +2089,9 @@ function editEntryTime(val) {
   const [hh, mm] = val.split(':').map(Number);
   const newDate = new Date(r.checkIn);
   newDate.setHours(hh, mm, 0, 0);
+  const before = r.checkIn;
   r.checkIn = newDate.toISOString();
+  logHourEdit(r, 'Ingreso (hora)', fmtDT(before), fmtDT(r.checkIn));
   co.entryTime = val;
   updateCoTimeAndPay();
 }
@@ -2068,7 +2102,9 @@ function editExitDate(val) {
   const [y, m, d] = val.split('-').map(Number);
   const newDate = new Date(co.exitTs);
   newDate.setFullYear(y, m - 1, d);
+  const before = co.exitTs;
   co.exitTs = newDate.getTime();
+  logHourEdit(db.rooms.find(x => x.id === co.id), 'Salida (fecha)', fmtDT(before), fmtDT(co.exitTs));
   co.exitDate = val;
   co.captured = true;
   updateCoTimeAndPay();
@@ -2081,7 +2117,9 @@ function editExitTime(val) {
   const [hh, mm] = val.split(':').map(Number);
   const newDate = new Date(co.exitTs);
   newDate.setHours(hh, mm, 0, 0);
+  const before = co.exitTs;
   co.exitTs = newDate.getTime();
+  logHourEdit(db.rooms.find(x => x.id === co.id), 'Salida (hora)', fmtDT(before), fmtDT(co.exitTs));
   co.exitTime = val;
   co.captured = true;
   updateCoTimeAndPay();
