@@ -142,17 +142,17 @@ html[data-theme="dark"] .cr-badge.busy{color:var(--accent)}
 .cr-grid{display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:10px;padding:14px 0;border-top:1px solid var(--sep);border-bottom:1px solid var(--sep);margin-bottom:12px}
 .cr-col{display:flex;flex-direction:column;gap:3px;text-align:center;position:relative}
 .cr-col + .cr-col::before{content:'';position:absolute;left:-5px;top:4px;bottom:4px;width:1px;background:var(--sep)}
-.cr-col .k{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
-.cr-col .v{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em;color:var(--text)}
-.cr-col .v.live{color:var(--accent);font-size:18px}
+.cr-col .k{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
+.cr-col .v{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em;color:var(--text)}
+.cr-col .v.live{color:var(--accent);font-size:22px;font-weight:900}
 .cr-col .v.dash{color:var(--text-3);font-weight:500;letter-spacing:.05em}
-.cr-col .v.big{font-size:19px;color:var(--accent)}
+.cr-col .v.big{font-size:22px;color:var(--accent)}
 .cr-col.hl .v.big{color:var(--green)}
 .cr-col.warn .v.big{color:var(--accent)}
 .cr-col.crit .v.big{color:var(--red)}
 .cr-amount-box{background:var(--amount-bg);border:1px solid var(--border-btn);border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:12px}
 .cr-amount-box .ab-lbl{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
-.cr-amount-box .ab-val{font-size:26px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.cr-amount-box .ab-val{font-size:32px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .cr-amount-box .ab-sub{font-size:11px;color:var(--text-2);font-variant-numeric:tabular-nums;text-align:right;line-height:1.4}
 .cr-progress{height:7px;background:var(--fill);border-radius:4px;overflow:hidden;margin-bottom:6px;position:relative}
 .cr-progress-fill{position:absolute;right:0;top:0;bottom:0;border-radius:4px;background:var(--green);transition:width .6s linear,background .5s}
@@ -319,7 +319,7 @@ html[data-theme="dark"] .btn.purple{color:var(--purple)}
 .bd-row.tolerance span:last-child{color:var(--green)}
 .bd-row.total-row{border-top:1.5px solid var(--sep);padding-top:12px;margin-top:4px}
 .bd-row.total-row span:first-child{font-weight:800;color:var(--text)}
-.bd-row.total-row span:last-child{font-size:18px;color:var(--accent)}
+.bd-row.total-row span:last-child{font-size:24px;color:var(--accent);font-weight:900}
 .edit-hours-panel{background:var(--surface);border:1px solid var(--border-btn);border-radius:var(--r-md);padding:14px;margin-bottom:16px;box-shadow:var(--shadow-card)}
 .edit-hours-panel .eh-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .edit-hours-panel input.hour-24-input{width:100%;padding:12px 14px;background:var(--input-bg);border:1px solid var(--border-input);border-radius:var(--r-sm);color:var(--text);font-size:18px;font-variant-numeric:tabular-nums;letter-spacing:.08em;box-shadow:var(--shadow-btn);text-align:center;font-weight:800;min-height:50px}
@@ -1037,7 +1037,7 @@ function closeModal(){
   $('#modalRoot').classList.remove('open');
   $('#modalRoot').innerHTML = '';
   document.body.style.overflow = '';
-  ci = null; co = null; qp = null;
+  ci = null; co = null; qp = null; qpPay = null;
   ciLock = false; coLock = false;
 }
 
@@ -1052,6 +1052,10 @@ function openUserSheet(){
       <div class="menu-item" onclick="openUsersManager()"><span class="mi-icon">👥</span><span>Usuarios</span><span class="mi-arrow">›</span></div>
       <div class="menu-item" onclick="openShiftsView()"><span class="mi-icon">📋</span><span>Historial de turnos</span><span class="mi-arrow">›</span></div>
     </div>` : '';
+  const generalItems = `
+    <div class="menu-list">
+      <div class="menu-item" onclick="openManualEntry()"><span class="mi-icon">✎</span><span>Registro manual</span><span class="mi-arrow">›</span></div>
+    </div>`;
   openSheet('Mi cuenta', `
     <div class="user-hero">
       <div class="avatar-lg">${initials(currentUser.name)}</div>
@@ -1064,6 +1068,7 @@ function openUserSheet(){
       <div class="si-time" id="shiftElapsed">${fmtDur(shiftMs)}</div>
       <div class="si-sub">Desde ${currentShift ? fmtTime(currentShift.loginAt) : '—'}</div>
     </div>
+    ${generalItems}
     ${adminItems}
     <div class="menu-list"><div class="menu-item danger" onclick="confirmLogout()"><span class="mi-icon">⏻</span><span>Cerrar turno</span></div></div>
   `, `<button class="btn" onclick="closeModal()">Cerrar</button>`);
@@ -1684,6 +1689,7 @@ function rmProdFromRoom(pid){
 }
 
 /* QUICK PAY */
+let qpPay = null;
 function quickPay(id, method){
   const r = db.rooms.find(x => x.id === id);
   if(!r || r.status !== 'ocupada') return;
@@ -1691,9 +1697,25 @@ function quickPay(id, method){
   const calc = calcRoomAmount(r, refTs);
   const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
   const total = calc.amount + consTotal;
+  qpPay = { id, method, total, refTs };
   const label = method === 'efectivo' ? 'EFECTIVO' : 'QR';
-  if(!confirm(`Cobrar Pieza ${r.num} en ${label}\n\nTotal: ${money(total)}`)) return;
+  openSheet(`Confirmar cobro · ${label}`, `
+    <div style="text-align:center;padding:10px 0 16px">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--text-2);margin-bottom:8px">Pieza ${esc(r.num)}</div>
+      <div style="font-size:48px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.04em;line-height:1">${money(total)}</div>
+      <div style="font-size:12.5px;color:var(--text-2);margin-top:8px">${calc.hours ? calc.hours + ' h × ' + money(calc.rate) : ''}${consTotal > 0 ? (calc.hours ? ' · ' : '') + 'consumos ' + money(consTotal) : ''}</div>
+    </div>
+    <p class="hint" style="text-align:center;padding-bottom:6px">Al aceptar, la pieza queda <b>libre</b> y se registra el cobro en <b>${label}</b>.</p>
+  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="confirmQuickPay()">Aceptar y cobrar</button>`);
+}
+function confirmQuickPay(){
+  if(!qpPay){ closeModal(); return; }
+  const { id, method, total, refTs } = qpPay;
+  const r = db.rooms.find(x => x.id === id);
+  qpPay = null;
+  if(!r || r.status !== 'ocupada'){ closeModal(); toast('La pieza ya no está ocupada'); return; }
   registerSale(r, total, [{ method, amount: total }], refTs);
+  closeModal();
   toast(`Pieza ${r.num} cobrada · ${money(total)}`);
 }
 
@@ -1891,6 +1913,66 @@ function doCheckIn(){
   }
 }
 
+/* MOVER PIEZA */
+function openMoveRoom(fromId){
+  const from = db.rooms.find(x => x.id === fromId);
+  if(!from || from.status !== 'ocupada'){ toast('Pieza no válida'); return; }
+  const free = db.rooms.filter(x => x.status === 'libre' && x.id !== fromId);
+  if(!free.length){
+    openSheet('Cambiar de pieza', `<p class="empty">No hay piezas libres en este momento.</p>`,
+      `<button class="btn" onclick="openCheckOut('${fromId}')">Volver</button>`);
+    return;
+  }
+  const list = free.map(x => `
+    <div class="room-row">
+      <div class="rr-num">${esc(x.num)}</div>
+      <div class="rr-info">
+        <div class="rr-name">${esc(x.name)}</div>
+        <div class="rr-meta">${money(x.price)}/h · Libre</div>
+      </div>
+      <button class="row-btn" onclick="doMoveRoom('${fromId}','${x.id}')">Mover aquí</button>
+    </div>`).join('');
+  openSheet(`Cambiar de pieza · desde ${esc(from.num)}`, `
+    <p class="hint" style="padding:0 4px 12px">Se transfieren hora de ingreso, modo de cobro, consumos y observaciones a la nueva pieza. La pieza actual queda libre y no se cobra.</p>
+    <div class="group">${list}</div>
+  `, `<button class="btn" onclick="openCheckOut('${fromId}')">Cancelar</button>`);
+}
+function doMoveRoom(fromId, toId){
+  const from = db.rooms.find(x => x.id === fromId);
+  const to = db.rooms.find(x => x.id === toId);
+  if(!from || !to){ toast('Pieza no encontrada'); return; }
+  if(from.status !== 'ocupada' || to.status !== 'libre'){ toast('Estado inválido'); return; }
+  if(!confirm(`¿Mover la cuenta de la pieza ${from.num} a la pieza ${to.num}?`)) return;
+  to.status = 'ocupada';
+  to.mode = from.mode;
+  to.checkIn = from.checkIn;
+  to.checkOut = from.checkOut;
+  to.paidHours = from.paidHours;
+  to.hourlyRate = from.hourlyRate;
+  to.rate = from.rate;
+  to.packageEndTime = from.packageEndTime;
+  to.packagePrice = from.packagePrice;
+  to.consumos = JSON.parse(JSON.stringify(from.consumos || []));
+  to.paymentStatus = from.paymentStatus;
+  to.payments = JSON.parse(JSON.stringify(from.payments || []));
+  to.userId = from.userId;
+  to.userName = from.userName;
+  to.periodObservation = from.periodObservation || '';
+  to.hourEdits = JSON.parse(JSON.stringify(from.hourEdits || []));
+  Object.assign(from, {
+    status:'libre', mode:null, checkIn:null, checkOut:null, paidHours:null,
+    packageEndTime:null, packagePrice:null, consumos:[], paymentStatus:'pendiente',
+    payments:[], rate: from.price, hourlyRate: from.price, userId: null, userName: null,
+    periodObservation:'', hourEdits: []
+  });
+  save();
+  const toIdKeep = to.id;
+  closeModal();
+  renderAll();
+  toast(`Cuenta movida a pieza ${to.num}`);
+  setTimeout(() => openCheckOut(toIdKeep), 220);
+}
+
 /* CHECK-OUT */
 let co = null;
 
@@ -2011,12 +2093,26 @@ function renderCheckOutSheet(){
       ${consTotal > 0 ? `<span class="pap-count">${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems</span>` : ''}
     </button>`;
 
+  const grandTotalHTML = `
+    <div style="background:linear-gradient(165deg,var(--amount-bg),var(--surface));border:2px solid var(--accent);border-radius:18px;padding:18px 16px;margin-bottom:16px;text-align:center;box-shadow:0 8px 24px rgba(184,134,11,.18)">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--text-2);margin-bottom:4px">Total a cobrar</div>
+      <div style="font-size:44px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.04em;line-height:1">${money(grand)}</div>
+      <div style="font-size:12.5px;color:var(--text-2);margin-top:6px">${calc.hours ? calc.hours + ' h × ' + money(calc.rate) : ''}${consTotal > 0 ? (calc.hours ? ' · ' : '') + 'consumos ' + money(consTotal) : ''}</div>
+    </div>`;
+
+  const moveBtnHTML = `
+    <button class="btn-edit-hours" style="border-style:solid;margin-bottom:10px" onclick="openMoveRoom('${r.id}')">
+      ↔ Cambiar a otra pieza (sin cobrar)
+    </button>`;
+
   const footerHTML = r.checkOut
     ? `<button class="btn primary" onclick="doConfirmarCobro()">💳 Cobrar y liberar</button>`
     : `<button class="btn purple" onclick="doPorCobrar()">⏸ Detener sin cobrar</button>
        <button class="btn primary" onclick="doConfirmarCobro()">💳 Cobrar y liberar</button>`;
 
   openSheet(`Cobrar · Pieza ${r.num}`, `
+    ${grandTotalHTML}
+    ${moveBtnHTML}
     ${addProdBtnHTML}
     ${editHoursHTML}
     <div class="group-title" style="padding-left:4px">Desglose</div>
@@ -2375,7 +2471,18 @@ function saveKardexMovement(movementId){
     const cost = Number($('#kmCost')?.value);
     if(Number.isFinite(cost) && cost >= 0) m.unitCost = cost;
   }
-  save(); openKardex(m.productId); renderAll(); toast('Movimiento actualizado');
+  // Recalcular el costo vigente del producto desde la última entrada
+  const p = db.products.find(x => x.id === m.productId);
+  if(p){
+    const entradas = db.movements
+      .filter(x => x.productId === p.id && x.type === 'entrada')
+      .sort((a,b) => new Date(b.date) - new Date(a.date));
+    if(entradas.length){
+      const last = entradas[0];
+      if(Number.isFinite(Number(last.unitCost))) p.cost = Number(last.unitCost);
+    }
+  }
+  save(); openKardex(m.productId); renderAll(); toast('Costo actualizado');
 }
 function openKardex(id){
   const p = db.products.find(x => x.id === id);
@@ -2403,6 +2510,63 @@ function openKardex(id){
     <div class="cons-list"><div class="table-wrap"><table style="font-size:12.5px"><thead><tr><th>Fecha</th><th>Tipo</th><th class="num">Cant.</th><th class="num">Saldo</th><th>Acción</th></tr></thead><tbody>${rows}</tbody></table></div></div>
     <button class="btn danger block" style="margin:8px 0 4px" onclick="delProduct('${id}')">Eliminar producto</button>
   `, `<button class="btn primary" onclick="closeModal()">Cerrar</button>`);
+}
+
+/* REGISTRO MANUAL */
+function openManualEntry(){
+  const now = new Date();
+  const local = new Date(now.getTime() - now.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  openSheet('Registro manual', `
+    <p class="hint" style="padding:0 4px 12px">Carga ventas anotadas en papel por cortes de luz o falta de internet. Se registran con la fecha y hora reales.</p>
+    <div class="field"><label>Fecha y hora</label><input type="datetime-local" id="meTs" value="${local}"></div>
+    <div class="field"><label>Tipo</label>
+      <select id="meType">
+        <option value="habitacion">Pieza / Habitación</option>
+        <option value="producto">Producto</option>
+        <option value="otro">Otro ingreso</option>
+      </select>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Pieza (opcional)</label><input id="meRoom" placeholder="Ej: 3" autocomplete="off"></div>
+      <div class="field"><label>Método</label>
+        <select id="meMethod"><option value="efectivo">Efectivo</option><option value="qr">QR</option></select>
+      </div>
+    </div>
+    <div class="field"><label>Detalle</label><input id="meDetail" placeholder="Ej: 2 h + 1 cerveza" autocomplete="off"></div>
+    <div class="row2">
+      <div class="field"><label>Monto (Bs)</label><input id="meAmt" type="number" inputmode="decimal" min="0" step="0.5" value="0"></div>
+      <div class="field"><label>Costo (Bs)</label><input id="meCost" type="number" inputmode="decimal" min="0" step="0.5" value="0"><p class="helper">Solo si es producto</p></div>
+    </div>
+  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveManualEntry()">Guardar</button>`);
+}
+function saveManualEntry(){
+  const tsStr = $('#meTs').value;
+  const type = $('#meType').value;
+  const roomNum = ($('#meRoom').value || '').trim();
+  const detail = ($('#meDetail').value || '').trim();
+  const amt = Number($('#meAmt').value) || 0;
+  const cost = Number($('#meCost').value) || 0;
+  const method = $('#meMethod').value;
+  if(!tsStr){ toast('Ingresa fecha y hora'); return; }
+  if(!detail){ toast('Ingresa un detalle'); return; }
+  if(amt <= 0){ toast('El monto debe ser mayor a 0'); return; }
+  const iso = new Date(tsStr).toISOString();
+  const day = dayKey(iso);
+  db.sales.push({
+    id: uid(), ts: iso, day,
+    type: type === 'producto' ? 'producto' : (type === 'habitacion' ? 'habitacion' : 'otro'),
+    detail: detail + (roomNum ? ` · Pieza ${roomNum}` : ''),
+    amount: amt,
+    lodgingAmount: type === 'habitacion' ? amt : null,
+    totalCollected: amt,
+    cost: type === 'producto' ? cost : 0,
+    userId: currentUser?.id, userName: currentUser?.name, shiftId: currentShift?.id,
+    roomNum: roomNum || null,
+    payments: [{ method, amount: amt }],
+    manual: true
+  });
+  save(); closeModal(); renderAll();
+  toast('Venta manual registrada');
 }
 
 /* GASTOS / DEPÓSITOS */
