@@ -100,7 +100,7 @@ input,select,button{-webkit-appearance:none;appearance:none}
   line-height: 1.2;
 }
 
-.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;z-index:60;padding:6px 10px calc(var(--safe-b) + 6px);background:var(--nav-bg);backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);border-top:1px solid var(--sep);display:grid;grid-template-columns:repeat(4,1fr);gap:2px}
+.tabbar{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;z-index:60;padding:6px 10px calc(var(--safe-b) + 6px);background:var(--nav-bg);backdrop-filter:saturate(180%) blur(24px);-webkit-backdrop-filter:saturate(180%) blur(24px);border-top:1px solid var(--sep);display:grid;grid-template-columns:repeat(5,1fr);gap:2px}
 .tab{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 5px;border-radius:10px;font-size:10.5px;font-weight:600;color:var(--text-3);transition:color .18s var(--ease),transform .18s var(--ease)}
 .tab svg{width:25px;height:25px;transition:transform .25s var(--ease)}
 .tab.active{color:var(--accent)}
@@ -450,8 +450,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
   .stats{grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
   .stat{padding:18px 18px}
   .rooms-list{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-  .tabbar{width:auto;max-width:none;bottom:22px;padding:8px 12px;border-radius:20px;border:1px solid var(--border-btn);border-top:1px solid var(--border-btn);box-shadow:var(--shadow-float);gap:4px}
-  .tab{flex-direction:row;gap:8px;padding:10px 18px;border-radius:14px;font-size:14px;font-weight:700;transition:background .15s,color .15s}
+  .tabbar{width:auto;max-width:none;bottom:22px;padding:8px 12px;border-radius:20px;border:1px solid var(--border-btn);border-top:1px solid var(--border-btn);box-shadow:var(--shadow-float);gap:4px}  .tab{flex-direction:row;gap:8px;padding:10px 18px;border-radius:14px;font-size:14px;font-weight:700;transition:background .15s,color .15s}
   .tab svg{width:18px;height:18px}
   .tab.active{background:var(--amount-bg)}
   .tab.active svg{transform:none}
@@ -560,7 +559,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Fecha</th><th>Hora</th><th>Detalle</th><th class="num">Monto</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Hora</th><th>Detalle</th><th style="text-align:center">Tiempo</th><th class="num">Monto</th></tr></thead>
           <tbody id="panelRecent"></tbody>
         </table>
       </div>
@@ -587,6 +586,33 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
         <table>
           <thead><tr><th>Producto</th><th class="num">Stock</th><th class="num">Costo</th><th class="num">Venta</th><th class="num">Util.</th><th style="text-align:right"></th></tr></thead>
           <tbody id="prodBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="inventario" class="view">
+    <div class="page-title">
+      <div><h1>Inventario</h1><p>Artículos del motel: TVs, mantas, amenities, etc.</p></div>
+      <button class="add-btn" onclick="openNewItem()">＋ Agregar</button>
+    </div>
+    <div class="field">
+      <label>Buscar artículo</label>
+      <input id="itemSearch" type="search" placeholder="Ej: televisor, manta..." oninput="renderItems()" autocomplete="off">
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <button class="btn sm primary" id="itemBtnAll" onclick="setItemFilter('')">Todos</button>
+      <button class="btn sm" id="itemBtnElec" onclick="setItemFilter('electronica')">📺 Electrónica</button>
+      <button class="btn sm" id="itemBtnRopa" onclick="setItemFilter('ropa')">🛏 Ropa cama</button>
+      <button class="btn sm" id="itemBtnAmen" onclick="setItemFilter('amenities')">🧴 Amenities</button>
+      <button class="btn sm" id="itemBtnOtro" onclick="setItemFilter('otro')">📦 Otros</button>
+      <button class="btn sm" id="itemBtnBaja" onclick="setItemFilter('baja')" style="color:var(--red)">🗑 De baja</button>
+    </div>
+    <div class="group">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Artículo</th><th>Categoría</th><th class="num">Stock</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead>
+          <tbody id="itemBody"></tbody>
         </table>
       </div>
     </div>
@@ -658,6 +684,9 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
   </button>
   <button class="tab" data-tab="productos">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7l8.7 5 8.7-5"/><path d="M12 22V12"/></svg>Productos
+  </button>
+  <button class="tab" data-tab="inventario">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M7 8h2M7 12h2M11 8h6M11 12h6"/></svg>Inventario
   </button>
   <button class="tab" data-tab="reportes">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6" rx="1"/><rect x="12.5" y="8" width="3" height="10" rx="1"/><rect x="18" y="5" width="3" height="13" rx="1"/></svg>Reportes
@@ -826,7 +855,7 @@ function seed(){
       periodObservation: '', hourEdits: []
     })),
     products: [], movements: [], sales: [],
-    expenses: [], deposits: [],
+    expenses: [], deposits: [], items: [],
     users: [{ id:'u-admin', name:'Administrador', username:'admin', password:'admin123', role:'admin' }],
     shifts: []
   };
@@ -840,6 +869,7 @@ function loadLocal(){
       if(!d.shifts) d.shifts = [];
       if(!d.expenses) d.expenses = [];
       if(!d.deposits) d.deposits = [];
+      if(!d.items) d.items = [];
       return d;
     }
   }catch(e){ console.warn(e); }
@@ -2376,6 +2406,7 @@ function renderProducts(){
       <td class="num">${money(p.price)}</td>
       <td class="num" style="color:var(--accent);font-weight:700">${money(util)}</td>
       <td style="text-align:right;white-space:nowrap">
+        <button class="row-btn" onclick="openEditProduct('${p.id}')" style="background:rgba(10,132,255,.8);border-color:rgba(10,132,255,.5)">✎</button>
         <button class="row-btn" onclick="openEntrada('${p.id}')">+</button>
         <button class="row-btn" onclick="openSalida('${p.id}')">−</button>
         <button class="row-btn" onclick="openKardex('${p.id}')">Kardex</button>
@@ -2510,6 +2541,167 @@ function openKardex(id){
     <div class="cons-list"><div class="table-wrap"><table style="font-size:12.5px"><thead><tr><th>Fecha</th><th>Tipo</th><th class="num">Cant.</th><th class="num">Saldo</th><th>Acción</th></tr></thead><tbody>${rows}</tbody></table></div></div>
     <button class="btn danger block" style="margin:8px 0 4px" onclick="delProduct('${id}')">Eliminar producto</button>
   `, `<button class="btn primary" onclick="closeModal()">Cerrar</button>`);
+}
+
+/* EDITAR PRODUCTO */
+function openEditProduct(id){
+  const p = db.products.find(x => x.id === id);
+  if(!p) return;
+  const util = (p.price || 0) - (p.cost || 0);
+  openSheet(`Editar producto`, `
+    <div class="field"><label>Nombre del producto</label><input id="epName" value="${esc(p.name)}" autocomplete="off"></div>
+    <div class="row2">
+      <div class="field"><label>Costo compra (Bs)</label><input id="epCost" type="number" inputmode="decimal" min="0" step="0.5" value="${p.cost || 0}" oninput="updateProdGanancia()"></div>
+      <div class="field"><label>Precio venta (Bs)</label><input id="epPrice" type="number" inputmode="decimal" min="0" step="0.5" value="${p.price || 0}" oninput="updateProdGanancia()"></div>
+    </div>
+    <div style="background:var(--amount-bg);border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2)">Ganancia por unidad</span>
+      <b id="epGanancia" style="font-size:22px;font-weight:800;color:${util >= 0 ? 'var(--green)' : 'var(--red)'}">${money(util)}</b>
+    </div>
+    <p class="helper" style="text-align:center;padding-bottom:4px">Stock actual: <b>${stockOf(p.id)}</b> unidades</p>
+  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveEditProduct('${id}')">Guardar</button>`);
+  setTimeout(()=>$('#epName').focus(), 320);
+}
+function updateProdGanancia(){
+  const cost = Number($('#epCost')?.value) || 0;
+  const price = Number($('#epPrice')?.value) || 0;
+  const g = price - cost;
+  const el = $('#epGanancia');
+  if(el){ el.textContent = money(g); el.style.color = g >= 0 ? 'var(--green)' : 'var(--red)'; }
+}
+function saveEditProduct(id){
+  const p = db.products.find(x => x.id === id);
+  if(!p) return;
+  const name = ($('#epName')?.value || '').trim();
+  if(!name){ toast('Ingresa el nombre'); return; }
+  const cost = Number($('#epCost')?.value) || 0;
+  const price = Number($('#epPrice')?.value) || 0;
+  p.name = name; p.cost = cost; p.price = price;
+  save(); closeModal(); renderAll(); toast('Producto actualizado');
+}
+
+/* INVENTARIO DE ARTÍCULOS DEL MOTEL */
+let itemFilter = '';
+function setItemFilter(f){
+  itemFilter = f;
+  ['All','Elec','Ropa','Amen','Otro','Baja'].forEach(k => {
+    const el = $('#itemBtn' + k);
+    if(!el) return;
+    const match = (k === 'All' && f === '') || (k.toLowerCase() === f) || (k === 'Baja' && f === 'baja');
+    el.classList.toggle('primary', match);
+  });
+  renderItems();
+}
+function renderItems(){
+  const body = $('#itemBody');
+  if(!body) return;
+  if(!db.items) db.items = [];
+  const query = ($('#itemSearch')?.value || '').trim().toLocaleLowerCase('es');
+  let items = db.items;
+  if(itemFilter === 'baja'){
+    items = items.filter(x => x.baja);
+  } else {
+    items = items.filter(x => !x.baja);
+    if(itemFilter) items = items.filter(x => x.categoria === itemFilter);
+  }
+  if(query) items = items.filter(x => (x.nombre||'').toLocaleLowerCase('es').includes(query));
+  if(!items.length){
+    body.innerHTML = `<tr><td colspan="5" class="empty">${itemFilter === 'baja' ? 'No hay artículos dados de baja.' : 'Sin artículos. Presiona ＋ Agregar para crear el primero.'}</td></tr>`;
+    return;
+  }
+  const catLabels = { electronica:'📺 Electrónica', ropa:'🛏 Ropa cama', amenities:'🧴 Amenities', otro:'📦 Otros' };
+  body.innerHTML = items.map(item => {
+    const catLabel = catLabels[item.categoria] || item.categoria || '—';
+    const stockColor = item.stock <= 0 ? 'var(--red)' : item.stock <= 2 ? 'var(--accent)' : 'var(--green)';
+    const statusBadge = item.baja
+      ? `<span style="background:rgba(255,59,48,.16);color:var(--red);padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700">De baja</span>`
+      : `<span style="background:rgba(52,199,89,.16);color:var(--green);padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700">Activo</span>`;
+    const actions = item.baja
+      ? `<button class="row-btn" onclick="reactivarItem('${item.id}')" style="background:rgba(52,199,89,.8);border-color:rgba(52,199,89,.5)">Reactivar</button>`
+      : `<button class="row-btn" onclick="openEditItem('${item.id}')">Editar</button> <button class="row-btn" onclick="darDeBajaItem('${item.id}')" style="background:rgba(255,59,48,.8);border-color:rgba(255,59,48,.5)">Dar baja</button>`;
+    return `<tr>
+      <td><b style="font-weight:600">${esc(item.nombre)}</b>${item.descripcion ? `<br><span style="font-size:11px;color:var(--text-2)">${esc(item.descripcion)}</span>` : ''}</td>
+      <td style="font-size:12px;color:var(--text-2)">${catLabel}</td>
+      <td class="num" style="color:${stockColor};font-weight:800">${item.stock}</td>
+      <td>${statusBadge}</td>
+      <td style="text-align:right;white-space:nowrap">${actions}</td>
+    </tr>`;
+  }).join('');
+}
+function openNewItem(){
+  openSheet('Nuevo artículo', `
+    <div class="field"><label>Nombre del artículo</label><input id="niNombre" placeholder="Ej: Televisor 32, manta polar..." autocomplete="off"></div>
+    <div class="field"><label>Descripción (opcional)</label><input id="niDesc" placeholder="Ej: Marca Samsung, pieza 3" autocomplete="off"></div>
+    <div class="row2">
+      <div class="field"><label>Categoría</label>
+        <select id="niCat">
+          <option value="electronica">📺 Electrónica</option>
+          <option value="ropa">🛏 Ropa de cama</option>
+          <option value="amenities">🧴 Amenities</option>
+          <option value="otro">📦 Otros</option>
+        </select>
+      </div>
+      <div class="field"><label>Cantidad / Stock</label><input id="niStock" type="number" inputmode="numeric" min="0" step="1" value="1"></div>
+    </div>
+  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveNewItem()">Guardar</button>`);
+  setTimeout(()=>$('#niNombre').focus(), 320);
+}
+function saveNewItem(){
+  const nombre = ($('#niNombre')?.value || '').trim();
+  if(!nombre){ toast('Ingresa el nombre del artículo'); return; }
+  const descripcion = ($('#niDesc')?.value || '').trim();
+  const categoria = $('#niCat').value;
+  const stock = Math.max(0, Number($('#niStock').value) || 0);
+  if(!db.items) db.items = [];
+  db.items.push({ id: uid(), nombre, descripcion, categoria, stock, baja: false, fechaBaja: null, creadoEn: new Date().toISOString() });
+  save(); closeModal(); renderItems(); toast('Artículo agregado');
+}
+function openEditItem(id){
+  const item = (db.items || []).find(x => x.id === id);
+  if(!item) return;
+  openSheet(`Editar artículo`, `
+    <div class="field"><label>Nombre del artículo</label><input id="eiNombre" value="${esc(item.nombre)}" autocomplete="off"></div>
+    <div class="field"><label>Descripción (opcional)</label><input id="eiDesc" value="${esc(item.descripcion || '')}" autocomplete="off"></div>
+    <div class="row2">
+      <div class="field"><label>Categoría</label>
+        <select id="eiCat">
+          <option value="electronica" ${item.categoria === 'electronica' ? 'selected' : ''}>📺 Electrónica</option>
+          <option value="ropa" ${item.categoria === 'ropa' ? 'selected' : ''}>🛏 Ropa de cama</option>
+          <option value="amenities" ${item.categoria === 'amenities' ? 'selected' : ''}>🧴 Amenities</option>
+          <option value="otro" ${item.categoria === 'otro' ? 'selected' : ''}>📦 Otros</option>
+        </select>
+      </div>
+      <div class="field"><label>Cantidad / Stock</label><input id="eiStock" type="number" inputmode="numeric" min="0" step="1" value="${item.stock}"></div>
+    </div>
+    <p class="helper" style="padding:0 4px">Creado: ${fmtDT(item.creadoEn || new Date().toISOString())}</p>
+  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveEditItem('${id}')">Guardar</button>`);
+  setTimeout(()=>$('#eiNombre').focus(), 320);
+}
+function saveEditItem(id){
+  const item = (db.items || []).find(x => x.id === id);
+  if(!item) return;
+  const nombre = ($('#eiNombre')?.value || '').trim();
+  if(!nombre){ toast('Ingresa el nombre'); return; }
+  item.nombre = nombre;
+  item.descripcion = ($('#eiDesc')?.value || '').trim();
+  item.categoria = $('#eiCat').value;
+  item.stock = Math.max(0, Number($('#eiStock').value) || 0);
+  save(); closeModal(); renderItems(); toast('Artículo actualizado');
+}
+function darDeBajaItem(id){
+  const item = (db.items || []).find(x => x.id === id);
+  if(!item) return;
+  if(!confirm(`¿Dar de baja "${item.nombre}"?\n\nEl artículo quedará inactivo. Puedes reactivarlo en cualquier momento desde la pestaña "De baja".`)) return;
+  item.baja = true;
+  item.fechaBaja = new Date().toISOString();
+  save(); renderItems(); toast(`${item.nombre} dado de baja`);
+}
+function reactivarItem(id){
+  const item = (db.items || []).find(x => x.id === id);
+  if(!item) return;
+  item.baja = false;
+  item.fechaBaja = null;
+  save(); renderItems(); toast(`${item.nombre} reactivado`);
 }
 
 /* REGISTRO MANUAL */
@@ -2677,7 +2869,18 @@ function renderPanelMovements(){
   const from = $('#panelFrom')?.value || todayKey();
   const to = $('#panelTo')?.value || todayKey();
   const all = [
-    ...db.sales.map(s => ({ ts:s.ts, day:s.day || dayKey(s.ts), label:s.detail || s.type || 'Venta', amount:Number(s.amount)||0, tipo:s.type || 'venta' })),
+    ...db.sales.map(s => {
+      let tiempo = null;
+      if(s.type === 'habitacion' && s.detail){
+        const m1 = String(s.detail).match(/(\d+)h\s*(\d+)?m?/);
+        if(m1){
+          const h = parseInt(m1[1]) || 0;
+          const min = parseInt(m1[2]) || 0;
+          tiempo = h > 0 && min > 0 ? `${h}h ${min}m` : h > 0 ? `${h}h` : min > 0 ? `${min}m` : null;
+        }
+      }
+      return { ts:s.ts, day:s.day || dayKey(s.ts), label:s.detail || s.type || 'Venta', amount:Number(s.amount)||0, tipo:s.type || 'venta', tiempo };
+    }),
     ...db.expenses.map(g => ({ ts:g.ts, day:g.day || dayKey(g.ts), label:`Gasto: ${g.desc || 'Sin detalle'}`, amount:-(Number(g.amount)||0), tipo:'gasto' })),
     ...db.deposits.map(d => ({ ts:d.ts, day:d.day || dayKey(d.ts), label:`Depósito: ${d.desc || 'Sin detalle'}`, amount:Number(d.amount)||0, tipo:'deposito' }))
   ].filter(m => m.ts && m.day >= from && m.day <= to).sort((a,b) => new Date(b.ts) - new Date(a.ts));
@@ -2687,10 +2890,12 @@ function renderPanelMovements(){
   $('#panelRecent').innerHTML = all.length ? all.map(m => {
     const color = m.tipo === 'gasto' ? 'var(--red)' : m.tipo === 'deposito' ? 'var(--blue)' : 'var(--accent)';
     const bg = m.tipo === 'gasto' ? 'rgba(255,59,48,.14)' : m.tipo === 'deposito' ? 'rgba(10,132,255,.14)' : 'rgba(200,150,62,.14)';
+    const tiempoStr = m.tiempo ? `<span style="font-size:12px;color:var(--accent);font-weight:700">${m.tiempo}</span>` : `<span style="color:var(--text-3);font-size:11px">—</span>`;
     return `<tr>
       <td style="color:var(--text-2);font-size:12.5px;white-space:nowrap">${fmtDate(m.day)}</td>
       <td style="color:var(--text-2);font-size:12.5px;white-space:nowrap">${fmtTime(m.ts)}</td>
       <td><span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:20px;background:${bg};color:${color};text-transform:capitalize">${esc(m.tipo)}</span> <span style="font-size:13px">${esc(m.label)}</span></td>
+      <td style="white-space:nowrap;text-align:center">${tiempoStr}</td>
       <td class="num" style="font-weight:700;color:${color};white-space:nowrap">${money(m.amount)}</td>
     </tr>`;
   }).join('') : `<tr><td colspan="4" class="empty">No hay movimientos en el rango seleccionado.</td></tr>`;
@@ -2913,6 +3118,7 @@ function renderAll(){
   updateDateDisplays();
   renderRooms();
   renderProducts();
+  renderItems();
   renderPanel();
   renderReports();
 }
