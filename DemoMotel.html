@@ -667,7 +667,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
     <div class="group">
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th class="num">Monto</th><th class="num">Util.</th></tr></thead>
+          <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Entrada</th><th>Salida</th><th class="num">Monto</th><th class="num">Util.</th></tr></thead>
           <tbody id="repDetail"></tbody>
         </table>
       </div>
@@ -1369,6 +1369,29 @@ function stateFor(r){
 }
 
 /* TARJETAS */
+function crAmountBox(roomAmt, consTotal, dataId){
+  const grand = roomAmt + consTotal;
+  const totalEl = dataId
+    ? `<span data-amount="${dataId}" style="font-size:30px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.02em">${money(grand)}</span>`
+    : `<span style="font-size:30px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.02em">${money(grand)}</span>`;
+  const roomRow = `<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0">
+    <span style="color:var(--text-2);font-weight:700">🏠 Habitación</span>
+    <span style="font-weight:800;font-variant-numeric:tabular-nums">${money(roomAmt)}</span>
+  </div>`;
+  const consRow = consTotal > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0">
+    <span style="color:var(--text-2);font-weight:700">🛍 Consumos</span>
+    <span style="font-weight:800;font-variant-numeric:tabular-nums;color:var(--accent)">${money(consTotal)}</span>
+  </div>` : '';
+  const sep = consTotal > 0 ? `<div style="border-top:1px solid var(--sep);margin:4px 0"></div>` : '';
+  return `<div class="cr-amount-box" style="flex-direction:column;align-items:stretch;gap:0;padding:12px 14px">
+    ${roomRow}${consRow}${sep}
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:${consTotal>0?'4':'0'}px">
+      <span class="ab-lbl">${consTotal > 0 ? 'TOTAL' : 'MONTO'}</span>
+      ${totalEl}
+    </div>
+  </div>`;
+}
+
 function cardRoom(r){
   if(!r) return '';
   const isLibre = r.status === 'libre';
@@ -1409,10 +1432,7 @@ function cardRoom(r){
             <div class="cr-col hl"><span class="k">H. Fin pqt</span><span class="v big">${outTime}</span></div>
           </div>
           <div class="cr-sub" style="color:var(--purple);font-weight:700">🔒 Tiempo detenido · Pendiente de cobro</div>
-          <div class="cr-amount-box">
-            <div><div class="ab-lbl">Bs Total</div><div class="ab-val">${money(grand)}</div></div>
-            <div class="ab-sub">Tarifa fija: ${money(totalAmt)}<br>${consTotal > 0 ? 'Consumos: ' + money(consTotal) : 'Sin consumos'}</div>
-          </div>
+          ${crAmountBox(totalAmt, consTotal, null)}
           <div class="stopped-actions">
             <button class="btn purple" onclick="event.stopPropagation(); reopenTimer('${r.id}')">↺ Reabrir</button>
             <button class="btn primary" onclick="event.stopPropagation(); openCheckOut('${r.id}')">💳 Cobrar</button>
@@ -1439,10 +1459,7 @@ function cardRoom(r){
           <div class="cr-col"><span class="k">H. Fin</span><span class="v">${outTime}</span></div>
           <div class="cr-col"><span class="k">H. Pieza</span><span class="v dash">- - - -</span></div>
         </div>
-        <div class="cr-amount-box">
-          <div><div class="ab-lbl">Bs Total</div><div class="ab-val">${money(grand)}</div></div>
-          <div class="ab-sub">Tarifa fija: ${money(totalAmt)}<br>${consTotal > 0 ? 'Consumos: ' + money(consTotal) : 'Sin consumos'}</div>
-        </div>
+        ${crAmountBox(totalAmt, consTotal, null)}
         <button class="btn-add-product" onclick="event.stopPropagation(); openQuickProduct('${r.id}')">
           <span class="pap-icon">＋</span>
           <span>Agregar producto</span>
@@ -1476,10 +1493,7 @@ function cardRoom(r){
             <div class="cr-col hl"><span class="k">H. Pieza</span><span class="v big">${fmtHM(finalElapsed)}</span></div>
           </div>
           <div class="cr-sub" style="color:var(--purple);font-weight:700">🔒 Tiempo detenido · Pendiente de cobro</div>
-          <div class="cr-amount-box">
-            <div><div class="ab-lbl">Monto</div><div class="ab-val">${money(grand)}</div></div>
-            <div class="ab-sub">${calc.hours}h × ${money(calc.rate)}${consTotal > 0 ? `<br>+ consumos ${money(consTotal)}` : ''}</div>
-          </div>
+          ${crAmountBox(calc.amount, consTotal, null)}
           <div class="stopped-actions">
             <button class="btn purple" onclick="event.stopPropagation(); reopenTimer('${r.id}')">↺ Reabrir</button>
             <button class="btn primary" onclick="event.stopPropagation(); openCheckOut('${r.id}')">💳 Cobrar</button>
@@ -1508,10 +1522,7 @@ function cardRoom(r){
           <div class="cr-col"><span class="k">H. Actu</span><span class="v live" data-now-time="${r.id}">${nowTimeStr}</span></div>
           <div class="cr-col hl"><span class="k">H. Pieza</span><span class="v big" data-elapsed="${r.id}">${elapsedStr}</span></div>
         </div>
-        <div class="cr-amount-box">
-          <div><div class="ab-lbl">Monto</div><div class="ab-val" data-amount="${r.id}">${money(grand)}</div></div>
-          <div class="ab-sub">${calc.hours}h × ${money(calc.rate)}${consTotal > 0 ? `<br>+ consumos ${money(consTotal)}` : ''}</div>
-        </div>
+        ${crAmountBox(calc.amount, consTotal, r.id)}
         <button class="btn-add-product" onclick="event.stopPropagation(); openQuickProduct('${r.id}')">
           <span class="pap-icon">＋</span>
           <span>Agregar producto</span>
@@ -1544,10 +1555,7 @@ function cardRoom(r){
           <div class="cr-col hl"><span class="k">H. Pieza</span><span class="v big">${fmtHM(finalElapsed)}</span></div>
         </div>
         <div class="cr-sub" style="color:var(--purple);font-weight:700">🔒 Tiempo detenido · Pendiente de cobro</div>
-        <div class="cr-amount-box">
-          <div><div class="ab-lbl">Monto</div><div class="ab-val">${money(grand)}</div></div>
-          <div class="ab-sub">${calc.hours ? `${calc.hours}h × ${money(calc.rate)}` : ''}${consTotal > 0 ? `<br>+ consumos ${money(consTotal)}` : ''}</div>
-        </div>
+        ${crAmountBox(calc.amount, consTotal, null)}
         <div class="stopped-actions">
           <button class="btn purple" onclick="event.stopPropagation(); reopenTimer('${r.id}')">↺ Reabrir</button>
           <button class="btn primary" onclick="event.stopPropagation(); openCheckOut('${r.id}')">💳 Cobrar</button>
@@ -1587,10 +1595,7 @@ function cardRoom(r){
         <div class="cr-col ${colCls}"><span class="k">H. Pieza</span><span class="v big" data-elapsed="${r.id}">${elapsedStr}</span></div>
       </div>
       ${barHTML}
-      <div class="cr-amount-box">
-        <div><div class="ab-lbl">Monto</div><div class="ab-val" data-amount="${r.id}">${money(grand)}</div></div>
-        <div class="ab-sub">${calc.hours ? `${calc.hours}h × ${money(calc.rate)}` : ''}${consTotal > 0 ? `<br>+ consumos ${money(consTotal)}` : ''}</div>
-      </div>
+      ${crAmountBox(calc.amount, consTotal, r.id)}
       <button class="btn-add-product" onclick="event.stopPropagation(); openQuickProduct('${r.id}')">
         <span class="pap-icon">＋</span>
         <span>Agregar producto</span>
@@ -1764,7 +1769,8 @@ function registerSale(r, total, payments, refTs){
     detail: detailParts.join(' · '),
     amount: ingresoHospedaje, lodgingAmount: ingresoHospedaje, totalCollected: Number(total) || 0, cost: 0,
     userId: currentUser?.id, userName: currentUser?.name, shiftId: currentShift?.id,
-    roomNum: r.num, payments: payments
+    roomNum: r.num, payments: payments,
+    checkIn: r.checkIn, checkOut: iso
   });
   r.consumos.forEach(c => {
     db.sales.push({
@@ -2961,7 +2967,7 @@ function renderReports(){
     $('#repRooms').innerHTML = '<tr><td colspan="8" class="empty">Seleccione un rango de fechas para generar el reporte.</td></tr>';
     $('#repDaily').innerHTML = '<tr><td colspan="5" class="empty">Seleccione un rango de fechas.</td></tr>';
     $('#repProduct').innerHTML = '<tr><td colspan="5" class="empty">Seleccione un rango de fechas.</td></tr>';
-    $('#repDetail').innerHTML = '<tr><td colspan="5" class="empty">Seleccione un rango de fechas.</td></tr>';
+    $('#repDetail').innerHTML = '<tr><td colspan="7" class="empty">Seleccione un rango de fechas.</td></tr>';
     return;
   }
   const rawSales = db.sales.filter(s => s.day >= from && s.day <= to);
@@ -3083,22 +3089,26 @@ function renderReports(){
       </tr>`).join('')
     : `<tr><td colspan="5" class="empty">Sin ventas de productos en el rango.</td></tr>`;
   const all = [
-    ...sales.map(s => ({ ts: s.ts, type: s.type, detail: s.detail, amount: s.amount, util: s.amount - s.cost, userName: s.userName })),
+    ...sales.map(s => ({ ts: s.ts, type: s.type, detail: s.detail, amount: s.amount, util: s.amount - s.cost, userName: s.userName, checkIn: s.checkIn || null, checkOut: s.checkOut || null })),
     ...expenses.map(g => ({ ts: g.ts, type: 'gasto', detail: `${g.desc} · ${g.category}`, amount: -g.amount, util: -g.amount, userName: g.userName })),
     ...deposits.map(d => ({ ts: d.ts, type: 'deposito', detail: d.desc, amount: 0, util: 0, userName: d.userName }))
   ].sort((a,b) => new Date(b.ts) - new Date(a.ts));
   $('#repDetail').innerHTML = all.length
     ? all.slice(0,300).map(s => {
         const tColor = s.type === 'gasto' ? 'var(--red)' : s.type === 'deposito' ? 'var(--blue)' : 'var(--accent)';
+        const entradaTd = s.type === 'habitacion' && s.checkIn ? `<span style="font-size:12px;font-weight:700;color:var(--green)">${fmtTime(s.checkIn)}</span>` : `<span style="color:var(--text-3);font-size:11px">—</span>`;
+        const salidaTd  = s.type === 'habitacion' && s.checkOut ? `<span style="font-size:12px;font-weight:700;color:var(--red)">${fmtTime(s.checkOut)}</span>` : `<span style="color:var(--text-3);font-size:11px">—</span>`;
         return `<tr>
           <td style="white-space:nowrap;color:var(--text-2);font-size:12px">${fmtDT(s.ts)}${s.userName ? `<br><span style="color:var(--text-3)">${esc(s.userName)}</span>` : ''}</td>
           <td style="font-size:12px;color:${tColor};text-transform:capitalize;font-weight:700">${s.type}</td>
           <td style="font-size:13px">${esc(s.detail)}</td>
+          <td style="text-align:center;white-space:nowrap">${entradaTd}</td>
+          <td style="text-align:center;white-space:nowrap">${salidaTd}</td>
           <td class="num" style="color:${s.type === 'gasto' ? 'var(--red)' : 'inherit'}">${money(s.amount)}</td>
           <td class="num" style="color:${s.util >= 0 ? 'var(--green)' : 'var(--red)'}">${money(s.util)}</td>
         </tr>`;
       }).join('')
-    : `<tr><td colspan="5" class="empty">Sin movimientos.</td></tr>`;
+    : `<tr><td colspan="7" class="empty">Sin movimientos.</td></tr>`;
 }
 
 /* RESPALDO */
