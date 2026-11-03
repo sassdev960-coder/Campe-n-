@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+<link rel="icon" href="logo.png">
+<title>DO SANTOS FC — Sistema de Gestión</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
+:root {
+  --club-primary: #06152F;
+  --club-secondary: #003B73;
+  --club-blue: #0066A6;
+  --club-cyan: #00AEEF;
+  --club-light-cyan: #08C5E8;
+  --club-white: #FFFFFF;
+  --club-light: #E8F5FC;
+  --club-gray: #A8B8C8;
+  --club-dark: #020B19;
+  --bg-main: #06152F;
+  --bg-card: #0B2345;
+  --bg-hover: #103967;
+  --text-primary: #FFFFFF;
+  --text-secondary: #B8D0E5;
+  --button-primary: #00AEEF;
+  --button-hover: #08C5E8;
+  --border-color: #164B79;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow: 0 8px 32px rgba(0,0,0,.4);
+  --font-display: 'Rajdhani', system-ui, sans-serif;
+  --font-body: 'Manrope', system-ui, sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--font-body);background:var(--bg-main);color:var(--text-primary);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+#app{display:flex;height:100vh;overflow:hidden}
+aside{width:270px;background:linear-gradient(180deg,var(--club-dark) 0%,#04102a 100%);color:var(--text-secondary);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;border-right:1px solid var(--border-color)}
+aside .logo{padding:18px 20px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border-color)}
+aside .logo img{width:42px;height:42px;object-fit:contain;border-radius:8px;background:rgba(255,255,255,.06);padding:4px}
+aside .logo .brand{display:flex;flex-direction:column;line-height:1.1}
+aside .logo .brand strong{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--club-white);letter-spacing:.5px}
+aside .logo .brand small{color:var(--club-gray);font-size:10px;font-weight:500;margin-top:2px;letter-spacing:.3px}
+aside nav{flex:1;overflow-y:auto;padding:10px 8px}
+aside nav::-webkit-scrollbar{width:6px}
+aside nav::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:3px}
+aside nav .group{color:var(--club-cyan);font-size:10px;text-transform:uppercase;padding:14px 12px 6px;letter-spacing:1.2px;font-weight:700;opacity:.85}
+aside nav a{display:flex;align-items:center;gap:10px;padding:9px 12px;color:var(--text-secondary);text-decoration:none;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .18s,color .18s,transform .18s}
+aside nav a i{font-size:16px;flex-shrink:0;opacity:.85}
+aside nav a:hover{background:var(--bg-hover);color:var(--club-white)}
+aside nav a.active{background:linear-gradient(90deg,var(--club-blue),var(--club-secondary));color:var(--club-white);font-weight:600;box-shadow:0 2px 8px rgba(0,174,239,.25)}
+aside nav a.active i{opacity:1}
+main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0;background:var(--bg-main)}
+header{background:rgba(11,35,69,.85);backdrop-filter:blur(10px);padding:16px 28px;border-bottom:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;gap:12px}
+header h1{font-family:var(--font-display);font-size:22px;font-weight:700;color:var(--club-white);letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#content{flex:1;padding:24px 28px;overflow-y:auto}
+#content::-webkit-scrollbar{width:8px}
+#content::-webkit-scrollbar-thumb{background:var(--border-color);border-radius:4px}
+.card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);margin-bottom:18px}
+.card h2{font-family:var(--font-display);font-size:17px;font-weight:600;color:var(--club-white);margin-bottom:14px;letter-spacing:.3px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-bottom:22px}
+.kpi{background:linear-gradient(135deg,var(--bg-card),#0d2a52);border:1px solid var(--border-color);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--club-cyan)}
+.kpi .label{font-size:11px;color:var(--club-gray);text-transform:none;font-weight:600;margin-bottom:8px;letter-spacing:.2px}
+.kpi .value{font-family:var(--font-display);font-size:28px;font-weight:700;line-height:1;color:var(--club-white)}
+.kpi .sub{font-size:11px;color:var(--text-secondary);margin-top:6px}
+table{width:100%;border-collapse:separate;border-spacing:0;background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+th,td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--border-color);font-size:13px}
+th{background:rgba(0,59,115,.35);font-weight:600;color:var(--club-light-cyan);text-transform:uppercase;font-size:10.5px;letter-spacing:.6px}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(16,57,103,.5)}
+.btn{padding:8px 16px;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;font-family:inherit;transition:transform .15s,box-shadow .15s,background .15s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:linear-gradient(135deg,var(--club-cyan),var(--club-light-cyan));color:var(--club-dark)}
+.btn-success{background:linear-gradient(135deg,#16a34a,#22c55e);color:#fff}
+.btn-danger{background:linear-gradient(135deg,#dc2626,#ef4444);color:#fff}
+.btn-secondary{background:var(--bg-hover);color:var(--club-white);border:1px solid var(--border-color)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-xs{padding:4px 9px;font-size:11px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:10px;flex-wrap:wrap}
+.toolbar .search{padding:9px 14px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-size:13px;min-width:220px;background:var(--bg-card);color:var(--club-white)}
+.toolbar .search::placeholder{color:var(--club-gray)}
+.toolbar .search:focus{outline:none;border-color:var(--club-cyan);box-shadow:0 0 0 3px rgba(0,174,239,.15)}
+#modal{position:fixed;inset:0;background:rgba(2,11,25,.75);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+#modal.hidden{display:none}
+.modal-content{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:26px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.modal-content h2{font-family:var(--font-display);font-size:19px;font-weight:700;color:var(--club-white);margin-bottom:18px;letter-spacing:.3px}
+.form-row{margin-bottom:14px}
+.form-row label{display:block;font-size:12px;font-weight:600;color:var(--club-light-cyan);margin-bottom:5px;letter-spacing:.2px}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:9px 12px;border:1px solid var(--border-color);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:rgba(6,21,47,.6);color:var(--club-white)}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:var(--club-cyan);box-shadow:0 0 0 3px rgba(0,174,239,.15)}
+.form-row textarea{min-height:70px;resize:vertical}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;letter-spacing:.2px}
+.badge-green{background:rgba(34,197,94,.15);color:#4ade80;border:1px solid rgba(34,197,94,.3)}
+.badge-red{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.3)}
+.badge-yellow{background:rgba(234,179,8,.15);color:#facc15;border:1px solid rgba(234,179,8,.3)}
+.badge-blue{background:rgba(0,174,239,.15);color:var(--club-cyan);border:1px solid rgba(0,174,239,.3)}
+.badge-gray{background:rgba(168,184,200,.12);color:var(--club-gray);border:1px solid rgba(168,184,200,.25)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:768px){.grid-2{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}}
+.empty{text-align:center;padding:40px;color:var(--club-gray);font-size:13px}
+.pos-layout{display:grid;grid-template-columns:1fr 400px;gap:18px;align-items:start}
+@media(max-width:900px){.pos-layout{grid-template-columns:1fr}}
+.pos-products{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:18px}
+.pos-cart{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:18px}
+.pos-cart-items{min-height:120px;max-height:400px;overflow-y:auto;margin:12px 0}
+.pos-item{display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid var(--border-color);font-size:13px;gap:8px}
+.pos-total{font-family:var(--font-display);font-size:22px;font-weight:700;padding-top:12px;border-top:2px solid var(--border-color);margin-bottom:8px;color:var(--club-cyan)}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.product-card{background:rgba(6,21,47,.6);border:1px solid var(--border-color);border-radius:var(--radius-sm);padding:12px;cursor:pointer;transition:all .18s}
+.product-card:hover{background:var(--bg-hover);border-color:var(--club-cyan);transform:translateY(-2px)}
+.product-card .pname{font-weight:600;font-size:13px;margin-bottom:4px;color:var(--club-white)}
+.product-card .pprice{color:var(--club-cyan);font-weight:700;font-size:12px}
+.product-card .pstock{color:var(--club-gray);font-size:11px;margin-top:2px}
+.chart-bar{background:rgba(168,184,200,.12);border-radius:4px;height:8px;overflow:hidden;margin-top:4px}
+.chart-bar div{background:linear-gradient(90deg,var(--club-cyan),var(--club-light-cyan));height:100%;border-radius:4px}
+.row-flex{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mb-2{margin-bottom:16px}
+.mt-2{margin-top:16px}
+.text-right{text-align:right}
+.text-muted{color:var(--club-gray)}
+.w-100{width:100%}
+.bi{vertical-align:-.125em}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside>
+    <div class="logo">
+      <img src="logo.png" alt="DO SANTOS FC">
+      <div class="brand">
+        <strong>DO SANTOS FC</strong>
+        <small>Sistema de gestión deportiva</small>
+      </div>
+    </div>
+    <nav id="nav"></nav>
+  </aside>
+  <main>
+    <header>
+      <h1 id="pageTitle">Panel Principal</h1>
+      <div class="actions">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('fileImport').click()"><i class="bi bi-upload"></i> Importar</button>
+        <input type="file" id="fileImport" accept=".json" style="display:none" onchange="importarJSON(this)">
+        <button class="btn btn-primary btn-sm" onclick="exportarJSON()"><i class="bi bi-download"></i> Exportar JSON</button>
+      </div>
+    </header>
+    <div id="content"></div>
+  </main>
+</div>
+<div id="modal" class="hidden"></div>
+
+<script>
+// ============ DB ============
+const DB_KEY = 'arnel_system_db_v1';
+
+const seedCategorias = [
+  {id:'cat_sub7', nombre:'Sub 7', edadMin:6, edadMax:7},
+  {id:'cat_sub8', nombre:'Sub 8', edadMin:7, edadMax:8},
+  {id:'cat_sub9', nombre:'Sub 9', edadMin:8, edadMax:9},
+  {id:'cat_sub10', nombre:'Sub 10', edadMin:9, edadMax:10},
+  {id:'cat_sub11', nombre:'Sub 11', edadMin:10, edadMax:11},
+  {id:'cat_sub12', nombre:'Sub 12', edadMin:11, edadMax:12},
+  {id:'cat_sub13', nombre:'Sub 13', edadMin:12, edadMax:13},
+  {id:'cat_sub14', nombre:'Sub 14', edadMin:13, edadMax:14},
+  {id:'cat_sub15', nombre:'Sub 15', edadMin:14, edadMax:15},
+  {id:'cat_sub16', nombre:'Sub 16', edadMin:15, edadMax:16},
+  {id:'cat_sub17', nombre:'Sub 17', edadMin:16, edadMax:17},
+  {id:'cat_sub18', nombre:'Sub 18', edadMin:17, edadMax:18},
+  {id:'cat_sub19', nombre:'Sub 19', edadMin:18, edadMax:19},
+  {id:'cat_sub15f', nombre:'Sub 15 Femenino', edadMin:14, edadMax:15},
+  {id:'cat_prim_m', nombre:'Primera de Ascenso Masculino', edadMin:16, edadMax:99},
+  {id:'cat_prim_f', nombre:'Primera de Ascenso Femenino', edadMin:16, edadMax:99}
+];
+
+function seedDB(){
+  const hoy = new Date().toISOString().slice(0,10);
+  const mes = hoy.slice(0,7);
+  return {
+    config:{nombre:'Academia Arnel', moneda:'Bs', mensualidadBase:250, sucursal:'Principal'},
+    categorias:[...seedCategorias],
+    deportistas:[
+      {id:'d1',nombres:'Carlos',apellidos:'Quispe',fechaNacimiento:'2010-05-12',sexo:'Masculino',direccion:'Av. Central #123',telefono:'77712345',tutor:'María Quispe',telefonoEmergencia:'77799999',fechaIngreso:hoy,categoriaId:'cat_sub14',turno:'Tarde',horario:'16:00-18:00',estado:'Activo',tipoSangre:'O+',alergias:'Ninguna',antecedentes:'',observacionesMedicas:'',tarifa:250,beca:0},
+      {id:'d2',nombres:'Luis',apellidos:'Mamani',fechaNacimiento:'2011-08-20',sexo:'Masculino',direccion:'Calle Los Pinos #45',telefono:'77754321',tutor:'Pedro Mamani',telefonoEmergencia:'77711111',fechaIngreso:hoy,categoriaId:'cat_sub13',turno:'Tarde',horario:'16:00-18:00',estado:'Activo',tipoSangre:'A+',alergias:'Penicilina',antecedentes:'',observacionesMedicas:'',tarifa:250,beca:50},
+      {id:'d3',nombres:'Ana',apellidos:'Flores',fechaNacimiento:'2009-03-15',sexo:'Femenino',direccion:'Av. Las Américas #88',telefono:'77788888',tutor:'Rosa Flores',telefonoEmergencia:'77722222',fechaIngreso:hoy,categoriaId:'cat_sub15f',turno:'Mañana',horario:'08:00-10:00',estado:'Activo',tipoSangre:'B+',alergias:'Ninguna',antecedentes:'',observacionesMedicas:'',tarifa:250,beca:0}
+    ],
+    personal:[
+      {id:'p1',nombres:'Juan',apellidos:'Pérez',cargo:'Entrenador',especialidad:'Fútbol formativo',telefono:'77710000',email:'juan@arnel.com',fechaIngreso:hoy,salario:2500,estado:'Activo',observaciones:''},
+      {id:'p2',nombres:'María',apellidos:'Torrez',cargo:'Secretaria',especialidad:'',telefono:'77720000',email:'maria@arnel.com',fechaIngreso:hoy,salario:1800,estado:'Activo',observaciones:''}
+    ],
+    usuarios:[
+      {id:'u1',nombre:'Superadmin',usuario:'admin',rol:'Superadministrador',activo:'true'},
+      {id:'u2',nombre:'Cajero Principal',usuario:'cajero',rol:'Cajero',activo:'true'}
+    ],
+    pagos:[], movCaja:[], cajaChica:[],
+    productos:[
+      {id:'pr1',nombre:'Camiseta Oficial Talla M',categoria:'Camiseta',talla:'M',color:'Rojo',precioCompra:60,precioVenta:100,stock:15,stockMinimo:5},
+      {id:'pr2',nombre:'Short Deportivo Talla M',categoria:'Short',talla:'M',color:'Negro',precioCompra:40,precioVenta:70,stock:12,stockMinimo:5},
+      {id:'pr3',nombre:'Medias Deportivas',categoria:'Medias',talla:'Única',color:'Blanco',precioCompra:10,precioVenta:25,stock:3,stockMinimo:5}
+    ],
+    ventas:[], proveedores:[],
+    equipamiento:[
+      {id:'eq1',nombre:'Balón Fútbol 5',tipo:'Balón',cantidad:10,estado:'Bueno',observaciones:''},
+      {id:'eq2',nombre:'Conos Naranja',tipo:'Conos',cantidad:30,estado:'Bueno',observaciones:''},
+      {id:'eq3',nombre:'Petos Azules',tipo:'Petos',cantidad:20,estado:'Bueno',observaciones:''}
+    ],
+    prestamos:[],
+    canchas:[
+      {id:'c1',nombre:'Cancha Principal',ubicacion:'Sede Central',capacidad:22,tipo:'Fútbol 11',estado:'Disponible'},
+      {id:'c2',nombre:'Cancha Sintética 1',ubicacion:'Sede Central',capacidad:14,tipo:'Fútbol 7',estado:'Disponible'}
+    ],
+    reservas:[], notificaciones:[], asistencias:[], evaluaciones:[], asistenciasPersonal:[], pagosPersonal:[],
+    preinscripciones:[
+      {id:'pre1',nombres:'Diego',apellidos:'Rojas',fechaNacimiento:'2012-01-10',sexo:'Masculino',representante:'Sofía Rojas',telefono:'77770001',categoriaInteres:'cat_sub12',estado:'Pendiente'}
+    ],
+    noticias:[
+      {id:'n1',titulo:'Inicio de temporada 2025',contenido:'Damos la bienvenida a todos nuestros alumnos a la nueva temporada deportiva.',fecha:hoy,autor:'Administración'}
+    ]
+  };
+}
+
+let db = null;
+
+function loadDB(){
+  const raw = localStorage.getItem(DB_KEY);
+  if(raw){ try{ db = JSON.parse(raw);}catch(e){ db = seedDB(); } }
+  else { db = seedDB(); }
+  const seed = seedDB();
+  for(const k in seed){ if(!(k in db)) db[k] = seed[k]; }
+  saveDB();
+}
+function saveDB(){ localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+function uid(p='id'){ return p+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+// ============ HELPERS ============
+function refLabel(source, id){
+  if(!id) return '-';
+  const list = db[source] || [];
+  const item = list.find(x => x.id === id);
+  if(!item) return id;
+  if(item.nombres) return (item.nombres + ' ' + (item.apellidos||'')).trim();
+  return item.nombre || item.titulo || id;
+}
+function fmtBs(n){ return 'Bs ' + (Number(n)||0).toFixed(2); }
+function fmtDate(d){ if(!d) return '-'; try{ return new Date(d+'T00:00:00').toLocaleDateString('es-BO'); }catch(e){ return d; } }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function currentMonth(){ return new Date().toISOString().slice(0,7); }
+
+function openModal(html){
+  const m = document.getElementById('modal');
+  m.innerHTML = '<div class="modal-content">' + html + '</div>';
+  m.classList.remove('hidden');
+}
+function closeModal(){ document.getElementById('modal').classList.add('hidden'); }
+
+function buildForm(fields, values){
+  let html = '<form id="dynForm"><div class="form-grid">';
+  for(const f of fields){
+    const isWide = f.type === 'textarea';
+    html += `<div class="form-row" style="${isWide?'grid-column:1/-1':''}">`;
+    html += `<label>${f.label}${f.required?' *':''}</label>`;
+    const val = values && values[f.name] !== undefined ? values[f.name] : (f.default !== undefined ? f.default : '');
+    if(f.type === 'select'){
+      let opts = f.options || [];
+      if(f.source){
+        opts = (db[f.source]||[]).map(o => ({value:o.id, label:(o.nombres ? (o.nombres+' '+(o.apellidos||'')) : (o.nombre||o.titulo||o.id))}));
+      } else if(opts.length && typeof opts[0] !== 'object'){
+        opts = opts.map(o => ({value:o, label:o}));
+      }
+      html += `<select name="${f.name}" ${f.required?'required':''}><option value="">-- Seleccionar --</option>`;
+      for(const o of opts){ html += `<option value="${o.value}" ${String(val)===String(o.value)?'selected':''}>${o.label}</option>`; }
+      html += `</select>`;
+    } else if(f.type === 'textarea'){
+      html += `<textarea name="${f.name}" ${f.required?'required':''}>${val||''}</textarea>`;
+    } else {
+      const step = f.type==='number' ? 'any' : '';
+      html += `<input type="${f.type||'text'}" name="${f.name}" value="${val||''}" ${f.required?'required':''} step="${step}">`;
+    }
+    html += `</div>`;
+  }
+  html += '</div>';
+  html += `<div class="row-flex" style="justify-content:flex-end;margin-top:16px">
+    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+    <button type="submit" class="btn btn-primary">Guardar</button>
+  </div></form>`;
+  return html;
+}
+
+function showForm(title, fields, values, onSave){
+  openModal('<h2>'+title+'</h2>' + buildForm(fields, values));
+  document.getElementById('dynForm').onsubmit = (e) => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const data = {};
+    for(const f of fields){
+      let v = fd.get(f.name);
+      if(f.type === 'number') v = v === '' || v === null ? null : Number(v);
+      data[f.name] = v;
+    }
+    onSave(data);
+    closeModal();
+  };
+}
+
+// ============ ENTITY DEFINITIONS ============
+const ENT = {
+  categorias:{
+    label:'Categoría',
+    fields:[
+      {name:'nombre', label:'Nombre', type:'text', required:true},
+      {name:'edadMin', label:'Edad mínima', type:'number'},
+      {name:'edadMax', label:'Edad máxima', type:'number'}
+    ]
+  },
+  deportistas:{
+    label:'Deportista',
+    fields:[
+      {name:'nombres', label:'Nombres', type:'text', required:true},
+      {name:'apellidos', label:'Apellidos', type:'text', required:true},
+      {name:'fechaNacimiento', label:'Fecha de nacimiento', type:'date'},
+      {name:'sexo', label:'Sexo', type:'select', options:['Masculino','Femenino']},
+      {name:'direccion', label:'Dirección', type:'text'},
+      {name:'telefono', label:'Teléfono', type:'text'},
+      {name:'tutor', label:'Padre/Madre/Tutor', type:'text'},
+      {name:'telefonoEmergencia', label:'Teléfono emergencia', type:'text'},
+      {name:'fechaIngreso', label:'Fecha de ingreso', type:'date', default:todayStr()},
+      {name:'categoriaId', label:'Categoría', type:'select', source:'categorias'},
+      {name:'turno', label:'Turno', type:'select', options:['Mañana','Tarde','Noche']},
+      {name:'horario', label:'Horario', type:'text'},
+      {name:'estado', label:'Estado', type:'select', options:['Activo','Inactivo','Retirado'], default:'Activo'},
+      {name:'tipoSangre', label:'Tipo de sangre', type:'text'},
+      {name:'alergias', label:'Alergias', type:'text'},
+      {name:'antecedentes', label:'Antecedentes médicos', type:'textarea'},
+      {name:'observacionesMedicas', label:'Observaciones médicas', type:'textarea'},
+      {name:'tarifa', label:'Tarifa mensual (Bs)', type:'number', default:250},
+      {name:'beca', label:'Beca / descuento (%)', type:'number', default:0}
+    ]
+  },
+  personal:{
+    label:'Personal',
+    fields:[
+      {name:'nombres', label:'Nombres', type:'text', required:true},
+      {name:'apellidos', label:'Apellidos', type:'text', required:true},
+      {name:'cargo', label:'Cargo', type:'select', options:['Entrenador','Asistente','Administrativo','Cajero','Secretaria','Otro']},
+      {name:'especialidad', label:'Especialidad', type:'text'},
+      {name:'telefono', label:'Teléfono', type:'text'},
+      {name:'email', label:'Email', type:'text'},
+      {name:'fechaIngreso', label:'Fecha de ingreso', type:'date'},
+      {name:'salario', label:'Salario / Honorarios (Bs)', type:'number'},
+      {name:'estado', label:'Estado', type:'select', options:['Activo','Inactivo','Licencia'], default:'Activo'},
+      {name:'observaciones', label:'Observaciones', type:'textarea'}
+    ]
+  },
+  proveedores:{
+    label:'Proveedor',
+    fields:[
+      {name:'nombre', label:'Nombre', type:'text', required:true},
+      {name:'contacto', label:'Contacto', type:'text'},
+      {name:'telefono', label:'Teléfono', type:'text'},
+      {name:'email', label:'Email', type:'text'},
+      {name:'direccion', label:'Dirección', type:'text'}
+    ]
+  },
+  productos:{
+    label:'Producto',
+    fields:[
+      {name:'nombre', label:'Producto', type:'text', required:true},
+      {name:'categoria', label:'Categoría', type:'select', options:['Uniforme','Camiseta','Short','Medias','Canilleras','Mochila','Accesorio','Otro']},
+      {name:'talla', label:'Talla', type:'text'},
+      {name:'color', label:'Color', type:'text'},
+      {name:'precioCompra', label:'Precio compra (Bs)', type:'number'},
+      {name:'precioVenta', label:'Precio venta (Bs)', type:'number', required:true},
+      {name:'stock', label:'Stock actual', type:'number', default:0},
+      {name:'stockMinimo', label:'Stock mínimo', type:'number', default:2}
+    ]
+  },
+  equipamiento:{
+    label:'Equipamiento',
+    fields:[
+      {name:'nombre', label:'Implemento', type:'text', required:true},
+      {name:'tipo', label:'Tipo', type:'select', options:['Balón','Conos','Redes','Escaleras','Petos','Silbatos','Otro']},
+      {name:'cantidad', label:'Cantidad total', type:'number', default:1},
+      {name:'estado', label:'Estado', type:'select', options:['Bueno','Regular','Malo','Baja'], default:'Bueno'},
+      {name:'observaciones', label:'Observaciones', type:'textarea'}
+    ]
+  },
+  canchas:{
+    label:'Cancha',
+    fields:[
+      {name:'nombre', label:'Nombre', type:'text', required:true},
+      {name:'ubicacion', label:'Ubicación', type:'text'},
+      {name:'capacidad', label:'Capacidad', type:'number'},
+      {name:'tipo', label:'Tipo', type:'select', options:['Fútbol 11','Fútbol 7','Fútbol 5','Sintética','Natural','Techada']},
+      {name:'estado', label:'Estado', type:'select', options:['Disponible','Mantenimiento','Ocupada'], default:'Disponible'}
+    ]
+  },
+  usuarios:{
+    label:'Usuario',
+    fields:[
+      {name:'nombre', label:'Nombre completo', type:'text', required:true},
+      {name:'usuario', label:'Usuario', type:'text', required:true},
+      {name:'rol', label:'Rol', type:'select', options:['Superadministrador','Administrador','Secretaria','Cajero','Entrenador','Encargado de Inventario','Director Deportivo']},
+      {name:'activo', label:'Activo', type:'select', options:['true','false'], default:'true'}
+    ]
+  },
+  noticias:{
+    label:'Noticia',
+    fields:[
+      {name:'titulo', label:'Título', type:'text', required:true},
+      {name:'contenido', label:'Contenido', type:'textarea'},
+      {name:'fecha', label:'Fecha', type:'date', default:todayStr()},
+      {name:'autor', label:'Autor', type:'text'}
+    ]
+  },
+  preinscripciones:{
+    label:'Preinscripción',
+    fields:[
+      {name:'nombres', label:'Nombres del alumno', type:'text', required:true},
+      {name:'apellidos', label:'Apellidos', type:'text', required:true},
+      {name:'fechaNacimiento', label:'Fecha de nacimiento', type:'date'},
+      {name:'sexo', label:'Sexo', type:'select', options:['Masculino','Femenino']},
+      {name:'representante', label:'Representante', type:'text'},
+      {name:'telefono', label:'Teléfono', type:'text', required:true},
+      {name:'categoriaInteres', label:'Categoría de interés', type:'select', source:'categorias'},
+      {name:'estado', label:'Estado', type:'select', options:['Pendiente','Aprobada','Contactado','Rechazada'], default:'Pendiente'}
+    ]
+  },
+  reservas:{
+    label:'Reserva',
+    fields:[
+      {name:'canchaId', label:'Cancha', type:'select', source:'canchas', required:true},
+      {name:'categoriaId', label:'Categoría', type:'select', source:'categorias'},
+      {name:'fecha', label:'Fecha', type:'date', required:true, default:todayStr()},
+      {name:'horaInicio', label:'Hora inicio', type:'time'},
+      {name:'horaFin', label:'Hora fin', type:'time'},
+      {name:'actividad', label:'Actividad', type:'text'},
+      {name:'estado', label:'Estado', type:'select', options:['Confirmada','Pendiente','Cancelada'], default:'Confirmada'}
+    ]
+  },
+  prestamos:{
+    label:'Préstamo',
+    fields:[
+      {name:'equipoId', label:'Equipamiento', type:'select', source:'equipamiento', required:true},
+      {name:'personalId', label:'Personal', type:'select', source:'personal', required:true},
+      {name:'cantidad', label:'Cantidad', type:'number', default:1},
+      {name:'fechaEntrega', label:'Fecha entrega', type:'date', default:todayStr()},
+      {name:'fechaDevolucion', label:'Fecha devolución esperada', type:'date'},
+      {name:'devuelto', label:'Devuelto', type:'select', options:['No','Sí'], default:'No'},
+      {name:'observaciones', label:'Observaciones', type:'textarea'}
+    ]
+  },
+  evaluaciones:{
+    label:'Evaluación',
+    fields:[
+      {name:'deportistaId', label:'Deportista', type:'select', source:'deportistas', required:true},
+      {name:'fecha', label:'Fecha', type:'date', default:todayStr()},
+      {name:'tecnica', label:'Técnica (1-10)', type:'number'},
+      {name:'tactica', label:'Táctica (1-10)', type:'number'},
+      {name:'fisico', label:'Físico (1-10)', type:'number'},
+      {name:'actitud', label:'Actitud (1-10)', type:'number'},
+      {name:'observaciones', label:'Observaciones', type:'textarea'}
+    ]
+  },
+  asistenciasPersonal:{
+    label:'Asistencia personal',
+    fields:[
+      {name:'personalId', label:'Personal', type:'select', source:'personal', required:true},
+      {name:'fecha', label:'Fecha', type:'date', required:true, default:todayStr()},
+      {name:'entrada', label:'Hora entrada', type:'time'},
+      {name:'salida', label:'Hora salida', type:'time'},
+      {name:'estado', label:'Estado', type:'select', options:['Presente','Tarde','Falta','Permiso'], default:'Presente'}
+    ]
+  },
+  pagosPersonal:{
+    label:'Pago personal',
+    fields:[
+      {name:'personalId', label:'Personal', type:'select', source:'personal', required:true},
+      {name:'mes', label:'Mes (YYYY-MM)', type:'text', default:currentMonth(), required:true},
+      {name:'monto', label:'Monto (Bs)', type:'number', required:true},
+      {name:'fecha', label:'Fecha de pago', type:'date', default:todayStr()},
+      {name:'metodo', label:'Método', type:'select', options:['Efectivo','Transferencia','Otro']},
+      {name:'estado', label:'Estado', type:'select', options:['Pagado','Pendiente'], default:'Pagado'}
+    ]
+  }
+};
+
+// ============ NAV & ROUTES ============
+const NAV = [
+  {group:'Principal', items:[{route:'dashboard', label:'<i class="bi bi-speedometer2"></i> Panel Principal'}]},
+  {group:'Gestión Deportiva', items:[
+    {route:'deportistas', label:'<i class="bi bi-people-fill"></i> Deportistas'},
+    {route:'categorias', label:'<i class="bi bi-tags-fill"></i> Categorías'},
+    {route:'asistencias', label:'<i class="bi bi-check2-circle"></i> Asistencias'},
+    {route:'evaluaciones', label:'<i class="bi bi-clipboard-check"></i> Evaluaciones'}
+  ]},
+  {group:'Recursos Humanos', items:[
+    {route:'personal', label:'<i class="bi bi-person-badge"></i> Personal'},
+    {route:'asistencia-personal', label:'<i class="bi bi-clock-history"></i> Asistencia Personal'},
+    {route:'pagos-personal', label:'<i class="bi bi-cash-stack"></i> Pagos Personal'}
+  ]},
+  {group:'Finanzas', items:[
+    {route:'cobros', label:'<i class="bi bi-cash-coin"></i> Cobros y Cobranza'},
+    {route:'caja', label:'<i class="bi bi-bank"></i> Caja General'},
+    {route:'caja-chica', label:'<i class="bi bi-wallet2"></i> Caja Chica'}
+  ]},
+  {group:'Inventario Comercial', items:[
+    {route:'productos', label:'<i class="bi bi-bag-fill"></i> Productos'},
+    {route:'pos', label:'<i class="bi bi-cart3"></i> Punto de Venta'},
+    {route:'proveedores', label:'<i class="bi bi-truck"></i> Proveedores'}
+  ]},
+  {group:'Inventario Deportivo', items:[
+    {route:'equipamiento', label:'<i class="bi bi-tools"></i> Equipamiento'},
+    {route:'prestamos', label:'<i class="bi bi-arrow-left-right"></i> Préstamos'}
+  ]},
+  {group:'Infraestructura', items:[
+    {route:'canchas', label:'<i class="bi bi-geo-alt-fill"></i> Canchas'},
+    {route:'reservas', label:'<i class="bi bi-calendar-check"></i> Reservas'}
+  ]},
+  {group:'Comunicación', items:[{route:'notificaciones', label:'<i class="bi bi-bell-fill"></i> Notificaciones'}]},
+  {group:'Web Pública', items:[
+    {route:'preinscripciones', label:'<i class="bi bi-pencil-square"></i> Preinscripciones'},
+    {route:'noticias', label:'<i class="bi bi-newspaper"></i> Noticias'}
+  ]},
+  {group:'Análisis', items:[{route:'reportes', label:'<i class="bi bi-bar-chart-line-fill"></i> Reportes'}]},
+  {group:'Configuración', items:[
+    {route:'usuarios', label:'<i class="bi bi-person-gear"></i> Usuarios'},
+    {route:'configuracion', label:'<i class="bi bi-gear-fill"></i> Configuración'}
+  ]}
+];
+
+const routes = {
+  dashboard:{title:'Panel Principal', render:renderDashboard},
+  deportistas:{title:'Gestión de Deportistas', render:()=>renderEntity('deportistas')},
+  categorias:{title:'Gestión de Categorías', render:()=>renderEntity('categorias')},
+  asistencias:{title:'Asistencias de Deportistas', render:renderAsistencias},
+  evaluaciones:{title:'Evaluaciones Deportivas', render:()=>renderEntity('evaluaciones')},
+  personal:{title:'Gestión de Personal', render:()=>renderEntity('personal')},
+  'asistencia-personal':{title:'Asistencia del Personal', render:()=>renderEntity('asistenciasPersonal')},
+  'pagos-personal':{title:'Pagos al Personal', render:()=>renderEntity('pagosPersonal')},
+  cobros:{title:'Cobros y Cobranza', render:renderCobros},
+  caja:{title:'Caja General', render:renderCaja},
+  'caja-chica':{title:'Caja Chica', render:renderCajaChica},
+  productos:{title:'Productos (Inventario Comercial)', render:()=>renderEntity('productos')},
+  pos:{title:'Punto de Venta', render:renderPOS},
+  proveedores:{title:'Proveedores', render:()=>renderEntity('proveedores')},
+  equipamiento:{title:'Equipamiento (Inventario Deportivo)', render:()=>renderEntity('equipamiento')},
+  prestamos:{title:'Préstamos de Equipamiento', render:()=>renderEntity('prestamos')},
+  canchas:{title:'Canchas', render:()=>renderEntity('canchas')},
+  reservas:{title:'Reservas', render:()=>renderEntity('reservas')},
+  notificaciones:{title:'Notificaciones Internas', render:renderNotificaciones},
+  reportes:{title:'Reportes y Estadísticas', render:renderReportes},
+  preinscripciones:{title:'Preinscripciones (Web Pública)', render:()=>renderEntity('preinscripciones')},
+  noticias:{title:'Noticias y Eventos (Web Pública)', render:()=>renderEntity('noticias')},
+  usuarios:{title:'Usuarios y Roles', render:()=>renderEntity('usuarios')},
+  configuracion:{title:'Configuración del Sistema', render:renderConfiguracion}
+};
+
+let currentRoute = 'dashboard';
+
+function renderNav(){
+  let html = '';
+  for(const g of NAV){
+    html += `<div class="group">${g.group}</div>`;
+    for(const item of g.items){
+      html += `<a data-route="${item.route}" class="${item.route===currentRoute?'active':''}" onclick="navigate('${item.route}')">${item.label}</a>`;
+    }
+  }
+  document.getElementById('nav').innerHTML = html;
+}
+
+function navigate(route){
+  currentRoute = route;
+  renderNav();
+  const r = routes[route];
+  document.getElementById('pageTitle').textContent = r.title;
+  document.getElementById('content').innerHTML = '';
+  r.render();
+}
+
+// ============ GENERIC ENTITY RENDERER ============
+function renderEntity(entityKey, customActions){
+  const cfg = ENT[entityKey];
+  const rows = db[entityKey] || [];
+  const fields = cfg.fields;
+  const displayFields = fields.filter(f => f.type !== 'textarea').slice(0, 6);
+
+  let html = `<div class="toolbar">
+    <input class="search" placeholder="Buscar..." oninput="filterTable(this,'tbl_${entityKey}')">
+    <button class="btn btn-primary" onclick="entityCreate('${entityKey}')">+ Nuevo ${cfg.label}</button>
+  </div>`;
+
+  html += `<table id="tbl_${entityKey}"><thead><tr>`;
+  for(const f of displayFields){ html += `<th>${f.label}</th>`; }
+  html += `<th style="text-align:right">Acciones</th></tr></thead><tbody>`;
+
+  if(rows.length === 0){
+    html += `<tr><td colspan="${displayFields.length+1}"><div class="empty">Sin registros aún. Crea el primero.</div></td></tr>`;
+  } else {
+    for(const row of rows){
+      html += '<tr>';
+      for(const f of displayFields){
+        let v = row[f.name];
+        if(f.source){ v = refLabel(f.source, v); }
+        else if(f.type === 'date'){ v = fmtDate(v); }
+        else if(v === undefined || v === null || v === ''){ v = '<span class="text-muted">-</span>'; }
+        html += `<td>${v}</td>`;
+      }
+      html += `<td style="text-align:right;white-space:nowrap">
+        ${customActions ? customActions(row) : ''}
+        <button class="btn btn-secondary btn-xs" onclick="entityEdit('${entityKey}','${row.id}')">Editar</button>
+        <button class="btn btn-danger btn-xs" onclick="entityDelete('${entityKey}','${row.id}')">Eliminar</button>
+      </td>`;
+      html += '</tr>';
+    }
+  }
+  html += '</tbody></table>';
+  document.getElementById('content').innerHTML = html;
+}
+
+function filterTable(input, tableId){
+  const term = input.value.toLowerCase();
+  const rows = document.querySelectorAll('#'+tableId+' tbody tr');
+  rows.forEach(r => {
+    r.style.display = r.textContent.toLowerCase().includes(term) ? '' : 'none';
+  });
+}
+
+function entityCreate(key){
+  const cfg = ENT[key];
+  showForm('Nuevo '+cfg.label, cfg.fields, null, (data) => {
+    data.id = uid(key);
+    db[key].push(data);
+    saveDB();
+    navigate(currentRoute);
+  });
+}
+
+function entityEdit(key, id){
+  const cfg = ENT[key];
+  const item = db[key].find(x => x.id === id);
+  if(!item) return;
+  showForm('Editar '+cfg.label, cfg.fields, item, (data) => {
+    Object.assign(item, data);
+    saveDB();
+    navigate(currentRoute);
+  });
+}
+
+function entityDelete(key, id){
+  if(!confirm('¿Eliminar este registro?')) return;
+  db[key] = db[key].filter(x => x.id !== id);
+  saveDB();
+  navigate(currentRoute);
+}
+
+// ============ DASHBOARD ============
+function renderDashboard(){
+  const activos = db.deportistas.filter(d => d.estado === 'Activo').length;
+  const entrenadores = db.personal.filter(p => p.cargo === 'Entrenador' && p.estado === 'Activo').length;
+  const mes = currentMonth();
+  const ingresosMes = db.pagos.filter(p => (p.mes === mes)).reduce((s,p) => s + (Number(p.monto)||0), 0)
+    + db.ventas.filter(v => (v.fecha||'').startsWith(mes)).reduce((s,v) => s + (Number(v.total)||0), 0);
+  const egresosMes = db.movCaja.filter(m => (m.fecha||'').startsWith(mes) && m.tipo === 'Egreso').reduce((s,m) => s + (Number(m.monto)||0), 0)
+    + db.cajaChica.filter(c => (c.fecha||'').startsWith(mes)).reduce((s,c) => s + (Number(c.monto)||0), 0);
+  const deudaTotal = calcularDeudaTotal();
+  const stockBajo = db.productos.filter(p => Number(p.stock) <= Number(p.stockMinimo)).length;
+  const prestamosActivos = db.prestamos.filter(p => p.devuelto !== 'Sí').length;
+  const reservasHoy = db.reservas.filter(r => r.fecha === todayStr()).length;
+  const notifNoLeidas = db.notificaciones.filter(n => !n.leida).length;
+  const preinsPend = db.preinscripciones.filter(p => p.estado === 'Pendiente').length;
+
+  let html = `<div class="card" style="display:flex;align-items:center;gap:18px;padding:20px 24px">
+    <img src="logo.png" alt="DO SANTOS FC" style="width:68px;height:68px;object-fit:contain;border-radius:12px;background:rgba(255,255,255,.04);padding:6px">
+    <div style="flex:1">
+      <h2 style="margin:0;font-size:20px">Bienvenido al panel de control</h2>
+      <p class="text-muted" style="margin:4px 0 0">Gestión deportiva, finanzas e inventario de DO SANTOS FC en un solo lugar.</p>
+    </div>
+  </div>`;
+  html += '<div class="kpis">';
+  html += kpi('Alumnos activos', activos, db.deportistas.length + ' en total');
+  html += kpi('Entrenadores', entrenadores, db.personal.length + ' personal total');
+  html += kpi('Ingresos del mes', fmtBs(ingresosMes), 'Mensualidades + ventas');
+  html += kpi('Egresos del mes', fmtBs(egresosMes), 'Gastos operativos');
+  html += kpi('Deuda pendiente', fmtBs(deudaTotal), 'Mensualidades por cobrar');
+  html += kpi('Stock bajo', stockBajo, 'Productos a reponer');
+  html += kpi('Préstamos activos', prestamosActivos, 'Equipamiento prestado');
+  html += kpi('Reservas hoy', reservasHoy, 'Canchas reservadas');
+  html += kpi('Notificaciones', notifNoLeidas, 'No leídas');
+  html += kpi('Preinscripciones', preinsPend, 'Pendientes de revisión');
+  html += '</div>';
+
+  html += '<div class="grid-2">';
+  // Próximos vencimientos
+  html += '<div class="card"><h2>Últimos pagos</h2>';
+  const ultimosPagos = [...db.pagos].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,5);
+  if(ultimosPagos.length === 0) html += '<div class="empty">Sin pagos registrados</div>';
+  else {
+    html += '<table><thead><tr><th>Deportista</th><th>Mes</th><th>Monto</th><th>Fecha</th></tr></thead><tbody>';
+    for(const p of ultimosPagos){
+      const d = db.deportistas.find(x => x.id === p.deportistaId);
+      html += `<tr><td>${d ? d.nombres+' '+d.apellidos : '-'}</td><td>${p.mes||'-'}</td><td>${fmtBs(p.monto)}</td><td>${fmtDate(p.fecha)}</td></tr>`;
+    }
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+
+  // Últimas ventas
+  html += '<div class="card"><h2>Últimas ventas</h2>';
+  const ultimasVentas = [...db.ventas].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,5);
+  if(ultimasVentas.length === 0) html += '<div class="empty">Sin ventas registradas</div>';
+  else {
+    html += '<table><thead><tr><th>Fecha</th><th>Items</th><th>Total</th></tr></thead><tbody>';
+    for(const v of ultimasVentas){
+      html += `<tr><td>${fmtDate(v.fecha)}</td><td>${(v.items||[]).length} producto(s)</td><td>${fmtBs(v.total)}</td></tr>`;
+    }
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+  html += '</div>';
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function kpi(label, value, sub){
+  return `<div class="kpi"><div class="label">${label}</div><div class="value">${value}</div><div class="sub">${sub||''}</div></div>`;
+}
+
+function calcularDeudaTotal(){
+  const mes = currentMonth();
+  let total = 0;
+  for(const d of db.deportistas.filter(x => x.estado === 'Activo')){
+    const tarifa = (Number(d.tarifa)||250) * (1 - (Number(d.beca)||0)/100);
+    const pagado = db.pagos.filter(p => p.deportistaId === d.id && p.mes === mes).reduce((s,p) => s + (Number(p.monto)||0), 0);
+    total += Math.max(0, tarifa - pagado);
+  }
+  return total;
+}
+
+// ============ ASISTENCIAS DEPORTISTAS ============
+function renderAsistencias(){
+  const hoy = todayStr();
+  let html = `<div class="card">
+    <h2>Registro de asistencia</h2>
+    <div class="row-flex mb-2">
+      <div class="form-row" style="margin:0">
+        <label>Fecha</label>
+        <input type="date" id="asistFecha" value="${hoy}" onchange="renderAsistenciasLista()">
+      </div>
+      <div class="form-row" style="margin:0">
+        <label>Categoría</label>
+        <select id="asistCat" onchange="renderAsistenciasLista()">
+          <option value="">Todas las categorías</option>
+          ${db.categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div id="asistLista"></div>
+  </div>`;
+
+  html += `<div class="card"><h2>Historial de asistencias</h2>`;
+  const lista = [...db.asistencias].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,50);
+  if(lista.length === 0) html += '<div class="empty">Sin registros</div>';
+  else {
+    html += '<table><thead><tr><th>Fecha</th><th>Deportista</th><th>Estado</th><th>Observaciones</th></tr></thead><tbody>';
+    for(const a of lista){
+      const badge = {Presente:'badge-green', Ausente:'badge-red', Tarde:'badge-yellow', Justificado:'badge-blue'}[a.estado] || 'badge-gray';
+      html += `<tr><td>${fmtDate(a.fecha)}</td><td>${refLabel('deportistas', a.deportistaId)}</td><td><span class="badge ${badge}">${a.estado||'-'}</span></td><td>${a.observaciones||'-'}</td></tr>`;
+    }
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+
+  document.getElementById('content').innerHTML = html;
+  renderAsistenciasLista();
+}
+
+function renderAsistenciasLista(){
+  const fecha = document.getElementById('asistFecha').value;
+  const catId = document.getElementById('asistCat').value;
+  let alumnos = db.deportistas.filter(d => d.estado === 'Activo');
+  if(catId) alumnos = alumnos.filter(d => d.categoriaId === catId);
+
+  const contenedor = document.getElementById('asistLista');
+  if(alumnos.length === 0){ contenedor.innerHTML = '<div class="empty">No hay alumnos para esta categoría</div>'; return; }
+
+  let html = '<table><thead><tr><th>Deportista</th><th>Categoría</th><th>Estado</th></tr></thead><tbody>';
+  for(const d of alumnos){
+    const existing = db.asistencias.find(a => a.deportistaId === d.id && a.fecha === fecha);
+    const estado = existing ? existing.estado : 'Presente';
+    html += `<tr>
+      <td>${d.nombres} ${d.apellidos}</td>
+      <td>${refLabel('categorias', d.categoriaId)}</td>
+      <td>
+        <select onchange="guardarAsistencia('${d.id}','${fecha}',this.value)" style="padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px">
+          ${['Presente','Tarde','Ausente','Justificado'].map(e => `<option ${estado===e?'selected':''}>${e}</option>`).join('')}
+        </select>
+      </td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+  contenedor.innerHTML = html;
+}
+
+function guardarAsistencia(deportistaId, fecha, estado){
+  const existing = db.asistencias.find(a => a.deportistaId === deportistaId && a.fecha === fecha);
+  if(existing){ existing.estado = estado; }
+  else { db.asistencias.push({id:uid('asis'), deportistaId, fecha, estado, observaciones:''}); }
+  saveDB();
+}
+
+// ============ COBROS ============
+function renderCobros(){
+  const mes = currentMonth();
+  const activos = db.deportistas.filter(d => d.estado === 'Activo');
+
+  let html = `<div class="card"><h2>Cobros del mes — ${mes}</h2>`;
+  html += `<table><thead><tr><th>Deportista</th><th>Categoría</th><th>Tarifa</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th style="text-align:right">Acción</th></tr></thead><tbody>`;
+
+  let totalFacturado = 0, totalCobrado = 0;
+  for(const d of activos){
+    const tarifa = (Number(d.tarifa)||250) * (1 - (Number(d.beca)||0)/100);
+    const pagado = db.pagos.filter(p => p.deportistaId === d.id && p.mes === mes).reduce((s,p) => s + (Number(p.monto)||0), 0);
+    const saldo = Math.max(0, tarifa - pagado);
+    totalFacturado += tarifa;
+    totalCobrado += Math.min(pagado, tarifa);
+    const estado = pagado >= tarifa && tarifa > 0 ? '<span class="badge badge-green">Pagado</span>'
+      : pagado > 0 ? '<span class="badge badge-yellow">Parcial</span>'
+      : '<span class="badge badge-red">Pendiente</span>';
+    html += `<tr>
+      <td>${d.nombres} ${d.apellidos}</td>
+      <td>${refLabel('categorias', d.categoriaId)}</td>
+      <td>${fmtBs(tarifa)}</td>
+      <td>${fmtBs(pagado)}</td>
+      <td>${fmtBs(saldo)}</td>
+      <td>${estado}</td>
+      <td style="text-align:right">
+        <button class="btn btn-success btn-xs" onclick="abrirPagoDeportista('${d.id}')">Registrar pago</button>
+        <button class="btn btn-secondary btn-xs" onclick="verPagosDeportista('${d.id}')">Historial</button>
+      </td>
+    </tr>`;
+  }
+  html += `</tbody></table>
+    <div class="row-flex mt-2" style="justify-content:space-between">
+      <div>Facturado del mes: <b>${fmtBs(totalFacturado)}</b></div>
+      <div>Cobrado del mes: <b>${fmtBs(totalCobrado)}</b></div>
+      <div>Pendiente: <b>${fmtBs(totalFacturado - totalCobrado)}</b></div>
+    </div>
+  </div>`;
+
+  // Historial general
+  html += `<div class="card"><h2>Historial general de pagos</h2>`;
+  const pagos = [...db.pagos].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')).slice(0,50);
+  if(pagos.length === 0) html += '<div class="empty">Sin pagos registrados</div>';
+  else {
+    html += '<table><thead><tr><th>Fecha</th><th>Deportista</th><th>Mes</th><th>Monto</th><th>Método</th></tr></thead><tbody>';
+    for(const p of pagos){
+      html += `<tr><td>${fmtDate(p.fecha)}</td><td>${refLabel('deportistas', p.deportistaId)}</td><td>${p.mes||'-'}</td><td>${fmtBs(p.monto)}</td><td>${p.metodo||'-'}</td></tr>`;
+    }
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function abrirPagoDeportista(deportistaId){
+  const d = db.deportistas.find(x => x.id === deportistaId);
+  const mes = currentMonth();
+  const tarifa = (Number(d.tarifa)||250) * (1 - (Number(d.beca)||0)/100);
+  const pagado = db.pagos.filter(p => p.deportistaId === d.id && p.mes === mes).reduce((s,p) => s + (Number(p.monto)||0), 0);
+  const saldo = Math.max(0, tarifa - pagado);
+  showForm('Registrar pago — ' + d.nombres + ' ' + d.apellidos, [
+    {name:'mes', label:'Mes (YYYY-MM)', type:'text', default:mes, required:true},
+    {name:'monto', label:'Monto (Bs)', type:'number', default:saldo, required:true},
+    {name:'fecha', label:'Fecha del pago', type:'date', default:todayStr(), required:true},
+    {name:'metodo', label:'Método', type:'select', options:['Efectivo','Transferencia','QR','Otro'], default:'Efectivo'}
+  ], null, (data) => {
+    db.pagos.push({id:uid('pago'), deportistaId, ...data});
+    db.movCaja.push({
+      id:uid('mov'), fecha:data.fecha, tipo:'Ingreso',
+      concepto:`Mensualidad ${d.nombres} ${d.apellidos} — ${data.mes}`,
+      monto:Number(data.monto), origen:'Mensualidad'
+    });
+    saveDB();
+    navigate('cobros');
+  });
+}
+
+function verPagosDeportista(deportistaId){
+  const d = db.deportistas.find(x => x.id === deportistaId);
+  const pagos = db.pagos.filter(p => p.deportistaId === deportistaId).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  let html = `<h2>Pagos de ${d.nombres} ${d.apellidos}</h2>`;
+  if(pagos.length === 0) html += '<div class="empty">Sin pagos registrados</div>';
+  else {
+    html += '<table><thead><tr><th>Fecha</th><th>Mes</th><th>Monto</th><th>Método</th></tr></thead><tbody>';
+    for(const p of pagos){ html += `<tr><td>${fmtDate(p.fecha)}</td><td>${p.mes||'-'}</td><td>${fmtBs(p.monto)}</td><td>${p.metodo||'-'}</td></tr>`; }
+    html += '</tbody></table>';
+  }
+  html += '<div style="text-align:right;margin-top:16px"><button class="btn btn-secondary" onclick="closeModal()">Cerrar</button></div>';
+  openModal(html);
+}
+
+// ============ CAJA ============
+function renderCaja(){
+  const mes = currentMonth();
+  const ingresos = db.movCaja.filter(m => (m.fecha||'').startsWith(mes) && m.tipo === 'Ingreso').reduce((s,m) => s + (Number(m.monto)||0), 0);
+  const egresos = db.movCaja.filter(m => (m.fecha||'').startsWith(mes) && m.tipo === 'Egreso').reduce((s,m) => s + (Number(m.monto)||0), 0);
+  const saldo = ingresos - egresos;
+
+  let html = `<div class="kpis">
+    ${kpi('Ingresos del mes', fmtBs(ingresos), 'Total de entradas')}
+    ${kpi('Egresos del mes', fmtBs(egresos), 'Total de salidas')}
+    ${kpi('Saldo del mes', fmtBs(saldo), 'Balance')}
+    ${kpi('Movimientos', db.movCaja.length, 'Registros totales')}
+  </div>`;
+
+  html += `<div class="toolbar">
+    <input class="search" placeholder="Buscar en movimientos..." oninput="filterTable(this,'tblCaja')">
+    <div class="row-flex">
+      <button class="btn btn-success btn-sm" onclick="nuevoMovimiento('Ingreso')">+ Ingreso</button>
+      <button class="btn btn-danger btn-sm" onclick="nuevoMovimiento('Egreso')">+ Egreso</button>
+    </div>
+  </div>`;
+
+  const movs = [...db.movCaja].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  html += `<table id="tblCaja"><thead><tr><th>Fecha</th><th>Tipo</th><th>Concepto</th><th>Origen</th><th>Monto</th><th style="text-align:right">Acción</th></tr></thead><tbody>`;
+  if(movs.length === 0) html += '<tr><td colspan="6"><div class="empty">Sin movimientos</div></td></tr>';
+  else {
+    for(const m of movs){
+      const badge = m.tipo === 'Ingreso' ? 'badge-green' : 'badge-red';
+      html += `<tr><td>${fmtDate(m.fecha)}</td><td><span class="badge ${badge}">${m.tipo}</span></td><td>${m.concepto||'-'}</td><td>${m.origen||'-'}</td><td>${fmtBs(m.monto)}</td>
+        <td style="text-align:right"><button class="btn btn-danger btn-xs" onclick="borrarMovimiento('${m.id}')">Eliminar</button></td></tr>`;
+    }
+  }
+  html += '</tbody></table>';
+
+  document.getElementById('content').innerHTML = html;
+}
+
+function nuevoMovimiento(tipo){
+  showForm('Nuevo movimiento — ' + tipo, [
+    {name:'fecha', label:'Fecha', type:'date', default:todayStr(), required:true},
+    {name:'concepto', label:'Concepto', type:'text', required:true},
+    {name:'monto', label:'Monto (Bs)', type:'number', required:true},
+    {name:'origen', label:'Origen', type:'select', options:['Mensualidad','Venta','Gasto operativo','Caja chica','Otro'], default:tipo==='Ingreso'?'Venta':'Gasto operativo'}
+  ], null, (data) => {
+    db.movCaja.push({id:uid('mov'), tipo, ...data, monto:Number(data.monto)});
+    saveDB();
+    navigate('caja');
+  });
+}
+function borrarMovimiento(id){
+  if(!confirm('¿Eliminar este movimiento?')) return;
+  db.movCaja = db.movCaja.filter(x => x.id !== id);
+  saveDB();
+  navigate('caja');
+}
+
+// ============ CAJA CHICA ============
+function renderCajaChica(){
+  const mes = currentMonth();
+  const total = db.cajaChica.filter(c => (c.fecha||'').startsWith(mes)).reduce((s,c) => s + (Number(c.monto)||0), 0);
+  let html = `<div class="kpis">
+    ${kpi('Gastos del mes', fmtBs(total), 'Caja chica')}
+    ${kpi('Registros', db.cajaChica.length, 'Total histórico')}
+  </div>`;
+  html += `<div class="toolbar">
+    <input class="search" placeholder="Buscar..." oninput="filterTable(this,'tblCC')">
+    <button class="btn btn-primary" onclick="nuevoGastoChico()">+ Nuevo gasto</button>
+  </div>`;
+  html += `<table id="tblCC"><thead><tr><th>Fecha</th><th>Concepto</th><th>Responsable</th><th>Monto</th><th>Comprobante</th><th style="text-align:right">Acción</th></tr></thead><tbody>`;
+  const lista = [...db.cajaChica].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  if(lista.length === 0) html += '<tr><td colspan="6"><div class="empty">Sin gastos registrados</div></td></tr>';
+  else {
+    for(const c of lista){
+      html += `<tr><td>${fmtDate(c.fecha)}</td><td>${c.concepto||'-'}</td><td>${c.responsable||'-'}</td><td>${fmtBs(c.monto)}</td><td>${c.comprobante||'-'}</td>
+        <td style="text-align:right"><button class="btn btn-danger btn-xs" onclick="borrarGastoChico('${c.id}')">Eliminar</button></td></tr>`;
+    }
+  }
+  html += '</tbody></table>';
+  document.getElementById('content').innerHTML = html;
+}
+
+function nuevoGastoChico(){
+  showForm('Nuevo gasto de caja chica', [
+    {name:'fecha', label:'Fecha', type:'date', default:todayStr(), required:true},
+    {name:'concepto', label:'Concepto', type:'text', required:true},
+    {name:'monto', label:'Monto (Bs)', type:'number', required:true},
+    {name:'responsable', label:'Responsable', type:'text'},
+    {name:'comprobante', label:'N° comprobante', type:'text'}
+  ], null, (data) => {
+    db.cajaChica.push({id:uid('cc'), ...data, monto:Number(data.monto)});
+    saveDB();
+    navigate('caja-chica');
+  });
+}
+function borrarGastoChico(id){
+  if(!confirm('¿Eliminar este gasto?')) return;
+  db.cajaChica = db.cajaChica.filter(x => x.id !== id);
+  saveDB();
+  navigate('caja-chica');
+}
+
+// ============ POS ============
+let posCart = [];
+
+function renderPOS(){
+  const productos = db.productos.filter(p => Number(p.stock) > 0);
+  let html = `<div class="pos-layout">
+    <div class="pos-products">
+      <h2 style="margin-bottom:12px">Productos disponibles</h2>
+      <div class="product-grid">`;
+  if(productos.length === 0) html += '<div class="empty">Sin productos con stock disponible</div>';
+  for(const p of productos){
+    html += `<div class="product-card" onclick="posAdd('${p.id}')">
+      <div class="pname">${p.nombre}</div>
+      <div class="pprice">${fmtBs(p.precioVenta)}</div>
+      <div class="pstock">Stock: ${p.stock}</div>
+    </div>`;
+  }
+  html += `</div></div>
+    <div class="pos-cart">
+      <h2>Carrito</h2>
+      <div class="pos-cart-items">`;
+  if(posCart.length === 0) html += '<div class="empty">Carrito vacío</div>';
+  else {
+    for(let i = 0; i < posCart.length; i++){
+      const item = posCart[i];
+      html += `<div class="pos-item">
+        <div style="flex:1">
+          <b>${item.nombre}</b><br>
+          <span class="text-muted">${fmtBs(item.precio)} x ${item.cantidad}</span>
+        </div>
+        <div style="text-align:right">
+          <div>${fmtBs(item.precio * item.cantidad)}</div>
+          <button class="btn btn-danger btn-xs" onclick="posRemove(${i})">×</button>
+        </div>
+      </div>`;
+    }
+  }
+  html += `</div>
+      <div class="pos-total">Total: ${fmtBs(posCart.reduce((s,i) => s + i.precio*i.cantidad, 0))}</div>
+      <button class="btn btn-success w-100" onclick="posCheckout()" ${posCart.length===0?'disabled':''}>Registrar venta</button>
+      <button class="btn btn-secondary w-100 mt-2" onclick="posCart=[];renderPOS()" ${posCart.length===0?'disabled':''}>Vaciar carrito</button>
+    </div>
+  </div>`;
+  document.getElementById('content').innerHTML = html;
+}
+
+function posAdd(productoId){
+  const p = db.productos.find(x => x.id === productoId);
+  if(!p) return;
+  const existing = posCart.find(i => i.productoId === productoId);
+  if(existing){
+    if(existing.cantidad + 1 > Number(p.stock)){ alert('Stock insuficiente'); return; }
+    existing.cantidad++;
+  } else {
+    posCart.push({productoId, nombre:p.nombre, precio:Number(p.precioVenta), cantidad:1});
+  }
+  renderPOS();
+}
+function posRemove(idx){ posCart.splice(idx,1); renderPOS(); }
+
+function posCheckout(){
+  if(posCart.length === 0) return;
+  const total = posCart.reduce((s,i) => s + i.precio*i.cantidad, 0);
+  showForm('Confirmar venta', [
+    {name:'cliente', label:'Cliente (opcional, nombre alumno)', type:'text'},
+    {name:'metodo', label:'Método de pago', type:'select', options:['Efectivo','Transferencia','QR','Otro'], default:'Efectivo'}
+  ], null, (data) => {
+    // Descontar stock
+    for(const item of posCart){
+      const p = db.productos.find(x => x.id === item.productoId);
+      if(p) p.stock = Number(p.stock) - item.cantidad;
+    }
+    // Registrar venta
+    const venta = {
+      id:uid('venta'), fecha:todayStr(), items:[...posCart], total, metodo:data.metodo, cliente:data.cliente
+    };
+    db.ventas.push(venta);
+    // Registrar en caja
+    db.movCaja.push({
+      id:uid('mov'), fecha:todayStr(), tipo:'Ingreso',
+      concepto:'Venta POS — ' + posCart.map(i => i.nombre+' x'+i.cantidad).join(', '),
+      monto:total, origen:'Venta'
+    });
+    posCart = [];
+    saveDB();
+    navigate('pos');
+    alert('Venta registrada: ' + fmtBs(total));
+  });
+}
+
+// ============ NOTIFICACIONES ============
+function renderNotificaciones(){
+  let html = `<div class="toolbar">
+    <input class="search" placeholder="Buscar..." oninput="filterTable(this,'tblNot')">
+    <button class="btn btn-primary" onclick="nuevaNotificacion()">+ Nueva notificación</button>
+  </div>`;
+  html += `<table id="tblNot"><thead><tr><th>Fecha</th><th>Destinatario</th><th>Título</th><th>Mensaje</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead><tbody>`;
+  const lista = [...db.notificaciones].sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));
+  if(lista.length === 0) html += '<tr><td colspan="6"><div class="empty">Sin notificaciones</div></td></tr>';
+  else {
+    for(const n of lista){
+      html += `<tr>
+        <td>${fmtDate(n.fecha)}</td>
+        <td>${n.destinatario||'Todos'}</td>
+        <td><b>${n.titulo}</b></td>
+        <td>${n.mensaje||'-'}</td>
+        <td>${n.leida ? '<span class="badge badge-gray">Leída</span>' : '<span class="badge badge-blue">Nueva</span>'}</td>
+        <td style="text-align:right">
+          ${!n.leida ? `<button class="btn btn-secondary btn-xs" onclick="marcarLeida('${n.id}')">Marcar leída</button>` : ''}
+          <button class="btn btn-danger btn-xs" onclick="borrarNotif('${n.id}')">Eliminar</button>
+        </td>
+      </tr>`;
+    }
+  }
+  html += '</tbody></table>';
+  document.getElementById('content').innerHTML = html;
+}
+
+function nuevaNotificacion(){
+  showForm('Nueva notificación', [
+    {name:'destinatario', label:'Destinatario', type:'select', options:['Todos','Administradores','Entrenadores','Cajeros','Alumnos de una categoría','Padres de familia']},
+    {name:'titulo', label:'Título', type:'text', required:true},
+    {name:'mensaje', label:'Mensaje', type:'textarea', required:true}
+  ], null, (data) => {
+    db.notificaciones.push({id:uid('not'), fecha:todayStr(), leida:false, ...data});
+    saveDB();
+    navigate('notificaciones');
+  });
+}
+function marcarLeida(id){
+  const n = db.notificaciones.find(x => x.id === id);
+  if(n){ n.leida = true; saveDB(); navigate('notificaciones'); }
+}
+function borrarNotif(id){
+  if(!confirm('¿Eliminar?')) return;
+  db.notificaciones = db.notificaciones.filter(x => x.id !== id);
+  saveDB();
+  navigate('notificaciones');
+}
+
+// ============ REPORTES ============
+function renderReportes(){
+  const mes = currentMonth();
+  const activos = db.deportistas.filter(d => d.estado === 'Activo').length;
+  const inactivos = db.deportistas.filter(d => d.estado !== 'Activo').length;
+  const porCategoria = {};
+  for(const d of db.deportistas){ porCategoria[d.categoriaId] = (porCategoria[d.categoriaId]||0)+1; }
+  const porSexo = {Masculino:0, Femenino:0};
+  for(const d of db.deportistas){ if(porSexo[d.sexo] !== undefined) porSexo[d.sexo]++; }
+
+  const ingresosMes = db.pagos.filter(p => p.mes === mes).reduce((s,p) => s + (Number(p.monto)||0), 0);
+  const ingresosVentas = db.ventas.filter(v => (v.fecha||'').startsWith(mes)).reduce((s,v) => s + (Number(v.total)||0), 0);
+  const egresos = db.movCaja.filter(m => (m.fecha||'').startsWith(mes) && m.tipo === 'Egreso').reduce((s,m) => s + (Number(m.monto)||0), 0);
+  const deuda = calcularDeudaTotal();
+
+  let html = `<div class="kpis">
+    ${kpi('Alumnos activos', activos, inactivos+' inactivos')}
+    ${kpi('Ingresos mensualidades', fmtBs(ingresosMes), 'Mes actual')}
+    ${kpi('Ingresos por ventas', fmtBs(ingresosVentas), 'Mes actual')}
+    ${kpi('Egresos', fmtBs(egresos), 'Mes actual')}
+    ${kpi('Deuda pendiente', fmtBs(deuda), 'Cobranza')}
+  </div>`;
+
+  html += '<div class="grid-2">';
+  // Distribución por categoría
+  html += '<div class="card"><h2>Alumnos por categoría</h2>';
+  const maxCat = Math.max(1, ...Object.values(porCategoria));
+  for(const catId in porCategoria){
+    const cnt = porCategoria[catId];
+    const pct = (cnt/maxCat)*100;
+    html += `<div style="margin-bottom:8px">
+      <div class="row-flex" style="justify-content:space-between;font-size:12px"><span>${refLabel('categorias', catId)}</span><span><b>${cnt}</b></span></div>
+      <div class="chart-bar"><div style="width:${pct}%"></div></div>
+    </div>`;
+  }
+  if(Object.keys(porCategoria).length === 0) html += '<div class="empty">Sin datos</div>';
+  html += '</div>';
+
+  // Distribución por sexo
+  html += '<div class="card"><h2>Alumnos por sexo</h2>';
+  const totalSexo = Math.max(1, porSexo.Masculino + porSexo.Femenino);
+  for(const s in porSexo){
+    const pct = (porSexo[s]/totalSexo)*100;
+    html += `<div style="margin-bottom:8px">
+      <div class="row-flex" style="justify-content:space-between;font-size:12px"><span>${s}</span><span><b>${porSexo[s]}</b></span></div>
+      <div class="chart-bar"><div style="width:${pct}%"></div></div>
+    </div>`;
+  }
+  html += '</div>';
+  html += '</div>';
+
+  // Movimientos y ventas del mes
+  html += '<div class="grid-2">';
+  html += '<div class="card"><h2>Productos con stock bajo</h2>';
+  const bajo = db.productos.filter(p => Number(p.stock) <= Number(p.stockMinimo));
+  if(bajo.length === 0) html += '<div class="empty">Todo en orden</div>';
+  else {
+    html += '<table><thead><tr><th>Producto</th><th>Stock</th><th>Mínimo</th></tr></thead><tbody>';
+    for(const p of bajo) html += `<tr><td>${p.nombre}</td><td>${p.stock}</td><td>${p.stockMinimo}</td></tr>`;
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+
+  html += '<div class="card"><h2>Equipamiento prestado</h2>';
+  const activos2 = db.prestamos.filter(p => p.devuelto !== 'Sí');
+  if(activos2.length === 0) html += '<div class="empty">Sin préstamos activos</div>';
+  else {
+    html += '<table><thead><tr><th>Equipo</th><th>Personal</th><th>Cant.</th><th>Entrega</th></tr></thead><tbody>';
+    for(const p of activos2){
+      html += `<tr><td>${refLabel('equipamiento', p.equipoId)}</td><td>${refLabel('personal', p.personalId)}</td><td>${p.cantidad}</td><td>${fmtDate(p.fechaEntrega)}</td></tr>`;
+    }
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+  html += '</div>';
+
+  document.getElementById('content').innerHTML = html;
+}
+
+// ============ CONFIGURACION ============
+function renderConfiguracion(){
+  const tamanio = (new Blob([JSON.stringify(db)]).size/1024).toFixed(1);
+  let html = `<div class="card">
+    <h2>Información del sistema</h2>
+    <p class="mb-2"><b>Academia:</b> ${db.config.nombre}</p>
+    <p class="mb-2"><b>Sucursal:</b> ${db.config.sucursal}</p>
+    <p class="mb-2"><b>Moneda:</b> ${db.config.moneda}</p>
+    <p class="mb-2"><b>Tamaño de la base:</b> ${tamanio} KB</p>
+    <p class="text-muted" style="font-size:12px;margin-top:8px">Esta demo usa <b>localStorage</b> del navegador como base de datos. Todos los datos se guardan localmente y puedes exportarlos a JSON para migrar a tu base de datos real.</p>
+  </div>
+
+  <div class="card">
+    <h2>Exportar / Importar</h2>
+    <p class="mb-2 text-muted">Descarga un archivo JSON con toda la información del sistema. Úsalo para migrar a tu base de datos real o para respaldar.</p>
+    <button class="btn btn-primary" onclick="exportarJSON()"><i class="bi bi-download"></i> Descargar JSON completo</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('fileImport').click()" style="margin-left:8px"><i class="bi bi-upload"></i> Importar desde JSON</button>
+  </div>
+
+  <div class="card">
+    <h2>Contenido de la base</h2>
+    <div class="grid-2">
+      ${Object.keys(ENT).map(k => `<div>${ENT[k].label}: <b>${(db[k]||[]).length}</b></div>`).join('')}
+      <div>Pagos: <b>${db.pagos.length}</b></div>
+      <div>Movimientos de caja: <b>${db.movCaja.length}</b></div>
+      <div>Ventas: <b>${db.ventas.length}</b></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Zona de peligro</h2>
+    <p class="mb-2 text-muted">Restablecer todos los datos a los valores iniciales de la demo.</p>
+    <button class="btn btn-danger" onclick="resetearDatos()"><i class="bi bi-exclamation-triangle"></i> Borrar todos los datos y reiniciar</button>
+  </div>`;
+  document.getElementById('content').innerHTML = html;
+}
+
+function resetearDatos(){
+  if(!confirm('¿Estás seguro? Se borrarán todos los datos actuales y se cargarán los de ejemplo.')) return;
+  db = seedDB();
+  saveDB();
+  navigate('dashboard');
+  alert('Sistema reiniciado');
+}
+
+// ============ EXPORT / IMPORT ============
+function exportarJSON(){
+  const dataStr = JSON.stringify(db, null, 2);
+  const blob = new Blob([dataStr], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'arnel-system-' + todayStr() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function importarJSON(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if(!confirm('¿Reemplazar todos los datos actuales con los del archivo?')) return;
+      db = data;
+      const seed = seedDB();
+      for(const k in seed){ if(!(k in db)) db[k] = seed[k]; }
+      saveDB();
+      navigate('dashboard');
+      alert('Datos importados correctamente');
+    } catch(err){
+      alert('Archivo JSON inválido: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+// ============ PREINSCRIPCIONES -> DEPORTISTA ============
+function convertirDeportista(preId){
+  const p = db.preinscripciones.find(x => x.id === preId);
+  if(!p) return;
+  showForm('Convertir preinscripción en deportista', ENT.deportistas.fields, {
+    nombres:p.nombres, apellidos:p.apellidos, fechaNacimiento:p.fechaNacimiento,
+    sexo:p.sexo, telefono:p.telefono, tutor:p.representante, categoriaId:p.categoriaInteres,
+    fechaIngreso:todayStr(), estado:'Activo', tarifa:250, beca:0
+  }, (data) => {
+    data.id = uid('dep');
+    db.deportistas.push(data);
+    p.estado = 'Aprobada';
+    saveDB();
+    alert('Deportista creado exitosamente');
+    navigate('preinscripciones');
+  });
+}
+
+// ============ INIT ============
+loadDB();
+renderNav();
+navigate('dashboard');
+</script>
+</body>
+</html>
