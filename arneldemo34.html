@@ -6,7 +6,6 @@
 <title>ArnelSystem — Ventas e Inventario</title>
 <style>
 :root{
-  /* Paleta corporativa: blanco + azul + caqui */
   --navy-900:#0b1a3a; --navy-800:#122352; --navy-700:#1a3068;
   --blue-700:#1d4ed8; --blue-600:#2563eb; --blue-500:#3b82f6;
   --blue-100:#dbeafe; --blue-50:#eff6ff;
@@ -53,16 +52,10 @@ body{
   cursor:pointer;text-align:left;transition:.15s;white-space:nowrap;
 }
 .nav-item:hover{background:rgba(255,255,255,.06);color:var(--white)}
-.nav-item.active{
-  background:rgba(59,130,246,.18);color:var(--white);
-  box-shadow:inset 3px 0 0 var(--khaki-500);
-}
+.nav-item.active{background:rgba(59,130,246,.18);color:var(--white);box-shadow:inset 3px 0 0 var(--khaki-500)}
 .nav-item .ico{opacity:.85;transition:.15s}
 .nav-item.active .ico,.nav-item:hover .ico{opacity:1}
-.side-foot{
-  margin-top:auto;font-size:.68rem;color:rgba(255,255,255,.35);line-height:1.55;
-  padding-top:14px;border-top:1px solid rgba(255,255,255,.08);
-}
+.side-foot{margin-top:auto;font-size:.68rem;color:rgba(255,255,255,.35);line-height:1.55;padding-top:14px;border-top:1px solid rgba(255,255,255,.08)}
 
 /* ---------- MAIN ---------- */
 .main{flex:1;min-width:0;display:flex;flex-direction:column}
@@ -80,59 +73,31 @@ body{
 
 h2.sec{font-size:.95rem;margin:0 0 14px;font-weight:700;color:var(--gray-900);display:flex;align-items:center;gap:8px}
 h2.sec .ico{color:var(--khaki-600)}
-.panel{
-  background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
-  padding:20px;margin-bottom:20px;box-shadow:0 1px 2px rgba(15,23,42,.04);
-}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
-.card{
-  background:var(--white);border:1px solid var(--border);border-radius:var(--radius);
-  padding:18px;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.05);
-}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:18px;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.05)}
 .card::after{content:'';position:absolute;inset:0 0 auto 0;height:3px;background:var(--blue-600)}
-.card .lbl{
-  font-size:.7rem;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);
-  font-weight:700;display:flex;align-items:center;gap:6px;
-}
+.card .lbl{font-size:.7rem;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:6px}
 .card .lbl .ico{color:var(--blue-600)}
 .card .val{font-size:1.55rem;font-weight:800;margin-top:9px;letter-spacing:-.5px;color:var(--gray-900)}
 .card .sub{font-size:.74rem;color:var(--muted);margin-top:4px}
-.card.green::after{background:var(--green)}
-.card.green .lbl .ico{color:var(--green)}
-.card.red::after{background:var(--red)}
-.card.red .lbl .ico{color:var(--red)}
-.card.khaki::after{background:var(--khaki-500)}
-.card.khaki .lbl .ico{color:var(--khaki-600)}
+.card.green::after{background:var(--green)} .card.green .lbl .ico{color:var(--green)}
+.card.red::after{background:var(--red)}     .card.red .lbl .ico{color:var(--red)}
+.card.khaki::after{background:var(--khaki-500)} .card.khaki .lbl .ico{color:var(--khaki-600)}
 
 /* ---------- FORMULARIOS ---------- */
-input,select,textarea{
-  width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);
-  background:var(--white);color:var(--text);font:inherit;font-size:.88rem;outline:none;transition:.15s;
-}
+input,select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--white);color:var(--text);font:inherit;font-size:.88rem;outline:none;transition:.15s}
 input::placeholder,textarea::placeholder{color:#a5b1c2}
-input:focus,select:focus,textarea:focus{
-  border-color:var(--blue-500);box-shadow:0 0 0 3px rgba(59,130,246,.15);
-}
-label{
-  display:block;font-size:.72rem;font-weight:700;color:var(--muted);
-  margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase;
-}
+input:focus,select:focus,textarea:focus{border-color:var(--blue-500);box-shadow:0 0 0 3px rgba(59,130,246,.15)}
+label{display:block;font-size:.72rem;font-weight:700;color:var(--muted);margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase}
 .field{margin-bottom:12px}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
-.btn{
-  padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:var(--white);
-  color:var(--gray-700);font:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:.15s;
-  display:inline-flex;align-items:center;gap:7px;justify-content:center;
-}
+.btn{padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:var(--white);color:var(--gray-700);font:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px;justify-content:center}
 .btn:hover{background:var(--gray-50);border-color:var(--gray-300)}
 .btn:active{transform:translateY(1px)}
-.btn.primary{
-  background:var(--blue-600);border-color:var(--blue-600);color:var(--white);
-  box-shadow:0 2px 6px -1px rgba(37,99,235,.35);
-}
+.btn.primary{background:var(--blue-600);border-color:var(--blue-600);color:var(--white);box-shadow:0 2px 6px -1px rgba(37,99,235,.35)}
 .btn.primary:hover{background:var(--blue-700);border-color:var(--blue-700)}
 .btn.khaki{background:var(--khaki-500);border-color:var(--khaki-500);color:var(--white)}
-.btn.khaki:hover{background:var(--khaki-600);border-color:var(--khaki-600)}
 .btn.danger{background:var(--white);border-color:#fecaca;color:var(--red)}
 .btn.danger:hover{background:var(--red-bg);border-color:var(--red)}
 .btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
@@ -142,11 +107,7 @@ label{
 /* ---------- TABLAS ---------- */
 .table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);background:var(--white)}
 table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:620px}
-thead th{
-  background:var(--gray-50);text-align:left;padding:11px 13px;font-size:.7rem;
-  text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:700;
-  border-bottom:1px solid var(--border);white-space:nowrap;
-}
+thead th{background:var(--gray-50);text-align:left;padding:11px 13px;font-size:.7rem;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border);white-space:nowrap}
 tbody td{padding:11px 13px;border-bottom:1px solid var(--gray-100);vertical-align:middle;color:var(--gray-700)}
 tbody tr:last-child td{border-bottom:0}
 tbody tr:hover{background:var(--blue-50)}
@@ -161,14 +122,8 @@ tbody tr:hover{background:var(--blue-50)}
 
 /* ---------- POS ---------- */
 .pos-grid{display:grid;grid-template-columns:1fr 380px;gap:18px;align-items:start}
-.product-grid{
-  display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;
-  margin-top:14px;max-height:60vh;overflow:auto;padding-right:4px;
-}
-.prod{
-  text-align:left;padding:13px;border-radius:12px;border:1px solid var(--border);
-  background:var(--white);color:var(--text);cursor:pointer;font:inherit;transition:.15s;position:relative;
-}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:14px;max-height:60vh;overflow:auto;padding-right:4px}
+.prod{text-align:left;padding:13px;border-radius:12px;border:1px solid var(--border);background:var(--white);color:var(--text);cursor:pointer;font:inherit;transition:.15s;position:relative}
 .prod:hover{border-color:var(--blue-500);transform:translateY(-2px);box-shadow:0 10px 22px -12px rgba(37,99,235,.5)}
 .prod:disabled{opacity:.4;cursor:not-allowed;transform:none}
 .prod .pn{font-weight:700;font-size:.83rem;line-height:1.3;margin-bottom:8px;min-height:2.2em;color:var(--gray-900)}
@@ -176,44 +131,22 @@ tbody tr:hover{background:var(--blue-50)}
 .prod .ps{font-size:.68rem;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
 .cart{position:sticky;top:90px}
 .cart-items{max-height:32vh;overflow:auto;margin:10px 0;display:flex;flex-direction:column;gap:8px}
-.citem{
-  display:flex;gap:9px;align-items:center;background:var(--gray-50);
-  border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-size:.82rem;
-}
+.citem{display:flex;gap:9px;align-items:center;background:var(--gray-50);border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-size:.82rem}
 .citem .cn{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--gray-700)}
 .qty{display:flex;align-items:center;gap:5px}
-.qty button{
-  width:24px;height:24px;border-radius:7px;border:1px solid var(--border);
-  background:var(--white);color:var(--blue-600);cursor:pointer;font-weight:800;
-  display:grid;place-items:center;transition:.15s;
-}
+.qty button{width:24px;height:24px;border-radius:7px;border:1px solid var(--border);background:var(--white);color:var(--blue-600);cursor:pointer;font-weight:800;display:grid;place-items:center;transition:.15s}
 .qty button:hover{border-color:var(--blue-500);background:var(--blue-50)}
 .tot-row{display:flex;justify-content:space-between;padding:6px 0;font-size:.85rem;color:var(--muted)}
-.tot-row.big{
-  font-size:1.25rem;font-weight:800;color:var(--gray-900);
-  border-top:1px dashed var(--border);margin-top:8px;padding-top:12px;
-}
+.tot-row.big{font-size:1.25rem;font-weight:800;color:var(--gray-900);border-top:1px dashed var(--border);margin-top:8px;padding-top:12px}
 .tot-row.big span:last-child{color:var(--blue-700)}
 
 /* ---------- MODAL ---------- */
-.modal-backdrop{
-  position:fixed;inset:0;background:rgba(11,26,58,.55);backdrop-filter:blur(3px);
-  display:none;align-items:center;justify-content:center;padding:20px;z-index:100;
-}
+.modal-backdrop{position:fixed;inset:0;background:rgba(11,26,58,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:20px;z-index:100}
 .modal-backdrop.open{display:flex}
-.modal{
-  background:var(--white);border-radius:18px;width:100%;max-width:620px;max-height:90vh;
-  overflow:auto;box-shadow:0 30px 80px -20px rgba(11,26,58,.5);
-}
-.modal-head{
-  display:flex;justify-content:space-between;align-items:center;padding:16px 22px;
-  border-bottom:1px solid var(--border);
-}
+.modal{background:var(--white);border-radius:18px;width:100%;max-width:620px;max-height:90vh;overflow:auto;box-shadow:0 30px 80px -20px rgba(11,26,58,.5)}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid var(--border)}
 .modal-head h3{margin:0;font-size:1rem;color:var(--gray-900)}
-.modal-head button{
-  background:none;border:0;color:var(--muted);cursor:pointer;
-  display:grid;place-items:center;padding:6px;border-radius:8px;transition:.15s;
-}
+.modal-head button{background:none;border:0;color:var(--muted);cursor:pointer;display:grid;place-items:center;padding:6px;border-radius:8px;transition:.15s}
 .modal-head button:hover{background:var(--gray-100);color:var(--gray-700)}
 .modal-body{padding:22px}
 .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
@@ -221,65 +154,85 @@ tbody tr:hover{background:var(--blue-50)}
 /* ---------- TICKET ---------- */
 #print-area{display:none}
 .tk{font-family:'Courier New',ui-monospace,monospace;color:#000;background:#fff;padding:4px 2px;line-height:1.4}
-.tk-c{text-align:center}
-.tk-b{font-weight:700}
-.tk-lg{font-size:1.18em}
-.tk-sm{font-size:.82em;color:#333}
-.tk-sep{border-top:1px dashed #000;margin:5px 0}
+.tk-c{text-align:center} .tk-b{font-weight:700} .tk-lg{font-size:1.18em}
+.tk-sm{font-size:.82em;color:#333} .tk-sep{border-top:1px dashed #000;margin:5px 0}
 .tk-row{display:flex;justify-content:space-between;gap:8px}
 .tk-item{margin:2px 0}
 .tk-item-name{font-weight:700;white-space:normal;word-break:break-word}
 .tk-item-row{display:flex;justify-content:space-between;padding-left:6px}
 .tk-space{height:26px}
-.w58{width:58mm;font-size:10.5px}
-.w80{width:80mm;font-size:12px}
+.w58{width:58mm;font-size:10.5px} .w80{width:80mm;font-size:12px}
 .preview-box{display:inline-block;background:#fff;border-radius:8px;padding:6px;box-shadow:0 10px 30px -12px rgba(11,26,58,.4)}
-@media print{
-  .app,.modal-backdrop,#toasts{display:none!important}
-  #print-area{display:block!important}
-  body{background:#fff!important}
-}
+@media print{.app,.modal-backdrop,#toasts,#chartTooltip{display:none!important}#print-area{display:block!important}body{background:#fff!important}}
 
 /* ---------- TOAST ---------- */
 #toasts{position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column;gap:9px;z-index:300}
-.toast{
-  padding:12px 18px;border-radius:11px;font-size:.85rem;font-weight:700;
-  background:var(--white);border:1px solid var(--border);color:var(--gray-700);
-  box-shadow:0 14px 36px -12px rgba(11,26,58,.3);
-  display:flex;align-items:center;gap:9px;animation:slide .25s ease;
-}
-.toast.ok{border-color:#86efac;color:#047857}
-.toast.ok .ico{color:var(--green)}
-.toast.error{border-color:#fca5a5;color:#b91c1c}
-.toast.error .ico{color:var(--red)}
+.toast{padding:12px 18px;border-radius:11px;font-size:.85rem;font-weight:700;background:var(--white);border:1px solid var(--border);color:var(--gray-700);box-shadow:0 14px 36px -12px rgba(11,26,58,.3);display:flex;align-items:center;gap:9px;animation:slide .25s ease}
+.toast.ok{border-color:#86efac;color:#047857} .toast.ok .ico{color:var(--green)}
+.toast.error{border-color:#fca5a5;color:#b91c1c} .toast.error .ico{color:var(--red)}
 .toast.out{opacity:0;transform:translateX(20px);transition:.3s}
 @keyframes slide{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
 
-/* ---------- GRÁFICO ---------- */
-.bars{display:flex;align-items:flex-end;gap:8px;height:170px;padding-top:10px;overflow-x:auto}
-.bar-col{flex:1;min-width:34px;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%}
-.bar{
-  width:100%;background:linear-gradient(180deg,var(--blue-500),var(--blue-700));
-  border-radius:6px 6px 0 0;min-height:3px;transition:.3s;
-}
-.bar-col small{font-size:.66rem;color:var(--muted);white-space:nowrap}
-.bar-col .bv{font-size:.66rem;font-weight:800;color:var(--blue-700)}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px}
 .toolbar .field{margin:0;min-width:130px}
 
-@media(max-width:1000px){
-  .pos-grid{grid-template-columns:1fr}
-  .cart{position:static}
+/* ============================================================
+   GRÁFICO DE MOVIMIENTO DE VENTAS
+   ============================================================ */
+.chart-panel{padding:22px}
+.chart-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+.chart-title{font-size:.98rem;font-weight:800;color:var(--gray-900);margin:0;display:flex;align-items:center;gap:8px}
+.chart-title .ico{color:var(--khaki-600)}
+.chart-sub{font-size:.77rem;color:var(--muted);margin:3px 0 0}
+.chart-tabs{display:flex;gap:3px;background:var(--gray-100);padding:4px;border-radius:11px;flex-wrap:wrap}
+.chart-tab{
+  padding:7px 13px;border-radius:8px;border:0;background:transparent;color:var(--muted);
+  font:inherit;font-size:.78rem;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap;
 }
+.chart-tab:hover{color:var(--gray-900)}
+.chart-tab.active{background:var(--white);color:var(--blue-700);box-shadow:0 1px 3px rgba(15,23,42,.1)}
+.chart-stats{
+  display:flex;gap:26px;flex-wrap:wrap;padding:14px 18px;
+  background:linear-gradient(135deg,var(--blue-50) 0%,var(--khaki-50) 100%);
+  border-radius:12px;margin-bottom:16px;border:1px solid var(--border);
+}
+.chart-stat{display:flex;flex-direction:column;gap:2px;min-width:110px}
+.cs-lbl{font-size:.66rem;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:5px}
+.cs-lbl .ico{color:var(--blue-600)}
+.cs-val{font-size:1.2rem;font-weight:800;color:var(--gray-900);letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+.cs-sub{font-size:.68rem;color:var(--khaki-700);font-weight:800;letter-spacing:.3px}
+.chart-canvas{position:relative;width:100%;min-height:260px}
+.chart-svg{width:100%;height:auto;display:block;overflow:visible}
+.chart-line{stroke-dasharray:4000;stroke-dashoffset:4000;animation:drawLine .95s ease forwards}
+@keyframes drawLine{to{stroke-dashoffset:0}}
+.chart-empty{padding:56px 20px;text-align:center;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:12px;font-size:.88rem}
+.chart-empty .ico{color:var(--gray-300)}
+.chart-tooltip{
+  position:fixed;pointer-events:none;background:var(--navy-900);color:#fff;
+  padding:10px 14px;border-radius:10px;font-size:.78rem;
+  box-shadow:0 12px 32px -8px rgba(11,26,58,.55);
+  opacity:0;transition:opacity .15s;z-index:400;min-width:140px;
+  border:1px solid rgba(255,255,255,.12);
+}
+.chart-tooltip.show{opacity:1}
+.ct-label{font-weight:800;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.14);font-size:.8rem;letter-spacing:.3px}
+.ct-row{display:flex;justify-content:space-between;gap:16px;padding:2px 0}
+.ct-row span{color:rgba(255,255,255,.6)}
+.ct-row b{color:#fff;font-variant-numeric:tabular-nums}
+
+@media(max-width:1000px){.pos-grid{grid-template-columns:1fr}.cart{position:static}}
 @media(max-width:820px){
   .app{flex-direction:column}
-  .sidebar{
-    width:100%;flex:none;height:auto;position:static;flex-direction:row;align-items:center;
-    gap:12px;overflow-x:auto;padding:12px;border-right:0;
-  }
+  .sidebar{width:100%;flex:none;height:auto;position:static;flex-direction:row;align-items:center;gap:12px;overflow-x:auto;padding:12px;border-right:0}
   .sidebar nav{flex-direction:row}
   .side-foot{display:none}
   .content{padding:18px 14px 60px}
+  .chart-head{flex-direction:column;align-items:stretch}
+  .chart-tabs{width:100%;justify-content:space-between}
+  .chart-tab{flex:1;text-align:center;padding:8px 6px;font-size:.72rem}
+  .chart-stats{gap:16px;padding:12px 14px}
+  .chart-stat{min-width:90px}
+  .cs-val{font-size:1.05rem}
 }
 </style>
 </head>
@@ -320,6 +273,25 @@ tbody tr:hover{background:var(--blue-50)}
       <!-- ============ DASHBOARD ============ -->
       <section class="view active" id="view-dashboard">
         <div class="cards" id="dashCards"></div>
+
+        <!-- GRÁFICO DE MOVIMIENTO -->
+        <div class="panel chart-panel">
+          <div class="chart-head">
+            <div>
+              <h3 class="chart-title"><span data-icon="chart" data-size="18"></span>Movimiento de ventas</h3>
+              <p class="chart-sub">Analiza el comportamiento por hora, día, semana o mes</p>
+            </div>
+            <div class="chart-tabs" data-chart-section="dash">
+              <button class="chart-tab" data-mode="hourly">Hoy (horas)</button>
+              <button class="chart-tab active" data-mode="daily">14 días</button>
+              <button class="chart-tab" data-mode="weekly">12 semanas</button>
+              <button class="chart-tab" data-mode="monthly">12 meses</button>
+            </div>
+          </div>
+          <div class="chart-stats" id="dashChartStats"></div>
+          <div class="chart-canvas" id="dashChart"></div>
+        </div>
+
         <div class="panel">
           <h2 class="sec"><span data-icon="receipt" data-size="16"></span>Últimas ventas</h2>
           <div id="dashRecent"></div>
@@ -417,9 +389,7 @@ tbody tr:hover{background:var(--blue-50)}
             <div class="field"><label>Monto</label><input id="expAmount" type="number" min="0" step="0.01" placeholder="0.00"></div>
             <div class="field"><label>Fecha</label><input id="expDate" type="date"></div>
             <div class="field" style="display:flex;align-items:flex-end">
-              <button class="btn primary" style="width:100%" onclick="addExpense()">
-                <span data-icon="check" data-size="14"></span>Guardar gasto
-              </button>
+              <button class="btn primary" style="width:100%" onclick="addExpense()"><span data-icon="check" data-size="14"></span>Guardar gasto</button>
             </div>
           </div>
         </div>
@@ -440,10 +410,25 @@ tbody tr:hover{background:var(--blue-50)}
           </div>
         </div>
         <div class="cards" id="repCards"></div>
-        <div class="panel">
-          <h2 class="sec"><span data-icon="chart" data-size="16"></span>Ventas por día</h2>
-          <div class="bars" id="repChart"></div>
+
+        <!-- GRÁFICO DE MOVIMIENTO -->
+        <div class="panel chart-panel">
+          <div class="chart-head">
+            <div>
+              <h3 class="chart-title"><span data-icon="chart" data-size="18"></span>Movimiento de ventas</h3>
+              <p class="chart-sub">Analiza el comportamiento por hora, día, semana o mes</p>
+            </div>
+            <div class="chart-tabs" data-chart-section="rep">
+              <button class="chart-tab" data-mode="hourly">Hoy (horas)</button>
+              <button class="chart-tab active" data-mode="daily">14 días</button>
+              <button class="chart-tab" data-mode="weekly">12 semanas</button>
+              <button class="chart-tab" data-mode="monthly">12 meses</button>
+            </div>
+          </div>
+          <div class="chart-stats" id="repChartStats"></div>
+          <div class="chart-canvas" id="repChart"></div>
         </div>
+
         <div class="panel">
           <h2 class="sec"><span data-icon="trending" data-size="16"></span>Productos más vendidos</h2>
           <div id="repTop"></div>
@@ -471,9 +456,7 @@ tbody tr:hover{background:var(--blue-50)}
               <input id="prCopies" type="number" min="1" max="3" value="1">
             </div>
             <div class="field" style="display:flex;align-items:flex-end">
-              <button class="btn primary" style="width:100%" onclick="savePrinterSettings()">
-                <span data-icon="check" data-size="14"></span>Guardar configuración
-              </button>
+              <button class="btn primary" style="width:100%" onclick="savePrinterSettings()"><span data-icon="check" data-size="14"></span>Guardar configuración</button>
             </div>
           </div>
           <p style="color:var(--muted);font-size:.78rem;line-height:1.6;margin:12px 0 0">
@@ -507,9 +490,7 @@ tbody tr:hover{background:var(--blue-50)}
             <div class="field"><label>Alerta de stock mínimo</label><input id="stLow" type="number" min="1"></div>
             <div class="field" style="grid-column:1/-1"><label>Mensaje del ticket</label><input id="stFooter"></div>
           </div>
-          <div style="margin-top:6px">
-            <button class="btn primary" onclick="saveSettings()"><span data-icon="check" data-size="14"></span>Guardar cambios</button>
-          </div>
+          <div style="margin-top:6px"><button class="btn primary" onclick="saveSettings()"><span data-icon="check" data-size="14"></span>Guardar cambios</button></div>
         </div>
 
         <div class="panel">
@@ -540,11 +521,12 @@ tbody tr:hover{background:var(--blue-50)}
 
 <div id="print-area"></div>
 <div id="toasts"></div>
+<div id="chartTooltip" class="chart-tooltip"></div>
 <style id="pageStyle"></style>
 
 <script>
 /* ==================================================================
-   ICONOS SVG (sin emojis)
+   ICONOS SVG
    ================================================================== */
 const ICONS = {
   dashboard: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
@@ -655,7 +637,6 @@ function go(view) {
 }
 $$('.nav-item').forEach(b => b.onclick = () => go(b.dataset.view));
 
-/* ---------------- MODAL ---------------- */
 function openModal() { $('#modal').classList.add('open'); }
 function closeModal() { $('#modal').classList.remove('open'); }
 $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
@@ -891,7 +872,6 @@ $('#payMethod').onchange = renderCart;
 
 $('#btnCheckout').onclick = () => {
   if (!cart.length) return toast('El carrito está vacío', 'error');
-
   const sub = cart.reduce((a, i) => a + i.price * i.qty, 0);
   const disc = Math.min(num($('#payDiscount').value), sub);
   const total = sub - disc;
@@ -900,23 +880,16 @@ $('#btnCheckout').onclick = () => {
   const cash = num($('#payCash').value);
 
   if (method === 'Efectivo' && cash < total) return toast('Efectivo insuficiente', 'error');
-
   for (const i of cart) {
     const p = db.products.find(x => x.id === i.id);
     if (!p || p.stock < i.qty) return toast('Stock insuficiente: ' + i.name, 'error');
   }
 
   const sale = {
-    id: uid(),
-    number: db.counter++,
-    date: new Date().toISOString(),
+    id: uid(), number: db.counter++, date: new Date().toISOString(),
     customer: $('#payCustomer').value.trim() || 'Consumidor final',
     items: cart.map(i => ({ ...i })),
-    subtotal: sub,
-    discount: disc,
-    total,
-    cost,
-    profit: total - cost,
+    subtotal: sub, discount: disc, total, cost, profit: total - cost,
     paymentMethod: method,
     cash: method === 'Efectivo' ? cash : total,
     change: method === 'Efectivo' ? Math.max(0, cash - total) : 0
@@ -931,7 +904,6 @@ $('#btnCheckout').onclick = () => {
   $('#payDiscount').value = 0;
   $('#payCash').value = 0;
   renderPOS(); refresh(); renderTicketPreview();
-
   showTicketModal(sale);
   toast('Venta #' + String(sale.number).padStart(6,'0') + ' registrada');
 };
@@ -1024,22 +996,6 @@ function renderReports() {
     <div class="card"><div class="lbl">${icon('chart',14)}Ticket promedio</div><div class="val">${money(ticket)}</div><div class="sub">Por venta</div></div>
   `;
 
-  const porDia = {};
-  sales.forEach(s => {
-    const k = toISODate(new Date(s.date));
-    porDia[k] = porDia[k] || { total: 0, count: 0 };
-    porDia[k].total += s.total;
-    porDia[k].count++;
-  });
-  const dias = Object.keys(porDia).sort();
-  const max = Math.max(1, ...dias.map(d => porDia[d].total));
-  $('#repChart').innerHTML = dias.length ? dias.map(d => `
-    <div class="bar-col">
-      <div class="bv">${money(porDia[d].total).replace(db.settings.currency,'')}</div>
-      <div class="bar" style="height:${Math.max(3, porDia[d].total / max * 100)}%" title="${d}: ${money(porDia[d].total)}"></div>
-      <small>${d.slice(5)}</small>
-    </div>`).join('') : `<div class="empty" style="width:100%">${icon('chart',30)}Sin ventas en el periodo</div>`;
-
   const prodMap = {};
   sales.forEach(s => s.items.forEach(i => {
     prodMap[i.name] = prodMap[i.name] || { qty: 0, total: 0, profit: 0 };
@@ -1079,7 +1035,321 @@ function renderReports() {
 }
 
 /* ==================================================================
-   IMPRESIÓN TÉRMICA
+   GRÁFICO ANALÍTICO DE VENTAS
+   ================================================================== */
+const chartModes = { dash: 'daily', rep: 'daily' };
+
+function aggregateSales(mode) {
+  const now = new Date();
+  if (mode === 'hourly') {
+    const today = now.toDateString();
+    const buckets = Array.from({length: 24}, (_, h) => ({
+      label: String(h).padStart(2,'0') + ':00',
+      short: h + 'h', value: 0, count: 0
+    }));
+    db.sales.filter(s => new Date(s.date).toDateString() === today).forEach(s => {
+      const h = new Date(s.date).getHours();
+      buckets[h].value += s.total;
+      buckets[h].count++;
+    });
+    return buckets;
+  }
+  if (mode === 'daily') {
+    const N = 14;
+    const buckets = [];
+    for (let i = N - 1; i >= 0; i--) {
+      const d = new Date(now); d.setDate(now.getDate() - i); d.setHours(0,0,0,0);
+      buckets.push({
+        label: d.toLocaleDateString('es-MX', {day:'2-digit', month:'short'}),
+        key: toISODate(d), value: 0, count: 0
+      });
+    }
+    const map = {}; buckets.forEach(b => map[b.key] = b);
+    db.sales.forEach(s => {
+      const k = toISODate(new Date(s.date));
+      if (map[k]) { map[k].value += s.total; map[k].count++; }
+    });
+    return buckets;
+  }
+  if (mode === 'weekly') {
+    const buckets = [];
+    const today = new Date(); today.setHours(0,0,0,0);
+    const dow = today.getDay();
+    const mondayOffset = dow === 0 ? -6 : 1 - dow;
+    const thisMonday = new Date(today); thisMonday.setDate(today.getDate() + mondayOffset);
+    for (let i = 11; i >= 0; i--) {
+      const start = new Date(thisMonday); start.setDate(thisMonday.getDate() - i*7);
+      const end = new Date(start); end.setDate(start.getDate() + 7);
+      buckets.push({
+        label: start.toLocaleDateString('es-MX', {day:'2-digit', month:'short'}),
+        start, end, value: 0, count: 0
+      });
+    }
+    db.sales.forEach(s => {
+      const sd = new Date(s.date);
+      const b = buckets.find(b => sd >= b.start && sd < b.end);
+      if (b) { b.value += s.total; b.count++; }
+    });
+    return buckets;
+  }
+  if (mode === 'monthly') {
+    const buckets = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      buckets.push({
+        label: d.toLocaleDateString('es-MX', {month:'short', year:'2-digit'}),
+        y: d.getFullYear(), m: d.getMonth(), value: 0, count: 0
+      });
+    }
+    db.sales.forEach(s => {
+      const sd = new Date(s.date);
+      const b = buckets.find(b => b.y === sd.getFullYear() && b.m === sd.getMonth());
+      if (b) { b.value += s.total; b.count++; }
+    });
+    return buckets;
+  }
+  return [];
+}
+
+function niceNumber(v) {
+  if (v <= 0) return 10;
+  const exp = Math.floor(Math.log10(v));
+  const base = Math.pow(10, exp);
+  const norm = v / base;
+  let nice;
+  if (norm <= 1) nice = 1;
+  else if (norm <= 1.5) nice = 1.5;
+  else if (norm <= 2) nice = 2;
+  else if (norm <= 3) nice = 3;
+  else if (norm <= 5) nice = 5;
+  else if (norm <= 7.5) nice = 7.5;
+  else nice = 10;
+  return nice * base;
+}
+
+function formatCompact(v) {
+  if (v >= 1000000) return (v/1000000).toFixed(1).replace(/\.0$/,'') + 'M';
+  if (v >= 1000) return (v/1000).toFixed(1).replace(/\.0$/,'') + 'k';
+  if (Number.isInteger(v)) return v.toString();
+  if (v >= 100) return Math.round(v).toString();
+  return v.toFixed(1).replace(/\.0$/,'');
+}
+
+function smoothPath(points) {
+  if (points.length === 0) return '';
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+  if (points.length === 2) return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i - 1] || points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] || p2;
+    const cp1x = p1.x + (p2.x - p0.x) / 6;
+    const cp1y = p1.y + (p2.y - p0.y) / 6;
+    const cp2x = p2.x - (p3.x - p1.x) / 6;
+    const cp2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+  }
+  return d;
+}
+
+function showChartTooltip(e, d) {
+  const el = $('#chartTooltip');
+  el.innerHTML = `
+    <div class="ct-label">${esc(d.label)}</div>
+    <div class="ct-row"><span>Ventas</span><b>${d.count}</b></div>
+    <div class="ct-row"><span>Monto</span><b>${money(d.value)}</b></div>`;
+  el.classList.add('show');
+  moveChartTooltip(e);
+}
+function moveChartTooltip(e) {
+  const el = $('#chartTooltip');
+  const rect = el.getBoundingClientRect();
+  let x = e.clientX + 16, y = e.clientY + 16;
+  if (x + rect.width > window.innerWidth - 10) x = e.clientX - rect.width - 16;
+  if (y + rect.height > window.innerHeight - 10) y = e.clientY - rect.height - 16;
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+}
+function hideChartTooltip() { $('#chartTooltip').classList.remove('show'); }
+
+function drawChart(canvasEl, statsEl, data, mode) {
+  const parentW = canvasEl.parentElement?.clientWidth || window.innerWidth - 100;
+  const W = Math.max(320, Math.min(1400, parentW - 4));
+  const H = W < 560 ? 260 : 340;
+  const pad = { l: W < 500 ? 44 : 58, r: 22, t: 24, b: 46 };
+  const innerW = W - pad.l - pad.r;
+  const innerH = H - pad.t - pad.b;
+
+  const hasData = data.some(d => d.value > 0 || d.count > 0);
+  if (!hasData) {
+    canvasEl.innerHTML = `<div class="chart-empty">${icon('chart', 40)}<div>Sin datos de ventas para este periodo</div></div>`;
+    statsEl.innerHTML = '';
+    return;
+  }
+
+  const maxVal = Math.max(...data.map(d => d.value));
+  const niceMax = niceNumber(maxVal);
+  const stepX = data.length > 1 ? innerW / (data.length - 1) : 0;
+  const points = data.map((d, i) => ({
+    x: pad.l + i * stepX,
+    y: pad.t + innerH - (d.value / niceMax) * innerH,
+    ...d
+  }));
+
+  // Grid horizontal
+  const gridCount = 4;
+  let gridHTML = '';
+  for (let i = 0; i <= gridCount; i++) {
+    const y = pad.t + (innerH / gridCount) * i;
+    const val = niceMax * (1 - i / gridCount);
+    const isBase = i === gridCount;
+    gridHTML += `<line x1="${pad.l}" y1="${y}" x2="${W - pad.r}" y2="${y}"
+      stroke="${isBase ? '#cbd5e1' : '#eef2f9'}" stroke-width="1"
+      ${isBase ? '' : 'stroke-dasharray="3 5"'}/>`;
+    gridHTML += `<text x="${pad.l - 10}" y="${y + 4}" text-anchor="end"
+      font-size="11" fill="#94a3b8" font-weight="600">${db.settings.currency}${formatCompact(val)}</text>`;
+  }
+
+  // Etiquetas X
+  const labelStep = mode === 'hourly' ? 3 : Math.ceil(data.length / 12);
+  let xLabelsHTML = '';
+  data.forEach((d, i) => {
+    if (i % labelStep === 0 || i === data.length - 1) {
+      xLabelsHTML += `<text x="${points[i].x}" y="${H - pad.b + 24}" text-anchor="middle"
+        font-size="11" fill="#64748b" font-weight="600">${esc(d.label)}</text>`;
+    }
+  });
+
+  // Curva y área
+  const linePath = smoothPath(points);
+  const areaPath = linePath +
+    ` L ${points[points.length-1].x} ${pad.t + innerH}` +
+    ` L ${points[0].x} ${pad.t + innerH} Z`;
+
+  // Puntos (visibles si <= 14, si no solo al hover)
+  const showDotsAlways = data.length <= 14;
+  let dotsHTML = '', hitHTML = '';
+  points.forEach((p, i) => {
+    dotsHTML += `<circle cx="${p.x}" cy="${p.y}" r="4.5" fill="#ffffff" stroke="#2563eb"
+      stroke-width="2.5" class="chart-dot" data-idx="${i}"
+      style="opacity:${showDotsAlways ? 1 : 0};transition:opacity .15s,r .15s"/>`;
+    const hitW = Math.max(stepX, 10);
+    hitHTML += `<rect x="${p.x - hitW/2}" y="${pad.t}" width="${hitW}" height="${innerH}"
+      fill="transparent" class="chart-hit" data-idx="${i}" style="cursor:pointer"/>`;
+  });
+
+  const gradId = 'ag-' + mode + '-' + Math.random().toString(36).slice(2,6);
+  const lineGradId = 'lg-' + mode + '-' + Math.random().toString(36).slice(2,6);
+
+  canvasEl.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" class="chart-svg" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.34"/>
+          <stop offset="55%" stop-color="#3b82f6" stop-opacity="0.09"/>
+          <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="${lineGradId}" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#3b82f6"/>
+          <stop offset="55%" stop-color="#2563eb"/>
+          <stop offset="100%" stop-color="#1d4ed8"/>
+        </linearGradient>
+      </defs>
+      ${gridHTML}
+      ${xLabelsHTML}
+      <path d="${areaPath}" fill="url(#${gradId})"/>
+      <path d="${linePath}" fill="none" stroke="url(#${lineGradId})" stroke-width="3"
+        stroke-linecap="round" stroke-linejoin="round" class="chart-line"/>
+      <line class="chart-guide" x1="0" y1="0" x2="0" y2="0"
+        stroke="#94a3b8" stroke-width="1" stroke-dasharray="4 4" opacity="0"/>
+      ${dotsHTML}
+      ${hitHTML}
+    </svg>
+  `;
+
+  // Interacción
+  const svgEl = canvasEl.querySelector('svg');
+  const guide = svgEl.querySelector('.chart-guide');
+  const dots = svgEl.querySelectorAll('.chart-dot');
+
+  svgEl.querySelectorAll('.chart-hit').forEach(hit => {
+    const idx = Number(hit.dataset.idx);
+    const p = points[idx];
+    const dot = dots[idx];
+    hit.addEventListener('mouseenter', (e) => {
+      dot.setAttribute('r', '6.5');
+      dot.style.opacity = '1';
+      guide.setAttribute('x1', p.x);
+      guide.setAttribute('x2', p.x);
+      guide.setAttribute('y1', pad.t);
+      guide.setAttribute('y2', pad.t + innerH);
+      guide.setAttribute('opacity', '1');
+      showChartTooltip(e, data[idx]);
+    });
+    hit.addEventListener('mousemove', moveChartTooltip);
+    hit.addEventListener('mouseleave', () => {
+      dot.setAttribute('r', '4.5');
+      dot.style.opacity = showDotsAlways ? '1' : '0';
+      guide.setAttribute('opacity', '0');
+      hideChartTooltip();
+    });
+  });
+
+  // Estadísticas
+  const total = data.reduce((a, d) => a + d.value, 0);
+  const count = data.reduce((a, d) => a + d.count, 0);
+  const peak = data.reduce((a, d) => d.value > a.value ? d : a, data[0]);
+  const ticketAvg = count ? total / count : 0;
+
+  statsEl.innerHTML = `
+    <div class="chart-stat">
+      <span class="cs-lbl">${icon('dollar',12)}Total</span>
+      <span class="cs-val">${money(total)}</span>
+    </div>
+    <div class="chart-stat">
+      <span class="cs-lbl">${icon('receipt',12)}Ventas</span>
+      <span class="cs-val">${count}</span>
+    </div>
+    <div class="chart-stat">
+      <span class="cs-lbl">${icon('trending',12)}Pico</span>
+      <span class="cs-val">${money(peak.value)}</span>
+      <span class="cs-sub">${esc(peak.label)}</span>
+    </div>
+    <div class="chart-stat">
+      <span class="cs-lbl">${icon('chart',12)}Ticket prom.</span>
+      <span class="cs-val">${money(ticketAvg)}</span>
+    </div>
+  `;
+}
+
+function renderChartSection(section) {
+  const mode = chartModes[section];
+  const canvasId = section === 'dash' ? 'dashChart' : 'repChart';
+  const statsId = section === 'dash' ? 'dashChartStats' : 'repChartStats';
+  const canvas = document.getElementById(canvasId);
+  const stats = document.getElementById(statsId);
+  if (!canvas || !stats) return;
+  drawChart(canvas, stats, aggregateSales(mode), mode);
+}
+
+function bindChartTabs() {
+  $$('.chart-tabs').forEach(container => {
+    const section = container.dataset.chartSection;
+    container.querySelectorAll('.chart-tab').forEach(tab => {
+      tab.onclick = () => {
+        container.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        chartModes[section] = tab.dataset.mode;
+        renderChartSection(section);
+      };
+    });
+  });
+}
+
+/* ==================================================================
+   IMPRESIÓN
    ================================================================== */
 function setPageSize() {
   const w = db.settings.printerWidth === '80' ? '80mm' : '58mm';
@@ -1127,39 +1397,23 @@ function doPrint(html) {
   setPageSize();
   setTimeout(() => window.print(), 120);
 }
-
-function printSale(sale) {
-  if (!sale) return toast('No hay venta para imprimir', 'error');
-  doPrint(ticketHTML(sale));
-}
-
-function reprintSale(id) {
-  const s = db.sales.find(x => x.id === id);
-  if (s) printSale(s);
-}
-
+function printSale(sale) { if (!sale) return toast('No hay venta para imprimir', 'error'); doPrint(ticketHTML(sale)); }
+function reprintSale(id) { const s = db.sales.find(x => x.id === id); if (s) printSale(s); }
 function reprintLast() {
   const last = [...db.sales].sort((a,b) => new Date(b.date) - new Date(a.date))[0];
   if (!last) return toast('No hay ventas registradas', 'error');
   printSale(last);
 }
-
 function printTest() {
-  const demo = {
-    number: 0,
-    date: new Date().toISOString(),
-    customer: 'CLIENTE DE PRUEBA',
-    paymentMethod: 'Efectivo',
+  doPrint(ticketHTML({
+    number: 0, date: new Date().toISOString(), customer: 'CLIENTE DE PRUEBA', paymentMethod: 'Efectivo',
     items: [
       { name: 'Producto de demostración A', qty: 2, price: 5.00, cost: 3.00 },
       { name: 'Producto de demostración B', qty: 1, price: 12.50, cost: 8.00 }
     ],
-    subtotal: 22.50, discount: 2.50, total: 20.00, cost: 14.00,
-    cash: 50.00, change: 30.00
-  };
-  doPrint(ticketHTML(demo));
+    subtotal: 22.50, discount: 2.50, total: 20.00, cash: 50.00, change: 30.00
+  }));
 }
-
 function showTicketModal(sale) {
   $('#modalTitle').textContent = 'Venta registrada · Ticket #' + String(sale.number).padStart(6,'0');
   $('#modalBody').innerHTML = `
@@ -1172,13 +1426,11 @@ function showTicketModal(sale) {
     </div>`;
   openModal();
 }
-
 function printSaleById(id) {
   const s = db.sales.find(x => x.id === id);
   closeModal();
   setTimeout(() => printSale(s), 150);
 }
-
 function renderTicketPreview() {
   const last = [...db.sales].sort((a,b) => new Date(b.date) - new Date(a.date))[0];
   const el = $('#ticketPreview');
@@ -1190,13 +1442,10 @@ function renderTicketPreview() {
   const sel = $('#prWidth');
   if (sel) sel.value = db.settings.printerWidth;
 }
-
 function savePrinterSettings() {
   db.settings.printerWidth = $('#prWidth').value;
   db.settings.copies = Math.max(1, num($('#prCopies').value));
-  save();
-  setPageSize();
-  renderTicketPreview();
+  save(); setPageSize(); renderTicketPreview();
   toast('Configuración de impresora guardada');
 }
 
@@ -1215,7 +1464,6 @@ function fillSettings() {
   $('#prWidth').value = s.printerWidth;
   $('#prCopies').value = s.copies;
 }
-
 function saveSettings() {
   const s = db.settings;
   s.businessName = $('#stName').value.trim() || 'ArnelSystem';
@@ -1228,21 +1476,16 @@ function saveSettings() {
   save(); refresh(); renderTicketPreview();
   toast('Configuración guardada');
 }
-
 function downloadFile(name, content, type = 'application/json') {
   const blob = new Blob([content], { type });
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  a.click();
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
   URL.revokeObjectURL(a.href);
 }
-
 function exportBackup() {
   downloadFile('arnelsystem-backup-' + todayISO() + '.json', JSON.stringify(db, null, 2));
   toast('Respaldo descargado');
 }
-
 function importBackup(ev) {
   const file = ev.target.files[0];
   if (!file) return;
@@ -1259,7 +1502,6 @@ function importBackup(ev) {
   reader.readAsText(file);
   ev.target.value = '';
 }
-
 function resetAll() {
   if (!confirm('¿Borrar TODOS los datos (productos, ventas, gastos)? Esta acción no se puede deshacer.')) return;
   localStorage.removeItem(DB_KEY);
@@ -1267,7 +1509,6 @@ function resetAll() {
   seed(); refresh(); fillSettings(); renderTicketPreview();
   toast('Datos reiniciados', 'error');
 }
-
 function exportProductsCSV() {
   const rows = [['Código','Producto','Categoría','Costo','Precio','Margen %','Stock','Valor costo']];
   db.products.forEach(p => {
@@ -1277,7 +1518,6 @@ function exportProductsCSV() {
   downloadFile('inventario-' + todayISO() + '.csv', '\uFEFF' + rows.map(r => r.join(';')).join('\n'), 'text/csv');
   toast('Inventario exportado');
 }
-
 function exportSalesCSV() {
   const from = new Date(($('#repFrom').value || todayISO()) + 'T00:00:00');
   const to = new Date(($('#repTo').value || todayISO()) + 'T23:59:59');
@@ -1301,6 +1541,8 @@ function refresh() {
   renderInventory();
   renderFinance();
   renderReports();
+  renderChartSection('dash');
+  renderChartSection('rep');
 }
 
 /* ==================================================================
@@ -1318,7 +1560,18 @@ function init() {
 
   setPageSize();
   renderTicketPreview();
+  bindChartTabs();
   refresh();
+
+  // Re-render gráficos al cambiar tamaño
+  let rt;
+  window.addEventListener('resize', () => {
+    clearTimeout(rt);
+    rt = setTimeout(() => {
+      renderChartSection('dash');
+      renderChartSection('rep');
+    }, 200);
+  });
 }
 init();
 </script>
