@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ArnelSystem — Ventas e Inventario</title>
+<style>
+:root{
+  /* Paleta corporativa: blanco + azul + caqui */
+  --navy-900:#0b1a3a; --navy-800:#122352; --navy-700:#1a3068;
+  --blue-700:#1d4ed8; --blue-600:#2563eb; --blue-500:#3b82f6;
+  --blue-100:#dbeafe; --blue-50:#eff6ff;
+  --khaki-700:#7a5f2e; --khaki-600:#a67c00; --khaki-500:#c9a227;
+  --khaki-100:#f5ecd4; --khaki-50:#faf5e9;
+  --white:#ffffff;
+  --gray-50:#f8fafc; --gray-100:#f1f5f9; --gray-200:#e6ebf2;
+  --gray-300:#cbd5e1; --gray-400:#94a3b8; --gray-500:#64748b;
+  --gray-700:#334155; --gray-900:#0f172a;
+  --bg:#f5f7fb; --panel:#ffffff; --border:#e5eaf2;
+  --text:#1e293b; --muted:#64748b;
+  --green:#059669; --green-bg:#d1fae5;
+  --red:#dc2626;   --red-bg:#fee2e2;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;color:var(--text);background:var(--bg);
+  font-family:'Inter','Segoe UI',system-ui,-apple-system,Roboto,sans-serif;
+  font-size:14px;-webkit-font-smoothing:antialiased;
+}
+.app{display:flex;min-height:100vh}
+.ico{display:inline-block;vertical-align:middle;flex-shrink:0;line-height:0}
+
+/* ---------- SIDEBAR ---------- */
+.sidebar{
+  width:240px;flex:0 0 240px;padding:20px 14px;display:flex;flex-direction:column;gap:22px;
+  background:linear-gradient(180deg,var(--navy-900),var(--navy-800));
+  color:var(--white);position:sticky;top:0;height:100vh;
+  border-right:1px solid var(--navy-700);
+}
+.logo{display:flex;align-items:center;gap:11px;font-weight:800;font-size:1.05rem;letter-spacing:.2px}
+.logo .dot{
+  width:34px;height:34px;border-radius:10px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--blue-600) 0%,var(--khaki-500) 100%);
+  color:var(--white);font-weight:800;font-size:1rem;box-shadow:0 4px 14px -4px rgba(0,0,0,.5);
+}
+.logo small{display:block;font-size:.6rem;color:rgba(255,255,255,.45);font-weight:600;letter-spacing:1.8px;margin-top:2px}
+.sidebar nav{display:flex;flex-direction:column;gap:3px}
+.nav-item{
+  display:flex;align-items:center;gap:11px;padding:11px 13px;border-radius:10px;border:0;
+  background:transparent;color:rgba(255,255,255,.65);font:inherit;font-size:.88rem;font-weight:600;
+  cursor:pointer;text-align:left;transition:.15s;white-space:nowrap;
+}
+.nav-item:hover{background:rgba(255,255,255,.06);color:var(--white)}
+.nav-item.active{
+  background:rgba(59,130,246,.18);color:var(--white);
+  box-shadow:inset 3px 0 0 var(--khaki-500);
+}
+.nav-item .ico{opacity:.85;transition:.15s}
+.nav-item.active .ico,.nav-item:hover .ico{opacity:1}
+.side-foot{
+  margin-top:auto;font-size:.68rem;color:rgba(255,255,255,.35);line-height:1.55;
+  padding-top:14px;border-top:1px solid rgba(255,255,255,.08);
+}
+
+/* ---------- MAIN ---------- */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{
+  display:flex;justify-content:space-between;align-items:center;gap:14px;
+  padding:16px 28px;background:var(--white);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:20;flex-wrap:wrap;
+}
+.topbar h1{font-size:1.15rem;margin:0;color:var(--gray-900);font-weight:700}
+.topbar p{margin:2px 0 0;font-size:.78rem;color:var(--muted)}
+.content{padding:24px 28px 60px;max-width:1500px;width:100%}
+.view{display:none;animation:fade .25s ease}
+.view.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+h2.sec{font-size:.95rem;margin:0 0 14px;font-weight:700;color:var(--gray-900);display:flex;align-items:center;gap:8px}
+h2.sec .ico{color:var(--khaki-600)}
+.panel{
+  background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;margin-bottom:20px;box-shadow:0 1px 2px rgba(15,23,42,.04);
+}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.card{
+  background:var(--white);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px;position:relative;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.05);
+}
+.card::after{content:'';position:absolute;inset:0 0 auto 0;height:3px;background:var(--blue-600)}
+.card .lbl{
+  font-size:.7rem;text-transform:uppercase;letter-spacing:.9px;color:var(--muted);
+  font-weight:700;display:flex;align-items:center;gap:6px;
+}
+.card .lbl .ico{color:var(--blue-600)}
+.card .val{font-size:1.55rem;font-weight:800;margin-top:9px;letter-spacing:-.5px;color:var(--gray-900)}
+.card .sub{font-size:.74rem;color:var(--muted);margin-top:4px}
+.card.green::after{background:var(--green)}
+.card.green .lbl .ico{color:var(--green)}
+.card.red::after{background:var(--red)}
+.card.red .lbl .ico{color:var(--red)}
+.card.khaki::after{background:var(--khaki-500)}
+.card.khaki .lbl .ico{color:var(--khaki-600)}
+
+/* ---------- FORMULARIOS ---------- */
+input,select,textarea{
+  width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--border);
+  background:var(--white);color:var(--text);font:inherit;font-size:.88rem;outline:none;transition:.15s;
+}
+input::placeholder,textarea::placeholder{color:#a5b1c2}
+input:focus,select:focus,textarea:focus{
+  border-color:var(--blue-500);box-shadow:0 0 0 3px rgba(59,130,246,.15);
+}
+label{
+  display:block;font-size:.72rem;font-weight:700;color:var(--muted);
+  margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase;
+}
+.field{margin-bottom:12px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.btn{
+  padding:10px 16px;border-radius:10px;border:1px solid var(--border);background:var(--white);
+  color:var(--gray-700);font:inherit;font-size:.85rem;font-weight:700;cursor:pointer;transition:.15s;
+  display:inline-flex;align-items:center;gap:7px;justify-content:center;
+}
+.btn:hover{background:var(--gray-50);border-color:var(--gray-300)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{
+  background:var(--blue-600);border-color:var(--blue-600);color:var(--white);
+  box-shadow:0 2px 6px -1px rgba(37,99,235,.35);
+}
+.btn.primary:hover{background:var(--blue-700);border-color:var(--blue-700)}
+.btn.khaki{background:var(--khaki-500);border-color:var(--khaki-500);color:var(--white)}
+.btn.khaki:hover{background:var(--khaki-600);border-color:var(--khaki-600)}
+.btn.danger{background:var(--white);border-color:#fecaca;color:var(--red)}
+.btn.danger:hover{background:var(--red-bg);border-color:var(--red)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{background:var(--gray-100);color:var(--gray-700)}
+.btn.sm{padding:6px 10px;font-size:.76rem;border-radius:8px;gap:5px}
+
+/* ---------- TABLAS ---------- */
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);background:var(--white)}
+table{width:100%;border-collapse:collapse;font-size:.85rem;min-width:620px}
+thead th{
+  background:var(--gray-50);text-align:left;padding:11px 13px;font-size:.7rem;
+  text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:700;
+  border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody td{padding:11px 13px;border-bottom:1px solid var(--gray-100);vertical-align:middle;color:var(--gray-700)}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--blue-50)}
+.right{text-align:right}
+.mono{font-variant-numeric:tabular-nums;font-weight:700}
+.pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:.7rem;font-weight:800}
+.pill.ok{background:var(--green-bg);color:#047857}
+.pill.warn{background:var(--khaki-100);color:var(--khaki-700)}
+.pill.bad{background:var(--red-bg);color:#b91c1c}
+.empty{padding:34px;text-align:center;color:var(--muted);font-size:.85rem;display:flex;flex-direction:column;align-items:center;gap:8px}
+.empty .ico{color:var(--gray-300);width:34px;height:34px}
+
+/* ---------- POS ---------- */
+.pos-grid{display:grid;grid-template-columns:1fr 380px;gap:18px;align-items:start}
+.product-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;
+  margin-top:14px;max-height:60vh;overflow:auto;padding-right:4px;
+}
+.prod{
+  text-align:left;padding:13px;border-radius:12px;border:1px solid var(--border);
+  background:var(--white);color:var(--text);cursor:pointer;font:inherit;transition:.15s;position:relative;
+}
+.prod:hover{border-color:var(--blue-500);transform:translateY(-2px);box-shadow:0 10px 22px -12px rgba(37,99,235,.5)}
+.prod:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.prod .pn{font-weight:700;font-size:.83rem;line-height:1.3;margin-bottom:8px;min-height:2.2em;color:var(--gray-900)}
+.prod .pp{color:var(--khaki-600);font-weight:800;font-size:1rem}
+.prod .ps{font-size:.68rem;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.cart{position:sticky;top:90px}
+.cart-items{max-height:32vh;overflow:auto;margin:10px 0;display:flex;flex-direction:column;gap:8px}
+.citem{
+  display:flex;gap:9px;align-items:center;background:var(--gray-50);
+  border:1px solid var(--border);border-radius:10px;padding:9px 11px;font-size:.82rem;
+}
+.citem .cn{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--gray-700)}
+.qty{display:flex;align-items:center;gap:5px}
+.qty button{
+  width:24px;height:24px;border-radius:7px;border:1px solid var(--border);
+  background:var(--white);color:var(--blue-600);cursor:pointer;font-weight:800;
+  display:grid;place-items:center;transition:.15s;
+}
+.qty button:hover{border-color:var(--blue-500);background:var(--blue-50)}
+.tot-row{display:flex;justify-content:space-between;padding:6px 0;font-size:.85rem;color:var(--muted)}
+.tot-row.big{
+  font-size:1.25rem;font-weight:800;color:var(--gray-900);
+  border-top:1px dashed var(--border);margin-top:8px;padding-top:12px;
+}
+.tot-row.big span:last-child{color:var(--blue-700)}
+
+/* ---------- MODAL ---------- */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(11,26,58,.55);backdrop-filter:blur(3px);
+  display:none;align-items:center;justify-content:center;padding:20px;z-index:100;
+}
+.modal-backdrop.open{display:flex}
+.modal{
+  background:var(--white);border-radius:18px;width:100%;max-width:620px;max-height:90vh;
+  overflow:auto;box-shadow:0 30px 80px -20px rgba(11,26,58,.5);
+}
+.modal-head{
+  display:flex;justify-content:space-between;align-items:center;padding:16px 22px;
+  border-bottom:1px solid var(--border);
+}
+.modal-head h3{margin:0;font-size:1rem;color:var(--gray-900)}
+.modal-head button{
+  background:none;border:0;color:var(--muted);cursor:pointer;
+  display:grid;place-items:center;padding:6px;border-radius:8px;transition:.15s;
+}
+.modal-head button:hover{background:var(--gray-100);color:var(--gray-700)}
+.modal-body{padding:22px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+
+/* ---------- TICKET ---------- */
+#print-area{display:none}
+.tk{font-family:'Courier New',ui-monospace,monospace;color:#000;background:#fff;padding:4px 2px;line-height:1.4}
+.tk-c{text-align:center}
+.tk-b{font-weight:700}
+.tk-lg{font-size:1.18em}
+.tk-sm{font-size:.82em;color:#333}
+.tk-sep{border-top:1px dashed #000;margin:5px 0}
+.tk-row{display:flex;justify-content:space-between;gap:8px}
+.tk-item{margin:2px 0}
+.tk-item-name{font-weight:700;white-space:normal;word-break:break-word}
+.tk-item-row{display:flex;justify-content:space-between;padding-left:6px}
+.tk-space{height:26px}
+.w58{width:58mm;font-size:10.5px}
+.w80{width:80mm;font-size:12px}
+.preview-box{display:inline-block;background:#fff;border-radius:8px;padding:6px;box-shadow:0 10px 30px -12px rgba(11,26,58,.4)}
+@media print{
+  .app,.modal-backdrop,#toasts{display:none!important}
+  #print-area{display:block!important}
+  body{background:#fff!important}
+}
+
+/* ---------- TOAST ---------- */
+#toasts{position:fixed;bottom:22px;right:22px;display:flex;flex-direction:column;gap:9px;z-index:300}
+.toast{
+  padding:12px 18px;border-radius:11px;font-size:.85rem;font-weight:700;
+  background:var(--white);border:1px solid var(--border);color:var(--gray-700);
+  box-shadow:0 14px 36px -12px rgba(11,26,58,.3);
+  display:flex;align-items:center;gap:9px;animation:slide .25s ease;
+}
+.toast.ok{border-color:#86efac;color:#047857}
+.toast.ok .ico{color:var(--green)}
+.toast.error{border-color:#fca5a5;color:#b91c1c}
+.toast.error .ico{color:var(--red)}
+.toast.out{opacity:0;transform:translateX(20px);transition:.3s}
+@keyframes slide{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+
+/* ---------- GRÁFICO ---------- */
+.bars{display:flex;align-items:flex-end;gap:8px;height:170px;padding-top:10px;overflow-x:auto}
+.bar-col{flex:1;min-width:34px;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%}
+.bar{
+  width:100%;background:linear-gradient(180deg,var(--blue-500),var(--blue-700));
+  border-radius:6px 6px 0 0;min-height:3px;transition:.3s;
+}
+.bar-col small{font-size:.66rem;color:var(--muted);white-space:nowrap}
+.bar-col .bv{font-size:.66rem;font-weight:800;color:var(--blue-700)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px}
+.toolbar .field{margin:0;min-width:130px}
+
+@media(max-width:1000px){
+  .pos-grid{grid-template-columns:1fr}
+  .cart{position:static}
+}
+@media(max-width:820px){
+  .app{flex-direction:column}
+  .sidebar{
+    width:100%;flex:none;height:auto;position:static;flex-direction:row;align-items:center;
+    gap:12px;overflow-x:auto;padding:12px;border-right:0;
+  }
+  .sidebar nav{flex-direction:row}
+  .side-foot{display:none}
+  .content{padding:18px 14px 60px}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="dot">A</div>
+      <div>ArnelSystem<small>GESTIÓN COMERCIAL</small></div>
+    </div>
+    <nav>
+      <button class="nav-item active" data-view="dashboard"><span data-icon="dashboard"></span>Dashboard</button>
+      <button class="nav-item" data-view="pos"><span data-icon="receipt"></span>Punto de Venta</button>
+      <button class="nav-item" data-view="inventory"><span data-icon="package"></span>Inventario</button>
+      <button class="nav-item" data-view="finance"><span data-icon="dollar"></span>Finanzas</button>
+      <button class="nav-item" data-view="reports"><span data-icon="chart"></span>Reportes</button>
+      <button class="nav-item" data-view="printer"><span data-icon="printer"></span>Impresión</button>
+      <button class="nav-item" data-view="settings"><span data-icon="settings"></span>Configuración</button>
+    </nav>
+    <div class="side-foot">ArnelSystem v1.0<br>Datos locales del navegador</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <h1 id="pageTitle">Dashboard</h1>
+        <p id="pageSub">Resumen general del negocio</p>
+      </div>
+      <div style="display:flex;gap:9px">
+        <button class="btn sm" onclick="go('pos')"><span data-icon="plus" data-size="14"></span>Nueva venta</button>
+        <button class="btn sm primary" onclick="openProductModal()"><span data-icon="plus" data-size="14"></span>Producto</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ============ DASHBOARD ============ -->
+      <section class="view active" id="view-dashboard">
+        <div class="cards" id="dashCards"></div>
+        <div class="panel">
+          <h2 class="sec"><span data-icon="receipt" data-size="16"></span>Últimas ventas</h2>
+          <div id="dashRecent"></div>
+        </div>
+        <div class="panel">
+          <h2 class="sec"><span data-icon="alert" data-size="16"></span>Productos con stock bajo</h2>
+          <div id="dashLow"></div>
+        </div>
+      </section>
+
+      <!-- ============ POS ============ -->
+      <section class="view" id="view-pos">
+        <div class="pos-grid">
+          <div class="panel">
+            <input id="posSearch" placeholder="Buscar producto por nombre o código…">
+            <div class="product-grid" id="posProducts"></div>
+          </div>
+          <div class="panel cart">
+            <h2 class="sec" style="margin-bottom:6px"><span data-icon="cart" data-size="16"></span>Carrito</h2>
+            <div class="cart-items" id="cartItems"></div>
+            <div class="field" style="margin-top:10px">
+              <label>Cliente (opcional)</label>
+              <input id="payCustomer" placeholder="Consumidor final">
+            </div>
+            <div class="form-grid">
+              <div class="field">
+                <label>Método de pago</label>
+                <select id="payMethod">
+                  <option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Descuento</label>
+                <input id="payDiscount" type="number" min="0" step="0.01" value="0">
+              </div>
+            </div>
+            <div class="field" id="cashWrap">
+              <label>Efectivo recibido</label>
+              <input id="payCash" type="number" min="0" step="0.01" value="0">
+            </div>
+            <div class="tot-row"><span>Subtotal</span><span class="mono" id="sumSub">$0.00</span></div>
+            <div class="tot-row"><span>Descuento</span><span class="mono" id="sumDisc">-$0.00</span></div>
+            <div class="tot-row big"><span>TOTAL</span><span class="mono" id="sumTotal">$0.00</span></div>
+            <div class="tot-row"><span>Cambio</span><span class="mono" id="sumChange">$0.00</span></div>
+            <button class="btn primary" style="width:100%;margin-top:12px;padding:14px;font-size:.92rem" id="btnCheckout">
+              <span data-icon="check" data-size="16"></span>COBRAR
+            </button>
+            <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="clearCart()">
+              <span data-icon="x" data-size="14"></span>Vaciar carrito
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ INVENTARIO ============ -->
+      <section class="view" id="view-inventory">
+        <div class="cards" id="invCards"></div>
+        <div class="panel">
+          <div class="toolbar">
+            <div class="field" style="flex:1;min-width:220px">
+              <label>Buscar</label>
+              <input id="invSearch" placeholder="Nombre o código…" oninput="renderInventory()">
+            </div>
+            <button class="btn primary" onclick="openProductModal()"><span data-icon="plus" data-size="14"></span>Nuevo producto</button>
+            <button class="btn" onclick="exportProductsCSV()"><span data-icon="download" data-size="14"></span>Exportar CSV</button>
+          </div>
+          <div id="invTable"></div>
+        </div>
+      </section>
+
+      <!-- ============ FINANZAS ============ -->
+      <section class="view" id="view-finance">
+        <div class="toolbar">
+          <div class="field">
+            <label>Periodo</label>
+            <select id="finPeriod" onchange="renderFinance()">
+              <option value="hoy">Hoy</option>
+              <option value="semana">Últimos 7 días</option>
+              <option value="mes" selected>Este mes</option>
+              <option value="todo">Todo</option>
+            </select>
+          </div>
+        </div>
+        <div class="cards" id="finCards"></div>
+        <div class="panel">
+          <h2 class="sec"><span data-icon="plus" data-size="16"></span>Registrar gasto / egreso</h2>
+          <div class="form-grid">
+            <div class="field"><label>Descripción</label><input id="expDesc" placeholder="Ej: Arriendo, servicios…"></div>
+            <div class="field"><label>Categoría</label>
+              <select id="expCat">
+                <option>Operativo</option><option>Nómina</option><option>Servicios</option>
+                <option>Compras</option><option>Transporte</option><option>Otro</option>
+              </select>
+            </div>
+            <div class="field"><label>Monto</label><input id="expAmount" type="number" min="0" step="0.01" placeholder="0.00"></div>
+            <div class="field"><label>Fecha</label><input id="expDate" type="date"></div>
+            <div class="field" style="display:flex;align-items:flex-end">
+              <button class="btn primary" style="width:100%" onclick="addExpense()">
+                <span data-icon="check" data-size="14"></span>Guardar gasto
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2 class="sec"><span data-icon="receipt" data-size="16"></span>Gastos registrados</h2>
+          <div id="expTable"></div>
+        </div>
+      </section>
+
+      <!-- ============ REPORTES ============ -->
+      <section class="view" id="view-reports">
+        <div class="panel">
+          <div class="toolbar">
+            <div class="field"><label>Desde</label><input type="date" id="repFrom"></div>
+            <div class="field"><label>Hasta</label><input type="date" id="repTo"></div>
+            <button class="btn primary" onclick="renderReports()"><span data-icon="check" data-size="14"></span>Generar reporte</button>
+            <button class="btn" onclick="exportSalesCSV()"><span data-icon="download" data-size="14"></span>Exportar ventas CSV</button>
+          </div>
+        </div>
+        <div class="cards" id="repCards"></div>
+        <div class="panel">
+          <h2 class="sec"><span data-icon="chart" data-size="16"></span>Ventas por día</h2>
+          <div class="bars" id="repChart"></div>
+        </div>
+        <div class="panel">
+          <h2 class="sec"><span data-icon="trending" data-size="16"></span>Productos más vendidos</h2>
+          <div id="repTop"></div>
+        </div>
+        <div class="panel">
+          <h2 class="sec"><span data-icon="receipt" data-size="16"></span>Detalle de ventas</h2>
+          <div id="repSales"></div>
+        </div>
+      </section>
+
+      <!-- ============ IMPRESIÓN ============ -->
+      <section class="view" id="view-printer">
+        <div class="panel">
+          <h2 class="sec"><span data-icon="printer" data-size="16"></span>Configuración de impresora térmica</h2>
+          <div class="form-grid">
+            <div class="field">
+              <label>Ancho del papel</label>
+              <select id="prWidth">
+                <option value="58">58 mm (2 pulgadas)</option>
+                <option value="80">80 mm (3 pulgadas)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Copias por ticket</label>
+              <input id="prCopies" type="number" min="1" max="3" value="1">
+            </div>
+            <div class="field" style="display:flex;align-items:flex-end">
+              <button class="btn primary" style="width:100%" onclick="savePrinterSettings()">
+                <span data-icon="check" data-size="14"></span>Guardar configuración
+              </button>
+            </div>
+          </div>
+          <p style="color:var(--muted);font-size:.78rem;line-height:1.6;margin:12px 0 0">
+            Para imprimir sin encabezados del navegador, en el diálogo de impresión selecciona
+            <b>Más ajustes → Márgenes: Ninguno</b> y desactiva <b>Encabezados y pies de página</b>.
+            Escala recomendada: <b>100%</b>. El tamaño de página se ajusta automáticamente.
+          </p>
+        </div>
+
+        <div class="panel">
+          <h2 class="sec"><span data-icon="printer" data-size="16"></span>Prueba de impresión</h2>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+            <button class="btn primary" onclick="printTest()"><span data-icon="printer" data-size="14"></span>Imprimir ticket de prueba</button>
+            <button class="btn" onclick="reprintLast()"><span data-icon="refresh" data-size="14"></span>Reimprimir última venta</button>
+          </div>
+          <h2 class="sec"><span data-icon="receipt" data-size="16"></span>Vista previa del ticket</h2>
+          <div class="preview-box"><div id="ticketPreview" class="w58"></div></div>
+        </div>
+      </section>
+
+      <!-- ============ CONFIGURACIÓN ============ -->
+      <section class="view" id="view-settings">
+        <div class="panel">
+          <h2 class="sec"><span data-icon="settings" data-size="16"></span>Datos del negocio</h2>
+          <div class="form-grid">
+            <div class="field"><label>Nombre del negocio</label><input id="stName"></div>
+            <div class="field"><label>NIT / RUC</label><input id="stTax"></div>
+            <div class="field"><label>Dirección</label><input id="stAddress"></div>
+            <div class="field"><label>Teléfono</label><input id="stPhone"></div>
+            <div class="field"><label>Símbolo de moneda</label><input id="stCurrency" maxlength="4"></div>
+            <div class="field"><label>Alerta de stock mínimo</label><input id="stLow" type="number" min="1"></div>
+            <div class="field" style="grid-column:1/-1"><label>Mensaje del ticket</label><input id="stFooter"></div>
+          </div>
+          <div style="margin-top:6px">
+            <button class="btn primary" onclick="saveSettings()"><span data-icon="check" data-size="14"></span>Guardar cambios</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2 class="sec"><span data-icon="download" data-size="16"></span>Datos y respaldo</h2>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn" onclick="exportBackup()"><span data-icon="download" data-size="14"></span>Descargar respaldo (JSON)</button>
+            <button class="btn" onclick="document.getElementById('importFile').click()"><span data-icon="upload" data-size="14"></span>Restaurar respaldo</button>
+            <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(event)">
+            <button class="btn danger" onclick="resetAll()"><span data-icon="trash" data-size="14"></span>Borrar todos los datos</button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="modalTitle">Título</h3>
+      <button onclick="closeModal()" data-icon="x"></button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div id="print-area"></div>
+<div id="toasts"></div>
+<style id="pageStyle"></style>
+
+<script>
+/* ==================================================================
+   ICONOS SVG (sin emojis)
+   ================================================================== */
+const ICONS = {
+  dashboard: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+  receipt: '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/>',
+  package: '<path d="M16.5 9.4 7.5 4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
+  dollar: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+  chart: '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
+  printer: '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  alert: '<path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
+  trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  refresh: '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
+  pencil: '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>',
+  check: '<polyline points="20 6 9 17 4 12"/>',
+  x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  cart: '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',
+  trending: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+  boxEmpty: '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>'
+};
+function icon(name, size = 16) {
+  return `<svg class="ico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+}
+function hydrateIcons(root = document) {
+  root.querySelectorAll('[data-icon]').forEach(el => {
+    if (el.dataset.hydrated) return;
+    el.innerHTML = icon(el.dataset.icon, Number(el.dataset.size) || 16);
+    el.dataset.hydrated = '1';
+  });
+}
+
+/* ---------------- Utilidades ---------------- */
+const $  = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const num = n => Number(n) || 0;
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = n => db.settings.currency + num(n).toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
+const fdate = iso => { const d = new Date(iso); return d.toLocaleDateString('es-MX') + ' ' + d.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}); };
+const toISODate = d => { const z = new Date(d.getTime() - d.getTimezoneOffset()*60000); return z.toISOString().slice(0,10); };
+const todayISO = () => toISODate(new Date());
+
+function toast(msg, type = 'ok') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = icon(type === 'ok' ? 'check' : 'alert', 16) + '<span>' + esc(msg) + '</span>';
+  $('#toasts').appendChild(el);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 320); }, 2600);
+}
+
+/* ---------------- Base de datos ---------------- */
+const DB_KEY = 'arnelsystem_v1';
+let db = {
+  products: [], sales: [], expenses: [], counter: 1,
+  settings: {
+    businessName: 'ArnelSystem', taxId: '', address: '', phone: '',
+    currency: '$', footer: '¡Gracias por su compra!', printerWidth: '58',
+    copies: 1, lowStock: 5
+  }
+};
+
+function save() { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+
+function load() {
+  try {
+    const raw = localStorage.getItem(DB_KEY);
+    if (!raw) { seed(); return; }
+    const p = JSON.parse(raw);
+    db = { ...db, ...p, settings: { ...db.settings, ...(p.settings || {}) } };
+  } catch (e) { console.error(e); seed(); }
+}
+
+function seed() {
+  db.products = [
+    {id:uid(), code:'P001', name:'Café molido 500g',   category:'Abarrotes', cost:4.50, price:7.90, stock:25, min:5},
+    {id:uid(), code:'P002', name:'Coca-Cola 500ml',    category:'Bebidas',   cost:1.20, price:2.00, stock:48, min:12},
+    {id:uid(), code:'P003', name:'Pan tajado',         category:'Panadería', cost:1.80, price:3.00, stock:15, min:5},
+    {id:uid(), code:'P004', name:'Leche entera 1L',    category:'Lácteos',   cost:2.10, price:3.50, stock:30, min:10},
+    {id:uid(), code:'P005', name:'Arroz 1kg',          category:'Abarrotes', cost:1.50, price:2.60, stock:40, min:10},
+    {id:uid(), code:'P006', name:'Jabón en polvo 1kg', category:'Aseo',      cost:3.00, price:5.50, stock:8,  min:10}
+  ];
+  db.counter = 1;
+  save();
+}
+
+/* ---------------- Navegación ---------------- */
+const VIEW_META = {
+  dashboard: ['Dashboard', 'Resumen general del negocio'],
+  pos:       ['Punto de Venta', 'Registra ventas rápidamente'],
+  inventory: ['Inventario', 'Control de productos, costos y existencias'],
+  finance:   ['Finanzas', 'Ingresos, costos, gastos y utilidades'],
+  reports:   ['Reportes', 'Análisis de ventas y rendimiento'],
+  printer:   ['Impresión Térmica', 'Configuración y tickets'],
+  settings:  ['Configuración', 'Datos del negocio y respaldo']
+};
+
+function go(view) {
+  $$('.view').forEach(v => v.classList.remove('active'));
+  $('#view-' + view).classList.add('active');
+  $$('.nav-item').forEach(b => b.classList.toggle('active', b.dataset.view === view));
+  const [t, s] = VIEW_META[view];
+  $('#pageTitle').textContent = t;
+  $('#pageSub').textContent = s;
+  window.scrollTo({top:0, behavior:'smooth'});
+  refresh();
+}
+$$('.nav-item').forEach(b => b.onclick = () => go(b.dataset.view));
+
+/* ---------------- MODAL ---------------- */
+function openModal() { $('#modal').classList.add('open'); }
+function closeModal() { $('#modal').classList.remove('open'); }
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+
+/* ==================================================================
+   DASHBOARD
+   ================================================================== */
+function renderDashboard() {
+  const hoy = new Date().toDateString();
+  const ventasHoy = db.sales.filter(s => new Date(s.date).toDateString() === hoy);
+  const ingHoy = ventasHoy.reduce((a, s) => a + s.total, 0);
+  const utilHoy = ventasHoy.reduce((a, s) => a + s.profit, 0);
+
+  const mes = new Date().getMonth(), anio = new Date().getFullYear();
+  const ventasMes = db.sales.filter(s => { const d = new Date(s.date); return d.getMonth() === mes && d.getFullYear() === anio; });
+  const ingMes = ventasMes.reduce((a, s) => a + s.total, 0);
+  const utilMes = ventasMes.reduce((a, s) => a + s.profit, 0);
+
+  const stockValor = db.products.reduce((a, p) => a + p.cost * p.stock, 0);
+  const bajos = db.products.filter(p => p.stock <= (p.min ?? db.settings.lowStock));
+
+  $('#dashCards').innerHTML = `
+    <div class="card"><div class="lbl">${icon('receipt',14)}Ventas de hoy</div><div class="val">${ventasHoy.length}</div><div class="sub">${money(ingHoy)} facturado</div></div>
+    <div class="card green"><div class="lbl">${icon('trending',14)}Utilidad de hoy</div><div class="val">${money(utilHoy)}</div><div class="sub">Margen bruto del día</div></div>
+    <div class="card"><div class="lbl">${icon('dollar',14)}Ingresos del mes</div><div class="val">${money(ingMes)}</div><div class="sub">${ventasMes.length} ventas</div></div>
+    <div class="card green"><div class="lbl">${icon('trending',14)}Utilidad del mes</div><div class="val">${money(utilMes)}</div><div class="sub">Antes de gastos</div></div>
+    <div class="card khaki"><div class="lbl">${icon('package',14)}Valor del inventario</div><div class="val">${money(stockValor)}</div><div class="sub">${db.products.length} productos · ${db.products.reduce((a,p)=>a+p.stock,0)} unidades</div></div>
+    <div class="card red"><div class="lbl">${icon('alert',14)}Stock bajo</div><div class="val">${bajos.length}</div><div class="sub">Requieren reposición</div></div>
+  `;
+
+  const ult = [...db.sales].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 8);
+  $('#dashRecent').innerHTML = ult.length ? `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Ticket</th><th>Fecha</th><th>Cliente</th><th>Pago</th><th class="right">Total</th><th class="right">Utilidad</th></tr></thead>
+      <tbody>${ult.map(s => `
+        <tr>
+          <td class="mono">#${String(s.number).padStart(6,'0')}</td>
+          <td>${fdate(s.date)}</td>
+          <td>${esc(s.customer || 'Consumidor final')}</td>
+          <td>${esc(s.paymentMethod)}</td>
+          <td class="right mono">${money(s.total)}</td>
+          <td class="right mono" style="color:var(--green)">${money(s.profit)}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>` : `<div class="empty">${icon('receipt',34)}Aún no hay ventas registradas.</div>`;
+
+  $('#dashLow').innerHTML = bajos.length ? `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Código</th><th>Producto</th><th class="right">Stock</th><th class="right">Mínimo</th><th></th></tr></thead>
+      <tbody>${bajos.map(p => `
+        <tr>
+          <td class="mono">${esc(p.code)}</td>
+          <td>${esc(p.name)}</td>
+          <td class="right"><span class="pill ${p.stock === 0 ? 'bad' : 'warn'}">${p.stock}</span></td>
+          <td class="right mono">${p.min ?? db.settings.lowStock}</td>
+          <td class="right"><button class="btn sm" onclick="openProductModal('${p.id}')">${icon('plus',12)}Reponer</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>` : `<div class="empty">${icon('check',34)}Todo el inventario está en niveles correctos.</div>`;
+}
+
+/* ==================================================================
+   INVENTARIO
+   ================================================================== */
+function renderInventory() {
+  const q = ($('#invSearch').value || '').toLowerCase();
+  const list = db.products.filter(p =>
+    p.name.toLowerCase().includes(q) || (p.code || '').toLowerCase().includes(q) ||
+    (p.category || '').toLowerCase().includes(q));
+
+  const valorCosto = db.products.reduce((a, p) => a + p.cost * p.stock, 0);
+  const valorVenta = db.products.reduce((a, p) => a + p.price * p.stock, 0);
+  const unidades = db.products.reduce((a, p) => a + p.stock, 0);
+
+  $('#invCards').innerHTML = `
+    <div class="card"><div class="lbl">${icon('package',14)}Productos</div><div class="val">${db.products.length}</div><div class="sub">${unidades} unidades en total</div></div>
+    <div class="card khaki"><div class="lbl">${icon('dollar',14)}Costo del inventario</div><div class="val">${money(valorCosto)}</div><div class="sub">Inversión actual</div></div>
+    <div class="card green"><div class="lbl">${icon('trending',14)}Valor a precio venta</div><div class="val">${money(valorVenta)}</div><div class="sub">Utilidad potencial: ${money(valorVenta - valorCosto)}</div></div>
+  `;
+
+  $('#invTable').innerHTML = list.length ? `
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Código</th><th>Producto</th><th>Categoría</th>
+        <th class="right">Costo</th><th class="right">Precio</th><th class="right">Margen</th>
+        <th class="right">Stock</th><th class="right">Valor costo</th><th></th>
+      </tr></thead>
+      <tbody>${list.map(p => {
+        const margen = p.price > 0 ? ((p.price - p.cost) / p.price * 100) : 0;
+        const bajo = p.stock <= (p.min ?? db.settings.lowStock);
+        const mColor = margen >= 30 ? 'var(--green)' : margen >= 15 ? 'var(--khaki-600)' : 'var(--red)';
+        return `<tr>
+          <td class="mono">${esc(p.code)}</td>
+          <td><b>${esc(p.name)}</b></td>
+          <td>${esc(p.category || '—')}</td>
+          <td class="right mono">${money(p.cost)}</td>
+          <td class="right mono">${money(p.price)}</td>
+          <td class="right mono" style="color:${mColor}">${margen.toFixed(1)}%</td>
+          <td class="right"><span class="pill ${p.stock === 0 ? 'bad' : bajo ? 'warn' : 'ok'}">${p.stock}</span></td>
+          <td class="right mono">${money(p.cost * p.stock)}</td>
+          <td class="right" style="white-space:nowrap">
+            <button class="btn sm" onclick="openProductModal('${p.id}')" title="Editar">${icon('pencil',13)}</button>
+            <button class="btn sm danger" onclick="deleteProduct('${p.id}')" title="Eliminar">${icon('trash',13)}</button>
+          </td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>` : `<div class="empty">${icon('boxEmpty',34)}No se encontraron productos.</div>`;
+}
+
+function openProductModal(id) {
+  const p = id ? db.products.find(x => x.id === id)
+               : {code:'', name:'', category:'', cost:'', price:'', stock:0, min:db.settings.lowStock};
+  if (!p) return;
+  $('#modalTitle').textContent = id ? 'Editar producto' : 'Nuevo producto';
+  $('#modalBody').innerHTML = `
+    <div class="form-grid">
+      <div class="field"><label>Código</label><input id="fCode" value="${esc(p.code)}" placeholder="P001"></div>
+      <div class="field"><label>Nombre *</label><input id="fName" value="${esc(p.name)}" placeholder="Nombre del producto"></div>
+      <div class="field"><label>Categoría</label><input id="fCat" value="${esc(p.category || '')}" placeholder="Abarrotes"></div>
+      <div class="field"><label>Costo unitario</label><input id="fCost" type="number" min="0" step="0.01" value="${p.cost}"></div>
+      <div class="field"><label>Precio de venta</label><input id="fPrice" type="number" min="0" step="0.01" value="${p.price}"></div>
+      <div class="field"><label>Stock actual</label><input id="fStock" type="number" step="1" value="${p.stock}"></div>
+      <div class="field"><label>Stock mínimo</label><input id="fMin" type="number" step="1" value="${p.min ?? db.settings.lowStock}"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" id="fSave">${icon('check',14)}Guardar producto</button>
+    </div>`;
+
+  $('#fSave').onclick = () => {
+    const name = $('#fName').value.trim();
+    if (!name) return toast('El nombre es obligatorio', 'error');
+    const data = {
+      code: $('#fCode').value.trim() || 'P' + String(db.products.length + 1).padStart(3,'0'),
+      name,
+      category: $('#fCat').value.trim(),
+      cost: num($('#fCost').value),
+      price: num($('#fPrice').value),
+      stock: Math.max(0, Math.round(num($('#fStock').value))),
+      min: Math.max(0, Math.round(num($('#fMin').value)))
+    };
+    if (id) Object.assign(db.products.find(x => x.id === id), data);
+    else db.products.push({ id: uid(), ...data });
+    save(); closeModal(); refresh(); renderTicketPreview();
+    toast(id ? 'Producto actualizado' : 'Producto creado');
+  };
+  openModal();
+}
+
+function deleteProduct(id) {
+  const p = db.products.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(`¿Eliminar "${p.name}" del inventario?`)) return;
+  db.products = db.products.filter(x => x.id !== id);
+  save(); refresh();
+  toast('Producto eliminado', 'error');
+}
+
+/* ==================================================================
+   PUNTO DE VENTA
+   ================================================================== */
+let cart = [];
+
+function renderPOS() {
+  const q = ($('#posSearch').value || '').toLowerCase();
+  const list = db.products.filter(p =>
+    p.name.toLowerCase().includes(q) || (p.code || '').toLowerCase().includes(q));
+
+  $('#posProducts').innerHTML = list.length ? list.map(p => `
+    <button class="prod" data-id="${p.id}" ${p.stock <= 0 ? 'disabled' : ''}>
+      <div class="pn">${esc(p.name)}</div>
+      <div class="pp">${money(p.price)}</div>
+      <div class="ps">Stock: ${p.stock}</div>
+    </button>`).join('') : `<div class="empty" style="grid-column:1/-1">${icon('boxEmpty',34)}Sin resultados</div>`;
+
+  $$('#posProducts .prod').forEach(b => b.onclick = () => addToCart(b.dataset.id));
+  renderCart();
+}
+
+function addToCart(id) {
+  const p = db.products.find(x => x.id === id);
+  if (!p) return;
+  const item = cart.find(i => i.id === id);
+  const enCarrito = item ? item.qty : 0;
+  if (enCarrito + 1 > p.stock) return toast('Stock insuficiente para ' + p.name, 'error');
+  if (item) item.qty++;
+  else cart.push({ id: p.id, name: p.name, price: p.price, cost: p.cost, qty: 1 });
+  renderCart();
+}
+
+function changeQty(id, delta) {
+  const item = cart.find(i => i.id === id);
+  if (!item) return;
+  const p = db.products.find(x => x.id === id);
+  const nueva = item.qty + delta;
+  if (nueva <= 0) cart = cart.filter(i => i.id !== id);
+  else if (nueva > p.stock) return toast('Stock insuficiente', 'error');
+  else item.qty = nueva;
+  renderCart();
+}
+
+function renderCart() {
+  $('#cartItems').innerHTML = cart.length ? cart.map(i => `
+    <div class="citem">
+      <div class="cn">${esc(i.name)}</div>
+      <div class="qty">
+        <button onclick="changeQty('${i.id}',-1)" title="Quitar">${icon('minus',12)}</button>
+        <span class="mono">${i.qty}</span>
+        <button onclick="changeQty('${i.id}',1)" title="Agregar">${icon('plus',12)}</button>
+      </div>
+      <div class="mono" style="min-width:60px;text-align:right">${money(i.qty * i.price)}</div>
+    </div>`).join('') : `<div class="empty" style="padding:20px">${icon('cart',30)}Carrito vacío</div>`;
+
+  const sub = cart.reduce((a, i) => a + i.price * i.qty, 0);
+  const disc = Math.min(num($('#payDiscount').value), sub);
+  const total = sub - disc;
+  const cash = num($('#payCash').value);
+  const change = Math.max(0, cash - total);
+
+  $('#sumSub').textContent = money(sub);
+  $('#sumDisc').textContent = '-' + money(disc);
+  $('#sumTotal').textContent = money(total);
+  $('#sumChange').textContent = money(change);
+  $('#cashWrap').style.display = $('#payMethod').value === 'Efectivo' ? 'block' : 'none';
+}
+
+function clearCart() { cart = []; renderCart(); }
+
+$('#posSearch').oninput = renderPOS;
+$('#payDiscount').oninput = renderCart;
+$('#payCash').oninput = renderCart;
+$('#payMethod').onchange = renderCart;
+
+$('#btnCheckout').onclick = () => {
+  if (!cart.length) return toast('El carrito está vacío', 'error');
+
+  const sub = cart.reduce((a, i) => a + i.price * i.qty, 0);
+  const disc = Math.min(num($('#payDiscount').value), sub);
+  const total = sub - disc;
+  const cost = cart.reduce((a, i) => a + i.cost * i.qty, 0);
+  const method = $('#payMethod').value;
+  const cash = num($('#payCash').value);
+
+  if (method === 'Efectivo' && cash < total) return toast('Efectivo insuficiente', 'error');
+
+  for (const i of cart) {
+    const p = db.products.find(x => x.id === i.id);
+    if (!p || p.stock < i.qty) return toast('Stock insuficiente: ' + i.name, 'error');
+  }
+
+  const sale = {
+    id: uid(),
+    number: db.counter++,
+    date: new Date().toISOString(),
+    customer: $('#payCustomer').value.trim() || 'Consumidor final',
+    items: cart.map(i => ({ ...i })),
+    subtotal: sub,
+    discount: disc,
+    total,
+    cost,
+    profit: total - cost,
+    paymentMethod: method,
+    cash: method === 'Efectivo' ? cash : total,
+    change: method === 'Efectivo' ? Math.max(0, cash - total) : 0
+  };
+
+  cart.forEach(i => { const p = db.products.find(x => x.id === i.id); if (p) p.stock -= i.qty; });
+  db.sales.push(sale);
+  save();
+
+  cart = [];
+  $('#payCustomer').value = '';
+  $('#payDiscount').value = 0;
+  $('#payCash').value = 0;
+  renderPOS(); refresh(); renderTicketPreview();
+
+  showTicketModal(sale);
+  toast('Venta #' + String(sale.number).padStart(6,'0') + ' registrada');
+};
+
+/* ==================================================================
+   FINANZAS
+   ================================================================== */
+function inPeriod(iso, period) {
+  const d = new Date(iso), now = new Date();
+  if (period === 'hoy') return d.toDateString() === now.toDateString();
+  if (period === 'semana') { const s = new Date(now); s.setDate(now.getDate() - 7); s.setHours(0,0,0,0); return d >= s; }
+  if (period === 'mes') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  return true;
+}
+
+function renderFinance() {
+  const period = $('#finPeriod').value;
+  const sales = db.sales.filter(s => inPeriod(s.date, period));
+  const exps = db.expenses.filter(e => inPeriod(e.date, period));
+
+  const ingresos = sales.reduce((a, s) => a + s.total, 0);
+  const costoVentas = sales.reduce((a, s) => a + s.cost, 0);
+  const gastos = exps.reduce((a, e) => a + e.amount, 0);
+  const utilBruta = ingresos - costoVentas;
+  const utilNeta = utilBruta - gastos;
+  const margen = ingresos > 0 ? (utilNeta / ingresos * 100) : 0;
+
+  $('#finCards').innerHTML = `
+    <div class="card"><div class="lbl">${icon('receipt',14)}Ingresos por ventas</div><div class="val">${money(ingresos)}</div><div class="sub">${sales.length} ventas</div></div>
+    <div class="card khaki"><div class="lbl">${icon('package',14)}Costo de mercancía</div><div class="val">${money(costoVentas)}</div><div class="sub">Costo de lo vendido</div></div>
+    <div class="card green"><div class="lbl">${icon('trending',14)}Utilidad bruta</div><div class="val">${money(utilBruta)}</div><div class="sub">Ingresos − costo</div></div>
+    <div class="card red"><div class="lbl">${icon('dollar',14)}Gastos operativos</div><div class="val">${money(gastos)}</div><div class="sub">${exps.length} registros</div></div>
+    <div class="card ${utilNeta >= 0 ? 'green' : 'red'}"><div class="lbl">${icon('trending',14)}Utilidad neta</div><div class="val">${money(utilNeta)}</div><div class="sub">Margen: ${margen.toFixed(1)}%</div></div>
+  `;
+
+  const ordenados = [...db.expenses].sort((a,b) => new Date(b.date) - new Date(a.date));
+  $('#expTable').innerHTML = ordenados.length ? `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Fecha</th><th>Descripción</th><th>Categoría</th><th class="right">Monto</th><th></th></tr></thead>
+      <tbody>${ordenados.map(e => `
+        <tr>
+          <td>${new Date(e.date).toLocaleDateString('es-MX')}</td>
+          <td>${esc(e.description)}</td>
+          <td><span class="pill warn">${esc(e.category)}</span></td>
+          <td class="right mono" style="color:var(--red)">-${money(e.amount)}</td>
+          <td class="right"><button class="btn sm danger" onclick="deleteExpense('${e.id}')" title="Eliminar">${icon('trash',13)}</button></td>
+        </tr>`).join('')}</tbody>
+    </table></div>` : `<div class="empty">${icon('receipt',30)}No hay gastos registrados.</div>`;
+}
+
+function addExpense() {
+  const description = $('#expDesc').value.trim();
+  const amount = num($('#expAmount').value);
+  const date = $('#expDate').value || todayISO();
+  if (!description) return toast('Escribe una descripción', 'error');
+  if (amount <= 0) return toast('El monto debe ser mayor a 0', 'error');
+  db.expenses.push({ id: uid(), description, category: $('#expCat').value, amount, date: date + 'T12:00:00' });
+  save();
+  $('#expDesc').value = ''; $('#expAmount').value = '';
+  refresh();
+  toast('Gasto registrado');
+}
+
+function deleteExpense(id) {
+  if (!confirm('¿Eliminar este gasto?')) return;
+  db.expenses = db.expenses.filter(e => e.id !== id);
+  save(); refresh();
+  toast('Gasto eliminado', 'error');
+}
+
+/* ==================================================================
+   REPORTES
+   ================================================================== */
+function renderReports() {
+  const from = new Date(($('#repFrom').value || todayISO()) + 'T00:00:00');
+  const to = new Date(($('#repTo').value || todayISO()) + 'T23:59:59');
+  const sales = db.sales.filter(s => { const d = new Date(s.date); return d >= from && d <= to; });
+
+  const ingresos = sales.reduce((a, s) => a + s.total, 0);
+  const costo = sales.reduce((a, s) => a + s.cost, 0);
+  const utilidad = sales.reduce((a, s) => a + s.profit, 0);
+  const ticket = sales.length ? ingresos / sales.length : 0;
+  const unidades = sales.reduce((a, s) => a + s.items.reduce((b, i) => b + i.qty, 0), 0);
+
+  $('#repCards').innerHTML = `
+    <div class="card"><div class="lbl">${icon('receipt',14)}Ventas</div><div class="val">${sales.length}</div><div class="sub">${unidades} unidades vendidas</div></div>
+    <div class="card"><div class="lbl">${icon('dollar',14)}Ingresos</div><div class="val">${money(ingresos)}</div><div class="sub">Total facturado</div></div>
+    <div class="card khaki"><div class="lbl">${icon('package',14)}Costo</div><div class="val">${money(costo)}</div><div class="sub">Costo de mercancía</div></div>
+    <div class="card green"><div class="lbl">${icon('trending',14)}Utilidad</div><div class="val">${money(utilidad)}</div><div class="sub">Margen: ${ingresos ? (utilidad/ingresos*100).toFixed(1) : 0}%</div></div>
+    <div class="card"><div class="lbl">${icon('chart',14)}Ticket promedio</div><div class="val">${money(ticket)}</div><div class="sub">Por venta</div></div>
+  `;
+
+  const porDia = {};
+  sales.forEach(s => {
+    const k = toISODate(new Date(s.date));
+    porDia[k] = porDia[k] || { total: 0, count: 0 };
+    porDia[k].total += s.total;
+    porDia[k].count++;
+  });
+  const dias = Object.keys(porDia).sort();
+  const max = Math.max(1, ...dias.map(d => porDia[d].total));
+  $('#repChart').innerHTML = dias.length ? dias.map(d => `
+    <div class="bar-col">
+      <div class="bv">${money(porDia[d].total).replace(db.settings.currency,'')}</div>
+      <div class="bar" style="height:${Math.max(3, porDia[d].total / max * 100)}%" title="${d}: ${money(porDia[d].total)}"></div>
+      <small>${d.slice(5)}</small>
+    </div>`).join('') : `<div class="empty" style="width:100%">${icon('chart',30)}Sin ventas en el periodo</div>`;
+
+  const prodMap = {};
+  sales.forEach(s => s.items.forEach(i => {
+    prodMap[i.name] = prodMap[i.name] || { qty: 0, total: 0, profit: 0 };
+    prodMap[i.name].qty += i.qty;
+    prodMap[i.name].total += i.qty * i.price;
+    prodMap[i.name].profit += i.qty * (i.price - i.cost);
+  }));
+  const top = Object.entries(prodMap).sort((a, b) => b[1].qty - a[1].qty).slice(0, 10);
+  $('#repTop').innerHTML = top.length ? `
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th>Producto</th><th class="right">Unidades</th><th class="right">Ventas</th><th class="right">Utilidad</th></tr></thead>
+      <tbody>${top.map(([name, v], i) => `
+        <tr>
+          <td class="mono">${i + 1}</td><td>${esc(name)}</td>
+          <td class="right mono">${v.qty}</td>
+          <td class="right mono">${money(v.total)}</td>
+          <td class="right mono" style="color:var(--green)">${money(v.profit)}</td>
+        </tr>`).join('')}</tbody>
+    </table></div>` : `<div class="empty">${icon('package',30)}Sin datos en el periodo.</div>`;
+
+  const ord = [...sales].sort((a,b) => new Date(b.date) - new Date(a.date));
+  $('#repSales').innerHTML = ord.length ? `
+    <div class="table-wrap"><table>
+      <thead><tr><th>Ticket</th><th>Fecha</th><th>Cliente</th><th>Pago</th><th class="right">Ítems</th><th class="right">Total</th><th class="right">Utilidad</th><th></th></tr></thead>
+      <tbody>${ord.map(s => `
+        <tr>
+          <td class="mono">#${String(s.number).padStart(6,'0')}</td>
+          <td>${fdate(s.date)}</td>
+          <td>${esc(s.customer || 'Consumidor final')}</td>
+          <td>${esc(s.paymentMethod)}</td>
+          <td class="right mono">${s.items.reduce((a,i)=>a+i.qty,0)}</td>
+          <td class="right mono">${money(s.total)}</td>
+          <td class="right mono" style="color:var(--green)">${money(s.profit)}</td>
+          <td class="right"><button class="btn sm" onclick="reprintSale('${s.id}')" title="Reimprimir">${icon('printer',13)}</button></td>
+        </tr>`).join('')}</tbody>
+    </table></div>` : `<div class="empty">${icon('receipt',30)}Sin ventas en el periodo.</div>`;
+}
+
+/* ==================================================================
+   IMPRESIÓN TÉRMICA
+   ================================================================== */
+function setPageSize() {
+  const w = db.settings.printerWidth === '80' ? '80mm' : '58mm';
+  $('#pageStyle').textContent = `@media print{@page{size:${w} auto;margin:2mm;}}`;
+}
+
+function ticketHTML(sale) {
+  const s = db.settings;
+  const items = sale.items.map(it => `
+    <div class="tk-item">
+      <div class="tk-item-name">${esc(it.name)}</div>
+      <div class="tk-item-row"><span>${it.qty} x ${money(it.price)}</span><span>${money(it.qty * it.price)}</span></div>
+    </div>`).join('');
+
+  return `<div class="tk">
+    <div class="tk-c tk-b tk-lg">${esc(s.businessName || 'ArnelSystem')}</div>
+    ${s.taxId ? `<div class="tk-c tk-sm">NIT/RUC: ${esc(s.taxId)}</div>` : ''}
+    ${s.address ? `<div class="tk-c tk-sm">${esc(s.address)}</div>` : ''}
+    ${s.phone ? `<div class="tk-c tk-sm">Tel: ${esc(s.phone)}</div>` : ''}
+    <div class="tk-sep"></div>
+    <div class="tk-row"><span>Ticket</span><span>#${String(sale.number).padStart(6,'0')}</span></div>
+    <div class="tk-row"><span>Fecha</span><span>${fdate(sale.date)}</span></div>
+    <div class="tk-row"><span>Cliente</span><span>${esc(sale.customer || 'Consumidor final')}</span></div>
+    <div class="tk-row"><span>Pago</span><span>${esc(sale.paymentMethod)}</span></div>
+    <div class="tk-sep"></div>
+    ${items}
+    <div class="tk-sep"></div>
+    <div class="tk-row"><span>SUBTOTAL</span><span>${money(sale.subtotal)}</span></div>
+    ${sale.discount > 0 ? `<div class="tk-row"><span>DESCUENTO</span><span>-${money(sale.discount)}</span></div>` : ''}
+    <div class="tk-row tk-b tk-lg"><span>TOTAL</span><span>${money(sale.total)}</span></div>
+    ${sale.paymentMethod === 'Efectivo' ? `
+      <div class="tk-row"><span>Efectivo</span><span>${money(sale.cash)}</span></div>
+      <div class="tk-row"><span>Cambio</span><span>${money(sale.change)}</span></div>` : ''}
+    <div class="tk-sep"></div>
+    <div class="tk-c tk-sm">${esc(s.footer || '¡Gracias por su compra!')}</div>
+    <div class="tk-c tk-sm" style="margin-top:4px">Generado por ArnelSystem</div>
+    <div class="tk-space"></div>
+  </div>`;
+}
+
+function doPrint(html) {
+  const area = $('#print-area');
+  area.className = db.settings.printerWidth === '80' ? 'w80' : 'w58';
+  area.innerHTML = html;
+  setPageSize();
+  setTimeout(() => window.print(), 120);
+}
+
+function printSale(sale) {
+  if (!sale) return toast('No hay venta para imprimir', 'error');
+  doPrint(ticketHTML(sale));
+}
+
+function reprintSale(id) {
+  const s = db.sales.find(x => x.id === id);
+  if (s) printSale(s);
+}
+
+function reprintLast() {
+  const last = [...db.sales].sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+  if (!last) return toast('No hay ventas registradas', 'error');
+  printSale(last);
+}
+
+function printTest() {
+  const demo = {
+    number: 0,
+    date: new Date().toISOString(),
+    customer: 'CLIENTE DE PRUEBA',
+    paymentMethod: 'Efectivo',
+    items: [
+      { name: 'Producto de demostración A', qty: 2, price: 5.00, cost: 3.00 },
+      { name: 'Producto de demostración B', qty: 1, price: 12.50, cost: 8.00 }
+    ],
+    subtotal: 22.50, discount: 2.50, total: 20.00, cost: 14.00,
+    cash: 50.00, change: 30.00
+  };
+  doPrint(ticketHTML(demo));
+}
+
+function showTicketModal(sale) {
+  $('#modalTitle').textContent = 'Venta registrada · Ticket #' + String(sale.number).padStart(6,'0');
+  $('#modalBody').innerHTML = `
+    <div style="display:flex;justify-content:center;margin-bottom:16px">
+      <div class="preview-box"><div class="${db.settings.printerWidth === '80' ? 'w80' : 'w58'}">${ticketHTML(sale)}</div></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn ghost" onclick="closeModal()">Cerrar</button>
+      <button class="btn primary" onclick="printSaleById('${sale.id}')">${icon('printer',14)}Imprimir ticket</button>
+    </div>`;
+  openModal();
+}
+
+function printSaleById(id) {
+  const s = db.sales.find(x => x.id === id);
+  closeModal();
+  setTimeout(() => printSale(s), 150);
+}
+
+function renderTicketPreview() {
+  const last = [...db.sales].sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+  const el = $('#ticketPreview');
+  if (!el) return;
+  el.className = db.settings.printerWidth === '80' ? 'w80' : 'w58';
+  el.innerHTML = last ? ticketHTML(last) : `<div class="tk"><div class="tk-c tk-b">${esc(db.settings.businessName)}</div>
+    <div class="tk-sep"></div><div class="tk-c">Sin ventas registradas aún.</div>
+    <div class="tk-c tk-sm">Este es un ticket de ejemplo.</div><div class="tk-space"></div></div>`;
+  const sel = $('#prWidth');
+  if (sel) sel.value = db.settings.printerWidth;
+}
+
+function savePrinterSettings() {
+  db.settings.printerWidth = $('#prWidth').value;
+  db.settings.copies = Math.max(1, num($('#prCopies').value));
+  save();
+  setPageSize();
+  renderTicketPreview();
+  toast('Configuración de impresora guardada');
+}
+
+/* ==================================================================
+   CONFIGURACIÓN
+   ================================================================== */
+function fillSettings() {
+  const s = db.settings;
+  $('#stName').value = s.businessName;
+  $('#stTax').value = s.taxId;
+  $('#stAddress').value = s.address;
+  $('#stPhone').value = s.phone;
+  $('#stCurrency').value = s.currency;
+  $('#stLow').value = s.lowStock;
+  $('#stFooter').value = s.footer;
+  $('#prWidth').value = s.printerWidth;
+  $('#prCopies').value = s.copies;
+}
+
+function saveSettings() {
+  const s = db.settings;
+  s.businessName = $('#stName').value.trim() || 'ArnelSystem';
+  s.taxId = $('#stTax').value.trim();
+  s.address = $('#stAddress').value.trim();
+  s.phone = $('#stPhone').value.trim();
+  s.currency = $('#stCurrency').value.trim() || '$';
+  s.lowStock = Math.max(1, num($('#stLow').value));
+  s.footer = $('#stFooter').value.trim();
+  save(); refresh(); renderTicketPreview();
+  toast('Configuración guardada');
+}
+
+function downloadFile(name, content, type = 'application/json') {
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function exportBackup() {
+  downloadFile('arnelsystem-backup-' + todayISO() + '.json', JSON.stringify(db, null, 2));
+  toast('Respaldo descargado');
+}
+
+function importBackup(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.products) throw new Error('Formato inválido');
+      db = { ...db, ...data, settings: { ...db.settings, ...(data.settings || {}) } };
+      save(); refresh(); fillSettings(); renderTicketPreview();
+      toast('Respaldo restaurado');
+    } catch (err) { toast('Archivo inválido', 'error'); }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+}
+
+function resetAll() {
+  if (!confirm('¿Borrar TODOS los datos (productos, ventas, gastos)? Esta acción no se puede deshacer.')) return;
+  localStorage.removeItem(DB_KEY);
+  db = { products: [], sales: [], expenses: [], counter: 1, settings: { ...db.settings } };
+  seed(); refresh(); fillSettings(); renderTicketPreview();
+  toast('Datos reiniciados', 'error');
+}
+
+function exportProductsCSV() {
+  const rows = [['Código','Producto','Categoría','Costo','Precio','Margen %','Stock','Valor costo']];
+  db.products.forEach(p => {
+    const m = p.price > 0 ? ((p.price - p.cost) / p.price * 100).toFixed(1) : '0';
+    rows.push([p.code, p.name, p.category || '', p.cost, p.price, m, p.stock, (p.cost * p.stock).toFixed(2)]);
+  });
+  downloadFile('inventario-' + todayISO() + '.csv', '\uFEFF' + rows.map(r => r.join(';')).join('\n'), 'text/csv');
+  toast('Inventario exportado');
+}
+
+function exportSalesCSV() {
+  const from = new Date(($('#repFrom').value || todayISO()) + 'T00:00:00');
+  const to = new Date(($('#repTo').value || todayISO()) + 'T23:59:59');
+  const sales = db.sales.filter(s => { const d = new Date(s.date); return d >= from && d <= to; });
+  const rows = [['Ticket','Fecha','Cliente','Método pago','Ítems','Subtotal','Descuento','Total','Costo','Utilidad']];
+  sales.forEach(s => rows.push([
+    s.number, fdate(s.date), s.customer || 'Consumidor final', s.paymentMethod,
+    s.items.reduce((a,i)=>a+i.qty,0), s.subtotal.toFixed(2), s.discount.toFixed(2),
+    s.total.toFixed(2), s.cost.toFixed(2), s.profit.toFixed(2)
+  ]));
+  downloadFile('ventas-' + todayISO() + '.csv', '\uFEFF' + rows.map(r => r.join(';')).join('\n'), 'text/csv');
+  toast('Ventas exportadas');
+}
+
+/* ==================================================================
+   REFRESCO GLOBAL
+   ================================================================== */
+function refresh() {
+  renderDashboard();
+  renderPOS();
+  renderInventory();
+  renderFinance();
+  renderReports();
+}
+
+/* ==================================================================
+   INICIALIZACIÓN
+   ================================================================== */
+function init() {
+  hydrateIcons();
+  load();
+  fillSettings();
+
+  const now = new Date();
+  $('#repTo').value = toISODate(now);
+  $('#repFrom').value = toISODate(new Date(now.getFullYear(), now.getMonth(), 1));
+  $('#expDate').value = todayISO();
+
+  setPageSize();
+  renderTicketPreview();
+  refresh();
+}
+init();
+</script>
+</body>
+</html>
