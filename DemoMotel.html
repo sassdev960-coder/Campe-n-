@@ -585,7 +585,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
     <div class="group">
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Producto</th><th class="num">Stock</th><th class="num">Costo</th><th class="num">Venta</th><th class="num">Util.</th><th style="text-align:right"></th></tr></thead>
+          <thead><tr><th>Producto</th><th class="num">Stock</th><th class="num">Costo</th><th class="num">Costo total</th><th class="num">Venta</th><th class="num">Util.</th><th style="text-align:right"></th></tr></thead>
           <tbody id="prodBody"></tbody>
         </table>
       </div>
@@ -613,7 +613,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
     <div class="group">
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Artículo</th><th>Categoría</th><th class="num">Stock</th><th class="num">Compra</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead>
+          <thead><tr><th>Artículo</th><th>Categoría</th><th class="num">Stock</th><th class="num">Compra</th><th class="num">Costo total</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead>
           <tbody id="itemBody"></tbody>
         </table>
       </div>
@@ -978,7 +978,16 @@ async function syncToSupabase(){
     if(db.expenses.length) tasks.push(sb.from('motel_expenses').upsert(db.expenses.map(toSnakeExpense)));
     if(db.deposits.length) tasks.push(sb.from('motel_deposits').upsert(db.deposits.map(toSnakeDeposit)));
     if(db.shifts.length) tasks.push(sb.from('motel_shifts').upsert(db.shifts.map(toSnakeShift)));
-    if(Array.isArray(db.items) && db.items.length) tasks.push(sb.from('motel_items').upsert(db.items.map(toSnakeItem)));
+    // Sync items separately (table may have RLS restrictions)
+    if(Array.isArray(db.items) && db.items.length){
+      try {
+        const r = await sb.from('motel_items').upsert(db.items.map(toSnakeItem));
+        if(r.error) throw r.error;
+        console.log('✅ items synced');
+      } catch(e){
+        console.warn('⚠ items sync failed (RLS?):', e?.message || e);
+      }
+    }
     const results = await Promise.allSettled(tasks);
     const errors = results.filter(r => r.status === 'rejected' || (r.value && r.value.error));
     if(errors.length) throw (errors[0].reason || errors[0].value?.error || errors[0]);
@@ -2445,10 +2454,10 @@ function updateTimers(){
 function stockOf(pid){ return db.movements.filter(m => m.productId === pid).reduce((a,m) => m.type === 'entrada' ? a + m.qty : a - m.qty, 0); }
 function renderProducts(){
   const body = $('#prodBody');
-  if(!db.products.length){ body.innerHTML = `<tr><td colspan="6" class="empty">Sin productos. Agrega el primero.</td></tr>`; renderProductCostStats(); return; }
+  if(!db.products.length){ body.innerHTML = `<tr><td colspan="7" class="empty">Sin productos. Agrega el primero.</td></tr>`; renderProductCostStats(); return; }
   const query = ($('#productSearch')?.value || '').trim().toLocaleLowerCase('es');
   const filtered = db.products.filter(p => p.name.toLocaleLowerCase('es').includes(query));
-  if(!filtered.length){ body.innerHTML = `<tr><td colspan="6" class="empty">No se encontraron productos con “${esc(query)}”.</td></tr>`; renderProductCostStats(); return; }
+  if(!filtered.length){ body.innerHTML = `<tr><td colspan="7" class="empty">No se encontraron productos con “${esc(query)}”.</td></tr>`; renderProductCostStats(); return; }
   body.innerHTML = filtered.map(p => {
     const st = stockOf(p.id);
     const bajo = st <= 3;
@@ -2457,6 +2466,7 @@ function renderProducts(){
       <td><b style="font-weight:600">${esc(p.name)}</b></td>
       <td class="num" style="color:${bajo?'var(--red)':'var(--green)'};font-weight:800">${st}</td>
       <td class="num" style="color:var(--text-2)">${money(p.cost)}</td>
+      <td class="num" style="color:var(--text-2);font-weight:700">${money(st * (Number(p.cost)||0))}</td>
       <td class="num">${money(p.price)}</td>
       <td class="num" style="color:var(--accent);font-weight:700">${money(util)}</td>
       <td style="text-align:right;white-space:nowrap">
@@ -2662,7 +2672,7 @@ function renderItems(){
   }
   if(query) items = items.filter(x => (x.nombre||'').toLocaleLowerCase('es').includes(query));
   if(!items.length){
-    body.innerHTML = `<tr><td colspan="6" class="empty">${itemFilter === 'baja' ? 'No hay artículos dados de baja.' : 'Sin artículos. Presiona ＋ Agregar para crear el primero.'}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7" class="empty">${itemFilter === 'baja' ? 'No hay artículos dados de baja.' : 'Sin artículos. Presiona ＋ Agregar para crear el primero.'}</td></tr>`;
     renderItemCostStats();
     return;
   }
@@ -2682,6 +2692,7 @@ function renderItems(){
       <td style="font-size:12px;color:var(--text-2)">${catLabel}</td>
       <td class="num" style="color:${stockColor};font-weight:800">${item.stock}</td>
       <td class="num" style="color:var(--text-2)">${costo > 0 ? money(costo) : '—'}</td>
+      <td class="num" style="font-weight:700">${costo > 0 ? money(item.stock * costo) : '—'}</td>
       <td>${statusBadge}</td>
       <td style="text-align:right;white-space:nowrap">${actions}</td>
     </tr>`;
