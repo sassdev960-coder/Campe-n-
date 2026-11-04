@@ -580,6 +580,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
   <section id="productos" class="view">
     <div class="page-title"><div><h1>Productos</h1><p>Inventario y kardex individual</p></div></div>
     <div class="fab-row"><button class="btn primary sm" onclick="openNewProduct()">＋ Nuevo producto</button></div>
+    <div class="stats" id="prodCostStats" style="margin-bottom:14px"></div>
     <div class="field"><label>Buscar producto</label><input id="productSearch" type="search" placeholder="Escribe el nombre, por ejemplo: cer" oninput="renderProducts()" autocomplete="off"><p class="helper">Busca por nombre y usa Entrada, Salida o Kardex para editar sus movimientos.</p></div>
     <div class="group">
       <div class="table-wrap">
@@ -596,6 +597,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
       <div><h1>Inventario</h1><p>Artículos del motel: TVs, mantas, amenities, etc.</p></div>
       <button class="add-btn" onclick="openNewItem()">＋ Agregar</button>
     </div>
+    <div class="stats" id="itemCostStats" style="margin-bottom:12px"></div>
     <div class="field">
       <label>Buscar artículo</label>
       <input id="itemSearch" type="search" placeholder="Ej: televisor, manta..." oninput="renderItems()" autocomplete="off">
@@ -669,6 +671,26 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
         <table>
           <thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th><th>Entrada</th><th>Salida</th><th class="num">Monto</th><th class="num">Util.</th></tr></thead>
           <tbody id="repDetail"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="group-title">Costo total de inventario (stock actual)</div>
+    <div class="stats" id="invCostStats" style="margin-bottom:14px"></div>
+    <div class="group" style="margin-bottom:14px">
+      <div class="group-title" style="padding:12px 14px 0;margin:0">Productos</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Producto</th><th class="num">Stock</th><th class="num">Costo unit.</th><th class="num">Costo total</th></tr></thead>
+          <tbody id="invCostProdBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="group">
+      <div class="group-title" style="padding:12px 14px 0;margin:0">Artículos del motel</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Artículo</th><th>Categoría</th><th class="num">Stock</th><th class="num">Costo unit.</th><th class="num">Costo total</th></tr></thead>
+          <tbody id="invCostItemBody"></tbody>
         </table>
       </div>
     </div>
@@ -2397,10 +2419,10 @@ function updateTimers(){
 function stockOf(pid){ return db.movements.filter(m => m.productId === pid).reduce((a,m) => m.type === 'entrada' ? a + m.qty : a - m.qty, 0); }
 function renderProducts(){
   const body = $('#prodBody');
-  if(!db.products.length){ body.innerHTML = `<tr><td colspan="6" class="empty">Sin productos. Agrega el primero.</td></tr>`; return; }
+  if(!db.products.length){ body.innerHTML = `<tr><td colspan="6" class="empty">Sin productos. Agrega el primero.</td></tr>`; renderProductCostStats(); return; }
   const query = ($('#productSearch')?.value || '').trim().toLocaleLowerCase('es');
   const filtered = db.products.filter(p => p.name.toLocaleLowerCase('es').includes(query));
-  if(!filtered.length){ body.innerHTML = `<tr><td colspan="6" class="empty">No se encontraron productos con “${esc(query)}”.</td></tr>`; return; }
+  if(!filtered.length){ body.innerHTML = `<tr><td colspan="6" class="empty">No se encontraron productos con “${esc(query)}”.</td></tr>`; renderProductCostStats(); return; }
   body.innerHTML = filtered.map(p => {
     const st = stockOf(p.id);
     const bajo = st <= 3;
@@ -2419,6 +2441,7 @@ function renderProducts(){
       </td>
     </tr>`;
   }).join('');
+  renderProductCostStats();
 }
 function openNewProduct(){
   openSheet('Nuevo producto', `
@@ -2613,6 +2636,7 @@ function renderItems(){
   if(query) items = items.filter(x => (x.nombre||'').toLocaleLowerCase('es').includes(query));
   if(!items.length){
     body.innerHTML = `<tr><td colspan="8" class="empty">${itemFilter === 'baja' ? 'No hay artículos dados de baja.' : 'Sin artículos. Presiona ＋ Agregar para crear el primero.'}</td></tr>`;
+    renderItemCostStats();
     return;
   }
   const catLabels = { electronica:'📺 Electrónica', ropa:'🛏 Ropa cama', amenities:'🧴 Amenities', otro:'📦 Otros' };
@@ -2640,6 +2664,7 @@ function renderItems(){
       <td style="text-align:right;white-space:nowrap">${actions}</td>
     </tr>`;
   }).join('');
+  renderItemCostStats();
 }
 function openNewItem(){
   openSheet('Nuevo artículo', `
@@ -2739,6 +2764,104 @@ function reactivarItem(id){
   item.baja = false;
   item.fechaBaja = null;
   save(); renderItems(); toast(`${item.nombre} reactivado`);
+}
+
+/* COSTO DE INVENTARIO */
+function renderProductCostStats(){
+  const el = $('#prodCostStats');
+  if(!el) return;
+  let stockTotal = 0, costTotal = 0, ventaTotal = 0;
+  (db.products || []).forEach(p => {
+    const st = stockOf(p.id);
+    stockTotal += st;
+    costTotal += st * (Number(p.cost) || 0);
+    ventaTotal += st * (Number(p.price) || 0);
+  });
+  const util = ventaTotal - costTotal;
+  el.innerHTML = `
+    <div class="stat"><div class="lbl">Productos</div><div class="val c-muted" style="font-size:18px">${db.products.length}</div></div>
+    <div class="stat"><div class="lbl">Stock total</div><div class="val c-muted" style="font-size:18px">${stockTotal}</div></div>
+    <div class="stat"><div class="lbl">Costo inventario</div><div class="val c-accent" style="font-size:18px">${money(costTotal)}</div></div>
+    <div class="stat"><div class="lbl">Valor venta</div><div class="val c-muted" style="font-size:18px">${money(ventaTotal)}</div></div>
+    <div class="stat"><div class="lbl">Ganancia potencial</div><div class="val ${util >= 0 ? 'c-green' : 'c-red'}" style="font-size:18px">${money(util)}</div></div>
+  `;
+}
+function renderItemCostStats(){
+  const el = $('#itemCostStats');
+  if(!el) return;
+  const activos = (db.items || []).filter(i => !i.baja);
+  const deBaja = (db.items || []).filter(i => i.baja);
+  let stockTotal = 0, costTotal = 0, ventaTotal = 0;
+  activos.forEach(i => {
+    const st = Number(i.stock) || 0;
+    stockTotal += st;
+    costTotal += st * (Number(i.costo) || 0);
+    ventaTotal += st * (Number(i.venta) || 0);
+  });
+  const util = ventaTotal - costTotal;
+  el.innerHTML = `
+    <div class="stat"><div class="lbl">Artículos activos</div><div class="val c-green" style="font-size:18px">${activos.length}</div></div>
+    <div class="stat"><div class="lbl">Stock total</div><div class="val c-muted" style="font-size:18px">${stockTotal}</div></div>
+    <div class="stat"><div class="lbl">Costo inventario</div><div class="val c-accent" style="font-size:18px">${money(costTotal)}</div></div>
+    <div class="stat"><div class="lbl">Valor venta</div><div class="val c-muted" style="font-size:18px">${money(ventaTotal)}</div></div>
+    <div class="stat"><div class="lbl">Ganancia potencial</div><div class="val ${util >= 0 ? 'c-green' : 'c-red'}" style="font-size:18px">${money(util)}</div></div>
+    <div class="stat"><div class="lbl">De baja</div><div class="val c-muted" style="font-size:18px">${deBaja.length}</div></div>
+  `;
+}
+function renderInventoryCost(){
+  const statsEl = $('#invCostStats');
+  const prodBody = $('#invCostProdBody');
+  const itemBody = $('#invCostItemBody');
+  if(!statsEl || !prodBody || !itemBody) return;
+  const catLabels = { electronica:'📺 Electrónica', ropa:'🛏 Ropa cama', amenities:'🧴 Amenities', otro:'📦 Otros' };
+
+  let prodStock = 0, prodCost = 0, prodVenta = 0;
+  const prodRows = (db.products || []).map(p => {
+    const st = stockOf(p.id);
+    const c = Number(p.cost) || 0;
+    const v = Number(p.price) || 0;
+    prodStock += st;
+    prodCost += st * c;
+    prodVenta += st * v;
+    return { name: p.name, stock: st, cost: c, total: st * c };
+  });
+  let itemStock = 0, itemCost = 0, itemVenta = 0;
+  const itemRows = (db.items || []).filter(i => !i.baja).map(i => {
+    const st = Number(i.stock) || 0;
+    const c = Number(i.costo) || 0;
+    const v = Number(i.venta) || 0;
+    itemStock += st;
+    itemCost += st * c;
+    itemVenta += st * v;
+    return { nombre: i.nombre, categoria: i.categoria, stock: st, costo: c, total: st * c };
+  });
+  const grandCost = prodCost + itemCost;
+  const grandVenta = prodVenta + itemVenta;
+  const grandUtil = grandVenta - grandCost;
+  statsEl.innerHTML = `
+    <div class="stat"><div class="lbl">Costo productos</div><div class="val c-accent" style="font-size:18px">${money(prodCost)}</div></div>
+    <div class="stat"><div class="lbl">Costo artículos</div><div class="val c-accent" style="font-size:18px">${money(itemCost)}</div></div>
+    <div class="stat"><div class="lbl">Costo total inventario</div><div class="val c-green" style="font-size:18px">${money(grandCost)}</div></div>
+    <div class="stat"><div class="lbl">Valor venta potencial</div><div class="val c-muted" style="font-size:18px">${money(grandVenta)}</div></div>
+    <div class="stat"><div class="lbl">Ganancia potencial</div><div class="val ${grandUtil >= 0 ? 'c-green' : 'c-red'}" style="font-size:18px">${money(grandUtil)}</div></div>
+  `;
+  prodBody.innerHTML = prodRows.length
+    ? prodRows.map(r => `<tr>
+        <td style="font-weight:600">${esc(r.name)}</td>
+        <td class="num">${r.stock}</td>
+        <td class="num">${money(r.cost)}</td>
+        <td class="num" style="font-weight:700">${money(r.total)}</td>
+      </tr>`).join('') + `<tr style="font-weight:800;border-top:2px solid var(--sep)"><td>TOTAL</td><td class="num">${prodStock}</td><td></td><td class="num">${money(prodCost)}</td></tr>`
+    : `<tr><td colspan="4" class="empty">Sin productos.</td></tr>`;
+  itemBody.innerHTML = itemRows.length
+    ? itemRows.map(r => `<tr>
+        <td style="font-weight:600">${esc(r.nombre)}</td>
+        <td style="font-size:12px;color:var(--text-2)">${catLabels[r.categoria] || r.categoria || '—'}</td>
+        <td class="num">${r.stock}</td>
+        <td class="num">${money(r.costo)}</td>
+        <td class="num" style="font-weight:700">${money(r.total)}</td>
+      </tr>`).join('') + `<tr style="font-weight:800;border-top:2px solid var(--sep)"><td>TOTAL</td><td></td><td class="num">${itemStock}</td><td></td><td class="num">${money(itemCost)}</td></tr>`
+    : `<tr><td colspan="5" class="empty">Sin artículos activos.</td></tr>`;
 }
 
 /* REGISTRO MANUAL */
@@ -2968,6 +3091,7 @@ function renderReports(){
     $('#repDaily').innerHTML = '<tr><td colspan="5" class="empty">Seleccione un rango de fechas.</td></tr>';
     $('#repProduct').innerHTML = '<tr><td colspan="5" class="empty">Seleccione un rango de fechas.</td></tr>';
     $('#repDetail').innerHTML = '<tr><td colspan="7" class="empty">Seleccione un rango de fechas.</td></tr>';
+    renderInventoryCost();
     return;
   }
   const rawSales = db.sales.filter(s => s.day >= from && s.day <= to);
@@ -3109,6 +3233,7 @@ function renderReports(){
         </tr>`;
       }).join('')
     : `<tr><td colspan="7" class="empty">Sin movimientos.</td></tr>`;
+  renderInventoryCost();
 }
 
 /* RESPALDO */
@@ -3162,6 +3287,7 @@ function renderAll(){
   renderItems();
   renderPanel();
   renderReports();
+  renderInventoryCost();
 }
 document.addEventListener('keydown', e => {
   if(e.key === 'Escape') closeModal();
