@@ -919,6 +919,7 @@ function mergePreferLocal(remote, local){
 
 /* SUPABASE CARGA */
 async function loadFromSupabase(){
+  console.log('☁ loadFromSupabase() start');
   if(!sb) return null;
   try {
     const [u, ro, pr, mv, sa, ex, de, sh, it] = await Promise.all([
@@ -961,6 +962,7 @@ let syncTimer = null;
 let syncInFlight = false;
 let syncPending = false;
 async function syncToSupabase(){
+  console.log('☁ syncToSupabase() start', { products: db.products?.length, items: db.items?.length });
   if(!sb) return;
   if(syncInFlight){ syncPending = true; return; }
   syncInFlight = true;
@@ -1012,7 +1014,9 @@ async function supaDelete(table, filters, retries = 2){
   }
 }
 
+function saveLocal(){ try { localStorage.setItem(KEY, JSON.stringify(db)); console.log('✅ saveLocal OK'); } catch(e){ console.warn('❌ saveLocal error', e); } }
 function save(){
+  console.log('💾 save() called', { products: db.products?.length, items: db.items?.length, movements: db.movements?.length });
   saveLocal();
   if(sb){
     clearTimeout(syncTimer);
@@ -2477,6 +2481,7 @@ function openNewProduct(){
   setTimeout(()=>$('#npName').focus(), 320);
 }
 function saveNewProduct(){
+  console.log('📦 saveNewProduct called');
   const name = $('#npName').value.trim();
   if(!name){ toast('Ingresa un nombre'); return; }
   const p = { id: uid(), name, cost: Number($('#npCost').value)||0, price: Number($('#npPrice').value)||0 };
@@ -2708,6 +2713,7 @@ function calcItemGanancia(prefix){
   if(el){ el.textContent = money(g); el.style.color = g >= 0 ? 'var(--green)' : 'var(--red)'; }
 }
 function saveNewItem(){
+  console.log('📦 saveNewItem called');
   const nombre = ($('#niNombre')?.value || '').trim();
   if(!nombre){ toast('Ingresa el nombre del artículo'); return; }
   const descripcion = ($('#niDesc')?.value || '').trim();
@@ -2715,6 +2721,7 @@ function saveNewItem(){
   const costo = Number($('#niCosto')?.value) || 0;
   const stock = Math.max(0, Number($('#niStock').value) || 0);
   if(!db.items) db.items = [];
+  db.items.push({ id: uid(), nombre, descripcion, categoria, costo, stock, baja: false, fechaBaja: null, creadoEn: new Date().toISOString() });
   save(); closeModal(); renderItems(); toast('Artículo agregado');
 }
 function openEditItem(id){
@@ -3288,6 +3295,7 @@ document.addEventListener('keydown', e => {
 });
 
 (async function boot(){
+  console.log('🚀 boot start');
   initTheme();
   const statusEl = $('#supabaseStatus');
   if(statusEl){
