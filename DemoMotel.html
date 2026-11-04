@@ -613,7 +613,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
     <div class="group">
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Artículo</th><th>Categoría</th><th class="num">Stock</th><th class="num">Compra</th><th class="num">Venta</th><th class="num">Ganancia</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead>
+          <thead><tr><th>Artículo</th><th>Categoría</th><th class="num">Stock</th><th class="num">Compra</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead>
           <tbody id="itemBody"></tbody>
         </table>
       </div>
@@ -2635,7 +2635,7 @@ function renderItems(){
   }
   if(query) items = items.filter(x => (x.nombre||'').toLocaleLowerCase('es').includes(query));
   if(!items.length){
-    body.innerHTML = `<tr><td colspan="8" class="empty">${itemFilter === 'baja' ? 'No hay artículos dados de baja.' : 'Sin artículos. Presiona ＋ Agregar para crear el primero.'}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="6" class="empty">${itemFilter === 'baja' ? 'No hay artículos dados de baja.' : 'Sin artículos. Presiona ＋ Agregar para crear el primero.'}</td></tr>`;
     renderItemCostStats();
     return;
   }
@@ -2644,9 +2644,6 @@ function renderItems(){
     const catLabel = catLabels[item.categoria] || item.categoria || '—';
     const stockColor = item.stock <= 0 ? 'var(--red)' : item.stock <= 2 ? 'var(--accent)' : 'var(--green)';
     const costo = item.costo || 0;
-    const venta = item.venta || 0;
-    const ganancia = venta - costo;
-    const ganColor = ganancia > 0 ? 'var(--green)' : ganancia < 0 ? 'var(--red)' : 'var(--text-2)';
     const statusBadge = item.baja
       ? `<span style="background:rgba(255,59,48,.16);color:var(--red);padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700">De baja</span>`
       : `<span style="background:rgba(52,199,89,.16);color:var(--green);padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700">Activo</span>`;
@@ -2658,8 +2655,6 @@ function renderItems(){
       <td style="font-size:12px;color:var(--text-2)">${catLabel}</td>
       <td class="num" style="color:${stockColor};font-weight:800">${item.stock}</td>
       <td class="num" style="color:var(--text-2)">${costo > 0 ? money(costo) : '—'}</td>
-      <td class="num" style="font-weight:700">${venta > 0 ? money(venta) : '—'}</td>
-      <td class="num" style="color:${ganColor};font-weight:700">${(costo > 0 || venta > 0) ? money(ganancia) : '—'}</td>
       <td>${statusBadge}</td>
       <td style="text-align:right;white-space:nowrap">${actions}</td>
     </tr>`;
@@ -2678,14 +2673,7 @@ function openNewItem(){
         <option value="otro">📦 Otros</option>
       </select>
     </div>
-    <div class="row2">
-      <div class="field"><label>Precio compra (Bs)</label><input id="niCosto" type="number" inputmode="decimal" min="0" step="0.5" value="0" oninput="calcItemGanancia('ni')"></div>
-      <div class="field"><label>Precio venta (Bs)</label><input id="niVenta" type="number" inputmode="decimal" min="0" step="0.5" value="0" oninput="calcItemGanancia('ni')"></div>
-    </div>
-    <div style="background:var(--amount-bg);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2)">Ganancia por unidad</span>
-      <b id="niGanancia" style="font-size:20px;font-weight:800;color:var(--green)">Bs 0.00</b>
-    </div>
+    <div class="field"><label>Precio compra (Bs)</label><input id="niCosto" type="number" inputmode="decimal" min="0" step="0.5" value="0"></div>
     <div class="field"><label>Cantidad / Stock</label><input id="niStock" type="number" inputmode="numeric" min="0" step="1" value="1"></div>
   `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveNewItem()">Guardar</button>`);
   setTimeout(()=>$('#niNombre').focus(), 320);
@@ -2703,16 +2691,13 @@ function saveNewItem(){
   const descripcion = ($('#niDesc')?.value || '').trim();
   const categoria = $('#niCat').value;
   const costo = Number($('#niCosto')?.value) || 0;
-  const venta = Number($('#niVenta')?.value) || 0;
   const stock = Math.max(0, Number($('#niStock').value) || 0);
   if(!db.items) db.items = [];
-  db.items.push({ id: uid(), nombre, descripcion, categoria, costo, venta, stock, baja: false, fechaBaja: null, creadoEn: new Date().toISOString() });
   save(); closeModal(); renderItems(); toast('Artículo agregado');
 }
 function openEditItem(id){
   const item = (db.items || []).find(x => x.id === id);
   if(!item) return;
-  const ganancia = (item.venta || 0) - (item.costo || 0);
   openSheet(`Editar artículo`, `
     <div class="field"><label>Nombre del artículo</label><input id="eiNombre" value="${esc(item.nombre)}" autocomplete="off"></div>
     <div class="field"><label>Descripción (opcional)</label><input id="eiDesc" value="${esc(item.descripcion || '')}" autocomplete="off"></div>
@@ -2724,14 +2709,7 @@ function openEditItem(id){
         <option value="otro" ${item.categoria === 'otro' ? 'selected' : ''}>📦 Otros</option>
       </select>
     </div>
-    <div class="row2">
-      <div class="field"><label>Precio compra (Bs)</label><input id="eiCosto" type="number" inputmode="decimal" min="0" step="0.5" value="${item.costo || 0}" oninput="calcItemGanancia('ei')"></div>
-      <div class="field"><label>Precio venta (Bs)</label><input id="eiVenta" type="number" inputmode="decimal" min="0" step="0.5" value="${item.venta || 0}" oninput="calcItemGanancia('ei')"></div>
-    </div>
-    <div style="background:var(--amount-bg);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2)">Ganancia por unidad</span>
-      <b id="eiGanancia" style="font-size:20px;font-weight:800;color:${ganancia >= 0 ? 'var(--green)' : 'var(--red)'}">${money(ganancia)}</b>
-    </div>
+    <div class="field"><label>Precio compra (Bs)</label><input id="eiCosto" type="number" inputmode="decimal" min="0" step="0.5" value="${item.costo || 0}"></div>
     <div class="field"><label>Cantidad / Stock</label><input id="eiStock" type="number" inputmode="numeric" min="0" step="1" value="${item.stock}"></div>
     <p class="helper" style="padding:0 4px">Creado: ${fmtDT(item.creadoEn || new Date().toISOString())}</p>
   `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveEditItem('${id}')">Guardar</button>`);
@@ -2746,7 +2724,6 @@ function saveEditItem(id){
   item.descripcion = ($('#eiDesc')?.value || '').trim();
   item.categoria = $('#eiCat').value;
   item.costo = Number($('#eiCosto')?.value) || 0;
-  item.venta = Number($('#eiVenta')?.value) || 0;
   item.stock = Math.max(0, Number($('#eiStock').value) || 0);
   save(); closeModal(); renderItems(); toast('Artículo actualizado');
 }
@@ -2791,20 +2768,16 @@ function renderItemCostStats(){
   if(!el) return;
   const activos = (db.items || []).filter(i => !i.baja);
   const deBaja = (db.items || []).filter(i => i.baja);
-  let stockTotal = 0, costTotal = 0, ventaTotal = 0;
+  let stockTotal = 0, costTotal = 0;
   activos.forEach(i => {
     const st = Number(i.stock) || 0;
     stockTotal += st;
     costTotal += st * (Number(i.costo) || 0);
-    ventaTotal += st * (Number(i.venta) || 0);
   });
-  const util = ventaTotal - costTotal;
   el.innerHTML = `
     <div class="stat"><div class="lbl">Artículos activos</div><div class="val c-green" style="font-size:18px">${activos.length}</div></div>
     <div class="stat"><div class="lbl">Stock total</div><div class="val c-muted" style="font-size:18px">${stockTotal}</div></div>
     <div class="stat"><div class="lbl">Costo inventario</div><div class="val c-accent" style="font-size:18px">${money(costTotal)}</div></div>
-    <div class="stat"><div class="lbl">Valor venta</div><div class="val c-muted" style="font-size:18px">${money(ventaTotal)}</div></div>
-    <div class="stat"><div class="lbl">Ganancia potencial</div><div class="val ${util >= 0 ? 'c-green' : 'c-red'}" style="font-size:18px">${money(util)}</div></div>
     <div class="stat"><div class="lbl">De baja</div><div class="val c-muted" style="font-size:18px">${deBaja.length}</div></div>
   `;
 }
@@ -2825,18 +2798,16 @@ function renderInventoryCost(){
     prodVenta += st * v;
     return { name: p.name, stock: st, cost: c, total: st * c };
   });
-  let itemStock = 0, itemCost = 0, itemVenta = 0;
+  let itemStock = 0, itemCost = 0;
   const itemRows = (db.items || []).filter(i => !i.baja).map(i => {
     const st = Number(i.stock) || 0;
     const c = Number(i.costo) || 0;
-    const v = Number(i.venta) || 0;
     itemStock += st;
     itemCost += st * c;
-    itemVenta += st * v;
     return { nombre: i.nombre, categoria: i.categoria, stock: st, costo: c, total: st * c };
   });
   const grandCost = prodCost + itemCost;
-  const grandVenta = prodVenta + itemVenta;
+  const grandVenta = prodVenta;
   const grandUtil = grandVenta - grandCost;
   statsEl.innerHTML = `
     <div class="stat"><div class="lbl">Costo productos</div><div class="val c-accent" style="font-size:18px">${money(prodCost)}</div></div>
