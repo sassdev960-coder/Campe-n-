@@ -904,12 +904,11 @@ function mergePreferLocal(remote, local){
   const result = Object.assign({}, remote || {});
   collections.forEach(key => {
     const r = Array.isArray(remote?.[key]) ? remote[key] : [];
-    const l = Array.isArray(local?.[key]) ? local[key] : [];
+    const l = Array.isArray(local?.[key])  ? local[key]  : [];
     const map = new Map();
     r.forEach(x => { if(x && x.id != null) map.set(x.id, x); });
-    l.forEach(x => { if(x && x.id != null) map.set(x.id, x); });
-    // If no ids, just prefer local if present
-    if(!r.length && !l.length) { result[key] = []; return; }
+    l.forEach(x => { if(x && x.id != null) map.set(x.id, x); }); // local gana en empate
+    if(!r.length && !l.length){ result[key] = []; return; }
     if(map.size) result[key] = [...map.values()];
     else result[key] = l.length ? l : r;
   });
@@ -933,7 +932,7 @@ async function loadFromSupabase(){
       sb.from('motel_shifts').select('*'),
       sb.from('motel_items').select('*'),
     ]);
-    if(u.error) throw u.error;
+    if(u.error)  throw u.error;
     if(ro.error) throw ro.error;
     if(pr.error) throw pr.error;
     if(mv.error) throw mv.error;
@@ -941,16 +940,18 @@ async function loadFromSupabase(){
     if(ex.error) throw ex.error;
     if(de.error) throw de.error;
     if(sh.error) throw sh.error;
-    // items table is optional; ignore errors
+    if(it.error) throw it.error;   // ← ya NO se ignora el error de items
+
     return {
-      users: (u.data || []).map(x => ({ id:x.id, name:x.name, username:x.username, password:x.password, role:x.role })),
-      rooms: (ro.data || []).map(fromSnakeRoom),
-      products: (pr.data || []).map(x => ({ id:x.id, name:x.name, cost:Number(x.cost)||0, price:Number(x.price)||0 })),
+      users:     (u.data  || []).map(x => ({ id:x.id, name:x.name, username:x.username, password:x.password, role:x.role })),
+      rooms:     (ro.data || []).map(fromSnakeRoom),
+      products:  (pr.data || []).map(x => ({ id:x.id, name:x.name, cost:Number(x.cost)||0, price:Number(x.price)||0 })),
       movements: (mv.data || []).map(fromSnakeMovement),
-      sales: (sa.data || []).map(fromSnakeSale),
-      expenses: (ex.data || []).map(fromSnakeExpense),
-      deposits: (de.data || []).map(fromSnakeDeposit),
-      shifts: (sh.data || []).map(fromSnakeShift)
+      sales:     (sa.data || []).map(fromSnakeSale),
+      expenses:  (ex.data || []).map(fromSnakeExpense),
+      deposits:  (de.data || []).map(fromSnakeDeposit),
+      shifts:    (sh.data || []).map(fromSnakeShift),
+      items:     (it.data || []).map(fromSnakeItem)   // ← AHORA SÍ se devuelve
     };
   } catch(e) {
     console.error('❌ loadFromSupabase:', e);
@@ -961,8 +962,13 @@ async function loadFromSupabase(){
 let syncTimer = null;
 let syncInFlight = false;
 let syncPending = false;
+
 async function syncToSupabase(){
-  console.log('☁ syncToSupabase() start', { products: db.products?.length, items: db.items?.length });
+  console.log('☁ syncToSupabase() start', {
+    products: db.products?.length,
+    items:    db.items?.length,
+    movements:db.movements?.length
+  });
   if(!sb) return;
   if(syncInFlight){ syncPending = true; return; }
   syncInFlight = true;
@@ -970,33 +976,48 @@ async function syncToSupabase(){
   setSyncStatus('syncing', 'Guardando...');
   try {
     const tasks = [];
-    if(db.users.length) tasks.push(sb.from('motel_users').upsert(db.users.map(u => ({ id:u.id, name:u.name, username:u.username, password:u.password, role:u.role }))));
-    if(db.rooms.length) tasks.push(sb.from('motel_rooms').upsert(db.rooms.map(toSnakeRoom)));
-    if(db.products.length) tasks.push(sb.from('motel_products').upsert(db.products.map(p => ({ id:p.id, name:p.name, cost:p.cost||0, price:p.price||0 }))));
-    if(db.movements.length) tasks.push(sb.from('motel_movements').upsert(db.movements.map(toSnakeMovement)));
-    if(db.sales.length) tasks.push(sb.from('motel_sales').upsert(db.sales.map(toSnakeSale)));
-    if(db.expenses.length) tasks.push(sb.from('motel_expenses').upsert(db.expenses.map(toSnakeExpense)));
-    if(db.deposits.length) tasks.push(sb.from('motel_deposits').upsert(db.deposits.map(toSnakeDeposit)));
-    if(db.shifts.length) tasks.push(sb.from('motel_shifts').upsert(db.shifts.map(toSnakeShift)));
-    // Sync items separately (table may have RLS restrictions)
-    if(Array.isArray(db.items) && db.items.length){
-      try {
-        const r = await sb.from('motel_items').upsert(db.items.map(toSnakeItem));
-        if(r.error) throw r.error;
-        console.log('✅ items synced');
-      } catch(e){
-        console.warn('⚠ items sync failed (RLS?):', e?.message || e);
+    if(db.users.length)
+      tasks.push({ name:'users',     p: sb.from('motel_users').upsert(db.users.map(u => ({ id:u.id, name:u.name, username:u.username, password:u.password, role:u.role }))) });
+    if(db.rooms.length)
+      tasks.push({ name:'rooms',     p: sb.from('motel_rooms').upsert(db.rooms.map(toSnakeRoom)) });
+    if(db.products.length)
+      tasks.push({ name:'products',  p: sb.from('motel_products').upsert(db.products.map(p => ({ id:p.id, name:p.name, cost:p.cost||0, price:p.price||0 }))) });
+    if(db.movements.length)
+      tasks.push({ name:'movements', p: sb.from('motel_movements').upsert(db.movements.map(toSnakeMovement)) });
+    if(db.sales.length)
+      tasks.push({ name:'sales',     p: sb.from('motel_sales').upsert(db.sales.map(toSnakeSale)) });
+    if(db.expenses.length)
+      tasks.push({ name:'expenses',  p: sb.from('motel_expenses').upsert(db.expenses.map(toSnakeExpense)) });
+    if(db.deposits.length)
+      tasks.push({ name:'deposits',  p: sb.from('motel_deposits').upsert(db.deposits.map(toSnakeDeposit)) });
+    if(db.shifts.length)
+      tasks.push({ name:'shifts',    p: sb.from('motel_shifts').upsert(db.shifts.map(toSnakeShift)) });
+    // items ahora va en la MISMA cola y sus errores sí se reportan
+    if(Array.isArray(db.items) && db.items.length)
+      tasks.push({ name:'items',     p: sb.from('motel_items').upsert(db.items.map(toSnakeItem)) });
+
+    const results = await Promise.allSettled(tasks.map(t => t.p));
+    const failures = [];
+    results.forEach((r, i) => {
+      if(r.status === 'rejected'){
+        failures.push({ name: tasks[i].name, err: r.reason });
+      } else if(r.value && r.value.error){
+        failures.push({ name: tasks[i].name, err: r.value.error });
       }
+    });
+
+    if(failures.length){
+      console.error('❌ sync failures:', failures);
+      const names = failures.map(f => f.name).join(', ');
+      const first = failures[0].err;
+      throw new Error(`No se pudo guardar [${names}]: ${first?.message || first}`);
     }
-    const results = await Promise.allSettled(tasks);
-    const errors = results.filter(r => r.status === 'rejected' || (r.value && r.value.error));
-    if(errors.length) throw (errors[0].reason || errors[0].value?.error || errors[0]);
 
     setSyncStatus('online', '✓ Guardado');
   } catch(e) {
     console.error('❌ syncToSupabase:', e);
-    setSyncStatus('offline', '✕ Error al guardar');
-   } finally {
+    setSyncStatus('offline', '✕ ' + (e?.message || 'Error al guardar'));
+  } finally {
     syncInFlight = false;
     if(syncPending){
       syncPending = false;
