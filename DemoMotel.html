@@ -861,8 +861,41 @@ function toSnakeDeposit(d){ return { id:d.id, ts:d.ts, day:d.day, description:d.
 function fromSnakeDeposit(d){ return { id:d.id, ts:d.ts, day:typeof d.day==='string'?d.day:dayKey(d.day), desc:d.description, amount:Number(d.amount)||0, userId:d.user_id||null, userName:d.user_name||null }; }
 function toSnakeShift(s){ return { id:s.id, user_id:s.userId, user_name:s.userName, role:s.role, login_at:s.loginAt, logout_at:s.logoutAt||null }; }
 function fromSnakeShift(s){ return { id:s.id, userId:s.user_id, userName:s.user_name, role:s.role, loginAt:s.login_at, logoutAt:s.logout_at||null }; }
-function toSnakeItem(it){ return { id:it.id, nombre:it.nombre, descripcion:it.descripcion||null, categoria:it.categoria||null, costo:it.costo||0, venta:it.venta||0, stock:it.stock||0, baja:!!it.baja, fecha_baja:it.fechaBaja||null, creado_en:it.creadoEn||null }; }
-function fromSnakeItem(it){ return { id:it.id, nombre:it.nombre, descripcion:it.descripcion||'', categoria:it.categoria||'otro', costo:Number(it.costo)||0, venta:Number(it.venta)||0, stock:Number(it.stock)||0, baja:!!it.baja, fechaBaja:it.fecha_baja||null, creadoEn:it.creado_en||new Date().toISOString() }; }
+
+/* ⬇️⬇️⬇️ ITEMS — MODIFICADO PARA KARDEX ⬇️⬇️⬇️ */
+function toSnakeItem(it){
+  return {
+    id: it.id,
+    nombre: it.nombre,
+    descripcion: it.descripcion || null,
+    categoria: it.categoria || null,
+    costo: it.costo || 0,
+    venta: it.venta || 0,
+    stock: it.stock || 0,
+    baja: !!it.baja,
+    fecha_baja: it.fechaBaja || null,
+    motivo_baja: it.motivoBaja || null,
+    historial: Array.isArray(it.historial) ? it.historial : [],
+    creado_en: it.creadoEn || null
+  };
+}
+function fromSnakeItem(it){
+  return {
+    id: it.id,
+    nombre: it.nombre,
+    descripcion: it.descripcion || '',
+    categoria: it.categoria || 'otro',
+    costo: Number(it.costo) || 0,
+    venta: Number(it.venta) || 0,
+    stock: Number(it.stock) || 0,
+    baja: !!it.baja,
+    fechaBaja: it.fecha_baja || null,
+    motivoBaja: it.motivo_baja || null,
+    historial: Array.isArray(it.historial) ? it.historial : [],
+    creadoEn: it.creado_en || new Date().toISOString()
+  };
+}
+/* ⬆️⬆️⬆️ FIN MODIFICACIÓN ITEMS ⬆️⬆️⬆️ */
 
 /* DB */
 const KEY = 'motel_db_v3';
@@ -904,11 +937,11 @@ function mergePreferLocal(remote, local){
   const result = Object.assign({}, remote || {});
   collections.forEach(key => {
     const r = Array.isArray(remote?.[key]) ? remote[key] : [];
-    const l = Array.isArray(local?.[key])  ? local[key]  : [];
+    const l = Array.isArray(local?.[key]) ? local[key] : [];
     const map = new Map();
     r.forEach(x => { if(x && x.id != null) map.set(x.id, x); });
-    l.forEach(x => { if(x && x.id != null) map.set(x.id, x); }); // local gana en empate
-    if(!r.length && !l.length){ result[key] = []; return; }
+    l.forEach(x => { if(x && x.id != null) map.set(x.id, x); });
+    if(!r.length && !l.length) { result[key] = []; return; }
     if(map.size) result[key] = [...map.values()];
     else result[key] = l.length ? l : r;
   });
@@ -916,7 +949,9 @@ function mergePreferLocal(remote, local){
   return result;
 }
 
-/* SUPABASE CARGA */
+/* =========================================================
+   ⬇️ LOAD FROM SUPABASE — FIX (devuelve items + propaga errores)
+   ========================================================= */
 async function loadFromSupabase(){
   console.log('☁ loadFromSupabase() start');
   if(!sb) return null;
@@ -940,7 +975,7 @@ async function loadFromSupabase(){
     if(ex.error) throw ex.error;
     if(de.error) throw de.error;
     if(sh.error) throw sh.error;
-    if(it.error) throw it.error;   // ← ya NO se ignora el error de items
+    if(it.error) throw it.error;
 
     return {
       users:     (u.data  || []).map(x => ({ id:x.id, name:x.name, username:x.username, password:x.password, role:x.role })),
@@ -951,7 +986,7 @@ async function loadFromSupabase(){
       expenses:  (ex.data || []).map(fromSnakeExpense),
       deposits:  (de.data || []).map(fromSnakeDeposit),
       shifts:    (sh.data || []).map(fromSnakeShift),
-      items:     (it.data || []).map(fromSnakeItem)   // ← AHORA SÍ se devuelve
+      items:     (it.data || []).map(fromSnakeItem)
     };
   } catch(e) {
     console.error('❌ loadFromSupabase:', e);
@@ -959,16 +994,15 @@ async function loadFromSupabase(){
   }
 }
 
+/* =========================================================
+   ⬇️ SYNC TO SUPABASE — FIX (no silencia errores de items)
+   ========================================================= */
 let syncTimer = null;
 let syncInFlight = false;
 let syncPending = false;
 
 async function syncToSupabase(){
-  console.log('☁ syncToSupabase() start', {
-    products: db.products?.length,
-    items:    db.items?.length,
-    movements:db.movements?.length
-  });
+  console.log('☁ syncToSupabase() start', { products: db.products?.length, items: db.items?.length, movements: db.movements?.length });
   if(!sb) return;
   if(syncInFlight){ syncPending = true; return; }
   syncInFlight = true;
@@ -992,27 +1026,21 @@ async function syncToSupabase(){
       tasks.push({ name:'deposits',  p: sb.from('motel_deposits').upsert(db.deposits.map(toSnakeDeposit)) });
     if(db.shifts.length)
       tasks.push({ name:'shifts',    p: sb.from('motel_shifts').upsert(db.shifts.map(toSnakeShift)) });
-    // items ahora va en la MISMA cola y sus errores sí se reportan
     if(Array.isArray(db.items) && db.items.length)
       tasks.push({ name:'items',     p: sb.from('motel_items').upsert(db.items.map(toSnakeItem)) });
 
     const results = await Promise.allSettled(tasks.map(t => t.p));
     const failures = [];
     results.forEach((r, i) => {
-      if(r.status === 'rejected'){
-        failures.push({ name: tasks[i].name, err: r.reason });
-      } else if(r.value && r.value.error){
-        failures.push({ name: tasks[i].name, err: r.value.error });
-      }
+      if(r.status === 'rejected') failures.push({ name: tasks[i].name, err: r.reason });
+      else if(r.value && r.value.error) failures.push({ name: tasks[i].name, err: r.value.error });
     });
-
     if(failures.length){
       console.error('❌ sync failures:', failures);
       const names = failures.map(f => f.name).join(', ');
       const first = failures[0].err;
       throw new Error(`No se pudo guardar [${names}]: ${first?.message || first}`);
     }
-
     setSyncStatus('online', '✓ Guardado');
   } catch(e) {
     console.error('❌ syncToSupabase:', e);
@@ -1044,9 +1072,8 @@ async function supaDelete(table, filters, retries = 2){
   }
 }
 
-function saveLocal(){ try { localStorage.setItem(KEY, JSON.stringify(db)); console.log('✅ saveLocal OK'); } catch(e){ console.warn('❌ saveLocal error', e); } }
+function saveLocal(){ try { localStorage.setItem(KEY, JSON.stringify(db)); } catch(e){ console.warn('❌ saveLocal error', e); } }
 function save(){
-  console.log('💾 save() called', { products: db.products?.length, items: db.items?.length, movements: db.movements?.length });
   saveLocal();
   if(sb){
     clearTimeout(syncTimer);
@@ -2512,7 +2539,6 @@ function openNewProduct(){
   setTimeout(()=>$('#npName').focus(), 320);
 }
 function saveNewProduct(){
-  console.log('📦 saveNewProduct called');
   const name = $('#npName').value.trim();
   if(!name){ toast('Ingresa un nombre'); return; }
   const p = { id: uid(), name, cost: Number($('#npCost').value)||0, price: Number($('#npPrice').value)||0 };
@@ -2589,7 +2615,6 @@ function saveKardexMovement(movementId){
     const cost = Number($('#kmCost')?.value);
     if(Number.isFinite(cost) && cost >= 0) m.unitCost = cost;
   }
-  // Recalcular el costo vigente del producto desde la última entrada
   const p = db.products.find(x => x.id === m.productId);
   if(p){
     const entradas = db.movements
@@ -2667,7 +2692,9 @@ function saveEditProduct(id){
   save(); closeModal(); renderAll(); toast('Producto actualizado');
 }
 
-/* INVENTARIO DE ARTÍCULOS DEL MOTEL */
+/* =========================================================
+   ⬇️ INVENTARIO DE ARTÍCULOS — MODIFICADO CON KARDEX / HISTORIAL
+   ========================================================= */
 let itemFilter = '';
 function setItemFilter(f){
   itemFilter = f;
@@ -2679,6 +2706,19 @@ function setItemFilter(f){
   });
   renderItems();
 }
+
+function logItemHistory(item, tipo, motivo, extra){
+  if(!item) return;
+  if(!Array.isArray(item.historial)) item.historial = [];
+  item.historial.push({
+    tipo,
+    fecha: new Date().toISOString(),
+    motivo: motivo || '',
+    usuario: currentUser?.name || null,
+    ...(extra || {})
+  });
+}
+
 function renderItems(){
   const body = $('#itemBody');
   if(!body) return;
@@ -2705,11 +2745,17 @@ function renderItems(){
     const statusBadge = item.baja
       ? `<span style="background:rgba(255,59,48,.16);color:var(--red);padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700">De baja</span>`
       : `<span style="background:rgba(52,199,89,.16);color:var(--green);padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700">Activo</span>`;
+    const bajaInfo = item.baja && item.fechaBaja
+      ? `<br><span style="font-size:11px;color:var(--red)">🗑 ${fmtDT(item.fechaBaja)}${item.motivoBaja ? ' · ' + esc(item.motivoBaja) : ''}</span>`
+      : '';
     const actions = item.baja
-      ? `<button class="row-btn" onclick="reactivarItem('${item.id}')" style="background:rgba(52,199,89,.8);border-color:rgba(52,199,89,.5)">Reactivar</button>`
-      : `<button class="row-btn" onclick="openEditItem('${item.id}')">Editar</button> <button class="row-btn" onclick="darDeBajaItem('${item.id}')" style="background:rgba(255,59,48,.8);border-color:rgba(255,59,48,.5)">Dar baja</button>`;
+      ? `<button class="row-btn" onclick="openItemKardex('${item.id}')" style="background:rgba(120,120,128,.6);border-color:rgba(120,120,128,.5)">📋 Historial</button>
+         <button class="row-btn" onclick="reactivarItem('${item.id}')" style="background:rgba(52,199,89,.8);border-color:rgba(52,199,89,.5)">Reactivar</button>`
+      : `<button class="row-btn" onclick="openItemKardex('${item.id}')" style="background:rgba(120,120,128,.6);border-color:rgba(120,120,128,.5)">📋</button>
+         <button class="row-btn" onclick="openEditItem('${item.id}')">Editar</button>
+         <button class="row-btn" onclick="darDeBajaItem('${item.id}')" style="background:rgba(255,59,48,.8);border-color:rgba(255,59,48,.5)">Dar baja</button>`;
     return `<tr>
-      <td><b style="font-weight:600">${esc(item.nombre)}</b>${item.descripcion ? `<br><span style="font-size:11px;color:var(--text-2)">${esc(item.descripcion)}</span>` : ''}</td>
+      <td><b style="font-weight:600">${esc(item.nombre)}</b>${item.descripcion ? `<br><span style="font-size:11px;color:var(--text-2)">${esc(item.descripcion)}</span>` : ''}${bajaInfo}</td>
       <td style="font-size:12px;color:var(--text-2)">${catLabel}</td>
       <td class="num" style="color:${stockColor};font-weight:800">${item.stock}</td>
       <td class="num" style="color:var(--text-2)">${costo > 0 ? money(costo) : '—'}</td>
@@ -2720,6 +2766,7 @@ function renderItems(){
   }).join('');
   renderItemCostStats();
 }
+
 function openNewItem(){
   openSheet('Nuevo artículo', `
     <div class="field"><label>Nombre del artículo</label><input id="niNombre" placeholder="Ej: Televisor 32, manta polar..." autocomplete="off"></div>
@@ -2737,15 +2784,8 @@ function openNewItem(){
   `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveNewItem()">Guardar</button>`);
   setTimeout(()=>$('#niNombre').focus(), 320);
 }
-function calcItemGanancia(prefix){
-  const costo = Number($('#'+prefix+'Costo')?.value) || 0;
-  const venta = Number($('#'+prefix+'Venta')?.value) || 0;
-  const g = venta - costo;
-  const el = $('#'+prefix+'Ganancia');
-  if(el){ el.textContent = money(g); el.style.color = g >= 0 ? 'var(--green)' : 'var(--red)'; }
-}
+
 function saveNewItem(){
-  console.log('📦 saveNewItem called');
   const nombre = ($('#niNombre')?.value || '').trim();
   if(!nombre){ toast('Ingresa el nombre del artículo'); return; }
   const descripcion = ($('#niDesc')?.value || '').trim();
@@ -2753,9 +2793,16 @@ function saveNewItem(){
   const costo = Number($('#niCosto')?.value) || 0;
   const stock = Math.max(0, Number($('#niStock').value) || 0);
   if(!db.items) db.items = [];
-  db.items.push({ id: uid(), nombre, descripcion, categoria, costo, stock, baja: false, fechaBaja: null, creadoEn: new Date().toISOString() });
+  const item = {
+    id: uid(), nombre, descripcion, categoria, costo, venta: 0, stock,
+    baja: false, fechaBaja: null, motivoBaja: null,
+    historial: [], creadoEn: new Date().toISOString()
+  };
+  logItemHistory(item, 'creacion', 'Artículo creado', { stock });
+  db.items.push(item);
   save(); closeModal(); renderItems(); toast('Artículo agregado');
 }
+
 function openEditItem(id){
   const item = (db.items || []).find(x => x.id === id);
   if(!item) return;
@@ -2776,35 +2823,173 @@ function openEditItem(id){
   `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveEditItem('${id}')">Guardar</button>`);
   setTimeout(()=>$('#eiNombre').focus(), 320);
 }
+
 function saveEditItem(id){
   const item = (db.items || []).find(x => x.id === id);
   if(!item) return;
   const nombre = ($('#eiNombre')?.value || '').trim();
   if(!nombre){ toast('Ingresa el nombre'); return; }
-  item.nombre = nombre;
+
+  const stockAntes  = item.stock;
+  const costoAntes  = item.costo;
+  const catAntes    = item.categoria;
+  const nombreAntes = item.nombre;
+
+  item.nombre      = nombre;
   item.descripcion = ($('#eiDesc')?.value || '').trim();
-  item.categoria = $('#eiCat').value;
-  item.costo = Number($('#eiCosto')?.value) || 0;
-  item.stock = Math.max(0, Number($('#eiStock').value) || 0);
+  item.categoria   = $('#eiCat').value;
+  item.costo       = Number($('#eiCosto')?.value) || 0;
+  item.stock       = Math.max(0, Number($('#eiStock').value) || 0);
+
+  if(item.stock !== stockAntes){
+    logItemHistory(item, 'ajuste_stock', `Stock: ${stockAntes} → ${item.stock}`, { stock: item.stock, stockAntes });
+  }
+  if(item.costo !== costoAntes){
+    logItemHistory(item, 'edicion', `Costo: ${money(costoAntes)} → ${money(item.costo)}`, { stock: item.stock });
+  }
+  if(item.categoria !== catAntes || item.nombre !== nombreAntes){
+    logItemHistory(item, 'edicion', `Datos del artículo modificados`, { stock: item.stock });
+  }
+
   save(); closeModal(); renderItems(); toast('Artículo actualizado');
 }
+
 function darDeBajaItem(id){
   const item = (db.items || []).find(x => x.id === id);
   if(!item) return;
-  if(!confirm(`¿Dar de baja "${item.nombre}"?\n\nEl artículo quedará inactivo. Puedes reactivarlo en cualquier momento desde la pestaña "De baja".`)) return;
+  openSheet(`Dar de baja · ${esc(item.nombre)}`, `
+    <p class="hint" style="padding:0 4px 12px">
+      El artículo quedará inactivo y <b>se restará del costo valorizado</b>.
+      La baja queda registrada en su historial con fecha, motivo y usuario.
+    </p>
+    <div class="field"><label>Motivo de baja</label>
+      <select id="bajaMotivo">
+        <option value="Daño / rotura">Daño / rotura</option>
+        <option value="Pérdida / extravío">Pérdida / extravío</option>
+        <option value="Robo">Robo</option>
+        <option value="Desgaste / fin de vida útil">Desgaste / fin de vida útil</option>
+        <option value="Reemplazo por modelo nuevo">Reemplazo por modelo nuevo</option>
+        <option value="Otro">Otro</option>
+      </select>
+    </div>
+    <div class="field"><label>Observación (opcional)</label>
+      <input id="bajaObs" placeholder="Ej: pantalla rota en pieza 3" autocomplete="off">
+    </div>
+    <div class="info-grid" style="margin-top:4px">
+      <div><span>Stock</span><b>${item.stock}</b></div>
+      <div><span>Costo valorizado</span><b>${money((item.stock||0)*(item.costo||0))}</b></div>
+    </div>
+  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn danger" onclick="confirmarBajaItem('${id}')">🗑 Dar de baja</button>`);
+}
+
+function confirmarBajaItem(id){
+  const item = (db.items || []).find(x => x.id === id);
+  if(!item) return;
+  const motivoBase = $('#bajaMotivo')?.value || 'Otro';
+  const obs = ($('#bajaObs')?.value || '').trim();
+  const motivo = obs ? `${motivoBase} — ${obs}` : motivoBase;
+
   item.baja = true;
   item.fechaBaja = new Date().toISOString();
-  save(); renderItems(); toast(`${item.nombre} dado de baja`);
+  item.motivoBaja = motivo;
+  logItemHistory(item, 'baja', motivo, { stock: item.stock });
+
+  save(); closeModal(); renderItems();
+  toast(`🗑 ${item.nombre} dado de baja`);
 }
+
 function reactivarItem(id){
   const item = (db.items || []).find(x => x.id === id);
   if(!item) return;
+  if(!confirm(`¿Reactivar "${item.nombre}"?\n\nVolverá al inventario activo y al costo valorizado.`)) return;
+  const motivoAnterior = item.motivoBaja;
   item.baja = false;
   item.fechaBaja = null;
-  save(); renderItems(); toast(`${item.nombre} reactivado`);
+  item.motivoBaja = null;
+  logItemHistory(item, 'reactivacion',
+    motivoAnterior ? `Reactivado (baja anterior: ${motivoAnterior})` : 'Reactivado',
+    { stock: item.stock });
+  save(); renderItems(); toast(`♻️ ${item.nombre} reactivado`);
 }
 
-/* COSTO DE INVENTARIO */
+function openItemKardex(id){
+  const item = (db.items || []).find(x => x.id === id);
+  if(!item) return;
+  const hist = (item.historial || [])
+    .slice()
+    .sort((a,b) => new Date(b.fecha) - new Date(a.fecha));
+  const tipoInfo = {
+    creacion:    { label:'🆕 Creación',      color:'var(--accent)' },
+    edicion:     { label:'✏️ Edición',        color:'var(--text-2)' },
+    ajuste_stock:{ label:'📦 Ajuste stock',  color:'var(--blue)'   },
+    baja:        { label:'🗑 Baja',          color:'var(--red)'    },
+    reactivacion:{ label:'♻️ Reactivación',   color:'var(--green)'  }
+  };
+  const rows = hist.length ? hist.map(h => {
+    const ti = tipoInfo[h.tipo] || { label:h.tipo, color:'var(--text-2)' };
+    const stockTag = h.stock != null ? ` <span style="font-size:11px;color:var(--text-2)">· stock ${h.stock}</span>` : '';
+    return `<tr>
+      <td style="white-space:nowrap;font-size:12px;color:var(--text-2)">${fmtDT(h.fecha)}</td>
+      <td style="color:${ti.color};font-weight:700;font-size:12.5px;white-space:nowrap">${ti.label}</td>
+      <td style="font-size:12.5px">${esc(h.motivo || '—')}${stockTag}</td>
+      <td style="font-size:11.5px;color:var(--text-3)">${esc(h.usuario || '—')}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="4" class="empty">Sin movimientos registrados todavía.</td></tr>`;
+
+  const estadoBadge = item.baja
+    ? `<span style="background:rgba(255,59,48,.16);color:var(--red);padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700">De baja</span>`
+    : `<span style="background:rgba(52,199,89,.16);color:var(--green);padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700">Activo</span>`;
+
+  openSheet(`Historial · ${esc(item.nombre)}`, `
+    <div class="info-grid cols-3" style="margin-bottom:14px">
+      <div><span>Stock actual</span><b>${item.stock}</b></div>
+      <div><span>Estado</span><b>${estadoBadge}</b></div>
+      <div><span>Valor</span><b>${money((item.stock||0)*(item.costo||0))}</b></div>
+    </div>
+    ${item.baja && item.fechaBaja ? `<div style="background:rgba(255,59,48,.08);border:1px solid rgba(255,59,48,.3);border-radius:12px;padding:12px 14px;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--red);margin-bottom:4px">🗑 Dado de baja</div>
+      <div style="font-size:12.5px;color:var(--text-2)">${fmtDT(item.fechaBaja)}</div>
+      ${item.motivoBaja ? `<div style="font-size:13px;font-weight:600;margin-top:2px">${esc(item.motivoBaja)}</div>` : ''}
+    </div>` : ''}
+    <div class="group-title" style="padding-left:4px">Historial de movimientos</div>
+    <div class="cons-list"><div class="table-wrap">
+      <table style="font-size:12.5px">
+        <thead><tr><th>Fecha</th><th>Tipo</th><th>Motivo / detalle</th><th>Usuario</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div></div>
+  `, `<button class="btn primary" onclick="closeModal()">Cerrar</button>`);
+}
+
+function renderItemCostStats(){
+  const el = $('#itemCostStats');
+  if(!el) return;
+  const activos = (db.items || []).filter(i => !i.baja);
+  const deBaja  = (db.items || []).filter(i => i.baja);
+
+  let stockActivo = 0, costActivo = 0;
+  activos.forEach(i => {
+    const st = Number(i.stock) || 0;
+    stockActivo += st;
+    costActivo  += st * (Number(i.costo) || 0);
+  });
+
+  let stockBaja = 0, costBaja = 0;
+  deBaja.forEach(i => {
+    const st = Number(i.stock) || 0;
+    stockBaja += st;
+    costBaja  += st * (Number(i.costo) || 0);
+  });
+
+  el.innerHTML = `
+    <div class="stat"><div class="lbl">Artículos activos</div><div class="val c-green" style="font-size:18px">${activos.length}</div></div>
+    <div class="stat"><div class="lbl">Stock activo</div><div class="val c-muted" style="font-size:18px">${stockActivo}</div></div>
+    <div class="stat"><div class="lbl">Costo valorizado</div><div class="val c-accent" style="font-size:18px">${money(costActivo)}</div></div>
+    <div class="stat"><div class="lbl">De baja (${deBaja.length})</div><div class="val c-red" style="font-size:18px">${money(costBaja)}</div></div>
+  `;
+}
+/* ⬆️ FIN INVENTARIO ARTÍCULOS MODIFICADO */
+
 function renderProductCostStats(){
   const el = $('#prodCostStats');
   if(!el) return;
@@ -2822,24 +3007,6 @@ function renderProductCostStats(){
     <div class="stat"><div class="lbl">Costo inventario</div><div class="val c-accent" style="font-size:18px">${money(costTotal)}</div></div>
     <div class="stat"><div class="lbl">Valor venta</div><div class="val c-muted" style="font-size:18px">${money(ventaTotal)}</div></div>
     <div class="stat"><div class="lbl">Ganancia potencial</div><div class="val ${util >= 0 ? 'c-green' : 'c-red'}" style="font-size:18px">${money(util)}</div></div>
-  `;
-}
-function renderItemCostStats(){
-  const el = $('#itemCostStats');
-  if(!el) return;
-  const activos = (db.items || []).filter(i => !i.baja);
-  const deBaja = (db.items || []).filter(i => i.baja);
-  let stockTotal = 0, costTotal = 0;
-  activos.forEach(i => {
-    const st = Number(i.stock) || 0;
-    stockTotal += st;
-    costTotal += st * (Number(i.costo) || 0);
-  });
-  el.innerHTML = `
-    <div class="stat"><div class="lbl">Artículos activos</div><div class="val c-green" style="font-size:18px">${activos.length}</div></div>
-    <div class="stat"><div class="lbl">Stock total</div><div class="val c-muted" style="font-size:18px">${stockTotal}</div></div>
-    <div class="stat"><div class="lbl">Costo inventario</div><div class="val c-accent" style="font-size:18px">${money(costTotal)}</div></div>
-    <div class="stat"><div class="lbl">De baja</div><div class="val c-muted" style="font-size:18px">${deBaja.length}</div></div>
   `;
 }
 function renderInventoryCost(){
@@ -3339,7 +3506,6 @@ document.addEventListener('keydown', e => {
   if(supaReady){ setSyncStatus('syncing', 'Cargando...'); remote = await loadFromSupabase(); }
   if(remote && remote.users && remote.users.length > 0){
     db = mergePreferLocal(remote, localDb);
-    // ensure items array
     if(!Array.isArray(db.items)) db.items = localDb.items || [];
     saveLocal();
     setSyncStatus('online', '✓ Datos cargados');
