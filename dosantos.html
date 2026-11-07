@@ -4,7 +4,1472 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Do Santos FC — Sistema de Gestión</title>
+<style><!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Do Santos FC — Sistema de Gestión</title>
 <style>
+:root{--brand-dark:#001838;--brand-blue:#00AEEF;--brand-blue-hover:#0095cc;--bg-body:#f4f7f9;--text-main:#1e293b;--text-muted:#64748b;--border-light:#e2e8f0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg-body);color:var(--text-main);font-size:14px}
+#app{display:flex;height:100vh;overflow:hidden}
+aside{width:270px;background:var(--brand-dark);color:#e2e8f0;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;box-shadow:4px 0 15px rgba(0,0,0,.1);z-index:10}
+aside .logo{padding:24px 20px 20px;text-align:center;border-bottom:1px solid rgba(255,255,255,.05);background:linear-gradient(180deg,rgba(0,174,239,0.12) 0%,transparent 100%)}
+aside .logo .crest-img{width:130px;height:auto;display:block;margin:0 auto 12px;filter:drop-shadow(0 8px 16px rgba(0,174,239,.3))}
+aside .logo .brand-name{font-weight:800;font-size:20px;color:#ffffff;letter-spacing:1.5px;line-height:1.1}
+aside .logo .brand-sub{display:block;color:var(--brand-blue);font-size:10px;font-weight:700;margin-top:6px;letter-spacing:1px;text-transform:uppercase}
+aside nav{flex:1;overflow-y:auto;padding:12px 12px 24px}
+aside nav::-webkit-scrollbar{width:6px}
+aside nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+aside nav .group{color:#64748b;font-size:10px;text-transform:uppercase;padding:18px 10px 8px;font-weight:700;letter-spacing:1px}
+aside nav a{display:flex;align-items:center;gap:12px;padding:10px 14px;color:#cbd5e1;text-decoration:none;border-radius:8px;font-size:13.5px;cursor:pointer;margin-bottom:2px;font-weight:500;transition:all .2s}
+aside nav a svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none;opacity:.7;transition:all .2s}
+aside nav a:hover{background:rgba(255,255,255,.05);color:#ffffff}
+aside nav a:hover svg{opacity:1}
+aside nav a.active{background:var(--brand-blue);color:#ffffff;font-weight:600;box-shadow:0 4px 12px rgba(0,174,239,.4)}
+aside nav a.active svg{opacity:1;stroke-width:2.5}
+main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+header{background:#ffffff;padding:16px 28px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;z-index:5}
+header h1{font-size:20px;font-weight:700;color:var(--brand-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header .actions{display:flex;gap:10px;align-items:center}
+#content{flex:1;padding:28px;overflow-y:auto}
+.card{background:#ffffff;border-radius:12px;padding:24px;box-shadow:0 4px 6px -1px rgba(0,0,0,.05);margin-bottom:20px;border:1px solid rgba(226,232,240,.5)}
+.card h2{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--brand-dark);display:flex;align-items:center;gap:8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:24px}
+.kpi{background:#ffffff;border-radius:12px;padding:20px;box-shadow:0 4px 6px -1px rgba(0,0,0,.05);border-left:4px solid var(--brand-blue);position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;right:0;width:60px;height:60px;background:var(--brand-blue);opacity:.05;border-radius:50%;transform:translate(20px,-20px)}
+.kpi .label{font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;margin-bottom:8px;letter-spacing:.5px}
+.kpi .value{font-size:28px;font-weight:800;line-height:1;color:var(--brand-dark)}
+.kpi .sub{font-size:12px;color:#94a3b8;margin-top:6px;font-weight:500}
+table{width:100%;border-collapse:collapse;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);border:1px solid var(--border-light)}
+th,td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--border-light);font-size:13.5px;vertical-align:middle}
+th{background:#f8fafc;font-weight:700;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:.5px}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#f8fafc}
+.btn{padding:8px 16px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;font-family:inherit;transition:all .2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 6px rgba(0,0,0,.1)}
+.btn-primary{background:var(--brand-blue);color:#ffffff}
+.btn-primary:hover{background:var(--brand-blue-hover)}
+.btn-success{background:#10b981;color:#ffffff}
+.btn-danger{background:#ef4444;color:#ffffff}
+.btn-secondary{background:#e2e8f0;color:var(--text-main)}
+.btn-outline{background:transparent;border:1px solid var(--border-light);color:var(--text-main)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-xs{padding:4px 10px;font-size:11px}
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.toolbar .search{padding:10px 16px;border:1px solid var(--border-light);border-radius:8px;font-size:13.5px;min-width:280px;outline:none;transition:border .2s}
+.toolbar .search:focus{border-color:var(--brand-blue);box-shadow:0 0 0 3px rgba(0,174,239,.1)}
+.hero-banner{background:linear-gradient(135deg,var(--brand-dark) 0%,#002b5e 100%);border-radius:16px;padding:32px;color:#ffffff;display:flex;align-items:center;gap:32px;margin-bottom:24px;box-shadow:0 10px 25px rgba(0,24,56,.2);position:relative;overflow:hidden}
+.hero-banner::after{content:'';position:absolute;right:-50px;top:-50px;width:300px;height:300px;background:var(--brand-blue);border-radius:50%;opacity:.1;filter:blur(40px)}
+.hero-logo{width:140px;height:auto;filter:drop-shadow(0 10px 20px rgba(0,0,0,.3));z-index:1;position:relative}
+.hero-text{z-index:1;position:relative}
+.hero-text h2{font-size:32px;font-weight:800;letter-spacing:1px;margin-bottom:6px;color:#ffffff}
+.hero-text p{font-size:14px;color:var(--brand-blue);text-transform:uppercase;letter-spacing:2px;font-weight:600}
+#modal{position:fixed;inset:0;background:rgba(0,24,56,.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+#modal.hidden{display:none}
+.modal-content{background:#ffffff;border-radius:16px;padding:28px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px -12px rgba(0,0,0,.25)}
+.modal-content h2{font-size:20px;font-weight:700;margin-bottom:24px;color:var(--brand-dark)}
+.form-row{margin-bottom:16px}
+.form-row label{display:block;font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:10px 14px;border:1px solid var(--border-light);border-radius:8px;font-size:14px;font-family:inherit;background:#f8fafc;transition:all .2s}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:var(--brand-blue);background:#ffffff;box-shadow:0 0 0 3px rgba(0,174,239,.1)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:768px){.form-grid{grid-template-columns:1fr}.hero-banner{flex-direction:column;text-align:center}}
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-green{background:#dcfce7;color:#166534}
+.badge-red{background:#fee2e2;color:#991b1b}
+.badge-yellow{background:#fef3c7;color:#92400e}
+.badge-blue{background:#e0f2fe;color:#0369a1}
+.badge-gray{background:#f1f5f9;color:#475569}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr}}
+.empty{text-align:center;padding:40px;color:#94a3b8;font-style:italic}
+.row-flex{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.mb-2{margin-bottom:16px}.mt-2{margin-top:16px}
+.text-muted{color:var(--text-muted)}.w-100{width:100%}
+.player-photo{width:40px;height:40px;border-radius:8px;object-fit:cover;background:#f1f5f9;border:1px solid var(--border-light);display:inline-block;vertical-align:middle}
+.player-photo-lg{width:130px;height:130px;border-radius:12px;object-fit:cover;background:#f1f5f9;border:3px solid #ffffff;box-shadow:0 4px 12px rgba(0,0,0,.1);display:inline-block}
+.photo-placeholder{display:inline-flex;align-items:center;justify-content:center;background:#f1f5f9;color:#94a3b8;font-size:11px;border:2px dashed #cbd5e1;font-weight:600;text-align:center}
+.kardex-header{display:flex;gap:24px;margin-bottom:24px;align-items:center;background:linear-gradient(to right,#f8fafc,#ffffff);padding:20px;border-radius:12px;border:1px solid var(--border-light)}
+.kardex-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.kardex-item{background:#ffffff;padding:14px;border-radius:8px;border:1px solid var(--border-light);box-shadow:0 1px 2px rgba(0,0,0,.02)}
+.kardex-item .lbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;font-weight:700;letter-spacing:.5px;margin-bottom:4px}
+.kardex-item .val{font-size:14px;font-weight:600;color:var(--brand-dark)}
+.info-box{background:#f0f9ff;border-left:4px solid var(--brand-blue);padding:16px;border-radius:8px;margin-bottom:20px;font-size:13.5px;color:#0369a1;line-height:1.5}
+.warning-box{background:#fffbeb;border-left:4px solid #f59e0b;padding:16px;border-radius:8px;margin-bottom:20px;font-size:13.5px;color:#92400e}
+.search-hero{background:linear-gradient(135deg,var(--brand-dark),#003b7a);color:#ffffff;padding:40px;border-radius:16px;margin-bottom:28px;box-shadow:0 10px 25px rgba(0,24,56,.2)}
+.search-hero h2{color:#ffffff;margin-bottom:8px;font-size:24px;font-weight:800}
+.search-hero p{color:var(--brand-blue);font-size:14px;margin-bottom:24px;font-weight:500}
+.search-hero input{width:100%;padding:16px 20px;border:none;border-radius:10px;font-size:16px;box-shadow:0 4px 12px rgba(0,0,0,.15);outline:none;font-family:inherit}
+.pos-layout{display:grid;grid-template-columns:1fr 420px;gap:20px;align-items:start}
+.pos-products{background:#ffffff;border-radius:12px;padding:20px;border:1px solid var(--border-light)}
+.pos-cart{background:#ffffff;border-radius:12px;padding:20px;border:1px solid var(--border-light);position:sticky;top:20px}
+.pos-cart-items{min-height:150px;max-height:400px;overflow-y:auto;margin:16px 0;border-top:1px solid var(--border-light);border-bottom:1px solid var(--border-light);padding:8px 0}
+.pos-item{display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px dashed var(--border-light);font-size:13px;gap:10px}
+.pos-item:last-child{border-bottom:none}
+.pos-total{font-size:24px;font-weight:800;padding-top:16px;margin-bottom:16px;color:var(--brand-dark);text-align:right}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.product-card{background:#f8fafc;border:1px solid var(--border-light);border-radius:10px;padding:14px;cursor:pointer;transition:all .2s;text-align:center}
+.product-card:hover{background:#ffffff;border-color:var(--brand-blue);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,174,239,.15)}
+.product-card .pname{font-weight:700;font-size:13px;margin-bottom:6px;color:var(--brand-dark)}
+.product-card .pprice{color:var(--brand-blue);font-weight:800;font-size:14px}
+.product-card .pstock{color:var(--text-muted);font-size:11px;margin-top:4px}
+.chart-bar{background:#e2e8f0;border-radius:6px;height:10px;overflow:hidden;margin-top:6px}
+.chart-bar div{background:var(--brand-blue);height:100%;border-radius:6px}
+@media print{.no-print{display:none!important}body{background:white}#content{padding:0}}
+</style>
+</head>
+<body>
+<div id="app">
+  <aside class="no-print">
+    <div class="logo">
+      <img src="logo.png" alt="Do Santos FC" class="crest-img" onerror="this.style.display='none'">
+      <div class="brand-name">DO SANTOS FC</div>
+      <small class="brand-sub">Sistema de Gestión</small>
+    </div>
+    <nav id="nav"></nav>
+  </aside>
+  <main>
+    <header class="no-print">
+      <h1 id="pageTitle">Panel Principal</h1>
+      <div class="actions">
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('fileImport').click()">📤 Importar</button>
+        <input type="file" id="fileImport" accept=".json" style="display:none" onchange="importarJSON(this)">
+        <button class="btn btn-primary btn-sm" onclick="exportarJSON()">📥 Exportar JSON</button>
+      </div>
+    </header>
+    <div id="content"></div>
+  </main>
+</div>
+<div id="modal" class="hidden"></div>
+
+<script>
+// ============ DB (CLAVE NUEVA PARA FORZAR DATOS LIMPIOS) ============
+const DB_KEY = 'dosantos_system_db_v4';
+
+// ============ ICONOS ============
+const icons = {
+  dash: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>',
+  search: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>',
+  user: '<svg viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  folder: '<svg viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>',
+  check: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+  clip: '<svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>',
+  id: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15h4"/><path d="M7 11h2"/><circle cx="16" cy="12" r="2"/></svg>',
+  briefcase: '<svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+  clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  money: '<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>',
+  bank: '<svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M12 3v7"/><path d="m5 10 7-7 7 7"/><path d="M5 21v-8"/><path d="M19 21v-8"/></svg>',
+  wallet: '<svg viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>',
+  book: '<svg viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>',
+  tag: '<svg viewBox="0 0 24 24"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><circle cx="7" cy="7" r="1.5"/></svg>',
+  cart: '<svg viewBox="0 0 24 24"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>',
+  receipt: '<svg viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/></svg>',
+  factory: '<svg viewBox="0 0 24 24"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M6 18h.01M10 18h.01M14 18h.01M18 18h.01"/></svg>',
+  package: '<svg viewBox="0 0 24 24"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>',
+  share: '<svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>',
+  map: '<svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  bell: '<svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+  edit: '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>',
+  chart: '<svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>',
+  users: '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  cog: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>'
+};
+
+// ============ SEED ============
+const seedCategorias = [
+  {id:'cat_sub7', nombre:'Sub 7', edadMin:6, edadMax:7},
+  {id:'cat_sub8', nombre:'Sub 8', edadMin:7, edadMax:8},
+  {id:'cat_sub9', nombre:'Sub 9', edadMin:8, edadMax:9},
+  {id:'cat_sub10', nombre:'Sub 10', edadMin:9, edadMax:10},
+  {id:'cat_sub11', nombre:'Sub 11', edadMin:10, edadMax:11},
+  {id:'cat_sub12', nombre:'Sub 12', edadMin:11, edadMax:12},
+  {id:'cat_sub13', nombre:'Sub 13', edadMin:12, edadMax:13},
+  {id:'cat_sub14', nombre:'Sub 14', edadMin:13, edadMax:14},
+  {id:'cat_sub15', nombre:'Sub 15', edadMin:14, edadMax:15},
+  {id:'cat_sub16', nombre:'Sub 16', edadMin:15, edadMax:16},
+  {id:'cat_sub17', nombre:'Sub 17', edadMin:16, edadMax:17},
+  {id:'cat_sub18', nombre:'Sub 18', edadMin:17, edadMax:18},
+  {id:'cat_sub19', nombre:'Sub 19', edadMin:18, edadMax:19},
+  {id:'cat_sub15f', nombre:'Sub 15 Femenino', edadMin:14, edadMax:15},
+  {id:'cat_prim_m', nombre:'Primera de Ascenso Masculino', edadMin:16, edadMax:99},
+  {id:'cat_prim_f', nombre:'Primera de Ascenso Femenino', edadMin:16, edadMax:99}
+];
+
+function seedDB(){
+  const hoy = new Date().toISOString().slice(0,10);
+  return {
+    config:{nombre:'Do Santos FC', moneda:'Bs', mensualidadBase:250, sucursal:'Principal'},
+    categorias:JSON.parse(JSON.stringify(seedCategorias)),
+    deportistas:[
+      {id:'d1',dni:'7845123',fechaVencimientoDni:'2028-05-15',foto:'',nombres:'Carlos',apellidos:'Quispe',fechaNacimiento:'2010-05-12',sexo:'Masculino',direccion:'Av. Central #123',telefono:'77712345',tutor:'María Quispe',telefonoEmergencia:'77799999',fechaIngreso:hoy,categoriaId:'cat_sub14',turno:'Tarde',horario:'16:00-18:00',estado:'Activo',tipoSangre:'O+',alergias:'Ninguna',antecedentes:'',observacionesMedicas:'',tarifa:250,beca:0},
+      {id:'d2',dni:'7845124',fechaVencimientoDni:'2027-08-20',foto:'',nombres:'Luis',apellidos:'Mamani',fechaNacimiento:'2011-08-20',sexo:'Masculino',direccion:'Calle Los Pinos #45',telefono:'77754321',tutor:'Pedro Mamani',telefonoEmergencia:'77711111',fechaIngreso:hoy,categoriaId:'cat_sub13',turno:'Tarde',horario:'16:00-18:00',estado:'Activo',tipoSangre:'A+',alergias:'Penicilina',antecedentes:'',observacionesMedicas:'',tarifa:250,beca:50},
+      {id:'d3',dni:'7845125',fechaVencimientoDni:'2029-03-15',foto:'',nombres:'Ana',apellidos:'Flores',fechaNacimiento:'2009-03-15',sexo:'Femenino',direccion:'Av. Las Américas #88',telefono:'77788888',tutor:'Rosa Flores',telefonoEmergencia:'77722222',fechaIngreso:hoy,categoriaId:'cat_sub15f',turno:'Mañana',horario:'08:00-10:00',estado:'Activo',tipoSangre:'B+',alergias:'Ninguna',antecedentes:'',observacionesMedicas:'',tarifa:250,beca:0}
+    ],
+    personal:[
+      {id:'p1',nombres:'Juan',apellidos:'Pérez',cargo:'Entrenador',especialidad:'Fútbol formativo',telefono:'77710000',email:'juan@dosantos.com',fechaIngreso:hoy,salario:2500,estado:'Activo',observaciones:''},
+      {id:'p2',nombres:'María',apellidos:'Torrez',cargo:'Secretaria',especialidad:'',telefono:'77720000',email:'maria@dosantos.com',fechaIngreso:hoy,salario:1800,estado:'Activo',observaciones:''}
+    ],
+    usuarios:[{id:'u1',nombre:'Superadmin',usuario:'admin',rol:'Superadministrador',activo:'true'}],
+    pagos:[], movCaja:[], cajaChica:[],
+    productos:[
+      {id:'pr1',nombre:'Camiseta Oficial Talla M',categoria:'Camiseta',talla:'M',color:'Celeste',precioCompra:60,precioVenta:100,stock:15,stockMinimo:5},
+      {id:'pr2',nombre:'Short Deportivo Talla M',categoria:'Short',talla:'M',color:'Azul Marino',precioCompra:40,precioVenta:70,stock:12,stockMinimo:5},
+      {id:'pr3',nombre:'Medias Deportivas',categoria:'Medias',talla:'Única',color:'Blanco',precioCompra:10,precioVenta:25,stock:3,stockMinimo:5}
+    ],
+    ventas:[], proveedores:[],
+    equipamiento:[
+      {id:'eq1',nombre:'Balón Fútbol 5',tipo:'Balón',cantidad:10,estado:'Bueno',observaciones:''},
+      {id:'eq2',nombre:'Conos Naranja',tipo:'Conos',cantidad:30,estado:'Bueno',observaciones:''}
+    ],
+    prestamos:[],
+    canchas:[
+      {id:'c1',nombre:'Cancha Principal',ubicacion:'Sede Central',capacidad:22,tipo:'Fútbol 11',estado:'Disponible'}
+    ],
+    reservas:[], notificaciones:[], asistencias:[], evaluaciones:[], asistenciasPersonal:[], pagosPersonal:[],
+    preinscripciones:[],
+    noticias:[]
+  };
+}
+
+let db = null;
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(DB_KEY);
+    if(raw) db = JSON.parse(raw);
+    else db = seedDB();
+  }catch(e){ db = seedDB(); }
+  // Asegurar que todas las claves existan
+  const seed = seedDB();
+  for(const k in seed){
+    if(!(k in db) || db[k] === null || db[k] === undefined){
+      db[k] = JSON.parse(JSON.stringify(seed[k]));
+    }
+  }
+  // Asegurar que deportistas sea array
+  if(!Array.isArray(db.deportistas)) db.deportistas = seed.deportistas;
+  saveDB();
+}
+function saveDB(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(db)); }catch(e){ console.warn('Storage lleno', e); } }
+function uid(p){ return (p||'id')+'_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+
+// ============ HELPERS ============
+function refLabel(source, id){
+  if(!id) return '-';
+  const list = (db && db[source]) || [];
+  const item = list.find(x => x.id === id);
+  if(!item) return id;
+  if(item.nombres) return (item.nombres + ' ' + (item.apellidos||'')).trim();
+  return item.nombre || item.titulo || id;
+}
+function fmtBs(n){ return 'Bs ' + (Number(n)||0).toFixed(2); }
+function fmtDate(d){ if(!d) return '-'; try{ return new Date(d+'T00:00:00').toLocaleDateString('es-BO'); }catch(e){ return d; } }
+function fmtDateTime(iso){ if(!iso) return '-'; try{ const d = new Date(iso); return d.toLocaleDateString('es-BO') + ' ' + d.toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'}); }catch(e){ return iso; } }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function currentMonth(){ return new Date().toISOString().slice(0,7); }
+
+function photoHTML(p, size){
+  size = size || '40px';
+  if(p && p.foto) return '<img src="'+p.foto+'" class="player-photo" style="width:'+size+';height:'+size+'">';
+  return '<span class="player-photo photo-placeholder" style="width:'+size+';height:'+size+'">4x4</span>';
+}
+
+function openModal(html){
+  const m = document.getElementById('modal');
+  m.innerHTML = '<div class="modal-content">' + html + '</div>';
+  m.classList.remove('hidden');
+}
+function closeModal(){ document.getElementById('modal').classList.add('hidden'); }
+
+// ============ ENTITY DEFS ============
+const ENT = {
+  categorias:{label:'Categoría', fields:[
+    {name:'nombre', label:'Nombre', type:'text', required:true},
+    {name:'edadMin', label:'Edad mínima', type:'number'},
+    {name:'edadMax', label:'Edad máxima', type:'number'}
+  ]},
+  deportistas:{label:'Deportista', fields:[
+    {name:'foto', label:'Foto 4x4', type:'photo'},
+    {name:'dni', label:'DNI / CI', type:'text', required:true},
+    {name:'fechaVencimientoDni', label:'Vencimiento DNI', type:'date'},
+    {name:'nombres', label:'Nombres', type:'text', required:true},
+    {name:'apellidos', label:'Apellidos', type:'text', required:true},
+    {name:'fechaNacimiento', label:'Fecha de nacimiento', type:'date'},
+    {name:'sexo', label:'Sexo', type:'select', options:['Masculino','Femenino']},
+    {name:'direccion', label:'Dirección', type:'text'},
+    {name:'telefono', label:'Teléfono', type:'text'},
+    {name:'tutor', label:'Padre/Madre/Tutor', type:'text'},
+    {name:'telefonoEmergencia', label:'Teléfono emergencia', type:'text'},
+    {name:'fechaIngreso', label:'Fecha de ingreso', type:'date', default:todayStr()},
+    {name:'categoriaId', label:'Categoría', type:'select', source:'categorias'},
+    {name:'turno', label:'Turno', type:'select', options:['Mañana','Tarde','Noche']},
+    {name:'horario', label:'Horario', type:'text'},
+    {name:'estado', label:'Estado', type:'select', options:['Activo','Inactivo','Retirado'], default:'Activo'},
+    {name:'tipoSangre', label:'Tipo de sangre', type:'text'},
+    {name:'alergias', label:'Alergias', type:'text'},
+    {name:'antecedentes', label:'Antecedentes médicos', type:'textarea'},
+    {name:'observacionesMedicas', label:'Observaciones médicas', type:'textarea'},
+    {name:'tarifa', label:'Tarifa mensual (Bs)', type:'number', default:250},
+    {name:'beca', label:'Beca / descuento (%)', type:'number', default:0}
+  ]},
+  personal:{label:'Personal', fields:[
+    {name:'nombres', label:'Nombres', type:'text', required:true},
+    {name:'apellidos', label:'Apellidos', type:'text', required:true},
+    {name:'cargo', label:'Cargo', type:'select', options:['Entrenador','Asistente','Administrativo','Cajero','Secretaria','Otro']},
+    {name:'especialidad', label:'Especialidad', type:'text'},
+    {name:'telefono', label:'Teléfono', type:'text'},
+    {name:'email', label:'Email', type:'text'},
+    {name:'fechaIngreso', label:'Fecha de ingreso', type:'date'},
+    {name:'salario', label:'Salario (Bs)', type:'number'},
+    {name:'estado', label:'Estado', type:'select', options:['Activo','Inactivo','Licencia'], default:'Activo'},
+    {name:'observaciones', label:'Observaciones', type:'textarea'}
+  ]},
+  proveedores:{label:'Proveedor', fields:[
+    {name:'nombre', label:'Nombre', type:'text', required:true},
+    {name:'contacto', label:'Contacto', type:'text'},
+    {name:'telefono', label:'Teléfono', type:'text'},
+    {name:'email', label:'Email', type:'text'},
+    {name:'direccion', label:'Dirección', type:'text'}
+  ]},
+  productos:{label:'Producto', fields:[
+    {name:'nombre', label:'Producto', type:'text', required:true},
+    {name:'categoria', label:'Categoría', type:'select', options:['Uniforme','Camiseta','Short','Medias','Canilleras','Mochila','Accesorio','Otro']},
+    {name:'talla', label:'Talla', type:'text'},
+    {name:'color', label:'Color', type:'text'},
+    {name:'precioCompra', label:'Precio compra', type:'number'},
+    {name:'precioVenta', label:'Precio venta', type:'number', required:true},
+    {name:'stock', label:'Stock', type:'number', default:0},
+    {name:'stockMinimo', label:'Stock mínimo', type:'number', default:2}
+  ]},
+  equipamiento:{label:'Equipamiento', fields:[
+    {name:'nombre', label:'Implemento', type:'text', required:true},
+    {name:'tipo', label:'Tipo', type:'select', options:['Balón','Conos','Redes','Escaleras','Petos','Silbatos','Otro']},
+    {name:'cantidad', label:'Cantidad', type:'number', default:1},
+    {name:'estado', label:'Estado', type:'select', options:['Bueno','Regular','Malo','Baja'], default:'Bueno'},
+    {name:'observaciones', label:'Observaciones', type:'textarea'}
+  ]},
+  canchas:{label:'Cancha', fields:[
+    {name:'nombre', label:'Nombre', type:'text', required:true},
+    {name:'ubicacion', label:'Ubicación', type:'text'},
+    {name:'capacidad', label:'Capacidad', type:'number'},
+    {name:'tipo', label:'Tipo', type:'select', options:['Fútbol 11','Fútbol 7','Fútbol 5','Sintética','Natural','Techada']},
+    {name:'estado', label:'Estado', type:'select', options:['Disponible','Mantenimiento','Ocupada'], default:'Disponible'}
+  ]},
+  usuarios:{label:'Usuario', fields:[
+    {name:'nombre', label:'Nombre', type:'text', required:true},
+    {name:'usuario', label:'Usuario', type:'text', required:true},
+    {name:'rol', label:'Rol', type:'select', options:['Superadministrador','Administrador','Secretaria','Cajero','Entrenador','Encargado de Inventario','Director Deportivo']},
+    {name:'activo', label:'Activo', type:'select', options:['true','false'], default:'true'}
+  ]},
+  noticias:{label:'Noticia', fields:[
+    {name:'titulo', label:'Título', type:'text', required:true},
+    {name:'contenido', label:'Contenido', type:'textarea'},
+    {name:'fecha', label:'Fecha', type:'date', default:todayStr()},
+    {name:'autor', label:'Autor', type:'text'}
+  ]},
+  preinscripciones:{label:'Preinscripción', fields:[
+    {name:'dni', label:'DNI', type:'text'},
+    {name:'nombres', label:'Nombres', type:'text', required:true},
+    {name:'apellidos', label:'Apellidos', type:'text', required:true},
+    {name:'fechaNacimiento', label:'Fecha de nacimiento', type:'date'},
+    {name:'sexo', label:'Sexo', type:'select', options:['Masculino','Femenino']},
+    {name:'representante', label:'Representante', type:'text'},
+    {name:'telefono', label:'Teléfono', type:'text', required:true},
+    {name:'categoriaInteres', label:'Categoría de interés', type:'select', source:'categorias'},
+    {name:'estado', label:'Estado', type:'select', options:['Pendiente','Aprobada','Contactado','Rechazada'], default:'Pendiente'}
+  ]},
+  reservas:{label:'Reserva', fields:[
+    {name:'canchaId', label:'Cancha', type:'select', source:'canchas', required:true},
+    {name:'categoriaId', label:'Categoría', type:'select', source:'categorias'},
+    {name:'fecha', label:'Fecha', type:'date', required:true, default:todayStr()},
+    {name:'horaInicio', label:'Hora inicio', type:'time'},
+    {name:'horaFin', label:'Hora fin', type:'time'},
+    {name:'actividad', label:'Actividad', type:'text'},
+    {name:'estado', label:'Estado', type:'select', options:['Confirmada','Pendiente','Cancelada'], default:'Confirmada'}
+  ]},
+  prestamos:{label:'Préstamo', fields:[
+    {name:'equipoId', label:'Equipamiento', type:'select', source:'equipamiento', required:true},
+    {name:'personalId', label:'Personal', type:'select', source:'personal', required:true},
+    {name:'cantidad', label:'Cantidad', type:'number', default:1},
+    {name:'fechaEntrega', label:'Fecha entrega', type:'date', default:todayStr()},
+    {name:'fechaDevolucion', label:'Fecha devolución', type:'date'},
+    {name:'devuelto', label:'Devuelto', type:'select', options:['No','Sí'], default:'No'},
+    {name:'observaciones', label:'Observaciones', type:'textarea'}
+  ]},
+  evaluaciones:{label:'Evaluación', fields:[
+    {name:'deportistaId', label:'Deportista', type:'select', source:'deportistas', required:true},
+    {name:'fecha', label:'Fecha', type:'date', default:todayStr()},
+    {name:'tecnica', label:'Técnica', type:'number'},
+    {name:'tactica', label:'Táctica', type:'number'},
+    {name:'fisico', label:'Físico', type:'number'},
+    {name:'actitud', label:'Actitud', type:'number'},
+    {name:'observaciones', label:'Observaciones', type:'textarea'}
+  ]},
+  asistenciasPersonal:{label:'Asistencia personal', fields:[
+    {name:'personalId', label:'Personal', type:'select', source:'personal', required:true},
+    {name:'fecha', label:'Fecha', type:'date', required:true, default:todayStr()},
+    {name:'entrada', label:'Entrada', type:'time'},
+    {name:'salida', label:'Salida', type:'time'},
+    {name:'estado', label:'Estado', type:'select', options:['Presente','Tarde','Falta','Permiso'], default:'Presente'}
+  ]},
+  pagosPersonal:{label:'Pago personal', fields:[
+    {name:'personalId', label:'Personal', type:'select', source:'personal', required:true},
+    {name:'mes', label:'Mes (YYYY-MM)', type:'text', default:currentMonth(), required:true},
+    {name:'monto', label:'Monto', type:'number', required:true},
+    {name:'fecha', label:'Fecha de pago', type:'date', default:todayStr()},
+    {name:'metodo', label:'Método', type:'select', options:['Efectivo','Transferencia','Otro']},
+    {name:'estado', label:'Estado', type:'select', options:['Pagado','Pendiente'], default:'Pagado'}
+  ]}
+};
+
+// ============ NAV ============
+const NAV = [
+  {group:'Principal', items:[{route:'dashboard', label:'Panel Principal', icon:icons.dash}]},
+  {group:'Gestión Deportiva', items:[
+    {route:'busqueda', label:'Búsqueda', icon:icons.search},
+    {route:'deportistas', label:'Deportistas', icon:icons.user},
+    {route:'categorias', label:'Categorías', icon:icons.folder},
+    {route:'asistencias', label:'Asistencias', icon:icons.check},
+    {route:'evaluaciones', label:'Evaluaciones', icon:icons.clip},
+    {route:'kardex', label:'Kardex / Ficha', icon:icons.id}
+  ]},
+  {group:'Recursos Humanos', items:[
+    {route:'personal', label:'Personal', icon:icons.briefcase},
+    {route:'asistencia-personal', label:'Asistencia Personal', icon:icons.clock},
+    {route:'pagos-personal', label:'Pagos Personal', icon:icons.money}
+  ]},
+  {group:'Finanzas', items:[
+    {route:'cobros', label:'Cobros y Suscripciones', icon:icons.money},
+    {route:'caja', label:'Caja General', icon:icons.bank},
+    {route:'caja-chica', label:'Caja Chica', icon:icons.wallet},
+    {route:'libro-diario', label:'Libro Diario', icon:icons.book}
+  ]},
+  {group:'Inventario Comercial', items:[
+    {route:'productos', label:'Productos', icon:icons.tag},
+    {route:'pos', label:'Punto de Venta', icon:icons.cart},
+    {route:'ventas', label:'Ventas', icon:icons.receipt},
+    {route:'proveedores', label:'Proveedores', icon:icons.factory}
+  ]},
+  {group:'Inventario Deportivo', items:[
+    {route:'equipamiento', label:'Equipamiento', icon:icons.package},
+    {route:'prestamos', label:'Préstamos', icon:icons.share}
+  ]},
+  {group:'Infraestructura', items:[
+    {route:'canchas', label:'Canchas', icon:icons.map},
+    {route:'reservas', label:'Reservas', icon:icons.calendar}
+  ]},
+  {group:'Comunicación', items:[{route:'notificaciones', label:'Notificaciones', icon:icons.bell}]},
+  {group:'Web Pública', items:[
+    {route:'preinscripciones', label:'Preinscripciones', icon:icons.edit},
+    {route:'noticias', label:'Noticias', icon:icons.chart}
+  ]},
+  {group:'Análisis', items:[{route:'reportes', label:'Reportes', icon:icons.chart}]},
+  {group:'Configuración', items:[
+    {route:'usuarios', label:'Usuarios', icon:icons.users},
+    {route:'configuracion', label:'Configuración', icon:icons.cog}
+  ]}
+];
+
+let currentRoute = 'dashboard';
+let _kardexSelectedId = null;
+let posCart = [];
+let _libroMes = null;
+
+// ============ ROUTER ============
+function renderNav(){
+  let html = '';
+  for(const g of NAV){
+    html += '<div class="group">'+g.group+'</div>';
+    for(const item of g.items){
+      html += '<a data-route="'+item.route+'" class="'+(item.route===currentRoute?'active':'')+'" onclick="navigate(\''+item.route+'\')">'+item.icon+item.label+'</a>';
+    }
+  }
+  document.getElementById('nav').innerHTML = html;
+}
+
+function navigate(route){
+  try{
+    currentRoute = route;
+    renderNav();
+    const routes = getRoutes();
+    const r = routes[route];
+    if(!r){ document.getElementById('content').innerHTML = '<div class="card"><h2>Sección no encontrada</h2></div>'; return; }
+    document.getElementById('pageTitle').textContent = r.title;
+    document.getElementById('content').innerHTML = '';
+    r.render();
+  }catch(err){
+    console.error('Error en navigate('+route+'):', err);
+    document.getElementById('content').innerHTML =
+      '<div class="card"><h2>⚠️ Error al cargar la sección</h2>'+
+      '<div class="warning-box">'+String(err && err.message || err)+'</div>'+
+      '<button class="btn btn-primary" onclick="navigate(\'dashboard\')">Volver al Panel</button></div>';
+  }
+}
+
+// ============ ROUTES (función para evitar errores de inicialización) ============
+function getRoutes(){
+  return {
+    dashboard:{title:'Panel Principal', render:renderDashboard},
+    busqueda:{title:'Búsqueda de Jugadores', render:renderBusqueda},
+    deportistas:{title:'Gestión de Deportistas', render:function(){
+      renderEntity('deportistas', function(row){
+        return '<button class="btn btn-success btn-xs" onclick="abrirPagoDeportista(\''+row.id+'\')">Pagar</button> '+
+               '<button class="btn btn-primary btn-xs" onclick="verKardex(\''+row.id+'\')">Kardex</button>';
+      });
+    }},
+    categorias:{title:'Gestión de Categorías', render:function(){renderEntity('categorias');}},
+    asistencias:{title:'Asistencias', render:renderAsistencias},
+    evaluaciones:{title:'Evaluaciones', render:function(){renderEntity('evaluaciones');}},
+    kardex:{title:'Kardex del Jugador', render:renderKardex},
+    personal:{title:'Gestión de Personal', render:function(){renderEntity('personal');}},
+    'asistencia-personal':{title:'Asistencia del Personal', render:function(){renderEntity('asistenciasPersonal');}},
+    'pagos-personal':{title:'Pagos al Personal', render:function(){renderEntity('pagosPersonal');}},
+    cobros:{title:'Cobros y Suscripciones', render:renderCobros},
+    caja:{title:'Caja General', render:renderCaja},
+    'caja-chica':{title:'Caja Chica', render:renderCajaChica},
+    'libro-diario':{title:'Libro Diario', render:renderLibroDiario},
+    productos:{title:'Productos', render:function(){renderEntity('productos');}},
+    pos:{title:'Punto de Venta', render:renderPOS},
+    ventas:{title:'Ventas Realizadas', render:renderVentas},
+    proveedores:{title:'Proveedores', render:function(){renderEntity('proveedores');}},
+    equipamiento:{title:'Equipamiento', render:function(){renderEntity('equipamiento');}},
+    prestamos:{title:'Préstamos', render:function(){renderEntity('prestamos');}},
+    canchas:{title:'Canchas', render:function(){renderEntity('canchas');}},
+    reservas:{title:'Reservas', render:function(){renderEntity('reservas');}},
+    notificaciones:{title:'Notificaciones', render:renderNotificaciones},
+    reportes:{title:'Reportes', render:renderReportes},
+    preinscripciones:{title:'Preinscripciones', render:function(){
+      renderEntity('preinscripciones', function(row){
+        return row.estado !== 'Aprobada' ? '<button class="btn btn-success btn-xs" onclick="convertirDeportista(\''+row.id+'\')">→ Convertir</button>' : '';
+      });
+    }},
+    noticias:{title:'Noticias', render:function(){renderEntity('noticias');}},
+    usuarios:{title:'Usuarios y Roles', render:function(){renderEntity('usuarios');}},
+    configuracion:{title:'Configuración', render:renderConfiguracion}
+  };
+}
+
+// ============ ENTITY RENDERER ============
+function renderEntity(entityKey, customActions){
+  const cfg = ENT[entityKey];
+  if(!cfg){ throw new Error('Entidad no configurada: '+entityKey); }
+  const rows = Array.isArray(db[entityKey]) ? db[entityKey] : [];
+  const fields = cfg.fields || [];
+  let displayFields;
+
+  if(entityKey === 'deportistas'){
+    displayFields = fields.filter(function(f){
+      return ['dni','nombres','apellidos','categoriaId','telefono','estado'].indexOf(f.name) !== -1;
+    });
+  } else {
+    displayFields = fields.filter(function(f){ return f.type !== 'textarea' && f.type !== 'photo'; }).slice(0, 6);
+  }
+
+  let html = '<div class="toolbar">'+
+    '<input class="search" placeholder="Buscar..." oninput="filterTable(this,\'tbl_'+entityKey+'\')">'+
+    '<button class="btn btn-primary" onclick="entityCreate(\''+entityKey+'\')">+ Nuevo '+cfg.label+'</button>'+
+    '</div>';
+
+  html += '<table id="tbl_'+entityKey+'"><thead><tr>';
+  if(entityKey === 'deportistas') html += '<th>Foto</th>';
+  for(const f of displayFields){ html += '<th>'+f.label+'</th>'; }
+  html += '<th style="text-align:right">Acciones</th></tr></thead><tbody>';
+
+  if(rows.length === 0){
+    html += '<tr><td colspan="'+(displayFields.length+2)+'"><div class="empty">Sin registros aún. Crea el primero.</div></td></tr>';
+  } else {
+    for(const row of rows){
+      html += '<tr>';
+      if(entityKey === 'deportistas') html += '<td>'+photoHTML(row, '40px')+'</td>';
+      for(const f of displayFields){
+        let v = row[f.name];
+        if(f.source){ v = refLabel(f.source, v); }
+        else if(f.type === 'date'){ v = fmtDate(v); }
+        else if(v === undefined || v === null || v === ''){ v = '<span class="text-muted">-</span>'; }
+        if(f.name === 'estado'){
+          const cls = v === 'Activo' ? 'badge-green' : v === 'Inactivo' ? 'badge-yellow' : 'badge-red';
+          v = '<span class="badge '+cls+'">'+v+'</span>';
+        }
+        html += '<td>'+v+'</td>';
+      }
+      let actions = '';
+      if(customActions){ try{ actions = customActions(row) || ''; }catch(e){ console.warn('customAction failed', e); } }
+      html += '<td style="text-align:right;white-space:nowrap">'+
+        actions+
+        '<button class="btn btn-secondary btn-xs" onclick="entityEdit(\''+entityKey+'\',\''+row.id+'\')">Editar</button> '+
+        '<button class="btn btn-danger btn-xs" onclick="entityDelete(\''+entityKey+'\',\''+row.id+'\')">Eliminar</button>'+
+      '</td></tr>';
+    }
+  }
+  html += '</tbody></table>';
+  document.getElementById('content').innerHTML = html;
+}
+
+function filterTable(input, tableId){
+  const term = input.value.toLowerCase();
+  document.querySelectorAll('#'+tableId+' tbody tr').forEach(function(r){
+    r.style.display = r.textContent.toLowerCase().indexOf(term) !== -1 ? '' : 'none';
+  });
+}
+
+// ============ DNI VALIDATION ============
+function validarDNI(dni, excludeId){
+  if(!dni) return true;
+  const dup = db.deportistas.find(function(d){
+    return d.dni === dni && d.id !== excludeId && d.estado === 'Activo';
+  });
+  return !dup;
+}
+
+function entityCreate(key){
+  const cfg = ENT[key];
+  showForm('Nuevo '+cfg.label, cfg.fields, null, function(data){
+    if(key === 'deportistas'){
+      if(!data.dni){ alert('❌ El DNI es obligatorio'); return false; }
+      if(!validarDNI(data.dni)){
+        const dup = db.deportistas.find(function(d){ return d.dni === data.dni && d.estado === 'Activo'; });
+        alert('❌ Ya existe un jugador ACTIVO con el DNI '+data.dni+':\n\n'+dup.nombres+' '+dup.apellidos+'\n\nDebe dar de BAJA al jugador existente.');
+        return false;
+      }
+    }
+    data.id = uid(key);
+    if(!Array.isArray(db[key])) db[key] = [];
+    db[key].push(data);
+    saveDB();
+    navigate(currentRoute);
+  });
+}
+
+function entityEdit(key, id){
+  const cfg = ENT[key];
+  const item = db[key].find(function(x){ return x.id === id; });
+  if(!item) return;
+  showForm('Editar '+cfg.label, cfg.fields, item, function(data){
+    if(key === 'deportistas'){
+      if(!data.dni){ alert('❌ El DNI es obligatorio'); return false; }
+      if(!validarDNI(data.dni, id)){
+        const dup = db.deportistas.find(function(d){ return d.dni === data.dni && d.id !== id && d.estado === 'Activo'; });
+        alert('❌ Ya existe otro jugador ACTIVO con el DNI '+data.dni+':\n\n'+dup.nombres+' '+dup.apellidos);
+        return false;
+      }
+    }
+    Object.assign(item, data);
+    saveDB();
+    navigate(currentRoute);
+  });
+}
+
+function entityDelete(key, id){
+  if(!confirm('¿Eliminar este registro?')) return;
+  db[key] = db[key].filter(function(x){ return x.id !== id; });
+  saveDB();
+  navigate(currentRoute);
+}
+
+// ============ FORM BUILDER ============
+function buildForm(fields, values){
+  let html = '<form id="dynForm"><div class="form-grid">';
+  for(const f of fields){
+    const isWide = f.type === 'textarea' || f.type === 'photo';
+    html += '<div class="form-row" style="'+(isWide?'grid-column:1/-1':'')+'">';
+    html += '<label>'+f.label+(f.required?' *':'')+'</label>';
+    const val = values && values[f.name] !== undefined ? values[f.name] : (f.default !== undefined ? f.default : '');
+    if(f.type === 'photo'){
+      html += '<div style="display:flex;gap:12px;align-items:center">'+
+        '<div id="photoPreview_'+f.name+'" style="width:90px;height:90px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">'+
+          (val ? '<img src="'+val+'" style="width:100%;height:100%;object-fit:cover">' : '<span style="font-size:10px;color:#94a3b8;text-align:center">Foto 4x4<br>fondo blanco</span>')+
+        '</div>'+
+        '<div style="flex:1"><input type="file" accept="image/*" onchange="handlePhotoUpload(\''+f.name+'\', this)">'+
+        '<input type="hidden" name="'+f.name+'" value="'+(val||'')+'">'+
+        '<div style="font-size:11px;color:#64748b;margin-top:4px">Se recorta a cuadrado automáticamente.</div></div>'+
+      '</div>';
+    } else if(f.type === 'select'){
+      let opts = f.options || [];
+      if(f.source){
+        opts = (db[f.source]||[]).map(function(o){
+          return {value:o.id, label:(o.nombres ? (o.nombres+' '+(o.apellidos||'')) : (o.nombre||o.titulo||o.id))};
+        });
+      } else if(opts.length && typeof opts[0] !== 'object'){
+        opts = opts.map(function(o){ return {value:o, label:o}; });
+      }
+      html += '<select name="'+f.name+'" '+(f.required?'required':'')+'><option value="">-- Seleccionar --</option>';
+      for(const o of opts){
+        html += '<option value="'+o.value+'" '+(String(val)===String(o.value)?'selected':'')+'>'+o.label+'</option>';
+      }
+      html += '</select>';
+    } else if(f.type === 'textarea'){
+      html += '<textarea name="'+f.name+'" '+(f.required?'required':'')+'>'+(val||'')+'</textarea>';
+    } else {
+      const step = f.type==='number' ? 'any' : '';
+      html += '<input type="'+(f.type||'text')+'" name="'+f.name+'" value="'+(val||'')+'" '+(f.required?'required':'')+' step="'+step+'">';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+  html += '<div class="row-flex" style="justify-content:flex-end;margin-top:16px">'+
+    '<button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>'+
+    '<button type="submit" class="btn btn-primary">Guardar</button>'+
+  '</div></form>';
+  return html;
+}
+
+function showForm(title, fields, values, onSave){
+  openModal('<h2>'+title+'</h2>' + buildForm(fields, values));
+  document.getElementById('dynForm').onsubmit = function(e){
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const data = {};
+    for(const f of fields){
+      let v = fd.get(f.name);
+      if(f.type === 'number') v = v === '' || v === null ? null : Number(v);
+      data[f.name] = v;
+    }
+    if(onSave(data) !== false) closeModal();
+  };
+}
+
+// ============ PHOTO CROP ============
+function cropSquare(file, size){
+  size = size || 300;
+  return new Promise(function(resolve, reject){
+    const reader = new FileReader();
+    reader.onload = function(e){
+      const img = new Image();
+      img.onload = function(){
+        const minDim = Math.min(img.width, img.height);
+        const sx = (img.width - minDim)/2;
+        const sy = (img.height - minDim)/2;
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0,0,size,size);
+        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handlePhotoUpload(fieldName, input){
+  const file = input.files[0];
+  if(!file) return;
+  try{
+    const base64 = await cropSquare(file);
+    const form = document.getElementById('dynForm');
+    const hidden = form.querySelector('input[name="'+fieldName+'"]');
+    hidden.value = base64;
+    const preview = document.getElementById('photoPreview_'+fieldName);
+    preview.innerHTML = '<img src="'+base64+'" style="width:100%;height:100%;object-fit:cover">';
+  }catch(e){ alert('Error al cargar la imagen'); }
+}
+
+// ============ DASHBOARD ============
+function renderDashboard(){
+  const activos = db.deportistas.filter(function(d){ return d.estado === 'Activo'; }).length;
+  const entrenadores = db.personal.filter(function(p){ return p.cargo === 'Entrenador' && p.estado === 'Activo'; }).length;
+  const mes = currentMonth();
+  const ingresosMes = db.pagos.filter(function(p){ return p.mes === mes && !p.revertido; }).reduce(function(s,p){ return s + (Number(p.monto)||0); }, 0)
+    + db.ventas.filter(function(v){ return (v.fecha||'').indexOf(mes) === 0 && !v.revertida; }).reduce(function(s,v){ return s + (Number(v.total)||0); }, 0);
+  const egresosMes = db.movCaja.filter(function(m){ return (m.fecha||'').indexOf(mes) === 0 && m.tipo === 'Egreso'; }).reduce(function(s,m){ return s + (Number(m.monto)||0); }, 0)
+    + db.cajaChica.filter(function(c){ return (c.fecha||'').indexOf(mes) === 0; }).reduce(function(s,c){ return s + (Number(c.monto)||0); }, 0);
+  const deudaTotal = calcularDeudaTotal();
+  const stockBajo = db.productos.filter(function(p){ return Number(p.stock) <= Number(p.stockMinimo); }).length;
+  const prestamosActivos = db.prestamos.filter(function(p){ return p.devuelto !== 'Sí'; }).length;
+
+  let html = '<div class="hero-banner">'+
+    '<img src="logo.png" class="hero-logo" alt="Do Santos FC" onerror="this.style.display=\'none\'">'+
+    '<div class="hero-text"><h2>DO SANTOS FC</h2><p>Sistema de Gestión Deportiva</p></div>'+
+  '</div><div class="kpis">';
+  html += kpi('Alumnos activos', activos, db.deportistas.length+' en total');
+  html += kpi('Entrenadores', entrenadores, db.personal.length+' personal');
+  html += kpi('Ingresos del mes', fmtBs(ingresosMes), 'Suscripciones + ventas');
+  html += kpi('Egresos del mes', fmtBs(egresosMes), 'Gastos operativos');
+  html += kpi('Deuda pendiente', fmtBs(deudaTotal), 'Mensualidades');
+  html += kpi('Stock bajo', stockBajo, 'Productos a reponer');
+  html += kpi('Préstamos activos', prestamosActivos, 'Equipamiento');
+  html += '</div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+function kpi(label, value, sub){
+  return '<div class="kpi"><div class="label">'+label+'</div><div class="value">'+value+'</div><div class="sub">'+(sub||'')+'</div></div>';
+}
+
+function calcularDeudaTotal(){
+  const mes = currentMonth();
+  let total = 0;
+  for(const d of db.deportistas.filter(function(x){ return x.estado === 'Activo'; })){
+    const tarifa = (Number(d.tarifa)||250) * (1 - (Number(d.beca)||0)/100);
+    const pagado = db.pagos.filter(function(p){ return p.deportistaId === d.id && p.mes === mes && !p.revertido; }).reduce(function(s,p){ return s + (Number(p.monto)||0); }, 0);
+    total += Math.max(0, tarifa - pagado);
+  }
+  return total;
+}
+
+// ============ BÚSQUEDA ============
+function renderBusqueda(){
+  document.getElementById('content').innerHTML = '<div class="search-hero">'+
+    '<h2>🔍 Búsqueda de Jugadores</h2>'+
+    '<p>Busca por DNI, nombre, apellido, teléfono o tutor.</p>'+
+    '<input type="text" id="searchInput" placeholder="Ej: 7845123, Carlos, Quispe..." oninput="buscarJugadores()" autofocus>'+
+  '</div><div id="searchResults"><div class="empty">Ingresa un término de búsqueda</div></div>';
+}
+function buscarJugadores(){
+  const term = document.getElementById('searchInput').value.trim().toLowerCase();
+  const results = document.getElementById('searchResults');
+  if(term.length < 2){ results.innerHTML = '<div class="empty">Ingresa al menos 2 caracteres</div>'; return; }
+  const found = db.deportistas.filter(function(d){
+    const txt = ((d.dni||'')+' '+(d.nombres||'')+' '+(d.apellidos||'')+' '+(d.telefono||'')+' '+(d.tutor||'')).toLowerCase();
+    return txt.indexOf(term) !== -1;
+  });
+  if(found.length === 0){ results.innerHTML = '<div class="empty">No se encontraron jugadores</div>'; return; }
+  let html = '<div class="card"><h2>'+found.length+' resultado(s)</h2>'+
+    '<table><thead><tr><th>Foto</th><th>DNI</th><th>Nombre completo</th><th>Categoría</th><th>Contacto</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead><tbody>';
+  for(const d of found){
+    const cls = d.estado === 'Activo' ? 'badge-green' : 'badge-red';
+    html += '<tr><td>'+photoHTML(d, '45px')+'</td><td><b>'+(d.dni||'-')+'</b></td><td>'+d.nombres+' '+d.apellidos+'</td>'+
+      '<td>'+refLabel('categorias', d.categoriaId)+'</td><td>'+(d.telefono||'-')+'</td><td><span class="badge '+cls+'">'+(d.estado||'-')+'</span></td>'+
+      '<td style="text-align:right"><button class="btn btn-primary btn-xs" onclick="verKardex(\''+d.id+'\')">Kardex</button> '+
+      '<button class="btn btn-success btn-xs" onclick="abrirPagoDeportista(\''+d.id+'\')">Pagar</button></td></tr>';
+  }
+  html += '</tbody></table></div>';
+  results.innerHTML = html;
+}
+
+// ============ KARDEX ============
+function verKardex(id){ _kardexSelectedId = id; navigate('kardex'); }
+
+function renderKardex(){
+  const selectedId = _kardexSelectedId;
+  let html = '<div class="card no-print"><h2>Seleccionar jugador</h2>'+
+    '<select onchange="_kardexSelectedId=this.value;renderKardex()" style="padding:10px;border:1px solid #cbd5e1;border-radius:8px;min-width:320px">'+
+    '<option value="">-- Seleccionar jugador --</option>';
+  for(const d of db.deportistas){
+    html += '<option value="'+d.id+'" '+(selectedId===d.id?'selected':'')+'>'+d.nombres+' '+d.apellidos+' ('+(d.dni||'sin DNI')+')</option>';
+  }
+  html += '</select></div>';
+  if(selectedId){
+    const d = db.deportistas.find(function(x){ return x.id === selectedId; });
+    if(d) html += renderKardexContent(d);
+  }
+  document.getElementById('content').innerHTML = html;
+}
+
+function renderKardexContent(d){
+  const asistencias = db.asistencias.filter(function(a){ return a.deportistaId === d.id; });
+  const presentes = asistencias.filter(function(a){ return a.estado === 'Presente' || a.estado === 'Tarde'; }).length;
+  const ausentes = asistencias.filter(function(a){ return a.estado === 'Ausente'; }).length;
+  const pctAsistencia = asistencias.length > 0 ? Math.round(presentes/asistencias.length*100) : 0;
+  const evaluaciones = db.evaluaciones.filter(function(e){ return e.deportistaId === d.id; });
+  const pagos = db.pagos.filter(function(p){ return p.deportistaId === d.id && !p.revertido; });
+  const totalPagado = pagos.reduce(function(s,p){ return s + (Number(p.monto)||0); }, 0);
+
+  return '<div class="card">'+
+    '<div class="row-flex no-print" style="justify-content:space-between;margin-bottom:20px">'+
+      '<button class="btn btn-outline" onclick="_kardexSelectedId=null;renderKardex()">← Volver</button>'+
+      '<div class="row-flex">'+
+        '<button class="btn btn-success" onclick="abrirPagoDeportista(\''+d.id+'\')">💵 Pagar</button>'+
+        '<button class="btn btn-primary" onclick="imprimirKardex(\''+d.id+'\')">🖨️ Imprimir</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="kardex-header">'+
+      (d.foto ? '<img src="'+d.foto+'" class="player-photo-lg">' : '<div class="player-photo-lg photo-placeholder" style="font-size:12px">SIN FOTO<br>4x4</div>')+
+      '<div style="flex:1"><h2 style="font-size:24px;margin-bottom:6px;color:var(--brand-dark)">'+d.nombres+' '+d.apellidos+'</h2>'+
+        '<p class="text-muted">DNI: <b>'+(d.dni||'-')+'</b> · Vence: '+fmtDate(d.fechaVencimientoDni)+' · <span class="badge '+(d.estado==='Activo'?'badge-green':'badge-red')+'">'+d.estado+'</span></p>'+
+        '<p class="text-muted" style="margin-top:6px">'+refLabel('categorias', d.categoriaId)+' · '+(d.turno||'-')+' · '+(d.horario||'-')+'</p>'+
+      '</div>'+
+    '</div>'+
+    '<div class="kardex-grid">'+
+      '<div class="kardex-item"><div class="lbl">Nacimiento</div><div class="val">'+fmtDate(d.fechaNacimiento)+'</div></div>'+
+      '<div class="kardex-item"><div class="lbl">Teléfono</div><div class="val">'+(d.telefono||'-')+'</div></div>'+
+      '<div class="kardex-item"><div class="lbl">Tutor</div><div class="val">'+(d.tutor||'-')+'</div></div>'+
+      '<div class="kardex-item"><div class="lbl">Emergencia</div><div class="val">'+(d.telefonoEmergencia||'-')+'</div></div>'+
+      '<div class="kardex-item"><div class="lbl">Sangre</div><div class="val">'+(d.tipoSangre||'-')+'</div></div>'+
+      '<div class="kardex-item"><div class="lbl">Tarifa</div><div class="val">'+fmtBs(d.tarifa)+'</div></div>'+
+    '</div>'+
+  '</div>'+
+  '<div class="kpis">'+
+    kpi('Asistencias', asistencias.length, 'Registros')+
+    kpi('Días asistidos', presentes, 'Presente o tarde')+
+    kpi('Ausencias', ausentes, 'Sin justificar')+
+    kpi('% Asistencia', pctAsistencia+'%', 'Sobre el total')+
+    kpi('Total pagado', fmtBs(totalPagado), pagos.length+' pagos')+
+  '</div>'+
+  '<div class="grid-2">'+
+    '<div class="card"><h2>📋 Asistencias ('+asistencias.length+')</h2>'+
+      (asistencias.length === 0 ? '<div class="empty">Sin registros</div>' :
+        '<table><thead><tr><th>Fecha</th><th>Estado</th></tr></thead><tbody>'+
+          asistencias.map(function(a){
+            const cls = ({Presente:'badge-green',Tarde:'badge-yellow',Ausente:'badge-red',Justificado:'badge-blue'})[a.estado] || 'badge-gray';
+            return '<tr><td>'+fmtDate(a.fecha)+'</td><td><span class="badge '+cls+'">'+a.estado+'</span></td></tr>';
+          }).join('')+
+        '</tbody></table>')+
+    '</div>'+
+    '<div class="card"><h2>📊 Evaluaciones ('+evaluaciones.length+')</h2>'+
+      (evaluaciones.length === 0 ? '<div class="empty">Sin evaluaciones</div>' :
+        '<table><thead><tr><th>Fecha</th><th>Téc</th><th>Tác</th><th>Fís</th><th>Act</th></tr></thead><tbody>'+
+          evaluaciones.map(function(e){
+            return '<tr><td>'+fmtDate(e.fecha)+'</td><td>'+(e.tecnica||'-')+'</td><td>'+(e.tactica||'-')+'</td><td>'+(e.fisico||'-')+'</td><td>'+(e.actitud||'-')+'</td></tr>';
+          }).join('')+
+        '</tbody></table>')+
+    '</div>'+
+  '</div>'+
+  '<div class="card"><h2>💵 Historial de pagos ('+pagos.length+')</h2>'+
+    (pagos.length === 0 ? '<div class="empty">Sin pagos</div>' :
+      '<table><thead><tr><th>Fecha/Hora</th><th>Mes</th><th>Monto</th><th>Método</th></tr></thead><tbody>'+
+        pagos.map(function(p){
+          return '<tr><td>'+(fmtDateTime(p.fechaHora)||fmtDate(p.fecha))+'</td><td>'+(p.mes||'-')+'</td><td>'+fmtBs(p.monto)+'</td><td>'+(p.metodo||'-')+'</td></tr>';
+        }).join('')+
+      '</tbody></table>')+
+  '</div>';
+}
+
+function imprimirKardex(playerId){
+  const d = db.deportistas.find(function(x){ return x.id === playerId; });
+  if(!d) return;
+  const asistencias = db.asistencias.filter(function(a){ return a.deportistaId === d.id; });
+  const presentes = asistencias.filter(function(a){ return a.estado === 'Presente' || a.estado === 'Tarde'; }).length;
+  const ausentes = asistencias.filter(function(a){ return a.estado === 'Ausente'; }).length;
+  const pct = asistencias.length > 0 ? Math.round(presentes/asistencias.length*100) : 0;
+  const evaluaciones = db.evaluaciones.filter(function(e){ return e.deportistaId === d.id; });
+  const pagos = db.pagos.filter(function(p){ return p.deportistaId === d.id && !p.revertido; });
+  const totalPagado = pagos.reduce(function(s,p){ return s + (Number(p.monto)||0); }, 0);
+
+  let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Kardex '+d.nombres+' '+d.apellidos+'</title>'+
+  '<style>body{font-family:Arial;padding:24px;max-width:800px;margin:0 auto;color:#0f172a}'+
+  '.hdr{display:flex;gap:20px;border-bottom:3px solid #00AEEF;padding-bottom:16px;margin-bottom:16px;align-items:center}'+
+  '.hdr img{width:110px;height:110px;object-fit:cover;border-radius:8px;border:2px solid #cbd5e1}'+
+  '.ph{width:110px;height:110px;background:#f1f5f9;border:2px dashed #cbd5e1;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:11px;border-radius:8px;text-align:center}'+
+  '.title{font-size:22px;font-weight:bold;color:#001838;margin-bottom:4px}'+
+  '.sub{font-size:12px;color:#64748b;margin-bottom:2px}'+
+  'h2{font-size:14px;margin:16px 0 8px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;color:#001838;text-transform:uppercase}'+
+  'table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px}'+
+  'th,td{border:1px solid #e2e8f0;padding:6px 8px;text-align:left}'+
+  'th{background:#f8fafc;font-weight:600}'+
+  '.row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;font-size:12px}'+
+  '.row div{padding:6px;background:#f8fafc;border-radius:4px}'+
+  '.row b{color:#475569;font-size:10px;display:block;text-transform:uppercase}'+
+  '.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}'+
+  '.stat{background:#f0f9ff;padding:10px;border-radius:6px;text-align:center;border-left:3px solid #00AEEF}'+
+  '.stat .l{font-size:10px;color:#64748b;text-transform:uppercase}'+
+  '.stat .v{font-size:18px;font-weight:bold;color:#001838}'+
+  '.footer{margin-top:20px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:10px}'+
+  '</style></head><body>'+
+  '<div class="hdr">'+
+    (d.foto ? '<img src="'+d.foto+'">' : '<div class="ph">SIN FOTO 4x4</div>')+
+    '<div><div class="title">'+d.nombres+' '+d.apellidos+'</div>'+
+      '<div class="sub"><b>DNI:</b> '+(d.dni||'-')+' · <b>Vence:</b> '+fmtDate(d.fechaVencimientoDni)+'</div>'+
+      '<div class="sub"><b>Categoría:</b> '+refLabel('categorias', d.categoriaId)+' · <b>Estado:</b> '+d.estado+'</div>'+
+      '<div class="sub"><b>Turno:</b> '+(d.turno||'-')+' · <b>Horario:</b> '+(d.horario||'-')+'</div>'+
+    '</div>'+
+  '</div>'+
+  '<h2>Contacto</h2><div class="row">'+
+    '<div><b>Teléfono</b>'+(d.telefono||'-')+'</div><div><b>Dirección</b>'+(d.direccion||'-')+'</div>'+
+    '<div><b>Tutor</b>'+(d.tutor||'-')+'</div><div><b>Emergencia</b>'+(d.telefonoEmergencia||'-')+'</div>'+
+  '</div>'+
+  '<h2>Ficha médica</h2><div class="row">'+
+    '<div><b>Sangre</b>'+(d.tipoSangre||'-')+'</div><div><b>Alergias</b>'+(d.alergias||'-')+'</div>'+
+  '</div>'+
+  '<h2>Asistencias</h2><div class="stats">'+
+    '<div class="stat"><div class="l">Total</div><div class="v">'+asistencias.length+'</div></div>'+
+    '<div class="stat"><div class="l">Asistidos</div><div class="v">'+presentes+'</div></div>'+
+    '<div class="stat"><div class="l">Ausencias</div><div class="v">'+ausentes+'</div></div>'+
+    '<div class="stat"><div class="l">%</div><div class="v">'+pct+'%</div></div>'+
+  '</div>'+
+  '<h2>Calificaciones</h2>'+
+  (evaluaciones.length === 0 ? '<p style="color:#94a3b8">Sin evaluaciones</p>' :
+    '<table><thead><tr><th>Fecha</th><th>Técnica</th><th>Táctica</th><th>Físico</th><th>Actitud</th></tr></thead><tbody>'+
+    evaluaciones.map(function(e){
+      return '<tr><td>'+fmtDate(e.fecha)+'</td><td>'+(e.tecnica||'-')+'</td><td>'+(e.tactica||'-')+'</td><td>'+(e.fisico||'-')+'</td><td>'+(e.actitud||'-')+'</td></tr>';
+    }).join('')+'</tbody></table>')+
+  '<h2>Pagos</h2>'+
+  (pagos.length === 0 ? '<p style="color:#94a3b8">Sin pagos</p>' :
+    '<table><thead><tr><th>Fecha/Hora</th><th>Mes</th><th>Monto</th><th>Método</th></tr></thead><tbody>'+
+    pagos.map(function(p){
+      return '<tr><td>'+(fmtDateTime(p.fechaHora)||fmtDate(p.fecha))+'</td><td>'+(p.mes||'-')+'</td><td>'+fmtBs(p.monto)+'</td><td>'+(p.metodo||'-')+'</td></tr>';
+    }).join('')+
+    '<tr style="font-weight:bold;background:#f8fafc"><td colspan="2">TOTAL</td><td colspan="2">'+fmtBs(totalPagado)+'</td></tr></tbody></table>')+
+  '<div class="footer">DO SANTOS FC · '+new Date().toLocaleString('es-BO')+'</div>'+
+  '</body></html>';
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 500);
+}
+
+// ============ ASISTENCIAS ============
+function renderAsistencias(){
+  const hoy = todayStr();
+  let html = '<div class="card"><h2>Registro de asistencia</h2>'+
+    '<div class="row-flex mb-2">'+
+      '<div class="form-row" style="margin:0"><label>Fecha</label><input type="date" id="asistFecha" value="'+hoy+'" onchange="renderAsistenciasLista()"></div>'+
+      '<div class="form-row" style="margin:0"><label>Categoría</label><select id="asistCat" onchange="renderAsistenciasLista()"><option value="">Todas</option>'+
+        db.categorias.map(function(c){ return '<option value="'+c.id+'">'+c.nombre+'</option>'; }).join('')+'</select></div>'+
+    '</div><div id="asistLista"></div></div>';
+  html += '<div class="card"><h2>Historial reciente</h2>';
+  const lista = db.asistencias.slice().sort(function(a,b){ return (b.fecha||'').localeCompare(a.fecha||''); }).slice(0, 50);
+  if(lista.length === 0) html += '<div class="empty">Sin registros</div>';
+  else {
+    html += '<table><thead><tr><th>Fecha</th><th>Deportista</th><th>Estado</th></tr></thead><tbody>';
+    for(const a of lista){
+      const cls = ({Presente:'badge-green',Ausente:'badge-red',Tarde:'badge-yellow',Justificado:'badge-blue'})[a.estado] || 'badge-gray';
+      html += '<tr><td>'+fmtDate(a.fecha)+'</td><td>'+refLabel('deportistas', a.deportistaId)+'</td><td><span class="badge '+cls+'">'+(a.estado||'-')+'</span></td></tr>';
+    }
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+  document.getElementById('content').innerHTML = html;
+  renderAsistenciasLista();
+}
+
+function renderAsistenciasLista(){
+  const fecha = document.getElementById('asistFecha').value;
+  const catId = document.getElementById('asistCat').value;
+  let alumnos = db.deportistas.filter(function(d){ return d.estado === 'Activo'; });
+  if(catId) alumnos = alumnos.filter(function(d){ return d.categoriaId === catId; });
+  const contenedor = document.getElementById('asistLista');
+  if(alumnos.length === 0){ contenedor.innerHTML = '<div class="empty">No hay alumnos</div>'; return; }
+  let html = '<table><thead><tr><th>Foto</th><th>Deportista</th><th>DNI</th><th>Estado</th></tr></thead><tbody>';
+  for(const d of alumnos){
+    const existing = db.asistencias.find(function(a){ return a.deportistaId === d.id && a.fecha === fecha; });
+    const estado = existing ? existing.estado : 'Presente';
+    html += '<tr><td>'+photoHTML(d, '32px')+'</td><td>'+d.nombres+' '+d.apellidos+'</td><td>'+(d.dni||'-')+'</td>'+
+      '<td><select onchange="guardarAsistencia(\''+d.id+'\',\''+fecha+'\',this.value)" style="padding:6px;border:1px solid #cbd5e1;border-radius:6px">'+
+        ['Presente','Tarde','Ausente','Justificado'].map(function(e){ return '<option '+(estado===e?'selected':'')+'>'+e+'</option>'; }).join('')+
+      '</select></td></tr>';
+  }
+  html += '</tbody></table>';
+  contenedor.innerHTML = html;
+}
+
+function guardarAsistencia(deportistaId, fecha, estado){
+  const existing = db.asistencias.find(function(a){ return a.deportistaId === deportistaId && a.fecha === fecha; });
+  if(existing) existing.estado = estado;
+  else db.asistencias.push({id:uid('asis'), deportistaId, fecha, estado, observaciones:''});
+  saveDB();
+}
+
+// ============ COBROS ============
+function renderCobros(){
+  const mes = currentMonth();
+  const activos = db.deportistas.filter(function(d){ return d.estado === 'Activo'; });
+  let html = '<div class="card"><h2>Suscripciones del mes — '+mes+'</h2>'+
+    '<table><thead><tr><th>Foto</th><th>Deportista</th><th>DNI</th><th>Tarifa</th><th>Pagado</th><th>Saldo</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead><tbody>';
+  let totalFacturado = 0, totalCobrado = 0;
+  for(const d of activos){
+    const tarifa = (Number(d.tarifa)||250) * (1 - (Number(d.beca)||0)/100);
+    const pagado = db.pagos.filter(function(p){ return p.deportistaId === d.id && p.mes === mes && !p.revertido; }).reduce(function(s,p){ return s + (Number(p.monto)||0); }, 0);
+    const saldo = Math.max(0, tarifa - pagado);
+    totalFacturado += tarifa; totalCobrado += Math.min(pagado, tarifa);
+    const estado = pagado >= tarifa && tarifa > 0 ? '<span class="badge badge-green">Pagado</span>'
+      : pagado > 0 ? '<span class="badge badge-yellow">Parcial</span>' : '<span class="badge badge-red">Pendiente</span>';
+    html += '<tr><td>'+photoHTML(d, '36px')+'</td><td>'+d.nombres+' '+d.apellidos+'</td><td>'+(d.dni||'-')+'</td>'+
+      '<td>'+fmtBs(tarifa)+'</td><td>'+fmtBs(pagado)+'</td><td>'+fmtBs(saldo)+'</td><td>'+estado+'</td>'+
+      '<td style="text-align:right"><button class="btn btn-success btn-xs" onclick="abrirPagoDeportista(\''+d.id+'\')">+ Pago</button> '+
+      '<button class="btn btn-primary btn-xs" onclick="verKardex(\''+d.id+'\')">Kardex</button></td></tr>';
+  }
+  html += '</tbody></table></div>';
+
+  html += '<div class="card"><h2>Historial general de pagos</h2>';
+  const pagos = db.pagos.slice().sort(function(a,b){ return (b.fechaHora||b.fecha||'').localeCompare(a.fechaHora||a.fecha||''); }).slice(0, 100);
+  if(pagos.length === 0) html += '<div class="empty">Sin pagos</div>';
+  else {
+    html += '<table><thead><tr><th>Fecha/Hora</th><th>Deportista</th><th>Mes</th><th>Monto</th><th>Método</th><th>Estado</th><th style="text-align:right">Acción</th></tr></thead><tbody>';
+    for(const p of pagos){
+      const rev = p.revertido ? '<span class="badge badge-red">Revertido</span>' : '<span class="badge badge-green">Vigente</span>';
+      html += '<tr><td>'+(fmtDateTime(p.fechaHora)||fmtDate(p.fecha))+'</td><td>'+refLabel('deportistas', p.deportistaId)+'</td><td>'+(p.mes||'-')+'</td><td>'+fmtBs(p.monto)+'</td><td>'+(p.metodo||'-')+'</td><td>'+rev+'</td>'+
+        '<td style="text-align:right">'+(!p.revertido ? '<button class="btn btn-danger btn-xs" onclick="revertirPago(\''+p.id+'\')">Revertir</button>' : '')+'</td></tr>';
+    }
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+function abrirPagoDeportista(deportistaId){
+  const d = db.deportistas.find(function(x){ return x.id === deportistaId; });
+  if(!d) return;
+  const mes = currentMonth();
+  const tarifa = (Number(d.tarifa)||250) * (1 - (Number(d.beca)||0)/100);
+  const pagado = db.pagos.filter(function(p){ return p.deportistaId === d.id && p.mes === mes && !p.revertido; }).reduce(function(s,p){ return s + (Number(p.monto)||0); }, 0);
+  const saldo = Math.max(0, tarifa - pagado);
+  showForm('Pagar suscripción — '+d.nombres+' '+d.apellidos, [
+    {name:'mes', label:'Mes (YYYY-MM)', type:'text', default:mes, required:true},
+    {name:'monto', label:'Monto (Bs)', type:'number', default:saldo, required:true},
+    {name:'fecha', label:'Fecha', type:'date', default:todayStr(), required:true},
+    {name:'metodo', label:'Método', type:'select', options:['Efectivo','Transferencia','QR','Otro'], default:'Efectivo'}
+  ], null, function(data){
+    const fechaHora = new Date().toISOString();
+    db.pagos.push(Object.assign({id:uid('pago'), deportistaId, fechaHora, revertido:false}, data));
+    db.movCaja.push({
+      id:uid('mov'), fecha:data.fecha, fechaHora, tipo:'Ingreso',
+      concepto:'Suscripción '+d.nombres+' '+d.apellidos+' — '+data.mes,
+      monto:Number(data.monto), origen:'Suscripción'
+    });
+    saveDB();
+    navigate(currentRoute);
+  });
+}
+
+function revertirPago(pagoId){
+  const p = db.pagos.find(function(x){ return x.id === pagoId; });
+  if(!p) return;
+  if(!confirm('¿Revertir el pago de '+fmtBs(p.monto)+'?')) return;
+  p.revertido = true;
+  p.fechaReversion = new Date().toISOString();
+  const d = db.deportistas.find(function(x){ return x.id === p.deportistaId; });
+  db.movCaja.push({
+    id:uid('mov'), fecha:todayStr(), fechaHora:new Date().toISOString(), tipo:'Egreso',
+    concepto:'REVERSIÓN pago — '+(d ? d.nombres+' '+d.apellidos : p.deportistaId)+' — '+p.mes,
+    monto:Number(p.monto), origen:'Reversión suscripción'
+  });
+  saveDB();
+  navigate(currentRoute);
+  alert('✅ Pago revertido');
+}
+
+// ============ CAJA ============
+function renderCaja(){
+  const mes = currentMonth();
+  const ingresos = db.movCaja.filter(function(m){ return (m.fecha||'').indexOf(mes)===0 && m.tipo === 'Ingreso'; }).reduce(function(s,m){ return s + (Number(m.monto)||0); }, 0);
+  const egresos = db.movCaja.filter(function(m){ return (m.fecha||'').indexOf(mes)===0 && m.tipo === 'Egreso'; }).reduce(function(s,m){ return s + (Number(m.monto)||0); }, 0);
+  let html = '<div class="kpis">'+kpi('Ingresos', fmtBs(ingresos), 'Mes actual')+kpi('Egresos', fmtBs(egresos), 'Mes actual')+kpi('Saldo', fmtBs(ingresos-egresos), 'Balance')+'</div>'+
+    '<div class="toolbar"><input class="search" placeholder="Buscar..." oninput="filterTable(this,\'tblCaja\')">'+
+    '<div class="row-flex"><button class="btn btn-success btn-sm" onclick="nuevoMovimiento(\'Ingreso\')">+ Ingreso</button>'+
+    '<button class="btn btn-danger btn-sm" onclick="nuevoMovimiento(\'Egreso\')">+ Egreso</button></div></div>'+
+    '<table id="tblCaja"><thead><tr><th>Fecha/Hora</th><th>Tipo</th><th>Concepto</th><th>Origen</th><th>Monto</th><th style="text-align:right">Acción</th></tr></thead><tbody>';
+  const movs = db.movCaja.slice().sort(function(a,b){ return (b.fechaHora||b.fecha||'').localeCompare(a.fechaHora||a.fecha||''); });
+  if(movs.length === 0) html += '<tr><td colspan="6"><div class="empty">Sin movimientos</div></td></tr>';
+  else for(const m of movs){
+    const cls = m.tipo === 'Ingreso' ? 'badge-green' : 'badge-red';
+    html += '<tr><td>'+(fmtDateTime(m.fechaHora)||fmtDate(m.fecha))+'</td><td><span class="badge '+cls+'">'+m.tipo+'</span></td><td>'+(m.concepto||'-')+'</td><td>'+(m.origen||'-')+'</td><td>'+fmtBs(m.monto)+'</td>'+
+      '<td style="text-align:right"><button class="btn btn-danger btn-xs" onclick="borrarMovimiento(\''+m.id+'\')">X</button></td></tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('content').innerHTML = html;
+}
+function nuevoMovimiento(tipo){
+  showForm('Nuevo '+tipo, [
+    {name:'fecha', label:'Fecha', type:'date', default:todayStr(), required:true},
+    {name:'concepto', label:'Concepto', type:'text', required:true},
+    {name:'monto', label:'Monto', type:'number', required:true},
+    {name:'origen', label:'Origen', type:'select', options:['Suscripción','Venta','Gasto operativo','Caja chica','Otro'], default:tipo==='Ingreso'?'Venta':'Gasto operativo'}
+  ], null, function(data){
+    db.movCaja.push(Object.assign({id:uid('mov'), tipo, fechaHora:new Date().toISOString(), monto:Number(data.monto)}, data));
+    saveDB(); navigate('caja');
+  });
+}
+function borrarMovimiento(id){
+  if(!confirm('¿Eliminar?')) return;
+  db.movCaja = db.movCaja.filter(function(x){ return x.id !== id; });
+  saveDB(); navigate(currentRoute);
+}
+
+// ============ CAJA CHICA ============
+function renderCajaChica(){
+  let html = '<div class="toolbar"><input class="search" placeholder="Buscar..." oninput="filterTable(this,\'tblCC\')"><button class="btn btn-primary" onclick="nuevoGastoChico()">+ Nuevo gasto</button></div>'+
+    '<table id="tblCC"><thead><tr><th>Fecha</th><th>Concepto</th><th>Responsable</th><th>Monto</th><th>Comprobante</th><th style="text-align:right">Acción</th></tr></thead><tbody>';
+  const lista = db.cajaChica.slice().sort(function(a,b){ return (b.fecha||'').localeCompare(a.fecha||''); });
+  if(lista.length === 0) html += '<tr><td colspan="6"><div class="empty">Sin gastos</div></td></tr>';
+  else for(const c of lista){
+    html += '<tr><td>'+fmtDate(c.fecha)+'</td><td>'+(c.concepto||'-')+'</td><td>'+(c.responsable||'-')+'</td><td>'+fmtBs(c.monto)+'</td><td>'+(c.comprobante||'-')+'</td>'+
+      '<td style="text-align:right"><button class="btn btn-danger btn-xs" onclick="borrarGastoChico(\''+c.id+'\')">X</button></td></tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('content').innerHTML = html;
+}
+function nuevoGastoChico(){
+  showForm('Nuevo gasto', [
+    {name:'fecha', label:'Fecha', type:'date', default:todayStr(), required:true},
+    {name:'concepto', label:'Concepto', type:'text', required:true},
+    {name:'monto', label:'Monto', type:'number', required:true},
+    {name:'responsable', label:'Responsable', type:'text'},
+    {name:'comprobante', label:'Comprobante', type:'text'}
+  ], null, function(data){
+    db.cajaChica.push(Object.assign({id:uid('cc'), monto:Number(data.monto)}, data));
+    saveDB(); navigate('caja-chica');
+  });
+}
+function borrarGastoChico(id){
+  if(!confirm('¿Eliminar?')) return;
+  db.cajaChica = db.cajaChica.filter(function(x){ return x.id !== id; });
+  saveDB(); navigate('caja-chica');
+}
+
+// ============ LIBRO DIARIO ============
+function renderLibroDiario(){
+  const mes = currentMonth();
+  const filtroMes = _libroMes || mes;
+  _libroMes = filtroMes;
+  const entries = [];
+  for(const m of db.movCaja){
+    entries.push({fechaHora:m.fechaHora||(m.fecha+'T12:00:00'), tipo:m.tipo, concepto:m.concepto||'-', origen:m.origen||'-', monto:Number(m.monto)||0});
+  }
+  for(const c of db.cajaChica){
+    entries.push({fechaHora:c.fecha+'T12:00:00', tipo:'Egreso', concepto:'Caja chica: '+(c.concepto||'-'), origen:'Caja chica', monto:Number(c.monto)||0});
+  }
+  const filtered = entries.filter(function(e){ return (e.fechaHora||'').indexOf(filtroMes) === 0; }).sort(function(a,b){ return (b.fechaHora||'').localeCompare(a.fechaHora||''); });
+  const totalIng = filtered.filter(function(e){ return e.tipo === 'Ingreso'; }).reduce(function(s,e){ return s + e.monto; }, 0);
+  const totalEgr = filtered.filter(function(e){ return e.tipo === 'Egreso'; }).reduce(function(s,e){ return s + e.monto; }, 0);
+
+  let html = '<div class="card">'+
+    '<div class="row-flex" style="justify-content:space-between;margin-bottom:16px">'+
+      '<div class="row-flex"><label>Mes:</label><input type="month" value="'+filtroMes+'" onchange="_libroMes=this.value;renderLibroDiario()" style="padding:6px;border:1px solid #cbd5e1;border-radius:6px"></div>'+
+      '<div class="row-flex" style="gap:16px"><span style="color:#166534"><b>Ingresos:</b> '+fmtBs(totalIng)+'</span>'+
+      '<span style="color:#991b1b"><b>Egresos:</b> '+fmtBs(totalEgr)+'</span>'+
+      '<span style="background:var(--brand-dark);color:white;padding:6px 12px;border-radius:6px"><b>Saldo: '+fmtBs(totalIng-totalEgr)+'</b></span></div>'+
+    '</div>'+
+    '<div class="info-box">📒 <b>Libro Diario:</b> Todos los ingresos y egresos unificados.</div>'+
+    '<table><thead><tr><th>Fecha/Hora</th><th>Tipo</th><th>Concepto</th><th>Origen</th><th style="text-align:right">Monto</th></tr></thead><tbody>';
+  if(filtered.length === 0) html += '<tr><td colspan="5"><div class="empty">Sin movimientos</div></td></tr>';
+  else for(const e of filtered){
+    const cls = e.tipo === 'Ingreso' ? 'badge-green' : 'badge-red';
+    const signo = e.tipo === 'Ingreso' ? '+' : '-';
+    html += '<tr><td>'+fmtDateTime(e.fechaHora)+'</td><td><span class="badge '+cls+'">'+e.tipo+'</span></td><td>'+e.concepto+'</td><td>'+e.origen+'</td>'+
+      '<td style="text-align:right;font-weight:700;color:'+(e.tipo==='Ingreso'?'#166534':'#991b1b')+'">'+signo+' '+fmtBs(e.monto)+'</td></tr>';
+  }
+  html += '</tbody></table></div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+// ============ POS ============
+function renderPOS(){
+  const productos = db.productos.filter(function(p){ return Number(p.stock) > 0; });
+  let html = '<div class="pos-layout">'+
+    '<div class="pos-products"><h2>Productos</h2><div class="product-grid">';
+  if(productos.length === 0) html += '<div class="empty">Sin stock</div>';
+  for(const p of productos){
+    html += '<div class="product-card" onclick="posAdd(\''+p.id+'\')"><div class="pname">'+p.nombre+'</div>'+
+      '<div class="pprice">'+fmtBs(p.precioVenta)+'</div><div class="pstock">Stock: '+p.stock+'</div></div>';
+  }
+  html += '</div></div><div class="pos-cart"><h2>Carrito</h2><div class="pos-cart-items">';
+  if(posCart.length === 0) html += '<div class="empty">Vacío</div>';
+  else for(let i = 0; i < posCart.length; i++){
+    const item = posCart[i];
+    html += '<div class="pos-item"><div style="flex:1"><b>'+item.nombre+'</b><br><span class="text-muted">'+fmtBs(item.precio)+' x '+item.cantidad+'</span></div>'+
+      '<div><div>'+fmtBs(item.precio*item.cantidad)+'</div><button class="btn btn-danger btn-xs" onclick="posRemove('+i+')">X</button></div></div>';
+  }
+  html += '</div><div class="pos-total">Total: '+fmtBs(posCart.reduce(function(s,i){ return s + i.precio*i.cantidad; }, 0))+'</div>'+
+    '<button class="btn btn-success w-100" onclick="posCheckout()" '+(posCart.length===0?'disabled':'')+'>Registrar venta</button>'+
+    '<button class="btn btn-secondary w-100 mt-2" onclick="posCart=[];renderPOS()" '+(posCart.length===0?'disabled':'')+'>Vaciar</button>'+
+  '</div></div>';
+  document.getElementById('content').innerHTML = html;
+}
+function posAdd(productoId){
+  const p = db.productos.find(function(x){ return x.id === productoId; });
+  if(!p) return;
+  const existing = posCart.find(function(i){ return i.productoId === productoId; });
+  if(existing){
+    if(existing.cantidad + 1 > Number(p.stock)){ alert('Stock insuficiente'); return; }
+    existing.cantidad++;
+  } else posCart.push({productoId, nombre:p.nombre, precio:Number(p.precioVenta), cantidad:1});
+  renderPOS();
+}
+function posRemove(idx){ posCart.splice(idx,1); renderPOS(); }
+function posCheckout(){
+  if(posCart.length === 0) return;
+  const total = posCart.reduce(function(s,i){ return s + i.precio*i.cantidad; }, 0);
+  showForm('Confirmar venta', [
+    {name:'cliente', label:'Cliente (opcional)', type:'text'},
+    {name:'metodo', label:'Método', type:'select', options:['Efectivo','Transferencia','QR','Otro'], default:'Efectivo'}
+  ], null, function(data){
+    for(const item of posCart){
+      const p = db.productos.find(function(x){ return x.id === item.productoId; });
+      if(p) p.stock = Number(p.stock) - item.cantidad;
+    }
+    const fechaHora = new Date().toISOString();
+    db.ventas.push({id:uid('venta'), fecha:todayStr(), fechaHora, items:posCart.slice(), total, metodo:data.metodo, cliente:data.cliente, revertida:false});
+    db.movCaja.push({id:uid('mov'), fecha:todayStr(), fechaHora, tipo:'Ingreso',
+      concepto:'Venta POS — '+posCart.map(function(i){ return i.nombre+' x'+i.cantidad; }).join(', '),
+      monto:total, origen:'Venta'});
+    posCart = [];
+    saveDB(); navigate('pos');
+    alert('✅ Venta registrada: '+fmtBs(total));
+  });
+}
+
+// ============ VENTAS ============
+function renderVentas(){
+  const ventas = db.ventas.slice().sort(function(a,b){ return (b.fechaHora||b.fecha||'').localeCompare(a.fechaHora||a.fecha||''); });
+  let html = '<div class="card"><div class="info-box">🧾 <b>Ventas:</b> Revisa y revierte ventas en caso de error.</div>'+
+    '<table><thead><tr><th>Fecha</th><th>Items</th><th>Cliente</th><th>Total</th><th>Estado</th><th style="text-align:right">Acción</th></tr></thead><tbody>';
+  if(ventas.length === 0) html += '<tr><td colspan="6"><div class="empty">Sin ventas</div></td></tr>';
+  else for(const v of ventas){
+    const items = (v.items||[]).map(function(i){ return i.nombre+' x'+i.cantidad; }).join('<br>');
+    const est = v.revertida ? '<span class="badge badge-red">Revertida</span>' : '<span class="badge badge-green">Vigente</span>';
+    html += '<tr><td>'+(fmtDateTime(v.fechaHora)||fmtDate(v.fecha))+'</td><td style="font-size:12px">'+items+'</td><td>'+(v.cliente||'-')+'</td>'+
+      '<td><b>'+fmtBs(v.total)+'</b></td><td>'+est+'</td><td style="text-align:right">'+
+      (!v.revertida ? '<button class="btn btn-danger btn-xs" onclick="revertirVenta(\''+v.id+'\')">Revertir</button>' : '')+'</td></tr>';
+  }
+  html += '</tbody></table></div>';
+  document.getElementById('content').innerHTML = html;
+}
+function revertirVenta(ventaId){
+  const v = db.ventas.find(function(x){ return x.id === ventaId; });
+  if(!v || v.revertida) return;
+  if(!confirm('¿Revertir esta venta de '+fmtBs(v.total)+'?')) return;
+  for(const item of v.items){
+    const p = db.productos.find(function(x){ return x.id === item.productoId; });
+    if(p) p.stock = Number(p.stock) + item.cantidad;
+  }
+  v.revertida = true;
+  v.fechaReversion = new Date().toISOString();
+  db.movCaja.push({id:uid('mov'), fecha:todayStr(), fechaHora:new Date().toISOString(), tipo:'Egreso',
+    concepto:'REVERSIÓN venta — '+v.items.map(function(i){ return i.nombre+' x'+i.cantidad; }).join(', '),
+    monto:Number(v.total), origen:'Reversión venta'});
+  saveDB(); navigate('ventas');
+  alert('✅ Venta revertida');
+}
+
+// ============ NOTIFICACIONES ============
+function renderNotificaciones(){
+  let html = '<div class="toolbar"><button class="btn btn-primary" onclick="nuevaNotificacion()">+ Nueva</button></div>'+
+    '<table><thead><tr><th>Fecha</th><th>Destinatario</th><th>Título</th><th>Estado</th><th style="text-align:right">Acciones</th></tr></thead><tbody>';
+  const lista = db.notificaciones.slice().sort(function(a,b){ return (b.fecha||'').localeCompare(a.fecha||''); });
+  if(lista.length === 0) html += '<tr><td colspan="5"><div class="empty">Sin notificaciones</div></td></tr>';
+  else for(const n of lista){
+    html += '<tr><td>'+fmtDate(n.fecha)+'</td><td>'+(n.destinatario||'Todos')+'</td><td><b>'+n.titulo+'</b></td>'+
+      '<td>'+(n.leida ? '<span class="badge badge-gray">Leída</span>' : '<span class="badge badge-blue">Nueva</span>')+'</td>'+
+      '<td style="text-align:right">'+(!n.leida ? '<button class="btn btn-secondary btn-xs" onclick="marcarLeida(\''+n.id+'\')">Marcar</button> ' : '')+
+      '<button class="btn btn-danger btn-xs" onclick="borrarNotif(\''+n.id+'\')">X</button></td></tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('content').innerHTML = html;
+}
+function nuevaNotificacion(){
+  showForm('Nueva notificación', [
+    {name:'destinatario', label:'Destinatario', type:'select', options:['Todos','Administradores','Entrenadores','Cajeros','Padres de familia']},
+    {name:'titulo', label:'Título', type:'text', required:true},
+    {name:'mensaje', label:'Mensaje', type:'textarea', required:true}
+  ], null, function(data){
+    db.notificaciones.push(Object.assign({id:uid('not'), fecha:todayStr(), leida:false}, data));
+    saveDB(); navigate('notificaciones');
+  });
+}
+function marcarLeida(id){
+  const n = db.notificaciones.find(function(x){ return x.id === id; });
+  if(n){ n.leida = true; saveDB(); navigate('notificaciones'); }
+}
+function borrarNotif(id){
+  if(!confirm('¿Eliminar?')) return;
+  db.notificaciones = db.notificaciones.filter(function(x){ return x.id !== id; });
+  saveDB(); navigate('notificaciones');
+}
+
+// ============ REPORTES ============
+function renderReportes(){
+  const mes = currentMonth();
+  const activos = db.deportistas.filter(function(d){ return d.estado === 'Activo'; }).length;
+  const porCategoria = {};
+  for(const d of db.deportistas){ porCategoria[d.categoriaId] = (porCategoria[d.categoriaId]||0)+1; }
+  const ingresosMes = db.pagos.filter(function(p){ return p.mes === mes && !p.revertido; }).reduce(function(s,p){ return s + (Number(p.monto)||0); }, 0);
+  const ingresosVentas = db.ventas.filter(function(v){ return (v.fecha||'').indexOf(mes)===0 && !v.revertida; }).reduce(function(s,v){ return s + (Number(v.total)||0); }, 0);
+  const egresos = db.movCaja.filter(function(m){ return (m.fecha||'').indexOf(mes)===0 && m.tipo === 'Egreso'; }).reduce(function(s,m){ return s + (Number(m.monto)||0); }, 0);
+
+  let html = '<div class="kpis">'+
+    kpi('Alumnos activos', activos, db.deportistas.length+' total')+
+    kpi('Ingresos suscripciones', fmtBs(ingresosMes), 'Mes actual')+
+    kpi('Ingresos ventas', fmtBs(ingresosVentas), 'Mes actual')+
+    kpi('Egresos', fmtBs(egresos), 'Mes actual')+
+  '</div><div class="card"><h2>Alumnos por categoría</h2>';
+  const maxCat = Math.max.apply(null, [1].concat(Object.values(porCategoria)));
+  for(const catId in porCategoria){
+    html += '<div style="margin-bottom:8px"><div class="row-flex" style="justify-content:space-between;font-size:12px"><span>'+refLabel('categorias', catId)+'</span><span>'+porCategoria[catId]+'</span></div>'+
+      '<div class="chart-bar"><div style="width:'+((porCategoria[catId]/maxCat)*100)+'%"></div></div></div>';
+  }
+  html += '</div>';
+  document.getElementById('content').innerHTML = html;
+}
+
+// ============ CONFIG ============
+function renderConfiguracion(){
+  const tamanio = (new Blob([JSON.stringify(db)]).size/1024).toFixed(1);
+  let html = '<div class="card"><h2>Información</h2>'+
+    '<p class="mb-2"><b>Academia:</b> '+db.config.nombre+'</p>'+
+    '<p class="mb-2"><b>Moneda:</b> '+db.config.moneda+'</p>'+
+    '<p class="mb-2"><b>Tamaño de la base:</b> '+tamanio+' KB</p>'+
+    '<p class="text-muted" style="font-size:12px">Los datos se guardan en localStorage. Exporta el JSON para migrar a tu base de datos real.</p></div>'+
+    '<div class="card"><h2>Exportar / Importar</h2>'+
+    '<button class="btn btn-primary" onclick="exportarJSON()">📥 Exportar JSON</button> '+
+    '<button class="btn btn-secondary" onclick="document.getElementById(\'fileImport\').click()">📤 Importar JSON</button></div>'+
+    '<div class="card"><h2>Zona de peligro</h2>'+
+    '<button class="btn btn-danger" onclick="resetearDatos()">⚠️ Resetear datos</button></div>';
+  document.getElementById('content').innerHTML = html;
+}
+function resetearDatos(){
+  if(!confirm('¿Borrar todos los datos?')) return;
+  db = seedDB();
+  saveDB();
+  navigate('dashboard');
+  alert('Sistema reiniciado');
+}
+
+// ============ EXPORT / IMPORT ============
+function exportarJSON(){
+  const blob = new Blob([JSON.stringify(db, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'dosantos-'+todayStr()+'.json';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+function importarJSON(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!confirm('¿Reemplazar todos los datos?')) return;
+      db = data;
+      const seed = seedDB();
+      for(const k in seed){ if(!(k in db)) db[k] = seed[k]; }
+      saveDB(); navigate('dashboard');
+      alert('Datos importados');
+    }catch(err){ alert('JSON inválido: '+err.message); }
+  };
+  reader.readAsText(file); input.value = '';
+}
+
+// ============ CONVERTIR PREINSCRIPCION ============
+function convertirDeportista(preId){
+  const p = db.preinscripciones.find(function(x){ return x.id === preId; });
+  if(!p) return;
+  showForm('Convertir preinscripción en deportista', ENT.deportistas.fields, {
+    dni: p.dni || '', nombres:p.nombres, apellidos:p.apellidos, fechaNacimiento:p.fechaNacimiento,
+    sexo:p.sexo, telefono:p.telefono, tutor:p.representante, categoriaId:p.categoriaInteres,
+    fechaIngreso:todayStr(), estado:'Activo', tarifa:250, beca:0
+  }, function(data){
+    if(!data.dni){ alert('❌ DNI obligatorio'); return false; }
+    if(!validarDNI(data.dni)){
+      const dup = db.deportistas.find(function(d){ return d.dni === data.dni && d.estado === 'Activo'; });
+      alert('❌ Ya existe un jugador con ese DNI: '+dup.nombres+' '+dup.apellidos);
+      return false;
+    }
+    data.id = uid('dep');
+    db.deportistas.push(data);
+    p.estado = 'Aprobada';
+    saveDB();
+    alert('✅ Deportista creado');
+    navigate('preinscripciones');
+  });
+}
+
+// ============ INIT ============
+loadDB();
+renderNav();
+navigate('dashboard');
+</script>
+</body>
+</html>
 :root {
   --brand-dark: #001838;
   --brand-blue: #00AEEF;
