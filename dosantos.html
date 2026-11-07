@@ -3,11 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>Do Santos FC — Sistema de Gestión</title>
 <style>
 :root{--brand-dark:#001838;--brand-blue:#00AEEF;--brand-blue-hover:#0095cc;--bg-body:#f4f7f9;--text-main:#1e293b;--text-muted:#64748b;--border-light:#e2e8f0}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg-body);color:var(--text-main);font-size:14px}
+body{font-family:'Manrope',system-ui,-apple-system,sans-serif;background:var(--bg-body);color:var(--text-main);font-size:14px;-webkit-font-smoothing:antialiased}
 #app{display:flex;height:100vh;overflow:hidden}
 aside{width:270px;background:var(--brand-dark);color:#e2e8f0;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;box-shadow:4px 0 15px rgba(0,0,0,.1);z-index:10}
 aside .logo{padding:24px 20px 20px;text-align:center;border-bottom:1px solid rgba(255,255,255,.05);background:linear-gradient(180deg,rgba(0,174,239,0.12) 0%,transparent 100%)}
@@ -113,6 +116,98 @@ tbody tr:hover td{background:#f8fafc}
 .chart-bar{background:#e2e8f0;border-radius:6px;height:10px;overflow:hidden;margin-top:6px}
 .chart-bar div{background:var(--brand-blue);height:100%;border-radius:6px}
 @media print{.no-print{display:none!important}body{background:white}#content{padding:0}}
+
+/* ============ RESPONSIVE SIDEBAR ============ */
+.hamburger{display:none;background:transparent;border:none;cursor:pointer;padding:6px;color:var(--brand-dark)}
+.hamburger svg{width:22px;height:22px;stroke:currentColor;stroke-width:2;fill:none}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(6,18,41,.55);backdrop-filter:blur(2px);z-index:9}
+@media(max-width:768px){
+  .hamburger{display:inline-flex;align-items:center;justify-content:center}
+  aside{position:fixed;inset:0 auto 0 0;transform:translateX(-100%);transition:transform .28s cubic-bezier(.2,.8,.2,1)}
+  body.sidebar-open aside{transform:translateX(0)}
+  body.sidebar-open .sidebar-overlay{display:block}
+  header{padding:12px 16px}
+  #content{padding:16px}
+  .kpis{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .kpis{grid-template-columns:1fr}
+  .hero-banner{padding:20px}
+  .hero-logo{width:90px}
+  .hero-text h2{font-size:22px}
+}
+/* ============ DASHBOARD PREMIUM ============ */
+.dash{display:flex;flex-direction:column;gap:20px}
+.dash-hero{position:relative;border-radius:20px;overflow:hidden;padding:36px 40px;color:#ffffff;
+  background:linear-gradient(135deg,#061229 0%,#0b3a6f 55%,#001838 100%);
+  box-shadow:0 20px 50px -12px rgba(6,18,41,.45);isolation:isolate}
+.dash-hero::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(900px 300px at 80% -20%,rgba(0,212,255,.22),transparent 60%),
+            radial-gradient(600px 240px at -10% 110%,rgba(245,179,1,.12),transparent 60%);
+  z-index:0}
+.dash-hero::after{content:'';position:absolute;right:-60px;top:-60px;width:260px;height:260px;
+  background:repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0 2px,transparent 2px 10px);
+  border-radius:50%;z-index:0;opacity:.6}
+.dash-hero__content{position:relative;z-index:1;display:grid;grid-template-columns:auto 1fr auto;gap:32px;align-items:center}
+.dash-hero__logo-wrap{position:relative;display:flex;align-items:center;justify-content:center}
+.dash-logo{width:150px;height:150px;object-fit:contain;filter:drop-shadow(0 12px 28px rgba(0,212,255,.35));animation:dashLogoIn .9s cubic-bezier(.2,.8,.2,1) both}
+.dash-logo-fallback{display:none;width:150px;height:150px;border-radius:50%;background:linear-gradient(135deg,#00d4ff,#0b3a6f);color:#fff;font-family:'Bebas Neue',sans-serif;font-size:64px;align-items:center;justify-content:center;box-shadow:0 12px 28px rgba(0,212,255,.35)}
+.dash-hero__text h1{font-family:'Bebas Neue',sans-serif;font-size:56px;letter-spacing:3px;line-height:.95;margin:4px 0 8px;color:#ffffff}
+.dash-eyebrow{display:inline-block;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#00d4ff;padding:6px 12px;border:1px solid rgba(0,212,255,.4);border-radius:999px;background:rgba(0,212,255,.08)}
+.dash-hero__text p{font-size:14px;color:rgba(226,232,240,.8);margin:0}
+.dash-hero__scoreboard{display:flex;gap:10px}
+.score{display:flex;flex-direction:column;align-items:center;padding:14px 18px;border-radius:14px;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(6px);min-width:96px}
+.score__num{font-family:'Bebas Neue',sans-serif;font-size:28px;line-height:1;color:#ffffff;letter-spacing:1px}
+.score__lbl{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#00d4ff;margin-top:6px}
+.dash-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.dash-kpis .kpi{border-left:4px solid var(--brand-blue);transition:box-shadow .2s}
+.dash-kpis .kpi:hover{box-shadow:0 8px 18px -8px rgba(0,24,56,.18)}
+.dash-kpis .kpi .label{text-transform:none;letter-spacing:.4px}
+.dash-kpis .kpi .value{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:1px}
+.dash-kpis .kpi .label{letter-spacing:1.5px}
+.dash-section{background:#ffffff;border-radius:16px;padding:24px;border:1px solid rgba(226,232,240,.6);box-shadow:0 4px 12px -4px rgba(0,24,56,.08)}
+.dash-section h3{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1.5px;color:var(--brand-dark);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.dash-section h3 .dot{width:10px;height:10px;border-radius:50%;background:var(--brand-blue);box-shadow:0 0 0 4px rgba(0,174,239,.15)}
+.dash-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:20px}
+.dash-actions{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.dash-action{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:18px;border-radius:14px;
+  background:linear-gradient(180deg,#ffffff,#f4f7f9);border:1px solid var(--border-light);cursor:pointer;transition:all .2s;text-align:left}
+.dash-action:hover{border-color:var(--brand-blue);transform:translateY(-2px);box-shadow:0 8px 18px -6px rgba(0,174,239,.25)}
+.dash-action .ic{width:36px;height:36px;border-radius:10px;background:rgba(0,174,239,.12);color:var(--brand-blue);display:flex;align-items:center;justify-content:center}
+.dash-action .ic svg{width:20px;height:20px;stroke:currentColor;stroke-width:2;fill:none}
+.dash-action .t{font-weight:700;font-size:13px;color:var(--brand-dark)}
+.dash-action .s{font-size:11px;color:var(--text-muted)}
+.dash-alerts{display:flex;flex-direction:column;gap:10px}
+.dash-alert{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:12px;border:1px solid var(--border-light);background:#ffffff}
+.dash-alert.warn{border-left:4px solid #f59e0b;background:#fffbeb}
+.dash-alert.danger{border-left:4px solid #ef4444;background:#fef2f2}
+.dash-alert.info{border-left:4px solid var(--brand-blue);background:#f0f9ff}
+.dash-alert .a-icon{font-size:20px}
+.dash-alert .a-text{flex:1;font-size:13px;color:var(--text-main)}
+.dash-alert .a-text b{color:var(--brand-dark)}
+.dash-alert .a-cta{font-size:12px;font-weight:700;color:var(--brand-blue);cursor:pointer}
+.dash-empty{color:#94a3b8;font-style:italic;font-size:13px;text-align:center;padding:12px}
+@keyframes dashLogoIn{from{opacity:0;transform:scale(.7) rotate(-8deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes dashFadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.dash-hero{animation:dashFadeUp .7s cubic-bezier(.2,.8,.2,1) both}
+.dash-kpis .kpi,.dash-section{animation:none}
+@media(max-width:900px){
+  .dash-hero__content{grid-template-columns:1fr;gap:18px;text-align:center}
+  .dash-hero__logo-wrap{justify-content:center}
+  .dash-hero__scoreboard{justify-content:center;flex-wrap:wrap}
+  .dash-grid{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .dash-hero{padding:24px 20px}
+  .dash-hero__text h1{font-size:40px}
+  .dash-logo,.dash-logo-fallback{width:110px;height:110px}
+  .score{min-width:80px;padding:10px 12px}
+  .score__num{font-size:22px}
+}
+@media (prefers-reduced-motion: reduce){
+  .dash-hero,.dash-kpis .kpi,.dash-section,.dash-logo{animation:none!important}
+}
 </style>
 </head>
 <body>
@@ -125,8 +220,12 @@ tbody tr:hover td{background:#f8fafc}
     </div>
     <nav id="nav"></nav>
   </aside>
+  <div class="sidebar-overlay no-print" onclick="toggleSidebar()"></div>
   <main>
     <header class="no-print">
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Menú">
+        <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <h1 id="pageTitle">Panel Principal</h1>
       <div class="actions">
         <button class="btn btn-outline btn-sm" onclick="document.getElementById('fileImport').click()">📤 Importar</button>
@@ -467,6 +566,7 @@ const NAV = [
   ]}
 ];
 
+function toggleSidebar(){ document.body.classList.toggle('sidebar-open'); }
 let currentRoute = 'dashboard';
 let _kardexSelectedId = null;
 let posCart = [];
@@ -488,6 +588,7 @@ function navigate(route){
   try{
     currentRoute = route;
     renderNav();
+    if(window.innerWidth <= 768) document.body.classList.remove('sidebar-open');
     const routes = getRoutes();
     const r = routes[route];
     if(!r){ document.getElementById('content').innerHTML = '<div class="card"><h2>Sección no encontrada</h2></div>'; return; }
@@ -537,7 +638,7 @@ function getRoutes(){
     reportes:{title:'Reportes', render:renderReportes},
     preinscripciones:{title:'Preinscripciones', render:function(){
       renderEntity('preinscripciones', function(row){
-        return row.estado !== 'Aprobada' ? '<button class="btn btn-success btn-xs" onclick="convertirDeportista(\''+row.id+'\')">→ Convertir</button>' : '';
+        return row.estado !== 'Aprobada' ? '<button class="btn btn-success btn-xs" onclick="convertirDeportista(\''+row.id+'\')"> Convertir</button>' : '';
       });
     }},
     noticias:{title:'Noticias', render:function(){renderEntity('noticias');}},
@@ -777,11 +878,33 @@ function renderDashboard(){
   const deudaTotal = calcularDeudaTotal();
   const stockBajo = db.productos.filter(function(p){ return Number(p.stock) <= Number(p.stockMinimo); }).length;
   const prestamosActivos = db.prestamos.filter(function(p){ return p.devuelto !== 'Sí'; }).length;
+  const stockBajoItems = db.productos.filter(function(p){ return Number(p.stock) <= Number(p.stockMinimo); });
+  const dniVencer = db.deportistas.filter(function(d){ return d.estado === 'Activo' && d.fechaVencimientoDni && (new Date(d.fechaVencimientoDni) - new Date()) < 30*86400000; }).length;
+  const fechaHoy = new Date().toLocaleDateString('es-BO', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
 
-  let html = '<div class="hero-banner">'+
-    '<img src="logo.png" class="hero-logo" alt="Do Santos FC" onerror="this.style.display=\'none\'">'+
-    '<div class="hero-text"><h2>DO SANTOS FC</h2><p>Sistema de Gestión Deportiva</p></div>'+
-  '</div><div class="kpis">';
+  let html = '<div class="dash">';
+
+  // Hero
+  html += '<section class="dash-hero">'+
+    '<div class="dash-hero__content">'+
+      '<div class="dash-hero__logo-wrap">'+
+        '<img src="logo.png" class="dash-logo" alt="Do Santos FC" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'+
+        '<div class="dash-logo-fallback">DS</div>'+
+      '</div>'+
+      '<div class="dash-hero__text">'+
+        '<h1>DO SANTOS FC</h1>'+
+        '<p>Panel de control · '+fechaHoy+'</p>'+
+      '</div>'+
+      '<div class="dash-hero__scoreboard">'+
+        '<div class="score"><span class="score__num">'+activos+'</span><span class="score__lbl">Alumnos</span></div>'+
+        '<div class="score"><span class="score__num">'+fmtBs(ingresosMes).replace('Bs ','')+'</span><span class="score__lbl">Ingresos</span></div>'+
+        '<div class="score"><span class="score__num">'+fmtBs(deudaTotal).replace('Bs ','')+'</span><span class="score__lbl">Deuda</span></div>'+
+      '</div>'+
+    '</div>'+
+  '</section>';
+
+  // KPIs
+  html += '<div class="dash-kpis">';
   html += kpi('Alumnos activos', activos, db.deportistas.length+' en total');
   html += kpi('Entrenadores', entrenadores, db.personal.length+' personal');
   html += kpi('Ingresos del mes', fmtBs(ingresosMes), 'Suscripciones + ventas');
@@ -790,7 +913,78 @@ function renderDashboard(){
   html += kpi('Stock bajo', stockBajo, 'Productos a reponer');
   html += kpi('Préstamos activos', prestamosActivos, 'Equipamiento');
   html += '</div>';
+
+  // Grid: actions + alerts
+  html += '<div class="dash-grid">';
+  html += '<div class="dash-section">'+
+    '<h3><span class="dot"></span>Acciones rápidas</h3>'+
+    '<div class="dash-actions">'+
+      actionCard(icons.user, 'Nuevo alumno', 'Registrar deportista', "navigate('deportistas')")+
+      actionCard(icons.check, 'Asistencia', 'Tomar lista hoy', "navigate('asistencias')")+
+      actionCard(icons.money, 'Cobrar', 'Suscripciones del mes', "navigate('cobros')")+
+      actionCard(icons.cart, 'Vender', 'Punto de venta', "navigate('pos')")+
+      actionCard(icons.search, 'Buscar', 'Ficha del jugador', "navigate('busqueda')")+
+      actionCard(icons.calendar, 'Reservas', 'Canchas y horarios', "navigate('reservas')")+
+    '</div>'+
+  '</div>';
+
+  // Alerts
+  html += '<div class="dash-section">'+
+    '<h3><span class="dot"></span>Alertas</h3>'+
+    '<div class="dash-alerts">';
+  let alertCount = 0;
+  if(stockBajo > 0){
+    alertCount++;
+    html += '<div class="dash-alert danger"><span class="a-icon">📦</span><span class="a-text"><b>'+stockBajo+' producto(s)</b> con stock bajo o crítico.</span><span class="a-cta" onclick="navigate(\'productos\')">Ver</span></div>';
+  }
+  if(deudaTotal > 0){
+    alertCount++;
+    html += '<div class="dash-alert warn"><span class="a-icon">💰</span><span class="a-text"><b>'+fmtBs(deudaTotal)+'</b> en mensualidades pendientes.</span><span class="a-cta" onclick="navigate(\'cobros\')">Cobrar </span></div>';
+  }
+  if(prestamosActivos > 0){
+    alertCount++;
+    html += '<div class="dash-alert info"><span class="a-icon">Loan</span><span class="a-text"><b>'+prestamosActivos+' préstamo(s)</b> de equipamiento sin devolver.</span><span class="a-cta" onclick="navigate(\'prestamos\')">Ver</span></div>'.replace('Loan','📋');
+  }
+  if(dniVencer > 0){
+    alertCount++;
+    html += '<div class="dash-alert warn"><span class="a-icon">🪪</span><span class="a-text"><b>'+dniVencer+' DNI(s)</b> vencen en menos de 30 días.</span><span class="a-cta" onclick="navigate(\'deportistas\')">Ver</span></div>';
+  }
+  if(alertCount === 0){
+    html += '<div class="dash-empty">Sin alertas pendientes. Todo en orden ✅</div>';
+  }
+  html += '</div></div></div>';
+
+  // Recent activity / top categories
+  html += '<div class="dash-grid">';
+  html += '<div class="dash-section"><h3><span class="dot"></span>Últimos pagos</h3>';
+  const pagosRec = db.pagos.slice().sort(function(a,b){ return (b.fechaHora||b.fecha||'').localeCompare(a.fechaHora||a.fecha||''); }).slice(0,6);
+  if(pagosRec.length === 0) html += '<div class="dash-empty">Sin pagos registrados</div>';
+  else {
+    html += '<table><thead><tr><th>Fecha</th><th>Deportista</th><th>Monto</th></tr></thead><tbody>';
+    for(const p of pagosRec){
+      html += '<tr><td>'+fmtDate(p.fecha)+'</td><td>'+refLabel('deportistas', p.deportistaId)+'</td><td><b>'+fmtBs(p.monto)+'</b></td></tr>';
+    }
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+
+  html += '<div class="dash-section"><h3><span class="dot"></span>Stock crítico</h3>';
+  if(stockBajoItems.length === 0) html += '<div class="dash-empty">Inventario saludable ✅</div>';
+  else {
+    html += '<div class="dash-alerts">';
+    for(const p of stockBajoItems.slice(0,5)){
+      html += '<div class="dash-alert danger"><span class="a-icon">📦</span><span class="a-text"><b>'+p.nombre+'</b> — stock '+p.stock+' (mín '+p.stockMinimo+')</span><span class="a-cta" onclick="navigate(\'productos\')">Reponer </span></div>';
+    }
+    html += '</div>';
+  }
+  html += '</div></div>';
+
+  html += '</div>';
   document.getElementById('content').innerHTML = html;
+}
+
+function actionCard(iconSvg, title, sub, onclick){
+  return '<div class="dash-action" onclick="'+onclick+'"><div class="ic">'+iconSvg+'</div><div class="t">'+title+'</div><div class="s">'+sub+'</div></div>';
 }
 
 function kpi(label, value, sub){
