@@ -3,113 +3,171 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Arnel System — Gestión Deportiva</title>
+<title>Do Santos FC — Sistema de Gestión</title>
 <style>
+:root {
+  --brand-dark: #001838;
+  --brand-blue: #00AEEF;
+  --brand-blue-hover: #0095cc;
+  --bg-body: #f4f7f9;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --border-light: #e2e8f0;
+}
+
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;background:#f0f2f5;color:#0f172a;font-size:14px}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg-body);color:var(--text-main);font-size:14px}
 #app{display:flex;height:100vh;overflow:hidden}
-aside{width:250px;background:#0f172a;color:#e2e8f0;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
-aside .logo{padding:16px;font-weight:700;font-size:16px;border-bottom:1px solid #1e293b}
-aside .logo small{display:block;color:#64748b;font-size:10px;font-weight:400;margin-top:2px}
-aside nav{flex:1;overflow-y:auto;padding:8px}
-aside nav .group{color:#64748b;font-size:10px;text-transform:uppercase;padding:12px 10px 6px;font-weight:600}
-aside nav a{display:block;padding:7px 12px;color:#cbd5e1;text-decoration:none;border-radius:6px;font-size:13px;cursor:pointer;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-aside nav a:hover{background:#1e293b;color:white}
-aside nav a.active{background:#2563eb;color:white;font-weight:500}
+
+/* ============ SIDEBAR PREMIUM ============ */
+aside{width:270px;background:var(--brand-dark);color:#e2e8f0;display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;box-shadow:4px 0 15px rgba(0,0,0,.1);z-index:10}
+aside .logo{padding:30px 20px 20px;text-align:center;border-bottom:1px solid rgba(255,255,255,.05);background:linear-gradient(180deg, rgba(0,168,232,0.1) 0%, transparent 100%)}
+aside .logo img{width:130px;height:auto;display:inline-block;filter:drop-shadow(0 8px 16px rgba(0,174,239,.3));margin-bottom:12px;transition:transform .3s}
+aside .logo img:hover{transform:scale(1.05)}
+aside .logo .brand-name{font-weight:800;font-size:20px;color:#ffffff;letter-spacing:1.5px;line-height:1.1}
+aside .logo .brand-sub{display:block;color:var(--brand-blue);font-size:10px;font-weight:700;margin-top:6px;letter-spacing:1px;text-transform:uppercase}
+aside nav{flex:1;overflow-y:auto;padding:12px 12px 24px}
+aside nav::-webkit-scrollbar{width:6px}
+aside nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:3px}
+aside nav .group{color:#64748b;font-size:10px;text-transform:uppercase;padding:18px 10px 8px;font-weight:700;letter-spacing:1px}
+aside nav a{display:flex;align-items:center;gap:12px;padding:10px 14px;color:#cbd5e1;text-decoration:none;border-radius:8px;font-size:13.5px;cursor:pointer;margin-bottom:2px;font-weight:500;transition:all .2s}
+aside nav a svg{width:18px;height:18px;stroke:currentColor;stroke-width:2;fill:none;opacity:.7;transition:all .2s}
+aside nav a:hover{background:rgba(255,255,255,.05);color:#ffffff}
+aside nav a:hover svg{opacity:1}
+aside nav a.active{background:var(--brand-blue);color:#ffffff;font-weight:600;box-shadow:0 4px 12px rgba(0,174,239,.4)}
+aside nav a.active svg{opacity:1;stroke-width:2.5}
+
+/* ============ MAIN CONTENT ============ */
 main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
-header{background:white;padding:14px 24px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;gap:12px}
-header h1{font-size:18px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-header .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-#content{flex:1;padding:24px;overflow-y:auto}
-.card{background:white;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:16px}
-.card h2{font-size:15px;font-weight:600;margin-bottom:12px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:20px}
-.kpi{background:white;border-radius:10px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.kpi .label{font-size:11px;color:#64748b;text-transform:uppercase;font-weight:600;margin-bottom:6px}
-.kpi .value{font-size:26px;font-weight:700;line-height:1}
-.kpi .sub{font-size:11px;color:#94a3b8;margin-top:4px}
-table{width:100%;border-collapse:collapse;background:white;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)}
-th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #e2e8f0;font-size:13px;vertical-align:middle}
-th{background:#f8fafc;font-weight:600;color:#475569;text-transform:uppercase;font-size:11px}
+header{background:#ffffff;padding:16px 28px;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;flex-shrink:0;z-index:5}
+header h1{font-size:20px;font-weight:700;color:var(--brand-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header .actions{display:flex;gap:10px;align-items:center}
+#content{flex:1;padding:28px;overflow-y:auto;scroll-behavior:smooth}
+
+/* ============ COMPONENTES ============ */
+.card{background:#ffffff;border-radius:12px;padding:24px;box-shadow:0 4px 6px -1px rgba(0,0,0,.05), 0 2px 4px -1px rgba(0,0,0,.03);margin-bottom:20px;border:1px solid rgba(226,232,240,.5)}
+.card h2{font-size:16px;font-weight:700;margin-bottom:16px;color:var(--brand-dark);display:flex;align-items:center;gap:8px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:24px}
+.kpi{background:#ffffff;border-radius:12px;padding:20px;box-shadow:0 4px 6px -1px rgba(0,0,0,.05);border-left:4px solid var(--brand-blue);position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;right:0;width:60px;height:60px;background:var(--brand-blue);opacity:.05;border-radius:50%;transform:translate(20px,-20px)}
+.kpi .label{font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:700;margin-bottom:8px;letter-spacing:.5px}
+.kpi .value{font-size:28px;font-weight:800;line-height:1;color:var(--brand-dark)}
+.kpi .sub{font-size:12px;color:#94a3b8;margin-top:6px;font-weight:500}
+
+table{width:100%;border-collapse:collapse;background:#ffffff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);border:1px solid var(--border-light)}
+th,td{padding:12px 16px;text-align:left;border-bottom:1px solid var(--border-light);font-size:13.5px;vertical-align:middle}
+th{background:#f8fafc;font-weight:700;color:var(--text-muted);text-transform:uppercase;font-size:11px;letter-spacing:.5px}
 tr:last-child td{border-bottom:none}
 tbody tr:hover td{background:#f8fafc}
-.btn{padding:7px 14px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:4px;font-family:inherit}
-.btn:hover{opacity:.9}
-.btn-primary{background:#2563eb;color:white}
-.btn-success{background:#16a34a;color:white}
-.btn-danger{background:#dc2626;color:white}
-.btn-warning{background:#f59e0b;color:white}
-.btn-secondary{background:#e2e8f0;color:#1e293b}
-.btn-sm{padding:5px 10px;font-size:12px}
-.btn-xs{padding:3px 8px;font-size:11px}
-.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:8px;flex-wrap:wrap}
-.toolbar .search{padding:8px 12px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;min-width:200px}
-#modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+
+.btn{padding:8px 16px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;display:inline-flex;align-items:center;gap:6px;font-family:inherit;transition:all .2s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 4px 6px rgba(0,0,0,.1)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:var(--brand-blue);color:#ffffff}
+.btn-primary:hover{background:var(--brand-blue-hover)}
+.btn-success{background:#10b981;color:#ffffff}
+.btn-danger{background:#ef4444;color:#ffffff}
+.btn-warning{background:#f59e0b;color:#ffffff}
+.btn-secondary{background:#e2e8f0;color:var(--text-main)}
+.btn-outline{background:transparent;border:1px solid var(--border-light);color:var(--text-main)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-xs{padding:4px 10px;font-size:11px}
+
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:12px;flex-wrap:wrap}
+.toolbar .search{padding:10px 16px;border:1px solid var(--border-light);border-radius:8px;font-size:13.5px;min-width:280px;outline:none;transition:border .2s}
+.toolbar .search:focus{border-color:var(--brand-blue);box-shadow:0 0 0 3px rgba(0,174,239,.1)}
+
+/* ============ HERO BANNER (DASHBOARD) ============ */
+.hero-banner{background:linear-gradient(135deg, var(--brand-dark) 0%, #002b5e 100%);border-radius:16px;padding:32px;color:#ffffff;display:flex;align-items:center;gap:32px;margin-bottom:24px;box-shadow:0 10px 25px rgba(0,24,56,.2);position:relative;overflow:hidden}
+.hero-banner::after{content:'';position:absolute;right:-50px;top:-50px;width:300px;height:300px;background:var(--brand-blue);border-radius:50%;opacity:.1;filter:blur(40px)}
+.hero-logo{width:140px;height:auto;filter:drop-shadow(0 10px 20px rgba(0,0,0,.3));z-index:1}
+.hero-text{z-index:1}
+.hero-text h2{font-size:32px;font-weight:800;letter-spacing:1px;margin-bottom:6px;color:#ffffff;text-shadow:0 2px 4px rgba(0,0,0,.3)}
+.hero-text p{font-size:14px;color:var(--brand-blue);text-transform:uppercase;letter-spacing:2px;font-weight:600}
+
+/* ============ FORMULARIOS Y MODALES ============ */
+#modal{position:fixed;inset:0;background:rgba(0,24,56,.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
 #modal.hidden{display:none}
-.modal-content{background:white;border-radius:12px;padding:24px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto}
-.modal-content h2{font-size:17px;font-weight:600;margin-bottom:16px}
-.form-row{margin-bottom:12px}
-.form-row label{display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px}
-.form-row input,.form-row select,.form-row textarea{width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;font-family:inherit;background:white}
-.form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}
-.form-row textarea{min-height:70px;resize:vertical}
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.badge{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600}
+.modal-content{background:#ffffff;border-radius:16px;padding:28px;width:100%;max-width:680px;max-height:90vh;overflow-y:auto;box-shadow:0 25px 50px -12px rgba(0,0,0,.25)}
+.modal-content h2{font-size:20px;font-weight:700;margin-bottom:24px;color:var(--brand-dark)}
+.form-row{margin-bottom:16px}
+.form-row label{display:block;font-size:12px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:10px 14px;border:1px solid var(--border-light);border-radius:8px;font-size:14px;font-family:inherit;background:#f8fafc;transition:all .2s}
+.form-row input:focus,.form-row select:focus,.form-row textarea:focus{outline:none;border-color:var(--brand-blue);background:#ffffff;box-shadow:0 0 0 3px rgba(0,174,239,.1)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:768px){.form-grid{grid-template-columns:1fr}.hero-banner{flex-direction:column;text-align:center}}
+
+.badge{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.3px}
 .badge-green{background:#dcfce7;color:#166534}
 .badge-red{background:#fee2e2;color:#991b1b}
 .badge-yellow{background:#fef3c7;color:#92400e}
-.badge-blue{background:#dbeafe;color:#1e40af}
+.badge-blue{background:#e0f2fe;color:#0369a1}
 .badge-gray{background:#f1f5f9;color:#475569}
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-@media(max-width:768px){.grid-2{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}}
-.empty{text-align:center;padding:40px;color:#94a3b8}
-.pos-layout{display:grid;grid-template-columns:1fr 400px;gap:16px;align-items:start}
-@media(max-width:900px){.pos-layout{grid-template-columns:1fr}}
-.pos-products{background:white;border-radius:10px;padding:16px}
-.pos-cart{background:white;border-radius:10px;padding:16px}
-.pos-cart-items{min-height:120px;max-height:400px;overflow-y:auto;margin:12px 0}
-.pos-item{display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid #f1f5f9;font-size:13px;gap:8px}
-.pos-total{font-size:20px;font-weight:700;padding-top:12px;border-top:2px solid #e2e8f0;margin-bottom:8px}
-.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
-.product-card{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:10px;cursor:pointer;transition:all .15s}
-.product-card:hover{background:#eff6ff;border-color:#3b82f6}
-.product-card .pname{font-weight:600;font-size:13px;margin-bottom:4px}
-.product-card .pprice{color:#16a34a;font-weight:600;font-size:12px}
-.product-card .pstock{color:#94a3b8;font-size:11px}
-.chart-bar{background:#e0e7ff;border-radius:4px;height:8px;overflow:hidden;margin-top:4px}
-.chart-bar div{background:#2563eb;height:100%}
-.row-flex{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.grid-2{grid-template-columns:1fr}}
+.empty{text-align:center;padding:40px;color:#94a3b8;font-style:italic}
+.row-flex{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .mb-2{margin-bottom:16px}.mt-2{margin-top:16px}
-.text-right{text-align:right}.text-muted{color:#64748b}.w-100{width:100%}
-.player-photo{width:40px;height:40px;border-radius:50%;object-fit:cover;background:#f1f5f9;border:1px solid #cbd5e1;display:inline-block;vertical-align:middle}
-.player-photo-lg{width:120px;height:120px;border-radius:8px;object-fit:cover;background:#f1f5f9;border:2px solid #cbd5e1}
-.photo-placeholder{display:inline-flex;align-items:center;justify-content:center;background:#f1f5f9;color:#94a3b8;font-size:10px;border:1px dashed #cbd5e1}
-.kardex-header{display:flex;gap:20px;margin-bottom:20px;align-items:start}
-.kardex-header .info{flex:1}
-.kardex-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
-.kardex-item{background:#f8fafc;padding:10px;border-radius:6px}
-.kardex-item .lbl{font-size:10px;color:#64748b;text-transform:uppercase;font-weight:600}
-.kardex-item .val{font-size:13px;font-weight:500;margin-top:2px}
-.info-box{background:#eff6ff;border-left:4px solid #2563eb;padding:12px;border-radius:6px;margin-bottom:16px;font-size:13px}
-.warning-box{background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;border-radius:6px;margin-bottom:16px;font-size:13px}
-.search-hero{background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;padding:24px;border-radius:10px;margin-bottom:20px}
-.search-hero h2{color:white;margin-bottom:8px;font-size:20px}
-.search-hero p{opacity:.9;font-size:13px;margin-bottom:16px}
-.search-hero input{width:100%;padding:12px 16px;border:none;border-radius:8px;font-size:15px}
-@media print{.no-print{display:none!important}body{background:white}}
+.text-muted{color:var(--text-muted)}.w-100{width:100%}
+
+/* FOTO JUGADOR */
+.player-photo{width:40px;height:40px;border-radius:8px;object-fit:cover;background:#f1f5f9;border:1px solid var(--border-light);display:inline-block;vertical-align:middle}
+.player-photo-lg{width:130px;height:130px;border-radius:12px;object-fit:cover;background:#f1f5f9;border:3px solid #ffffff;box-shadow:0 4px 12px rgba(0,0,0,.1);display:inline-block}
+.photo-placeholder{display:inline-flex;align-items:center;justify-content:center;background:#f1f5f9;color:#94a3b8;font-size:11px;border:2px dashed #cbd5e1;font-weight:600;text-align:center}
+
+/* KARDEX */
+.kardex-header{display:flex;gap:24px;margin-bottom:24px;align-items:center;background:linear-gradient(to right, #f8fafc, #ffffff);padding:20px;border-radius:12px;border:1px solid var(--border-light)}
+.kardex-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.kardex-item{background:#ffffff;padding:14px;border-radius:8px;border:1px solid var(--border-light);box-shadow:0 1px 2px rgba(0,0,0,.02)}
+.kardex-item .lbl{font-size:10px;color:var(--text-muted);text-transform:uppercase;font-weight:700;letter-spacing:.5px;margin-bottom:4px}
+.kardex-item .val{font-size:14px;font-weight:600;color:var(--brand-dark)}
+
+.info-box{background:#f0f9ff;border-left:4px solid var(--brand-blue);padding:16px;border-radius:8px;margin-bottom:20px;font-size:13.5px;color:#0369a1;line-height:1.5}
+.warning-box{background:#fffbeb;border-left:4px solid #f59e0b;padding:16px;border-radius:8px;margin-bottom:20px;font-size:13.5px;color:#92400e}
+
+/* BÚSQUEDA HERO */
+.search-hero{background:linear-gradient(135deg, var(--brand-dark), #003b7a);color:#ffffff;padding:40px;border-radius:16px;margin-bottom:28px;box-shadow:0 10px 25px rgba(0,24,56,.2)}
+.search-hero h2{color:#ffffff;margin-bottom:8px;font-size:24px;font-weight:800}
+.search-hero p{color:var(--brand-blue);font-size:14px;margin-bottom:24px;font-weight:500}
+.search-hero input{width:100%;padding:16px 20px;border:none;border-radius:10px;font-size:16px;box-shadow:0 4px 12px rgba(0,0,0,.15);outline:none;font-family:inherit}
+
+/* POS */
+.pos-layout{display:grid;grid-template-columns:1fr 420px;gap:20px;align-items:start}
+.pos-products{background:#ffffff;border-radius:12px;padding:20px;border:1px solid var(--border-light)}
+.pos-cart{background:#ffffff;border-radius:12px;padding:20px;border:1px solid var(--border-light);position:sticky;top:20px}
+.pos-cart-items{min-height:150px;max-height:400px;overflow-y:auto;margin:16px 0;border-top:1px solid var(--border-light);border-bottom:1px solid var(--border-light);padding:8px 0}
+.pos-item{display:flex;justify-content:space-between;align-items:center;padding:10px 8px;border-bottom:1px dashed var(--border-light);font-size:13px;gap:10px}
+.pos-item:last-child{border-bottom:none}
+.pos-total{font-size:24px;font-weight:800;padding-top:16px;margin-bottom:16px;color:var(--brand-dark);text-align:right}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
+.product-card{background:#f8fafc;border:1px solid var(--border-light);border-radius:10px;padding:14px;cursor:pointer;transition:all .2s;text-align:center}
+.product-card:hover{background:#ffffff;border-color:var(--brand-blue);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,174,239,.15)}
+.product-card .pname{font-weight:700;font-size:13px;margin-bottom:6px;color:var(--brand-dark)}
+.product-card .pprice{color:var(--brand-blue);font-weight:800;font-size:14px}
+.product-card .pstock{color:var(--text-muted);font-size:11px;margin-top:4px}
+.chart-bar{background:#e2e8f0;border-radius:6px;height:10px;overflow:hidden;margin-top:6px}
+.chart-bar div{background:var(--brand-blue);height:100%;border-radius:6px}
+
+@media print{.no-print{display:none!important}body{background:white}#content{padding:0}}
 </style>
 </head>
 <body>
 <div id="app">
   <aside class="no-print">
-    <div class="logo">ARNEL SYSTEM<small>Sistema de Gestión Deportiva</small></div>
+    <div class="logo">
+      <!-- AQUÍ VA TU LOGO: Asegúrate de guardar la imagen como 'logo.png' en la misma carpeta -->
+      <img src="logo.png" alt="Do Santos FC" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 120\'><path d=\'M50,3 L90,20 L90,60 C90,85 75,100 50,115 C25,100 10,85 10,60 L10,20 Z\' fill=\'%2300AEEF\' stroke=\'%23ffffff\' stroke-width=\'3\'/><text x=\'50\' y=\'65\' font-size=\'20\' text-anchor=\'middle\' fill=\'white\' font-weight=\'bold\'>FC</text></svg>'">
+      <div class="brand-name">DO SANTOS FC</div>
+      <small class="brand-sub">Sistema de Gestión</small>
+    </div>
     <nav id="nav"></nav>
   </aside>
   <main>
     <header class="no-print">
       <h1 id="pageTitle">Panel Principal</h1>
       <div class="actions">
-        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('fileImport').click()">📤 Importar</button>
+        <button class="btn btn-outline btn-sm" onclick="document.getElementById('fileImport').click()">📤 Importar</button>
         <input type="file" id="fileImport" accept=".json" style="display:none" onchange="importarJSON(this)">
         <button class="btn btn-primary btn-sm" onclick="exportarJSON()">📥 Exportar JSON</button>
       </div>
@@ -121,7 +179,7 @@ tbody tr:hover td{background:#f8fafc}
 
 <script>
 // ============ DB ============
-const DB_KEY = 'arnel_system_db_v2';
+const DB_KEY = 'dosantos_system_db_v3';
 const seedCategorias = [
   {id:'cat_sub7', nombre:'Sub 7', edadMin:6, edadMax:7},
   {id:'cat_sub8', nombre:'Sub 8', edadMin:7, edadMax:8},
@@ -144,7 +202,7 @@ function seedDB(){
   const hoy = new Date().toISOString().slice(0,10);
   const mes = hoy.slice(0,7);
   return {
-    config:{nombre:'Academia Arnel', moneda:'Bs', mensualidadBase:250, sucursal:'Principal'},
+    config:{nombre:'Do Santos FC', moneda:'Bs', mensualidadBase:250, sucursal:'Principal'},
     categorias:[...seedCategorias],
     deportistas:[
       {id:'d1',dni:'7845123',fechaVencimientoDni:'2028-05-15',foto:'',nombres:'Carlos',apellidos:'Quispe',fechaNacimiento:'2010-05-12',sexo:'Masculino',direccion:'Av. Central #123',telefono:'77712345',tutor:'María Quispe',telefonoEmergencia:'77799999',fechaIngreso:hoy,categoriaId:'cat_sub14',turno:'Tarde',horario:'16:00-18:00',estado:'Activo',tipoSangre:'O+',alergias:'Ninguna',antecedentes:'',observacionesMedicas:'',tarifa:250,beca:0},
@@ -152,8 +210,8 @@ function seedDB(){
       {id:'d3',dni:'7845125',fechaVencimientoDni:'2029-03-15',foto:'',nombres:'Ana',apellidos:'Flores',fechaNacimiento:'2009-03-15',sexo:'Femenino',direccion:'Av. Las Américas #88',telefono:'77788888',tutor:'Rosa Flores',telefonoEmergencia:'77722222',fechaIngreso:hoy,categoriaId:'cat_sub15f',turno:'Mañana',horario:'08:00-10:00',estado:'Activo',tipoSangre:'B+',alergias:'Ninguna',antecedentes:'',observacionesMedicas:'',tarifa:250,beca:0}
     ],
     personal:[
-      {id:'p1',nombres:'Juan',apellidos:'Pérez',cargo:'Entrenador',especialidad:'Fútbol formativo',telefono:'77710000',email:'juan@arnel.com',fechaIngreso:hoy,salario:2500,estado:'Activo',observaciones:''},
-      {id:'p2',nombres:'María',apellidos:'Torrez',cargo:'Secretaria',especialidad:'',telefono:'77720000',email:'maria@arnel.com',fechaIngreso:hoy,salario:1800,estado:'Activo',observaciones:''}
+      {id:'p1',nombres:'Juan',apellidos:'Pérez',cargo:'Entrenador',especialidad:'Fútbol formativo',telefono:'77710000',email:'juan@dosantos.com',fechaIngreso:hoy,salario:2500,estado:'Activo',observaciones:''},
+      {id:'p2',nombres:'María',apellidos:'Torrez',cargo:'Secretaria',especialidad:'',telefono:'77720000',email:'maria@dosantos.com',fechaIngreso:hoy,salario:1800,estado:'Activo',observaciones:''}
     ],
     usuarios:[
       {id:'u1',nombre:'Superadmin',usuario:'admin',rol:'Superadministrador',activo:'true'},
@@ -161,8 +219,8 @@ function seedDB(){
     ],
     pagos:[], movCaja:[], cajaChica:[],
     productos:[
-      {id:'pr1',nombre:'Camiseta Oficial Talla M',categoria:'Camiseta',talla:'M',color:'Rojo',precioCompra:60,precioVenta:100,stock:15,stockMinimo:5},
-      {id:'pr2',nombre:'Short Deportivo Talla M',categoria:'Short',talla:'M',color:'Negro',precioCompra:40,precioVenta:70,stock:12,stockMinimo:5},
+      {id:'pr1',nombre:'Camiseta Oficial Talla M',categoria:'Camiseta',talla:'M',color:'Celeste',precioCompra:60,precioVenta:100,stock:15,stockMinimo:5},
+      {id:'pr2',nombre:'Short Deportivo Talla M',categoria:'Short',talla:'M',color:'Azul Marino',precioCompra:40,precioVenta:70,stock:12,stockMinimo:5},
       {id:'pr3',nombre:'Medias Deportivas',categoria:'Medias',talla:'Única',color:'Blanco',precioCompra:10,precioVenta:25,stock:3,stockMinimo:5}
     ],
     ventas:[], proveedores:[],
@@ -210,7 +268,6 @@ function fmtDate(d){ if(!d) return '-'; try{ return new Date(d+'T00:00:00').toLo
 function fmtDateTime(iso){ if(!iso) return '-'; try{ const d = new Date(iso); return d.toLocaleDateString('es-BO') + ' ' + d.toLocaleTimeString('es-BO',{hour:'2-digit',minute:'2-digit'}); }catch(e){ return iso; } }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
 function currentMonth(){ return new Date().toISOString().slice(0,7); }
-function nowISO(){ return new Date().toISOString(); }
 function photoHTML(p, size='40px'){
   if(p && p.foto) return `<img src="${p.foto}" class="player-photo" style="width:${size};height:${size}">`;
   return `<span class="player-photo photo-placeholder" style="width:${size};height:${size}">4x4</span>`;
@@ -259,253 +316,81 @@ async function handlePhotoUpload(fieldName, input){
   preview.innerHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover">`;
 }
 
-// ============ FORM BUILDER ============
-function buildForm(fields, values){
-  let html = '<form id="dynForm"><div class="form-grid">';
-  for(const f of fields){
-    const isWide = f.type === 'textarea' || f.type === 'photo';
-    html += `<div class="form-row" style="${isWide?'grid-column:1/-1':''}">`;
-    html += `<label>${f.label}${f.required?' *':''}</label>`;
-    const val = values && values[f.name] !== undefined ? values[f.name] : (f.default !== undefined ? f.default : '');
-    if(f.type === 'photo'){
-      html += `<div style="display:flex;gap:12px;align-items:center">
-        <div id="photoPreview_${f.name}" style="width:90px;height:90px;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">
-          ${val ? `<img src="${val}" style="width:100%;height:100%;object-fit:cover">` : '<span style="font-size:10px;color:#94a3b8;text-align:center">Foto 4x4<br>fondo blanco</span>'}
-        </div>
-        <div style="flex:1">
-          <input type="file" accept="image/*" onchange="handlePhotoUpload('${f.name}', this)">
-          <input type="hidden" name="${f.name}" value="${val||''}">
-          <div style="font-size:11px;color:#64748b;margin-top:4px">Se recorta automáticamente a cuadrado (4x4). Recomendado: fondo blanco.</div>
-        </div>
-      </div>`;
-    } else if(f.type === 'select'){
-      let opts = f.options || [];
-      if(f.source){
-        opts = (db[f.source]||[]).map(o => ({value:o.id, label:(o.nombres ? (o.nombres+' '+(o.apellidos||'')) : (o.nombre||o.titulo||o.id))}));
-      } else if(opts.length && typeof opts[0] !== 'object'){
-        opts = opts.map(o => ({value:o, label:o}));
-      }
-      html += `<select name="${f.name}" ${f.required?'required':''}><option value="">-- Seleccionar --</option>`;
-      for(const o of opts){ html += `<option value="${o.value}" ${String(val)===String(o.value)?'selected':''}>${o.label}</option>`; }
-      html += `</select>`;
-    } else if(f.type === 'textarea'){
-      html += `<textarea name="${f.name}" ${f.required?'required':''}>${val||''}</textarea>`;
-    } else {
-      const step = f.type==='number' ? 'any' : '';
-      html += `<input type="${f.type||'text'}" name="${f.name}" value="${val||''}" ${f.required?'required':''} step="${step}">`;
-    }
-    html += `</div>`;
-  }
-  html += '</div>';
-  html += `<div class="row-flex" style="justify-content:flex-end;margin-top:16px">
-    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-    <button type="submit" class="btn btn-primary">Guardar</button>
-  </div></form>`;
-  return html;
-}
-
-function showForm(title, fields, values, onSave){
-  openModal('<h2>'+title+'</h2>' + buildForm(fields, values));
-  document.getElementById('dynForm').onsubmit = (e) => {
-    e.preventDefault();
-    const fd = new FormData(e.target);
-    const data = {};
-    for(const f of fields){
-      let v = fd.get(f.name);
-      if(f.type === 'number') v = v === '' || v === null ? null : Number(v);
-      data[f.name] = v;
-    }
-    const result = onSave(data);
-    if(result !== false) closeModal();
-  };
-}
-
-// ============ ENTITY DEFS ============
-const ENT = {
-  categorias:{label:'Categoría', fields:[
-    {name:'nombre', label:'Nombre', type:'text', required:true},
-    {name:'edadMin', label:'Edad mínima', type:'number'},
-    {name:'edadMax', label:'Edad máxima', type:'number'}
-  ]},
-  deportistas:{label:'Deportista', fields:[
-    {name:'foto', label:'Foto 4x4 (fondo blanco)', type:'photo'},
-    {name:'dni', label:'DNI / CI', type:'text', required:true},
-    {name:'fechaVencimientoDni', label:'Vencimiento DNI', type:'date'},
-    {name:'nombres', label:'Nombres', type:'text', required:true},
-    {name:'apellidos', label:'Apellidos', type:'text', required:true},
-    {name:'fechaNacimiento', label:'Fecha de nacimiento', type:'date'},
-    {name:'sexo', label:'Sexo', type:'select', options:['Masculino','Femenino']},
-    {name:'direccion', label:'Dirección', type:'text'},
-    {name:'telefono', label:'Teléfono', type:'text'},
-    {name:'tutor', label:'Padre/Madre/Tutor', type:'text'},
-    {name:'telefonoEmergencia', label:'Teléfono emergencia', type:'text'},
-    {name:'fechaIngreso', label:'Fecha de ingreso', type:'date', default:todayStr()},
-    {name:'categoriaId', label:'Categoría', type:'select', source:'categorias'},
-    {name:'turno', label:'Turno', type:'select', options:['Mañana','Tarde','Noche']},
-    {name:'horario', label:'Horario', type:'text'},
-    {name:'estado', label:'Estado', type:'select', options:['Activo','Inactivo','Retirado'], default:'Activo'},
-    {name:'tipoSangre', label:'Tipo de sangre', type:'text'},
-    {name:'alergias', label:'Alergias', type:'text'},
-    {name:'antecedentes', label:'Antecedentes médicos', type:'textarea'},
-    {name:'observacionesMedicas', label:'Observaciones médicas', type:'textarea'},
-    {name:'tarifa', label:'Tarifa mensual (Bs)', type:'number', default:250},
-    {name:'beca', label:'Beca / descuento (%)', type:'number', default:0}
-  ]},
-  personal:{label:'Personal', fields:[
-    {name:'nombres', label:'Nombres', type:'text', required:true},
-    {name:'apellidos', label:'Apellidos', type:'text', required:true},
-    {name:'cargo', label:'Cargo', type:'select', options:['Entrenador','Asistente','Administrativo','Cajero','Secretaria','Otro']},
-    {name:'especialidad', label:'Especialidad', type:'text'},
-    {name:'telefono', label:'Teléfono', type:'text'},
-    {name:'email', label:'Email', type:'text'},
-    {name:'fechaIngreso', label:'Fecha de ingreso', type:'date'},
-    {name:'salario', label:'Salario / Honorarios (Bs)', type:'number'},
-    {name:'estado', label:'Estado', type:'select', options:['Activo','Inactivo','Licencia'], default:'Activo'},
-    {name:'observaciones', label:'Observaciones', type:'textarea'}
-  ]},
-  proveedores:{label:'Proveedor', fields:[
-    {name:'nombre', label:'Nombre', type:'text', required:true},
-    {name:'contacto', label:'Contacto', type:'text'},
-    {name:'telefono', label:'Teléfono', type:'text'},
-    {name:'email', label:'Email', type:'text'},
-    {name:'direccion', label:'Dirección', type:'text'}
-  ]},
-  productos:{label:'Producto', fields:[
-    {name:'nombre', label:'Producto', type:'text', required:true},
-    {name:'categoria', label:'Categoría', type:'select', options:['Uniforme','Camiseta','Short','Medias','Canilleras','Mochila','Accesorio','Otro']},
-    {name:'talla', label:'Talla', type:'text'},
-    {name:'color', label:'Color', type:'text'},
-    {name:'precioCompra', label:'Precio compra (Bs)', type:'number'},
-    {name:'precioVenta', label:'Precio venta (Bs)', type:'number', required:true},
-    {name:'stock', label:'Stock actual', type:'number', default:0},
-    {name:'stockMinimo', label:'Stock mínimo', type:'number', default:2}
-  ]},
-  equipamiento:{label:'Equipamiento', fields:[
-    {name:'nombre', label:'Implemento', type:'text', required:true},
-    {name:'tipo', label:'Tipo', type:'select', options:['Balón','Conos','Redes','Escaleras','Petos','Silbatos','Otro']},
-    {name:'cantidad', label:'Cantidad total', type:'number', default:1},
-    {name:'estado', label:'Estado', type:'select', options:['Bueno','Regular','Malo','Baja'], default:'Bueno'},
-    {name:'observaciones', label:'Observaciones', type:'textarea'}
-  ]},
-  canchas:{label:'Cancha', fields:[
-    {name:'nombre', label:'Nombre', type:'text', required:true},
-    {name:'ubicacion', label:'Ubicación', type:'text'},
-    {name:'capacidad', label:'Capacidad', type:'number'},
-    {name:'tipo', label:'Tipo', type:'select', options:['Fútbol 11','Fútbol 7','Fútbol 5','Sintética','Natural','Techada']},
-    {name:'estado', label:'Estado', type:'select', options:['Disponible','Mantenimiento','Ocupada'], default:'Disponible'}
-  ]},
-  usuarios:{label:'Usuario', fields:[
-    {name:'nombre', label:'Nombre completo', type:'text', required:true},
-    {name:'usuario', label:'Usuario', type:'text', required:true},
-    {name:'rol', label:'Rol', type:'select', options:['Superadministrador','Administrador','Secretaria','Cajero','Entrenador','Encargado de Inventario','Director Deportivo']},
-    {name:'activo', label:'Activo', type:'select', options:['true','false'], default:'true'}
-  ]},
-  noticias:{label:'Noticia', fields:[
-    {name:'titulo', label:'Título', type:'text', required:true},
-    {name:'contenido', label:'Contenido', type:'textarea'},
-    {name:'fecha', label:'Fecha', type:'date', default:todayStr()},
-    {name:'autor', label:'Autor', type:'text'}
-  ]},
-  preinscripciones:{label:'Preinscripción', fields:[
-    {name:'dni', label:'DNI', type:'text'},
-    {name:'nombres', label:'Nombres del alumno', type:'text', required:true},
-    {name:'apellidos', label:'Apellidos', type:'text', required:true},
-    {name:'fechaNacimiento', label:'Fecha de nacimiento', type:'date'},
-    {name:'sexo', label:'Sexo', type:'select', options:['Masculino','Femenino']},
-    {name:'representante', label:'Representante', type:'text'},
-    {name:'telefono', label:'Teléfono', type:'text', required:true},
-    {name:'categoriaInteres', label:'Categoría de interés', type:'select', source:'categorias'},
-    {name:'estado', label:'Estado', type:'select', options:['Pendiente','Aprobada','Contactado','Rechazada'], default:'Pendiente'}
-  ]},
-  reservas:{label:'Reserva', fields:[
-    {name:'canchaId', label:'Cancha', type:'select', source:'canchas', required:true},
-    {name:'categoriaId', label:'Categoría', type:'select', source:'categorias'},
-    {name:'fecha', label:'Fecha', type:'date', required:true, default:todayStr()},
-    {name:'horaInicio', label:'Hora inicio', type:'time'},
-    {name:'horaFin', label:'Hora fin', type:'time'},
-    {name:'actividad', label:'Actividad', type:'text'},
-    {name:'estado', label:'Estado', type:'select', options:['Confirmada','Pendiente','Cancelada'], default:'Confirmada'}
-  ]},
-  prestamos:{label:'Préstamo', fields:[
-    {name:'equipoId', label:'Equipamiento', type:'select', source:'equipamiento', required:true},
-    {name:'personalId', label:'Personal', type:'select', source:'personal', required:true},
-    {name:'cantidad', label:'Cantidad', type:'number', default:1},
-    {name:'fechaEntrega', label:'Fecha entrega', type:'date', default:todayStr()},
-    {name:'fechaDevolucion', label:'Fecha devolución esperada', type:'date'},
-    {name:'devuelto', label:'Devuelto', type:'select', options:['No','Sí'], default:'No'},
-    {name:'observaciones', label:'Observaciones', type:'textarea'}
-  ]},
-  evaluaciones:{label:'Evaluación', fields:[
-    {name:'deportistaId', label:'Deportista', type:'select', source:'deportistas', required:true},
-    {name:'fecha', label:'Fecha', type:'date', default:todayStr()},
-    {name:'tecnica', label:'Técnica (1-10)', type:'number'},
-    {name:'tactica', label:'Táctica (1-10)', type:'number'},
-    {name:'fisico', label:'Físico (1-10)', type:'number'},
-    {name:'actitud', label:'Actitud (1-10)', type:'number'},
-    {name:'observaciones', label:'Observaciones', type:'textarea'}
-  ]},
-  asistenciasPersonal:{label:'Asistencia personal', fields:[
-    {name:'personalId', label:'Personal', type:'select', source:'personal', required:true},
-    {name:'fecha', label:'Fecha', type:'date', required:true, default:todayStr()},
-    {name:'entrada', label:'Hora entrada', type:'time'},
-    {name:'salida', label:'Hora salida', type:'time'},
-    {name:'estado', label:'Estado', type:'select', options:['Presente','Tarde','Falta','Permiso'], default:'Presente'}
-  ]},
-  pagosPersonal:{label:'Pago personal', fields:[
-    {name:'personalId', label:'Personal', type:'select', source:'personal', required:true},
-    {name:'mes', label:'Mes (YYYY-MM)', type:'text', default:currentMonth(), required:true},
-    {name:'monto', label:'Monto (Bs)', type:'number', required:true},
-    {name:'fecha', label:'Fecha de pago', type:'date', default:todayStr()},
-    {name:'metodo', label:'Método', type:'select', options:['Efectivo','Transferencia','Otro']},
-    {name:'estado', label:'Estado', type:'select', options:['Pagado','Pendiente'], default:'Pagado'}
-  ]}
+// ============ ICONOS SVG (NAV) ============
+const icons = {
+  dash: '<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>',
+  search: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>',
+  user: '<svg viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+  folder: '<svg viewBox="0 0 24 24"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>',
+  check: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+  clip: '<svg viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>',
+  id: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15h4"/><path d="M7 11h2"/><circle cx="16" cy="12" r="2"/></svg>',
+  briefcase: '<svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+  clock: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+  money: '<svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>',
+  bank: '<svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M3 10h18"/><path d="M12 3v7"/><path d="m5 10 7-7 7 7"/><path d="M5 21v-8"/><path d="M19 21v-8"/></svg>',
+  wallet: '<svg viewBox="0 0 24 24"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>',
+  book: '<svg viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>',
+  tag: '<svg viewBox="0 0 24 24"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><circle cx="7" cy="7" r="1.5"/></svg>',
+  cart: '<svg viewBox="0 0 24 24"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>',
+  receipt: '<svg viewBox="0 0 24 24"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/></svg>',
+  factory: '<svg viewBox="0 0 24 24"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M6 18h.01M10 18h.01M14 18h.01M18 18h.01"/></svg>',
+  package: '<svg viewBox="0 0 24 24"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>',
+  share: '<svg viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>',
+  map: '<svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
+  calendar: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  bell: '<svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+  edit: '<svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>',
+  chart: '<svg viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>',
+  users: '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  cog: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>'
 };
 
 // ============ NAV ============
 const NAV = [
-  {group:'Principal', items:[{route:'dashboard', label:'📊 Panel Principal'}]},
+  {group:'Principal', items:[{route:'dashboard', label:'Panel Principal', icon:icons.dash}]},
   {group:'Gestión Deportiva', items:[
-    {route:'busqueda', label:'🔍 Búsqueda'},
-    {route:'deportistas', label:'⚽ Deportistas'},
-    {route:'categorias', label:'📁 Categorías'},
-    {route:'asistencias', label:'✅ Asistencias'},
-    {route:'evaluaciones', label:'📋 Evaluaciones'},
-    {route:'kardex', label:'📇 Kardex / Ficha'}
+    {route:'busqueda', label:'Búsqueda', icon:icons.search},
+    {route:'deportistas', label:'Deportistas', icon:icons.user},
+    {route:'categorias', label:'Categorías', icon:icons.folder},
+    {route:'asistencias', label:'Asistencias', icon:icons.check},
+    {route:'evaluaciones', label:'Evaluaciones', icon:icons.clip},
+    {route:'kardex', label:'Kardex / Ficha', icon:icons.id}
   ]},
   {group:'Recursos Humanos', items:[
-    {route:'personal', label:'👔 Personal'},
-    {route:'asistencia-personal', label:'🕐 Asistencia Personal'},
-    {route:'pagos-personal', label:'💰 Pagos Personal'}
+    {route:'personal', label:'Personal', icon:icons.briefcase},
+    {route:'asistencia-personal', label:'Asistencia Personal', icon:icons.clock},
+    {route:'pagos-personal', label:'Pagos Personal', icon:icons.money}
   ]},
   {group:'Finanzas', items:[
-    {route:'cobros', label:'💵 Cobros y Suscripciones'},
-    {route:'caja', label:'🏦 Caja General'},
-    {route:'caja-chica', label:'💼 Caja Chica'},
-    {route:'libro-diario', label:'📒 Libro Diario'}
+    {route:'cobros', label:'Cobros y Suscripciones', icon:icons.money},
+    {route:'caja', label:'Caja General', icon:icons.bank},
+    {route:'caja-chica', label:'Caja Chica', icon:icons.wallet},
+    {route:'libro-diario', label:'Libro Diario', icon:icons.book}
   ]},
   {group:'Inventario Comercial', items:[
-    {route:'productos', label:'👕 Productos'},
-    {route:'pos', label:'🛒 Punto de Venta'},
-    {route:'ventas', label:'🧾 Ventas'},
-    {route:'proveedores', label:'🏭 Proveedores'}
+    {route:'productos', label:'Productos', icon:icons.tag},
+    {route:'pos', label:'Punto de Venta', icon:icons.cart},
+    {route:'ventas', label:'Ventas', icon:icons.receipt},
+    {route:'proveedores', label:'Proveedores', icon:icons.factory}
   ]},
   {group:'Inventario Deportivo', items:[
-    {route:'equipamiento', label:'🏐 Equipamiento'},
-    {route:'prestamos', label:'📤 Préstamos'}
+    {route:'equipamiento', label:'Equipamiento', icon:icons.package},
+    {route:'prestamos', label:'Préstamos', icon:icons.share}
   ]},
   {group:'Infraestructura', items:[
-    {route:'canchas', label:'🏟️ Canchas'},
-    {route:'reservas', label:'📅 Reservas'}
+    {route:'canchas', label:'Canchas', icon:icons.map},
+    {route:'reservas', label:'Reservas', icon:icons.calendar}
   ]},
-  {group:'Comunicación', items:[{route:'notificaciones', label:'🔔 Notificaciones'}]},
+  {group:'Comunicación', items:[{route:'notificaciones', label:'Notificaciones', icon:icons.bell}]},
   {group:'Web Pública', items:[
-    {route:'preinscripciones', label:'📝 Preinscripciones'},
-    {route:'noticias', label:'📰 Noticias'}
+    {route:'preinscripciones', label:'Preinscripciones', icon:icons.edit},
+    {route:'noticias', label:'Noticias', icon:icons.chart}
   ]},
-  {group:'Análisis', items:[{route:'reportes', label:'📈 Reportes'}]},
+  {group:'Análisis', items:[{route:'reportes', label:'Reportes', icon:icons.chart}]},
   {group:'Configuración', items:[
-    {route:'usuarios', label:'👥 Usuarios'},
-    {route:'configuracion', label:'⚙️ Configuración'}
+    {route:'usuarios', label:'Usuarios', icon:icons.users},
+    {route:'configuracion', label:'Configuración', icon:icons.cog}
   ]}
 ];
 
@@ -513,7 +398,7 @@ const routes = {
   dashboard:{title:'Panel Principal', render:renderDashboard},
   busqueda:{title:'Búsqueda de Jugadores', render:renderBusqueda},
   deportistas:{title:'Gestión de Deportistas', render:()=>renderEntity('deportistas', row => 
-    `<button class="btn btn-success btn-xs" onclick="abrirPagoDeportista('${row.id}')">Pagar suscripción</button>
+    `<button class="btn btn-success btn-xs" onclick="abrirPagoDeportista('${row.id}')">Pagar</button>
      <button class="btn btn-primary btn-xs" onclick="verKardex('${row.id}')">Kardex</button>`)},
   categorias:{title:'Gestión de Categorías', render:()=>renderEntity('categorias')},
   asistencias:{title:'Asistencias de Deportistas', render:renderAsistencias},
@@ -550,7 +435,7 @@ function renderNav(){
   for(const g of NAV){
     html += `<div class="group">${g.group}</div>`;
     for(const item of g.items){
-      html += `<a data-route="${item.route}" class="${item.route===currentRoute?'active':''}" onclick="navigate('${item.route}')">${item.label}</a>`;
+      html += `<a data-route="${item.route}" class="${item.route===currentRoute?'active':''}" onclick="navigate('${item.route}')">${item.icon}${item.label}</a>`;
     }
   }
   document.getElementById('nav').innerHTML = html;
@@ -624,8 +509,7 @@ function filterTable(input, tableId){
 function validarDNI(dni, excludeId){
   if(!dni) return true;
   const dup = db.deportistas.find(d => d.dni === dni && d.id !== excludeId && d.estado === 'Activo');
-  if(dup) return false;
-  return true;
+  return !dup;
 }
 
 function entityCreate(key){
@@ -683,10 +567,17 @@ function renderDashboard(){
   const stockBajo = db.productos.filter(p => Number(p.stock) <= Number(p.stockMinimo)).length;
   const prestamosActivos = db.prestamos.filter(p => p.devuelto !== 'Sí').length;
   const reservasHoy = db.reservas.filter(r => r.fecha === todayStr()).length;
-  const notifNoLeidas = db.notificaciones.filter(n => !n.leida).length;
-  const preinsPend = db.preinscripciones.filter(p => p.estado === 'Pendiente').length;
 
-  let html = '<div class="kpis">';
+  let html = `
+  <div class="hero-banner">
+    <!-- Logo grande en el dashboard -->
+    <img src="logo.png" class="hero-logo" alt="Do Santos FC" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 100 120\'><path d=\'M50,3 L90,20 L90,60 C90,85 75,100 50,115 C25,100 10,85 10,60 L10,20 Z\' fill=\'%2300AEEF\' stroke=\'%23ffffff\' stroke-width=\'3\'/><text x=\'50\' y=\'65\' font-size=\'20\' text-anchor=\'middle\' fill=\'white\' font-weight=\'bold\'>FC</text></svg>'">
+    <div class="hero-text">
+      <h2>DO SANTOS FC</h2>
+      <p>Sistema de Gestión Deportiva</p>
+    </div>
+  </div>
+  <div class="kpis">`;
   html += kpi('Alumnos activos', activos, db.deportistas.length + ' en total');
   html += kpi('Entrenadores', entrenadores, db.personal.length + ' personal total');
   html += kpi('Ingresos del mes', fmtBs(ingresosMes), 'Mensualidades + ventas');
@@ -695,8 +586,6 @@ function renderDashboard(){
   html += kpi('Stock bajo', stockBajo, 'Productos a reponer');
   html += kpi('Préstamos activos', prestamosActivos, 'Equipamiento prestado');
   html += kpi('Reservas hoy', reservasHoy, 'Canchas reservadas');
-  html += kpi('Notificaciones', notifNoLeidas, 'No leídas');
-  html += kpi('Preinscripciones', preinsPend, 'Pendientes');
   html += '</div>';
 
   html += '<div class="grid-2">';
@@ -787,7 +676,7 @@ function verKardex(id){ window._kardexSelectedId = id; navigate('kardex'); }
 function renderKardex(){
   const selectedId = window._kardexSelectedId;
   let html = `<div class="card no-print"><h2>Seleccionar jugador</h2>
-    <select onchange="window._kardexSelectedId=this.value;renderKardex()" style="padding:8px;border:1px solid #cbd5e1;border-radius:6px;min-width:320px">
+    <select onchange="window._kardexSelectedId=this.value;renderKardex()" style="padding:10px;border:1px solid #cbd5e1;border-radius:8px;min-width:320px;font-size:14px">
       <option value="">-- Seleccionar jugador --</option>`;
   for(const d of db.deportistas){
     html += `<option value="${d.id}" ${selectedId===d.id?'selected':''}>${d.nombres} ${d.apellidos} (${d.dni||'sin DNI'})</option>`;
@@ -814,8 +703,8 @@ function renderKardexContent(d){
   };
 
   let html = `<div class="card">
-    <div class="row-flex no-print" style="justify-content:space-between;margin-bottom:16px">
-      <button class="btn btn-secondary" onclick="window._kardexSelectedId=null;renderKardex()">← Volver</button>
+    <div class="row-flex no-print" style="justify-content:space-between;margin-bottom:20px">
+      <button class="btn btn-outline" onclick="window._kardexSelectedId=null;renderKardex()">← Volver</button>
       <div class="row-flex">
         <button class="btn btn-success" onclick="abrirPagoDeportista('${d.id}')">💵 Pagar suscripción</button>
         <button class="btn btn-primary" onclick="imprimirKardex('${d.id}')">🖨️ Imprimir Kardex</button>
@@ -824,9 +713,9 @@ function renderKardexContent(d){
     <div class="kardex-header">
       ${d.foto ? `<img src="${d.foto}" class="player-photo-lg">` : `<div class="player-photo-lg photo-placeholder" style="font-size:12px">SIN FOTO<br>4x4</div>`}
       <div class="info">
-        <h2 style="font-size:22px;margin-bottom:4px">${d.nombres} ${d.apellidos}</h2>
-        <p class="text-muted" style="font-size:13px">DNI: <b>${d.dni||'-'}</b> · Vence: ${fmtDate(d.fechaVencimientoDni)} · <span class="badge ${d.estado==='Activo'?'badge-green':'badge-red'}">${d.estado}</span></p>
-        <p class="text-muted" style="font-size:13px;margin-top:4px">${refLabel('categorias', d.categoriaId)} · ${d.turno||'-'} · ${d.horario||'-'}</p>
+        <h2 style="font-size:24px;margin-bottom:6px;color:var(--brand-dark)">${d.nombres} ${d.apellidos}</h2>
+        <p class="text-muted" style="font-size:14px">DNI: <b>${d.dni||'-'}</b> · Vence: ${fmtDate(d.fechaVencimientoDni)} · <span class="badge ${d.estado==='Activo'?'badge-green':'badge-red'}">${d.estado}</span></p>
+        <p class="text-muted" style="font-size:14px;margin-top:6px">${refLabel('categorias', d.categoriaId)} · ${d.turno||'-'} · ${d.horario||'-'}</p>
       </div>
     </div>
     <div class="kardex-grid">
@@ -903,28 +792,27 @@ function imprimirKardex(playerId){
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Kardex ${d.nombres} ${d.apellidos}</title>
   <style>
-    body{font-family:Arial,sans-serif;padding:24px;color:#0f172a;max-width:800px;margin:0 auto}
-    .hdr{display:flex;gap:20px;border-bottom:3px solid #1e40af;padding-bottom:16px;margin-bottom:16px}
-    .hdr img{width:110px;height:110px;object-fit:cover;border-radius:6px;border:2px solid #cbd5e1}
-    .ph{width:110px;height:110px;background:#f1f5f9;border:2px dashed #cbd5e1;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:11px;border-radius:6px}
-    .title{font-size:22px;font-weight:bold;margin-bottom:4px}
-    .sub{font-size:13px;color:#64748b;margin-bottom:2px}
-    h2{font-size:15px;margin:20px 0 8px;border-bottom:1px solid #e2e8f0;padding-bottom:4px}
-    table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px}
-    th,td{border:1px solid #e2e8f0;padding:6px 8px;text-align:left}
-    th{background:#f1f5f9;font-weight:600;font-size:11px}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;font-size:12px}
-    .row div{padding:6px;background:#f8fafc;border-radius:4px}
-    .row b{color:#475569;font-size:11px;display:block;text-transform:uppercase}
-    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
-    .stat{background:#eff6ff;padding:10px;border-radius:6px;text-align:center}
-    .stat .l{font-size:10px;color:#64748b;text-transform:uppercase}
-    .stat .v{font-size:18px;font-weight:bold;color:#1e40af}
-    .footer{margin-top:24px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:12px}
-    @media print{body{padding:12px}}
+    body{font-family:'Segoe UI',Arial,sans-serif;padding:30px;color:#0f172a;max-width:800px;margin:0 auto}
+    .hdr{display:flex;gap:24px;border-bottom:3px solid #00AEEF;padding-bottom:20px;margin-bottom:20px;align-items:center}
+    .hdr img{width:120px;height:120px;object-fit:cover;border-radius:10px;border:2px solid #cbd5e1}
+    .ph{width:120px;height:120px;background:#f1f5f9;border:2px dashed #cbd5e1;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;border-radius:10px;text-align:center;font-weight:600}
+    .title{font-size:26px;font-weight:800;margin-bottom:6px;color:#001838}
+    .sub{font-size:13px;color:#64748b;margin-bottom:4px}
+    h2{font-size:15px;margin:24px 0 10px;border-bottom:2px solid #e2e8f0;padding-bottom:6px;color:#001838;text-transform:uppercase;letter-spacing:.5px}
+    table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:12px}
+    th,td{border:1px solid #e2e8f0;padding:8px 10px;text-align:left}
+    th{background:#f8fafc;font-weight:700;font-size:11px;color:#475569;text-transform:uppercase}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;font-size:13px}
+    .row div{padding:10px;background:#f8fafc;border-radius:6px;border:1px solid #f1f5f9}
+    .row b{color:#475569;font-size:10px;display:block;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+    .stat{background:#f0f9ff;padding:14px;border-radius:8px;text-align:center;border-left:3px solid #00AEEF}
+    .stat .l{font-size:10px;color:#64748b;text-transform:uppercase;font-weight:700;letter-spacing:.5px}
+    .stat .v{font-size:20px;font-weight:800;color:#001838;margin-top:4px}
+    .footer{margin-top:30px;font-size:11px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:16px}
   </style></head><body>
   <div class="hdr">
-    ${d.foto ? `<img src="${d.foto}">` : '<div class="ph">SIN FOTO</div>'}
+    ${d.foto ? `<img src="${d.foto}">` : '<div class="ph">SIN FOTO 4x4</div>'}
     <div>
       <div class="title">${d.nombres} ${d.apellidos}</div>
       <div class="sub"><b>DNI:</b> ${d.dni||'-'} · <b>Vence:</b> ${fmtDate(d.fechaVencimientoDni)}</div>
@@ -970,7 +858,7 @@ function imprimirKardex(playerId){
     ${pagos.map(p => `<tr><td>${fmtDateTime(p.fechaHora) || fmtDate(p.fecha)}</td><td>${p.mes||'-'}</td><td>${fmtBs(p.monto)}</td><td>${p.metodo||'-'}</td></tr>`).join('')}
     <tr style="font-weight:bold;background:#f8fafc"><td colspan="2">TOTAL</td><td colspan="2">${fmtBs(totalPagado)}</td></tr>
   </tbody></table>` : '<p style="color:#94a3b8">Sin pagos</p>'}
-  <div class="footer">Generado por ARNEL SYSTEM · ${new Date().toLocaleString('es-BO')}</div>
+  <div class="footer">Generado por DO SANTOS FC · ${new Date().toLocaleString('es-BO')}</div>
   </body></html>`;
 
   const w = window.open('', '_blank');
@@ -985,9 +873,9 @@ function renderAsistencias(){
   let html = `<div class="card">
     <h2>Registro de asistencia</h2>
     <div class="row-flex mb-2">
-      <div class="form-row" style="margin:0"><label>Fecha</label><input type="date" id="asistFecha" value="${hoy}" onchange="renderAsistenciasLista()"></div>
+      <div class="form-row" style="margin:0"><label>Fecha</label><input type="date" id="asistFecha" value="${hoy}" onchange="renderAsistenciasLista()" style="padding:8px;border:1px solid #cbd5e1;border-radius:6px"></div>
       <div class="form-row" style="margin:0"><label>Categoría</label>
-        <select id="asistCat" onchange="renderAsistenciasLista()"><option value="">Todas</option>
+        <select id="asistCat" onchange="renderAsistenciasLista()" style="padding:8px;border:1px solid #cbd5e1;border-radius:6px"><option value="">Todas</option>
         ${db.categorias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('')}</select>
       </div>
     </div>
@@ -1023,7 +911,7 @@ function renderAsistenciasLista(){
       <td>${photoHTML(d, '32px')}</td>
       <td>${d.nombres} ${d.apellidos}</td>
       <td>${d.dni||'-'}</td>
-      <td><select onchange="guardarAsistencia('${d.id}','${fecha}',this.value)" style="padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;font-size:12px">
+      <td><select onchange="guardarAsistencia('${d.id}','${fecha}',this.value)" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px">
         ${['Presente','Tarde','Ausente','Justificado'].map(e => `<option ${estado===e?'selected':''}>${e}</option>`).join('')}
       </select></td>
     </tr>`;
@@ -1067,10 +955,10 @@ function renderCobros(){
     </tr>`;
   }
   html += `</tbody></table>
-    <div class="row-flex mt-2" style="justify-content:space-between">
+    <div class="row-flex mt-2" style="justify-content:space-between;background:#f8fafc;padding:16px;border-radius:8px">
       <div>Facturado: <b>${fmtBs(totalFacturado)}</b></div>
       <div>Cobrado: <b>${fmtBs(totalCobrado)}</b></div>
-      <div>Pendiente: <b>${fmtBs(totalFacturado - totalCobrado)}</b></div>
+      <div>Pendiente: <b style="color:#ef4444">${fmtBs(totalFacturado - totalCobrado)}</b></div>
     </div>
   </div>`;
 
@@ -1219,9 +1107,7 @@ function renderLibroDiario(){
   const filtroMes = window._libroMes || mes;
   window._libroMes = filtroMes;
 
-  // Recolectar todos los movimientos
   const entries = [];
-  // Caja general
   for(const m of db.movCaja){
     entries.push({
       fechaHora: m.fechaHora || (m.fecha + 'T12:00:00'),
@@ -1232,7 +1118,6 @@ function renderLibroDiario(){
       ref: 'caja'
     });
   }
-  // Caja chica (egresos)
   for(const c of db.cajaChica){
     entries.push({
       fechaHora: c.fecha + 'T12:00:00',
@@ -1243,7 +1128,6 @@ function renderLibroDiario(){
       ref: 'cc'
     });
   }
-  // Filtrar por mes
   const filtered = entries.filter(e => (e.fechaHora||'').startsWith(filtroMes))
     .sort((a,b) => (b.fechaHora||'').localeCompare(a.fechaHora||''));
 
@@ -1253,17 +1137,17 @@ function renderLibroDiario(){
   let html = `<div class="card">
     <div class="row-flex" style="justify-content:space-between;margin-bottom:16px">
       <div class="row-flex">
-        <label style="font-size:13px;font-weight:600">Mes:</label>
-        <input type="month" value="${filtroMes}" onchange="window._libroMes=this.value;renderLibroDiario()" style="padding:6px;border:1px solid #cbd5e1;border-radius:6px">
+        <label style="font-size:13px;font-weight:700;color:var(--brand-dark)">Mes:</label>
+        <input type="month" value="${filtroMes}" onchange="window._libroMes=this.value;renderLibroDiario()" style="padding:8px;border:1px solid #cbd5e1;border-radius:6px">
       </div>
       <div class="row-flex" style="gap:16px">
         <span style="color:#166534"><b>Ingresos:</b> ${fmtBs(totalIng)}</span>
         <span style="color:#991b1b"><b>Egresos:</b> ${fmtBs(totalEgr)}</span>
-        <span><b>Saldo:</b> ${fmtBs(totalIng - totalEgr)}</span>
+        <span style="background:var(--brand-dark);color:white;padding:6px 12px;border-radius:6px"><b>Saldo: ${fmtBs(totalIng - totalEgr)}</b></span>
       </div>
     </div>
     <div class="info-box">
-      <b>📒 Libro Diario unificado:</b> Aquí se registran TODOS los movimientos financieros: suscripciones, ventas de productos, reversiones, gastos de caja chica y movimientos manuales de caja. Cada entrada muestra su origen para auditoría.
+      <b>📒 Libro Diario unificado:</b> Aquí se registran TODOS los movimientos financieros: suscripciones, ventas de productos, reversiones, gastos de caja chica y movimientos manuales de caja.
     </div>
     <table><thead><tr><th>Fecha/Hora</th><th>Tipo</th><th>Concepto</th><th>Origen</th><th style="text-align:right">Monto</th></tr></thead><tbody>`;
   if(filtered.length === 0) html += '<tr><td colspan="5"><div class="empty">Sin movimientos este mes</div></td></tr>';
@@ -1275,16 +1159,10 @@ function renderLibroDiario(){
       <td><span class="badge ${cls}">${e.tipo}</span></td>
       <td>${e.concepto}</td>
       <td>${e.origen}</td>
-      <td style="text-align:right;font-weight:600;color:${e.tipo==='Ingreso'?'#166534':'#991b1b'}">${signo} ${fmtBs(e.monto)}</td>
+      <td style="text-align:right;font-weight:700;color:${e.tipo==='Ingreso'?'#166534':'#991b1b'}">${signo} ${fmtBs(e.monto)}</td>
     </tr>`;
   }
-  html += `</tbody></table>
-    <div class="row-flex" style="justify-content:flex-end;margin-top:16px;gap:16px">
-      <span style="color:#166534"><b>Total Ingresos: ${fmtBs(totalIng)}</b></span>
-      <span style="color:#991b1b"><b>Total Egresos: ${fmtBs(totalEgr)}</b></span>
-      <span style="background:#1e40af;color:white;padding:8px 16px;border-radius:6px"><b>Saldo: ${fmtBs(totalIng - totalEgr)}</b></span>
-    </div>
-  </div>`;
+  html += `</tbody></table></div>`;
   document.getElementById('content').innerHTML = html;
 }
 
@@ -1293,7 +1171,7 @@ let posCart = [];
 function renderPOS(){
   const productos = db.productos.filter(p => Number(p.stock) > 0);
   let html = `<div class="pos-layout">
-    <div class="pos-products"><h2 style="margin-bottom:12px">Productos disponibles</h2><div class="product-grid">`;
+    <div class="pos-products"><h2 style="margin-bottom:16px">Productos disponibles</h2><div class="product-grid">`;
   if(productos.length === 0) html += '<div class="empty">Sin productos con stock</div>';
   for(const p of productos){
     html += `<div class="product-card" onclick="posAdd('${p.id}')">
@@ -1308,13 +1186,13 @@ function renderPOS(){
     const item = posCart[i];
     html += `<div class="pos-item">
       <div style="flex:1"><b>${item.nombre}</b><br><span class="text-muted">${fmtBs(item.precio)} x ${item.cantidad}</span></div>
-      <div style="text-align:right"><div>${fmtBs(item.precio * item.cantidad)}</div>
-      <button class="btn btn-danger btn-xs" onclick="posRemove(${i})">×</button></div>
+      <div style="text-align:right"><div style="font-weight:700">${fmtBs(item.precio * item.cantidad)}</div>
+      <button class="btn btn-danger btn-xs" style="margin-top:4px" onclick="posRemove(${i})">Eliminar</button></div>
     </div>`;
   }
   html += `</div>
     <div class="pos-total">Total: ${fmtBs(posCart.reduce((s,i) => s + i.precio*i.cantidad, 0))}</div>
-    <button class="btn btn-success w-100" onclick="posCheckout()" ${posCart.length===0?'disabled':''}>Registrar venta</button>
+    <button class="btn btn-success w-100" style="padding:14px" onclick="posCheckout()" ${posCart.length===0?'disabled':''}>Registrar venta</button>
     <button class="btn btn-secondary w-100 mt-2" onclick="posCart=[];renderPOS()" ${posCart.length===0?'disabled':''}>Vaciar</button>
   </div></div>`;
   document.getElementById('content').innerHTML = html;
@@ -1392,7 +1270,6 @@ function revertirVenta(ventaId){
   if(!v) return;
   if(v.revertida){ alert('Esta venta ya fue revertida'); return; }
   if(!confirm(`¿Revertir esta venta de ${fmtBs(v.total)}?\n\nSe restaurará el stock de los productos y se generará un egreso de reversión en caja.`)) return;
-  // Restaurar stock
   for(const item of v.items){
     const p = db.productos.find(x => x.id === item.productoId);
     if(p) p.stock = Number(p.stock) + item.cantidad;
@@ -1469,13 +1346,13 @@ function renderReportes(){
     <div class="card"><h2>Alumnos por categoría</h2>`;
   const maxCat = Math.max(1, ...Object.values(porCategoria));
   for(const catId in porCategoria){
-    html += `<div style="margin-bottom:8px"><div class="row-flex" style="justify-content:space-between;font-size:12px"><span>${refLabel('categorias', catId)}</span><span><b>${porCategoria[catId]}</b></span></div>
+    html += `<div style="margin-bottom:12px"><div class="row-flex" style="justify-content:space-between;font-size:12px;font-weight:600"><span>${refLabel('categorias', catId)}</span><span>${porCategoria[catId]}</span></div>
       <div class="chart-bar"><div style="width:${(porCategoria[catId]/maxCat)*100}%"></div></div></div>`;
   }
   html += `</div><div class="card"><h2>Alumnos por sexo</h2>`;
   const totalSexo = Math.max(1, porSexo.Masculino + porSexo.Femenino);
   for(const s in porSexo){
-    html += `<div style="margin-bottom:8px"><div class="row-flex" style="justify-content:space-between;font-size:12px"><span>${s}</span><span><b>${porSexo[s]}</b></span></div>
+    html += `<div style="margin-bottom:12px"><div class="row-flex" style="justify-content:space-between;font-size:12px;font-weight:600"><span>${s}</span><span>${porSexo[s]}</span></div>
       <div class="chart-bar"><div style="width:${(porSexo[s]/totalSexo)*100}%"></div></div></div>`;
   }
   html += '</div></div><div class="grid-2">';
@@ -1484,7 +1361,7 @@ function renderReportes(){
   if(bajo.length === 0) html += '<div class="empty">Todo en orden</div>';
   else {
     html += '<table><thead><tr><th>Producto</th><th>Stock</th><th>Mínimo</th></tr></thead><tbody>';
-    for(const p of bajo) html += `<tr><td>${p.nombre}</td><td>${p.stock}</td><td>${p.stockMinimo}</td></tr>`;
+    for(const p of bajo) html += `<tr><td>${p.nombre}</td><td><span class="badge badge-red">${p.stock}</span></td><td>${p.stockMinimo}</td></tr>`;
     html += '</tbody></table>';
   }
   html += '</div><div class="card"><h2>Equipamiento prestado</h2>';
@@ -1543,7 +1420,7 @@ function exportarJSON(){
   const blob = new Blob([dataStr], {type:'application/json'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'arnel-system-' + todayStr() + '.json';
+  a.href = url; a.download = 'dosantos-system-' + todayStr() + '.json';
   document.body.appendChild(a); a.click();
   document.body.removeChild(a); URL.revokeObjectURL(url);
 }
