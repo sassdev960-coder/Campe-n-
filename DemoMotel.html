@@ -781,8 +781,8 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = n => 'Bs ' + (Number(n)||0).toFixed(2);
 const CAPITAL_OPENING_PREFIX = '[[CAPITAL_INICIAL]]';
-const DEFAULT_TARIFF_SETTINGS = { rate30:30, rate40:40, night30:130, night40:150, discounts:[{hours:3,percent:5},{hours:5,percent:10},{hours:8,percent:15}] };
-function getTariffSettings(){ const x = db?.tariffSettings || {}; return { ...DEFAULT_TARIFF_SETTINGS, ...x, discounts:Array.isArray(x.discounts)?x.discounts:DEFAULT_TARIFF_SETTINGS.discounts }; }
+const DEFAULT_TARIFF_SETTINGS = { rate30:30, rate40:40, night30:130, night40:150, prices30:[0,30,60,90,115,140,165,185,200,225,250], prices40:[0,40,80,115,145,175,205,285,260,280,300] };
+function getTariffSettings(){ const x = db?.tariffSettings || {}; return { ...DEFAULT_TARIFF_SETTINGS, ...x, prices30:Array.isArray(x.prices30)&&x.prices30.length>=11?x.prices30:DEFAULT_TARIFF_SETTINGS.prices30, prices40:Array.isArray(x.prices40)&&x.prices40.length>=11?x.prices40:DEFAULT_TARIFF_SETTINGS.prices40 }; }
 function effectiveHourlyRate(roomRate){ const t=getTariffSettings(); return Number(roomRate)===40 ? Number(t.rate40)||40 : Number(t.rate30)||30; }
 const isCapitalOpening = d => String(d?.desc || '').startsWith(CAPITAL_OPENING_PREFIX);
 const getCashDeposits = () => (db?.deposits || []).filter(d => !isCapitalOpening(d));
@@ -1578,59 +1578,50 @@ function tickLiveClocks(){
 setInterval(tickLiveClocks, 1000);
 
 /* CÁLCULOS */
-const TARIFF_TABLES = { 30: [0,30,60,90,115,140,165,185,200,225,250], 40: [0,40,80,115,145,175,205,235,260,280,300] };
-const NIGHT_PRICES = {30:130, 40:150};
 function tariffPrice(rate, hours){
   const settings = getTariffSettings();
-  const base = Number(rate) || 30;
+  const base = Number(rate) === 40 ? 40 : 30;
   const h = Math.max(0, Math.min(10, Math.ceil(Number(hours) || 0)));
   if(h === 0) return 0;
-  const standardBase = base === 40 ? 40 : 30;
-  const configuredRate = Number(standardBase === 40 ? settings.rate40 : settings.rate30) || standardBase;
-  const table = TARIFF_TABLES[standardBase];
-  const gross = (table ? table[h] : h * standardBase) * (configuredRate / standardBase);
-  const rule = [...settings.discounts].filter(x => Number(x.hours) > 0 && h >= Number(x.hours)).sort((a,b)=>Number(b.hours)-Number(a.hours))[0];
-  const pct = rule ? Math.max(0, Math.min(100, Number(rule.percent)||0)) : 0;
-  return Math.round(gross * (1-pct/100) * 100) / 100;
+  const prices = base === 40 ? settings.prices40 : settings.prices30;
+  const value = Number(prices?.[h]);
+  return Number.isFinite(value) && value >= 0 ? value : h * base;
+}
+function tariffDiscountPercent(base, hours, price){
+  const regular = Number(base) * Number(hours);
+  if(!regular) return 0;
+  return ((regular - Number(price)) / regular) * 100;
 }
 function openTariffSettings(){
   if(currentUser?.role !== 'admin') return;
   const t = getTariffSettings();
-  const rules = [...t.discounts].sort((a,b)=>Number(a.hours)-Number(b.hours));
+  const table = (base, prices, normalRate) => `<section class="ts-rate-section" style="margin:16px 0 22px;padding:12px;border:1px solid var(--border-btn);border-radius:14px;background:var(--surface)"><div style="font-weight:900;font-size:15px;margin-bottom:4px">PRECIOS POR HORAS — HABITACIÓN Bs ${base}</div><p class="helper" style="margin:0 0 10px">Toca el campo de precio de cada hora para modificarlo.</p><div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px">${Array.from({length:10},(_,i)=>{const h=i+1,price=Number(prices[h]??h*base),pct=tariffDiscountPercent(normalRate,h,price);return `<label style="display:block;padding:10px;border:1px solid var(--border-btn);border-radius:11px;background:var(--bg-elev);min-width:0"><span style="display:block;font-weight:800;font-size:13px;margin-bottom:6px">${h} ${h===1?'hora':'horas'}</span><span style="display:flex;align-items:center;gap:5px"><span style="font-size:12px;color:var(--text-2)">Bs</span><input class="ts-price" data-base="${base}" data-hour="${h}" type="number" inputmode="decimal" autocomplete="off" min="0" step="0.5" value="${price}" aria-label="Precio para ${h} horas, habitación Bs ${base}" style="display:block;pointer-events:auto;touch-action:manipulation;box-sizing:border-box;width:100%;min-width:0;padding:11px 9px;border:2px solid var(--accent);border-radius:9px;background:var(--input-bg);color:var(--text);font-size:17px;font-weight:800"></span><span style="display:block;margin-top:5px;font-size:12px;color:var(--text-2)">Descuento: <b class="ts-pct" data-base="${base}" data-hour="${h}">${pct.toFixed(2)}%</b></span></label>`}).join('')}</div><p class="helper" style="margin:10px 0 0">El porcentaje se actualiza al cambiar el precio, comparándolo con el precio normal (${base} × horas).</p></section>`;
   openSheet('Tarifas y descuentos', `
-    <p class="helper" style="padding:0 4px 12px">Configura los precios base de las piezas y descuentos automáticos según la cantidad de horas. Los cambios se aplican a nuevos ingresos y cálculos en curso.</p>
-    <div class="row2">
-      <div class="field"><label>Tarifa base tipo Bs 30</label><input id="tsRate30" type="number" min="1" step="0.5" value="${Number(t.rate30)}"></div>
-      <div class="field"><label>Tarifa base tipo Bs 40</label><input id="tsRate40" type="number" min="1" step="0.5" value="${Number(t.rate40)}"></div>
-    </div>
-    <div class="row2">
-      <div class="field"><label>Paquete nocturno (tipo 30)</label><input id="tsNight30" type="number" min="0" step="1" value="${Number(t.night30)}"></div>
-      <div class="field"><label>Paquete nocturno (tipo 40)</label><input id="tsNight40" type="number" min="0" step="1" value="${Number(t.night40)}"></div>
-    </div>
-    <div style="font-weight:800;margin:12px 0 6px">Descuentos por duración</div>
-    <p class="helper">Al alcanzar la cantidad de horas indicada, se aplica ese porcentaje al total de la tarifa. Se utiliza la regla más alta alcanzada.</p>
-    <div id="tsDiscountRows">${[0,1,2].map(i=>{const d=rules[i]||{hours:[3,5,8][i],percent:0};return `<div class="row2 ts-rule" style="align-items:end"><div class="field"><label>Desde cuántas horas</label><input class="ts-hours" type="number" min="1" max="10" step="1" value="${Number(d.hours)}"></div><div class="field"><label>Descuento (%)</label><input class="ts-percent" type="number" min="0" max="100" step="0.5" value="${Number(d.percent)}"></div></div>`}).join('')}</div>
-    <div class="total-box" style="margin-top:12px"><span>Ejemplo: tarifa Bs ${Number(t.rate30)} por 5 horas</span><b id="tsPreview">${money(tariffPrice(30,5))}</b></div>
-    <p class="helper">Los descuentos afectan la tarifa por horas. No modifican el precio de productos ni los paquetes nocturnos.</p>
+    <p class="helper" style="padding:0 4px 8px">Edita cada precio directamente. Los importes iniciales corresponden a la hoja de tarifas y se aplican tal como están, sin añadir otro descuento automático.</p>
+    <div class="row2"><div class="field"><label>Tarifa base tipo Bs 30</label><input id="tsRate30" type="number" min="1" step="0.5" value="${Number(t.rate30)}"></div><div class="field"><label>Tarifa base tipo Bs 40</label><input id="tsRate40" type="number" min="1" step="0.5" value="${Number(t.rate40)}"></div></div>
+    ${table(30,t.prices30,t.rate30)}
+    ${table(40,t.prices40,t.rate40)}
+    <div style="font-weight:850;margin:14px 0 8px">PAQUETE NOCTURNO</div>
+    <p class="helper">Horario de la hoja: 10:00 p. m. a 7:00 a. m.</p>
+    <div class="row2"><div class="field"><label>Precio nocturno tipo Bs 30</label><input id="tsNight30" type="number" min="0" step="1" value="${Number(t.night30)}"></div><div class="field"><label>Precio nocturno tipo Bs 40</label><input id="tsNight40" type="number" min="0" step="1" value="${Number(t.night40)}"></div></div>
+    <div class="total-box" style="margin-top:12px"><span>Ejemplo: habitación Bs 30 por 5 horas</span><b id="tsPreview">${money(tariffPrice(30,5))}</b></div>
+    <p class="helper">Los precios nocturnos y los precios por horas son independientes. Los cambios se guardan para los siguientes cálculos.</p>
   `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveTariffSettings()">Guardar tarifas</button>`);
-  setTimeout(()=>{ ['tsRate30','tsRate40','tsNight30','tsNight40'].forEach(id=>{const el=$('#'+id);if(el)el.addEventListener('input',updateTariffPreview)}); $$('.ts-hours,.ts-percent').forEach(el=>el.addEventListener('input',updateTariffPreview)); },80);
+  setTimeout(()=>{ $$('.ts-price').forEach(el=>{el.readOnly=false;el.disabled=false;el.addEventListener('input',updateTariffPreview);el.addEventListener('change',updateTariffPreview);}); ['tsRate30','tsRate40','tsNight30','tsNight40'].forEach(id=>{const el=$('#'+id);if(el)el.addEventListener('input',updateTariffPreview)}); },80);
 }
 function updateTariffPreview(){
-  const t=getTariffSettings(); t.rate30=Number($('#tsRate30')?.value)||30;
-  t.discounts=$$('.ts-rule').map(row=>({hours:Number(row.querySelector('.ts-hours').value),percent:Number(row.querySelector('.ts-percent').value)}));
-  const h=5, rule=[...t.discounts].filter(x=>x.hours>0&&h>=x.hours).sort((a,b)=>b.hours-a.hours)[0];
-  const gross=TARIFF_TABLES[30][h]*(t.rate30/30), total=gross*(1-(rule?Math.max(0,Math.min(100,rule.percent)):0)/100);
-  const out=$('#tsPreview'); if(out)out.textContent=money(total);
+  const prices30=[0,...Array.from({length:10},(_,i)=>Number($(`.ts-price[data-base="30"][data-hour="${i+1}"]`)?.value)||0)];
+  const preview=prices30[5];
+  const out=$('#tsPreview'); if(out)out.textContent=money(preview);
+  [30,40].forEach(b=>{for(let h=1;h<=10;h++){const input=$(`.ts-price[data-base="${b}"][data-hour="${h}"]`),cell=$(`.ts-pct[data-base="${b}"][data-hour="${h}"]`);if(input&&cell){const normalRate=Number($('#tsRate'+b)?.value)||b;const pct=tariffDiscountPercent(normalRate,h,Number(input.value)||0);cell.textContent=pct.toFixed(2)+'%';}}});
 }
 function saveTariffSettings(){
   const rate30=Number($('#tsRate30')?.value), rate40=Number($('#tsRate40')?.value), night30=Number($('#tsNight30')?.value), night40=Number($('#tsNight40')?.value);
-  const discounts=$$('.ts-rule').map(row=>({hours:Number(row.querySelector('.ts-hours').value),percent:Number(row.querySelector('.ts-percent').value)}));
-  if([rate30,rate40,night30,night40].some(x=>!Number.isFinite(x)||x<0)||rate30<=0||rate40<=0){toast('Revisa los precios ingresados');return;}
-  if(discounts.some(x=>!Number.isInteger(x.hours)||x.hours<1||x.hours>10||!Number.isFinite(x.percent)||x.percent<0||x.percent>100)){toast('Revisa las reglas de descuento');return;}
-  if(new Set(discounts.map(x=>x.hours)).size!==discounts.length){toast('No repitas las horas de descuento');return;}
-  db.tariffSettings={rate30,rate40,night30,night40,discounts};
-  // The default nightly package price follows the configured package value on next check-in.
-  save(); closeModal(); renderAll(); toast('Tarifas y descuentos guardados');
+  const prices30=[0,...Array.from({length:10},(_,i)=>Number($(`.ts-price[data-base="30"][data-hour="${i+1}"]`)?.value))];
+  const prices40=[0,...Array.from({length:10},(_,i)=>Number($(`.ts-price[data-base="40"][data-hour="${i+1}"]`)?.value))];
+  if([rate30,rate40,night30,night40,...prices30,...prices40].some(x=>!Number.isFinite(x)||x<0)||rate30<=0||rate40<=0){toast('Revisa los precios ingresados');return;}
+  db.tariffSettings={rate30,rate40,night30,night40,prices30,prices40};
+  save(); closeModal(); renderAll(); toast('Tarifas guardadas correctamente');
 }
 function isNightWindow(ts){
   const d = new Date(ts);
@@ -1656,7 +1647,7 @@ function calcTariffWithNight(entryTs, endTs, rate){
     const actualEnd = Math.min(endTs, segmentEnd.getTime());
     if(actualEnd <= cursor.getTime()) break;
     const ms = actualEnd - cursor.getTime();
-    if(isNight){ nightCount++; nightAmount += Number(base === 40 ? nightPrices.night40 : nightPrices.night30) || NIGHT_PRICES[base]; }
+    if(isNight){ nightCount++; const configuredNight=Number(base === 40 ? nightPrices.night40 : nightPrices.night30); nightAmount += Number.isFinite(configuredNight) && configuredNight >= 0 ? configuredNight : NIGHT_PRICES[base]; }
     else { normalAmount += tariffPrice(base, ms/3600000); normalMs += ms; }
     cursor = new Date(actualEnd);
   }
