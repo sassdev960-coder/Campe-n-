@@ -674,26 +674,6 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
         </table>
       </div>
     </div>
-    <div class="group-title">Costo total de inventario (stock actual)</div>
-    <div class="stats" id="invCostStats" style="margin-bottom:14px"></div>
-    <div class="group" style="margin-bottom:14px">
-      <div class="group-title" style="padding:12px 14px 0;margin:0">Productos</div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Producto</th><th class="num">Stock</th><th class="num">Costo unit.</th><th class="num">Costo total</th></tr></thead>
-          <tbody id="invCostProdBody"></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="group">
-      <div class="group-title" style="padding:12px 14px 0;margin:0">Artículos del motel</div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Artículo</th><th>Categoría</th><th class="num">Stock</th><th class="num">Costo unit.</th><th class="num">Costo total</th></tr></thead>
-          <tbody id="invCostItemBody"></tbody>
-        </table>
-      </div>
-    </div>
   </section>
 </div>
 
@@ -905,6 +885,16 @@ function mergePreferLocal(remote, local){
   collections.forEach(key => {
     const r = Array.isArray(remote?.[key]) ? remote[key] : [];
     const l = Array.isArray(local?.[key]) ? local[key] : [];
+    if(key === 'rooms'){
+      // Las habitaciones son estado compartido: el remoto (Supabase) es la fuente de verdad.
+      // Se prefieren los datos remotos por id; las piezas locales que no existan en remoto se conservan.
+      const map = new Map();
+      l.forEach(x => { if(x && x.id != null) map.set(x.id, x); });
+      r.forEach(x => { if(x && x.id != null) map.set(x.id, x); }); // remoto sobrescribe
+      if(!r.length && !l.length) { result[key] = []; return; }
+      result[key] = map.size ? [...map.values()] : (r.length ? r : l);
+      return;
+    }
     const map = new Map();
     r.forEach(x => { if(x && x.id != null) map.set(x.id, x); });
     l.forEach(x => { if(x && x.id != null) map.set(x.id, x); });
@@ -941,7 +931,7 @@ async function loadFromSupabase(){
     if(ex.error) throw ex.error;
     if(de.error) throw de.error;
     if(sh.error) throw sh.error;
-    // items table is optional; ignore errors
+    if(it.error) console.warn('⚠ items load:', it.error?.message);
     return {
       users: (u.data || []).map(x => ({ id:x.id, name:x.name, username:x.username, password:x.password, role:x.role })),
       rooms: (ro.data || []).map(fromSnakeRoom),
@@ -950,7 +940,8 @@ async function loadFromSupabase(){
       sales: (sa.data || []).map(fromSnakeSale),
       expenses: (ex.data || []).map(fromSnakeExpense),
       deposits: (de.data || []).map(fromSnakeDeposit),
-      shifts: (sh.data || []).map(fromSnakeShift)
+      shifts: (sh.data || []).map(fromSnakeShift),
+      items: (!it.error && Array.isArray(it.data)) ? it.data.map(fromSnakeItem) : []
     };
   } catch(e) {
     console.error('❌ loadFromSupabase:', e);
@@ -1006,38 +997,139 @@ async function syncToSupabase(){
   }
 }
 
-/* REFRESCO DE PIEZAS DESDE SUPABASE (sincronización entre dispositivos) */
+/* =========================================================
+   SINCRONIZACIÓN DE PIEZAS ENTRE DISPOSITIVOS
+   ========================================================= */
+let roomsChannel = null;
+let pendingRoomUpdates = new Map(); // roomId -> remote room (cuando hay modal abierto)
+let renderRoomsTimer = null;
+
+function editingRoomId(){
+  if(typeof ci !== 'undefined' && ci && ci.roomId) return ci.roomId;
+  if(typeof co !== 'undefined' && co && co.id) return co.id;
+  if(typeof qp !== 'undefined' && qp && qp.roomId) return qp.roomId;
+  return null;
+}
+
+function scheduleRenderRooms(){
+  if(renderRoomsTimer) return;
+  renderRoomsTimer = setTimeout(() => {
+    renderRoomsTimer = null;
+    if(typeof renderRooms === 'function') renderRooms();
+    // también actualiza panel stats (libres/ocupadas)
+    const panelStats = document.getElementById('panelStats');
+    if(panelStats && typeof renderPanel === 'function') renderPanel();
+  }, 120);
+}
+
+function applyRemoteRoom(rr, { force = false } = {}){
+  if(!rr || !rr.id) return false;
+  const editId = editingRoomId();
+  // Si la pieza que se está editando en este dispositivo cambió en otro, encolamos y avisamos.
+  if(!force && editId && rr.id === editId){
+    const lr = db.rooms.find(r => r.id === rr.id);
+    if(lr && JSON.stringify(lr) !== JSON.stringify(rr)){
+      pendingRoomUpdates.set(rr.id, rr);
+      setSyncStatus('syncing', '⚠ Pieza modificada en otro dispositivo');
+    }
+    return false;
+  }
+  const idx = db.rooms.findIndex(r => r.id === rr.id);
+  if(idx >= 0){
+    const lr = db.rooms[idx];
+    if(JSON.stringify(lr) === JSON.stringify(rr)) return false;
+    db.rooms[idx] = rr;
+  } else {
+    db.rooms.push(rr);
+  }
+  return true;
+}
+
+function applyRemoteRoomsList(remoteList){
+  if(!Array.isArray(remoteList)) return false;
+  let changed = false;
+  const remoteIds = new Set(remoteList.map(r => r.id));
+  // actualizar / agregar
+  remoteList.forEach(rr => { if(applyRemoteRoom(rr)) changed = true; });
+  // eliminar piezas que ya no existen en remoto (solo si no están ocupadas localmente recién)
+  const before = db.rooms.length;
+  db.rooms = db.rooms.filter(r => {
+    if(remoteIds.has(r.id)) return true;
+    // conservar si está ocupada localmente y no vino en remoto (evitar pérdida por lag)
+    if(r.status === 'ocupada') return true;
+    changed = true;
+    return false;
+  });
+  if(db.rooms.length !== before) changed = true;
+  if(changed){
+    db.rooms.sort((a,b) => (Number(a.num)||0) - (Number(b.num)||0));
+    if(typeof saveLocal === 'function') saveLocal();
+    scheduleRenderRooms();
+  }
+  return changed;
+}
+
 async function refreshRoomsFromSupabase(){
   if(!sb || !currentUser) return;
-  if(typeof ci !== 'undefined' && ci) return;
-  if(typeof co !== 'undefined' && co) return;
-  const modal = document.getElementById('modalRoot');
-  if(modal && modal.classList.contains('open')) return;
   if(typeof syncInFlight !== 'undefined' && syncInFlight) return;
   try {
     const { data, error } = await sb.from('motel_rooms').select('*');
     if(error) throw error;
     const remote = (data || []).map(fromSnakeRoom);
-    let changed = false;
-    remote.forEach(rr => {
-      const idx = db.rooms.findIndex(r => r.id === rr.id);
-      if(idx >= 0){
-        const lr = db.rooms[idx];
-        if(lr.status !== rr.status || lr.checkIn !== rr.checkIn || lr.checkOut !== rr.checkOut || lr.mode !== rr.mode || (lr.consumos||[]).length !== (rr.consumos||[]).length || lr.paymentStatus !== rr.paymentStatus){
-          db.rooms[idx] = { ...lr, ...rr };
-          changed = true;
-        }
-      } else {
-        db.rooms.push(rr);
-        changed = true;
-      }
-    });
-    if(changed){
-      db.rooms.sort((a,b) => (Number(a.num)||0) - (Number(b.num)||0));
-      if(typeof saveLocal === 'function') saveLocal();
-      if(typeof renderAll === 'function') renderAll();
-    }
+    applyRemoteRoomsList(remote);
   } catch(e){ console.warn('refreshRoomsFromSupabase error:', e?.message || e); }
+}
+
+/* Suscripción en tiempo real a cambios en motel_rooms */
+function handleRoomRealtimePayload(payload){
+  if(!sb || !currentUser) return;
+  try {
+    if(payload.eventType === 'DELETE'){
+      const oldRow = payload.old ? fromSnakeRoom(payload.old) : null;
+      if(oldRow && oldRow.id){
+        const idx = db.rooms.findIndex(r => r.id === oldRow.id);
+        if(idx >= 0 && db.rooms[idx].status !== 'ocupada'){ db.rooms.splice(idx,1); db.rooms.sort((a,b)=>(Number(a.num)||0)-(Number(b.num)||0)); if(typeof saveLocal==='function') saveLocal(); scheduleRenderRooms(); }
+      }
+      return;
+    }
+    if(payload.eventType === 'INSERT' || payload.eventType === 'UPDATE'){
+      const rr = payload.new ? fromSnakeRoom(payload.new) : null;
+      if(!rr) return;
+      const changed = applyRemoteRoom(rr);
+      if(changed){
+        db.rooms.sort((a,b) => (Number(a.num)||0) - (Number(b.num)||0));
+        if(typeof saveLocal === 'function') saveLocal();
+        scheduleRenderRooms();
+      }
+    }
+  } catch(e){ console.warn('handleRoomRealtimePayload error:', e?.message || e); }
+}
+
+function subscribeRoomsRealtime(){
+  if(!sb || !currentUser) return;
+  if(roomsChannel){ try { sb.removeChannel(roomsChannel); } catch(e){} roomsChannel = null; }
+  try {
+    roomsChannel = sb.channel('motel-rooms-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'motel_rooms' }, (payload) => {
+        handleRoomRealtimePayload(payload);
+      })
+      .subscribe((status) => {
+        if(status === 'SUBSCRIBED'){
+          setSyncStatus('online', '⚡ Tiempo real activo');
+          refreshRoomsFromSupabase();
+        } else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT'){
+          console.warn('Realtime rooms status:', status);
+          setSyncStatus('offline', 'Sin tiempo real (polling)');
+        }
+      });
+  } catch(e){ console.warn('subscribeRoomsRealtime error:', e?.message || e); }
+}
+
+function unsubscribeRoomsRealtime(){
+  if(roomsChannel && sb){
+    try { sb.removeChannel(roomsChannel); } catch(e){}
+    roomsChannel = null;
+  }
 }
 
 async function supaDelete(table, filters, retries = 2){
@@ -1101,6 +1193,7 @@ function doLogout(){
     const shift = db.shifts.find(s => s.id === currentShift.id);
     if(shift && !shift.logoutAt){ shift.logoutAt = new Date().toISOString(); save(); }
   }
+  if(typeof unsubscribeRoomsRealtime === 'function') unsubscribeRoomsRealtime();
   sessionStorage.removeItem(SESSION_KEY);
   currentUser = null; currentShift = null;
   exitApp();
@@ -1109,9 +1202,11 @@ function enterApp(){
   $('#loginScreen').classList.add('hidden');
   $('#appRoot').classList.remove('hidden');
   applyRoleUI(); renderAll();
+  if(typeof subscribeRoomsRealtime === 'function') subscribeRoomsRealtime();
   toast(`Bienvenido, ${currentUser.name.split(' ')[0]}`);
 }
 function exitApp(){
+  if(typeof unsubscribeRoomsRealtime === 'function') unsubscribeRoomsRealtime();
   $('#loginScreen').classList.remove('hidden');
   $('#appRoot').classList.add('hidden');
   $('#tabbar').classList.add('hidden');
@@ -1160,6 +1255,21 @@ function closeModal(){
   document.body.style.overflow = '';
   ci = null; co = null; qp = null; qpPay = null;
   ciLock = false; coLock = false;
+  // Aplicar cambios remotos encolados mientras el modal estaba abierto
+  if(pendingRoomUpdates && pendingRoomUpdates.size){
+    let changed = false;
+    pendingRoomUpdates.forEach((rr, id) => {
+      const idx = db.rooms.findIndex(r => r.id === id);
+      if(idx >= 0){ db.rooms[idx] = rr; changed = true; }
+    });
+    pendingRoomUpdates.clear();
+    if(changed){
+      db.rooms.sort((a,b) => (Number(a.num)||0) - (Number(b.num)||0));
+      if(typeof saveLocal === 'function') saveLocal();
+      if(typeof renderAll === 'function') renderAll();
+      toast('⚠ Una pieza fue modificada en otro dispositivo');
+    }
+  }
 }
 
 /* USER MENU */
@@ -1180,6 +1290,7 @@ function openUserSheet(){
   const generalItems = `
     <div class="menu-list">
       <div class="menu-item" onclick="openManualEntry()"><span class="mi-icon">✎</span><span>Registro manual</span><span class="mi-arrow">›</span></div>
+      <div class="menu-item" onclick="syncNow()"><span class="mi-icon">↻</span><span>Sincronizar ahora</span><span class="mi-arrow">›</span></div>
     </div>`;
   openSheet('Mi cuenta', `
     <div class="user-hero">
@@ -1834,8 +1945,9 @@ function clickRoom(id){
   else openCheckOut(id);
 }
 
-function reopenTimer(id){
+async function reopenTimer(id){
   if(coLock) return;
+  await ensureRoomFresh(id);
   const r = db.rooms.find(x => x.id === id);
   if(!r || r.status !== 'ocupada') return;
   if(!r.checkOut){ toast('El tiempo ya está corriendo'); return; }
@@ -1848,7 +1960,8 @@ function reopenTimer(id){
 
 /* PRODUCTO RÁPIDO */
 let qp = null;
-function openQuickProduct(roomId){
+async function openQuickProduct(roomId){
+  await ensureRoomFresh(roomId);
   const r = db.rooms.find(x => x.id === roomId);
   if(!r || r.status !== 'ocupada') return;
   qp = { roomId };
@@ -1925,7 +2038,8 @@ function rmProdFromRoom(pid){
 
 /* QUICK PAY */
 let qpPay = null;
-function quickPay(id, method){
+async function quickPay(id, method){
+  await ensureRoomFresh(id);
   const r = db.rooms.find(x => x.id === id);
   if(!r || r.status !== 'ocupada') return;
   const refTs = r.checkOut ? new Date(r.checkOut).getTime() : Date.now();
@@ -1995,13 +2109,32 @@ let ci = null;
 let ciLock = false;
 let coLock = false;
 
+async function ensureRoomFresh(id){
+  if(!sb || !currentUser || !id) return;
+  try {
+    const { data, error } = await sb.from('motel_rooms').select('*').eq('id', id).maybeSingle();
+    if(error || !data) return;
+    const rr = fromSnakeRoom(data);
+    const idx = db.rooms.findIndex(r => r.id === id);
+    if(idx >= 0) db.rooms[idx] = rr;
+    else db.rooms.push(rr);
+    db.rooms.sort((a,b) => (Number(a.num)||0) - (Number(b.num)||0));
+    if(typeof saveLocal === 'function') saveLocal();
+  } catch(e){ console.warn('ensureRoomFresh error:', e?.message || e); }
+}
+
+let openingRoom = false;
 function openCheckIn(id){
-  if(ciLock) return;
-  const r = db.rooms.find(x => x.id === id);
-  if(!r){ toast('Pieza no encontrada'); return; }
-  if(r.status !== 'libre'){ toast('Esa pieza ya está ocupada'); return; }
-  ci = { roomId: id, entryTs: Date.now(), captured: false, mode: 'hora', paidHours: 1, hourlyRate: r.price, packageEndTime: '07:00', packagePrice: Number(r.price) === 40 ? 150 : 130 };
-  renderCheckInSheet();
+  if(ciLock || openingRoom) return;
+  openingRoom = true;
+  ensureRoomFresh(id).then(() => {
+    openingRoom = false;
+    const r = db.rooms.find(x => x.id === id);
+    if(!r){ toast('Pieza no encontrada'); return; }
+    if(r.status !== 'libre'){ toast('Esa pieza ya está ocupada en otro dispositivo'); return; }
+    ci = { roomId: id, entryTs: Date.now(), captured: false, mode: 'hora', paidHours: 1, hourlyRate: r.price, packageEndTime: '07:00', packagePrice: Number(r.price) === 40 ? 150 : 130 };
+    renderCheckInSheet();
+  });
 }
 
 function renderCheckInSheet(){
@@ -2107,9 +2240,11 @@ function captureEntryTime(){
   tickLiveClocks();
 }
 
-function doCheckIn(){
+async function doCheckIn(){
   if(ciLock) return;
   if(!ci){ return; }
+  await ensureRoomFresh(ci.roomId);
+  if(!ci) return;
   const r = db.rooms.find(x => x.id === ci.roomId);
   if(!r){ toast('Pieza no encontrada'); closeModal(); return; }
   if(r.status !== 'libre'){ toast('Esa pieza ya está ocupada'); closeModal(); return; }
@@ -2150,7 +2285,8 @@ function doCheckIn(){
 }
 
 /* MOVER PIEZA */
-function openMoveRoom(fromId){
+async function openMoveRoom(fromId){
+  await ensureRoomFresh(fromId);
   const from = db.rooms.find(x => x.id === fromId);
   if(!from || from.status !== 'ocupada'){ toast('Pieza no válida'); return; }
   const free = db.rooms.filter(x => x.status === 'libre' && x.id !== fromId);
@@ -2212,8 +2348,9 @@ function doMoveRoom(fromId, toId){
 /* CHECK-OUT */
 let co = null;
 
-function openCheckOut(id){
+async function openCheckOut(id){
   if(coLock) return;
+  await ensureRoomFresh(id);
   const r = db.rooms.find(x => x.id === id);
   if(!r){ toast('Pieza no encontrada'); return; }
   if(r.status !== 'ocupada'){ toast('Esa pieza está libre'); return; }
@@ -2504,11 +2641,13 @@ function delConsumo(i){
   renderCheckOutSheet();
 }
 
-function doPorCobrar(){
+async function doPorCobrar(){
   if(coLock) return;
   if(!co){ return; }
+  await ensureRoomFresh(co.id);
+  if(!co) return;
   const r = db.rooms.find(x => x.id === co.id);
-  if(!r){ closeModal(); return; }
+  if(!r || r.status !== 'ocupada'){ toast('La pieza ya no está ocupada'); closeModal(); return; }
   if(!co.exitEdited && !r.checkOut){
     co.exitTs = Date.now();
     co.captured = true;
@@ -2524,11 +2663,13 @@ function doPorCobrar(){
   }
 }
 
-function doConfirmarCobro(){
+async function doConfirmarCobro(){
   if(coLock) return;
   if(!co){ return; }
+  await ensureRoomFresh(co.id);
+  if(!co) return;
   const r = db.rooms.find(x => x.id === co.id);
-  if(!r){ closeModal(); return; }
+  if(!r || r.status !== 'ocupada'){ toast('La pieza ya no está ocupada'); closeModal(); return; }
   if(!co.exitEdited && !r.checkOut){
     co.exitTs = Date.now();
     co.captured = true;
@@ -3474,6 +3615,16 @@ function renderReports(){
   brand.addEventListener('touchend', cancel);
 })();
 
+async function syncNow(){
+  if(!sb){ toast('Sin conexión a Supabase'); return; }
+  setSyncStatus('syncing', 'Sincronizando...');
+  try {
+    await syncToSupabase();
+    await refreshRoomsFromSupabase();
+    setSyncStatus('online', '✓ Sincronizado');
+    toast('Sincronización completa');
+  } catch(e){ setSyncStatus('offline', '✕ Error'); toast('Error al sincronizar'); }
+}
 function renderAll(){
   updateDateDisplays();
   renderRooms();
@@ -3526,10 +3677,13 @@ document.addEventListener('keydown', e => {
   }
   updateTimers();
   setInterval(updateTimers, 1000);
-  // Sincronización periódica de piezas entre dispositivos
+  // Sincronización periódica de piezas entre dispositivos (respaldo del tiempo real)
   if(supaReady){
-    setInterval(() => { if(currentUser) refreshRoomsFromSupabase(); }, 10000);
+    setInterval(() => { if(currentUser) refreshRoomsFromSupabase(); }, 3000);
     document.addEventListener('visibilitychange', () => { if(!document.hidden && currentUser) refreshRoomsFromSupabase(); });
+    window.addEventListener('focus', () => { if(currentUser) refreshRoomsFromSupabase(); });
+    // Reintentar suscripción realtime si se perdió
+    setInterval(() => { if(currentUser && sb && !roomsChannel) subscribeRoomsRealtime(); }, 15000);
   }
   renderReports();
 })();
