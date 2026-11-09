@@ -435,6 +435,19 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
   .print-title{display:block!important}
   .card-room{border-color:#ccc!important;background:#fff!important;page-break-inside:avoid;box-shadow:none}
   .cr-col .v.big{color:#b8860b!important}
+  @page{size:A4 landscape;margin:10mm}
+  #reportes .group{break-inside:auto;page-break-inside:auto;margin-bottom:12px!important}
+  #reportes table{width:100%;border-collapse:collapse;font-size:9px}
+  #reportes th,#reportes td{padding:5px 6px;border:1px solid #d8d8d8;vertical-align:top}
+  #reportes thead{display:table-header-group}
+  #reportes tr{break-inside:avoid;page-break-inside:avoid}
+  #reportes .group-title{font-size:12px;margin:10px 0 5px}
+  #reportes .helper{display:none!important}
+  #reportes .stats{grid-template-columns:repeat(5,1fr);gap:6px;margin:8px 0}
+  #reportes .stat{padding:7px}
+  #reportes .stat .val{font-size:13px!important}
+  #reportes .stat .lbl{font-size:9px}
+  #reportes .print-title{break-after:avoid}
 }
 .print-title{display:none}
 
@@ -653,6 +666,25 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
         <table>
           <thead><tr><th>Fecha</th><th class="num">Hab.</th><th class="num">Prod.</th><th class="num">Gastos</th><th class="num">Util.</th></tr></thead>
           <tbody id="repDaily"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="group-title">Cierre diario de caja</div>
+    <div class="group" style="margin-bottom:20px">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha</th><th class="num">Saldo inicial</th><th class="num">Ingresos efectivo</th><th class="num">Depósitos / entradas</th><th class="num">Gastos / salidas</th><th class="num">Saldo al cierre</th></tr></thead>
+          <tbody id="repCashDaily"></tbody>
+        </table>
+      </div>
+      <p class="helper" style="padding:8px 12px;margin:0">El cierre se calcula con los movimientos registrados: efectivo cobrado + depósitos/entradas − gastos/salidas. Los pagos QR no aumentan el efectivo de caja.</p>
+    </div>
+    <div class="group-title">Libro de movimientos de caja</div>
+    <div class="group" style="margin-bottom:20px">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Fecha y hora</th><th>Detalle</th><th class="num">Entrada</th><th class="num">Salida</th><th class="num">Saldo acumulado</th></tr></thead>
+          <tbody id="repCashDetail"></tbody>
         </table>
       </div>
     </div>
@@ -3460,6 +3492,8 @@ function renderReports(){
     $('#repDaily').innerHTML = '<tr><td colspan="5" class="empty">Seleccione un rango de fechas.</td></tr>';
     $('#repProduct').innerHTML = '<tr><td colspan="5" class="empty">Seleccione un rango de fechas.</td></tr>';
     $('#repDetail').innerHTML = '<tr><td colspan="7" class="empty">Seleccione un rango de fechas.</td></tr>';
+    if($('#repCashDaily')) $('#repCashDaily').innerHTML = '<tr><td colspan="6" class="empty">Seleccione un rango de fechas.</td></tr>';
+    if($('#repCashDetail')) $('#repCashDetail').innerHTML = '<tr><td colspan="5" class="empty">Seleccione un rango de fechas.</td></tr>'; 
     renderInventoryCost();
     return;
   }
@@ -3480,6 +3514,38 @@ function renderReports(){
   });
   const expenses = db.expenses.filter(g => g.day >= from && g.day <= to);
   const deposits = db.deposits.filter(d => d.day >= from && d.day <= to);
+  // Libro de caja: solo el efectivo recibido entra a caja; QR no se cuenta como efectivo.
+  const cashFromSale = s => (Array.isArray(s.payments) ? s.payments : [])
+    .filter(p => String(p.method || '').trim().toLowerCase() === 'efectivo')
+    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+  const cashEntries = [
+    ...db.sales.filter(s => s.day < from).map(s => ({ day:s.day, ts:s.ts, kind:'sale', detail:`Venta ${s.type === 'habitacion' ? 'de pieza' : 'de producto'} · ${s.detail || ''}`, incoming:cashFromSale(s), outgoing:0 })),
+    ...db.deposits.filter(d => d.day < from).map(d => ({ day:d.day, ts:d.ts, kind:'deposit', detail:`Entrada / depósito · ${d.desc || ''}`, incoming:Number(d.amount)||0, outgoing:0 })),
+    ...db.expenses.filter(g => g.day < from).map(g => ({ day:g.day, ts:g.ts, kind:'expense', detail:`Gasto · ${g.desc || ''}`, incoming:0, outgoing:Number(g.amount)||0 })),
+    ...sales.map(s => ({ day:s.day, ts:s.ts, kind:'sale', detail:`Venta ${s.type === 'habitacion' ? 'de pieza' : 'de producto'} · ${s.detail || ''}`, incoming:cashFromSale(s), outgoing:0 })),
+    ...deposits.map(d => ({ day:d.day, ts:d.ts, kind:'deposit', detail:`Entrada / depósito · ${d.desc || ''}`, incoming:Number(d.amount)||0, outgoing:0 })),
+    ...expenses.map(g => ({ day:g.day, ts:g.ts, kind:'expense', detail:`Gasto · ${g.desc || ''}`, incoming:0, outgoing:Number(g.amount)||0 }))
+  ].filter(x => x.day && x.day <= to && (x.incoming > 0 || x.outgoing > 0))
+   .sort((a,b) => String(a.ts || a.day).localeCompare(String(b.ts || b.day)));
+  let cashBalance = cashEntries.filter(x => x.day < from).reduce((sum,x) => sum + x.incoming - x.outgoing, 0);
+  const openingCashBalance = cashBalance;
+  const periodCashEntries = cashEntries.filter(x => x.day >= from && x.day <= to);
+  const cashByDay = new Map();
+  periodCashEntries.forEach(entry => {
+    if(!cashByDay.has(entry.day)) cashByDay.set(entry.day, { cashSales:0, deposits:0, incoming:0, outgoing:0, entries:[] });
+    const day = cashByDay.get(entry.day);
+    if(entry.kind === 'sale') day.cashSales += entry.incoming;
+    if(entry.kind === 'deposit') day.deposits += entry.incoming;
+    day.incoming += entry.incoming; day.outgoing += entry.outgoing; day.entries.push(entry);
+  });
+  const activityDays = new Set([...sales, ...expenses, ...deposits].map(x => x.day).filter(Boolean));
+  activityDays.forEach(day => { if(!cashByDay.has(day)) cashByDay.set(day, { cashSales:0, deposits:0, incoming:0, outgoing:0, entries:[] }); });
+  const cashDailyRows = [...cashByDay.entries()].sort((a,b) => a[0].localeCompare(b[0])).map(([day, totals]) => {
+    const opening = cashBalance;
+    cashBalance += totals.incoming - totals.outgoing;
+    return { day, opening, cashSales:totals.cashSales, deposits:totals.deposits, incoming:totals.incoming, outgoing:totals.outgoing, closing:cashBalance };
+  });
+  const closingCashBalance = cashBalance;
   const ingresos = sales.reduce((a,s) => a + s.amount, 0);
   const costos = sales.reduce((a,s) => a + s.cost, 0);
   const gastos = expenses.reduce((a,g) => a + g.amount, 0);
@@ -3488,7 +3554,7 @@ function renderReports(){
   const utilidadNeta = utilidadBruta - gastos;
   const hab = sales.filter(s => s.type === 'habitacion').reduce((a,s) => a + s.amount, 0);
   const prod = sales.filter(s => s.type === 'producto').reduce((a,s) => a + s.amount, 0);
-  const pr = $('#printRange'); if(pr) pr.textContent = `Del ${fmtDate(from)} al ${fmtDate(to)}`;
+  const pr = $('#printRange'); if(pr) pr.textContent = `Del ${fmtDate(from)} al ${fmtDate(to)} · Importes en Bs · Cierre calculado según movimientos registrados`;
   $('#repStats').innerHTML = `
     <div class="stat"><div class="lbl">Ingresos</div><div class="val c-accent" style="font-size:20px">${money(ingresos)}</div></div>
     <div class="stat"><div class="lbl">Utilidad neta</div><div class="val ${utilidadNeta >= 0 ? 'c-green' : 'c-red'}" style="font-size:20px">${money(utilidadNeta)}</div></div>
@@ -3497,7 +3563,9 @@ function renderReports(){
     <div class="stat"><div class="lbl">Costo productos</div><div class="val c-muted" style="font-size:18px">${money(costos)}</div></div>
     <div class="stat"><div class="lbl">Gastos</div><div class="val" style="color:var(--red);font-size:18px">${money(gastos)}</div></div>
     <div class="stat"><div class="lbl">Utilidad bruta</div><div class="val c-blue" style="font-size:18px">${money(utilidadBruta)}</div></div>
-    <div class="stat"><div class="lbl">Depósitos</div><div class="val c-muted" style="font-size:18px">${money(depositos)}</div></div>
+    <div class="stat"><div class="lbl">Depósitos / entradas</div><div class="val c-muted" style="font-size:18px">${money(depositos)}</div></div>
+    <div class="stat"><div class="lbl">Saldo inicial de caja</div><div class="val c-muted" style="font-size:18px">${money(openingCashBalance)}</div></div>
+    <div class="stat"><div class="lbl">Saldo final de caja</div><div class="val ${closingCashBalance >= 0 ? 'c-green' : 'c-red'}" style="font-size:20px">${money(closingCashBalance)}</div></div>
   `;
   const roomRows = new Map();
   const getRoomRow = (num) => {
@@ -3560,6 +3628,27 @@ function renderReports(){
         </tr>`;
       }).join('')
     : `<tr><td colspan="5" class="empty">Sin registros en el rango.</td></tr>`;
+  const cashDailyBody = $('#repCashDaily');
+  if(cashDailyBody) cashDailyBody.innerHTML = cashDailyRows.length
+    ? cashDailyRows.map(d => `<tr>
+        <td style="font-weight:700">${fmtDate(d.day)}</td>
+        <td class="num">${money(d.opening)}</td>
+        <td class="num">${money(d.cashSales)}</td>
+        <td class="num">${money(d.deposits)}</td>
+        <td class="num">${money(d.outgoing)}</td>
+        <td class="num" style="font-weight:800">${money(d.closing)}</td>
+      </tr>`).join('') + `<tr style="font-weight:800;border-top:2px solid #777"><td>TOTAL / CIERRE DEL PERÍODO</td><td class="num">${money(openingCashBalance)}</td><td class="num">${money(cashDailyRows.reduce((a,d)=>a+d.cashSales,0))}</td><td class="num">${money(cashDailyRows.reduce((a,d)=>a+d.deposits,0))}</td><td class="num">${money(cashDailyRows.reduce((a,d)=>a+d.outgoing,0))}</td><td class="num">${money(closingCashBalance)}</td></tr>`
+    : `<tr><td colspan="6" class="empty">Sin movimientos de efectivo en el rango. Saldo al cierre: ${money(closingCashBalance)}</td></tr>`;
+  const cashDetailBody = $('#repCashDetail');
+  if(cashDetailBody) {
+    let runningCash = openingCashBalance;
+    cashDetailBody.innerHTML = periodCashEntries.length
+      ? periodCashEntries.map(entry => {
+          runningCash += entry.incoming - entry.outgoing;
+          return `<tr><td style="white-space:nowrap">${fmtDT(entry.ts || entry.day)}</td><td>${esc(entry.detail)}</td><td class="num">${entry.incoming ? money(entry.incoming) : '—'}</td><td class="num">${entry.outgoing ? money(entry.outgoing) : '—'}</td><td class="num" style="font-weight:700">${money(runningCash)}</td></tr>`;
+        }).join('') + `<tr style="font-weight:800;border-top:2px solid #777"><td colspan="4">SALDO FINAL DEL PERÍODO</td><td class="num">${money(closingCashBalance)}</td></tr>`
+      : `<tr><td colspan="5" class="empty">Sin movimientos de caja en el rango.</td></tr>`;
+  }
   const byProd = {};
   sales.filter(s => s.type === 'producto').forEach(s => {
     const name = s.detail.split(' ×')[0];
