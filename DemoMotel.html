@@ -861,7 +861,13 @@ function seed(){
     products: [], movements: [], sales: [],
     expenses: [], deposits: [], items: [],
     users: [{ id:'u-admin', name:'Administrador', username:'admin', password:'admin123', role:'admin' }],
-    shifts: []
+    shifts: [],
+    settings: {
+      tariffs30: [0,30,60,90,115,140,165,185,200,225,250],
+      tariffs40: [0,40,80,115,145,175,205,235,260,280,300],
+      nightPrice30: 130,
+      nightPrice40: 150
+    }
   };
 }
 function loadLocal(){
@@ -874,6 +880,7 @@ function loadLocal(){
       if(!d.expenses) d.expenses = [];
       if(!d.deposits) d.deposits = [];
       if(!d.items) d.items = [];
+      if(!d.settings) d.settings = seed().settings;
       return d;
     }
   }catch(e){ console.warn(e); }
@@ -882,6 +889,10 @@ function loadLocal(){
 function mergePreferLocal(remote, local){
   const collections = ['rooms','products','movements','sales','expenses','deposits','items','users','shifts'];
   const result = Object.assign({}, remote || {});
+  // Configuración (tarifas) compartida: preferir remoto
+  if(remote?.settings && typeof remote.settings === 'object') result.settings = remote.settings;
+  else if(local?.settings && typeof local.settings === 'object') result.settings = local.settings;
+  else result.settings = (typeof seed === 'function') ? seed().settings : result.settings;
   collections.forEach(key => {
     const r = Array.isArray(remote?.[key]) ? remote[key] : [];
     const l = Array.isArray(local?.[key]) ? local[key] : [];
@@ -912,7 +923,7 @@ async function loadFromSupabase(){
   console.log('☁ loadFromSupabase() start');
   if(!sb) return null;
   try {
-    const [u, ro, pr, mv, sa, ex, de, sh, it] = await Promise.all([
+    const [u, ro, pr, mv, sa, ex, de, sh, it, st] = await Promise.all([
       sb.from('motel_users').select('*'),
       sb.from('motel_rooms').select('*'),
       sb.from('motel_products').select('*'),
@@ -922,6 +933,7 @@ async function loadFromSupabase(){
       sb.from('motel_deposits').select('*'),
       sb.from('motel_shifts').select('*'),
       sb.from('motel_items').select('*'),
+      sb.from('motel_settings').select('*'),
     ]);
     if(u.error) throw u.error;
     if(ro.error) throw ro.error;
@@ -932,6 +944,12 @@ async function loadFromSupabase(){
     if(de.error) throw de.error;
     if(sh.error) throw sh.error;
     if(it.error) console.warn('⚠ items load:', it.error?.message);
+    if(st.error) console.warn('⚠ settings load:', st.error?.message);
+    let settings = null;
+    if(!st.error && Array.isArray(st.data)){
+      const row = st.data.find(x => x.id === 'app_settings');
+      if(row && row.value && typeof row.value === 'object') settings = row.value;
+    }
     return {
       users: (u.data || []).map(x => ({ id:x.id, name:x.name, username:x.username, password:x.password, role:x.role })),
       rooms: (ro.data || []).map(fromSnakeRoom),
@@ -941,7 +959,8 @@ async function loadFromSupabase(){
       expenses: (ex.data || []).map(fromSnakeExpense),
       deposits: (de.data || []).map(fromSnakeDeposit),
       shifts: (sh.data || []).map(fromSnakeShift),
-      items: (!it.error && Array.isArray(it.data)) ? it.data.map(fromSnakeItem) : []
+      items: (!it.error && Array.isArray(it.data)) ? it.data.map(fromSnakeItem) : [],
+      settings
     };
   } catch(e) {
     console.error('❌ loadFromSupabase:', e);
@@ -969,6 +988,7 @@ async function syncToSupabase(){
     if(db.expenses.length) tasks.push(sb.from('motel_expenses').upsert(db.expenses.map(toSnakeExpense)));
     if(db.deposits.length) tasks.push(sb.from('motel_deposits').upsert(db.deposits.map(toSnakeDeposit)));
     if(db.shifts.length) tasks.push(sb.from('motel_shifts').upsert(db.shifts.map(toSnakeShift)));
+    if(db.settings) tasks.push(sb.from('motel_settings').upsert({ id:'app_settings', value: db.settings }));
     // Sync items separately (table may have RLS restrictions)
     if(Array.isArray(db.items) && db.items.length){
       try {
@@ -1282,6 +1302,7 @@ function openUserSheet(){
       <div class="menu-item" onclick="openRoomManager()"><span class="mi-icon">🏠</span><span>Gestionar piezas</span><span class="mi-arrow">›</span></div>
       <div class="menu-item" onclick="openUsersManager()"><span class="mi-icon">👥</span><span>Usuarios</span><span class="mi-arrow">›</span></div>
       <div class="menu-item" onclick="openShiftsView()"><span class="mi-icon">📋</span><span>Historial de turnos</span><span class="mi-arrow">›</span></div>
+      <div class="menu-item" onclick="openSettings()"><span class="mi-icon">⚙️</span><span>Configuración / Tarifas</span><span class="mi-arrow">›</span></div>
     </div>
     <div class="menu-list">
       <div class="menu-item" onclick="confirmLimpiarCaja()" style="color:var(--accent)"><span class="mi-icon" style="background:rgba(200,150,62,.18);color:var(--accent)">🗑</span><span>Limpiar caja (conservar catálogo)</span><span class="mi-arrow">›</span></div>
@@ -1575,38 +1596,51 @@ setInterval(tickLiveClocks, 1000);
 /* CÁLCULOS */
 const TARIFF_TABLES = { 30: [0,30,60,90,115,140,165,185,200,225,250], 40: [0,40,80,115,145,175,205,235,260,280,300] };
 const NIGHT_PRICES = {30:130, 40:150};
+function tariffTable(base){
+  const key = base === 40 ? 'tariffs40' : 'tariffs30';
+  const t = db?.settings?.[key];
+  if(Array.isArray(t) && t.length >= 11) return t;
+  return TARIFF_TABLES[base] || TARIFF_TABLES[30];
+}
 function tariffPrice(rate, hours){
-  const base = Number(rate) || 30;
-  const table = TARIFF_TABLES[base];
+  const base = Number(rate) === 40 ? 40 : 30;
+  const table = tariffTable(base);
   const h = Math.max(0, Math.min(10, Math.ceil(Number(hours) || 0)));
   if(h === 0) return 0;
-  if(table) return table[h];
+  if(table && table[h] != null) return Number(table[h]);
   return h * base;
+}
+function nightPrice(base){
+  const key = base === 40 ? 'nightPrice40' : 'nightPrice30';
+  const v = db?.settings?.[key];
+  if(v != null) return Number(v);
+  return NIGHT_PRICES[base] || (base === 40 ? 150 : 130);
 }
 function isNightWindow(ts){
   const d = new Date(ts);
   const mins = d.getHours()*60 + d.getMinutes();
-  return mins >= 22*60 || mins < 7*60;
+  return mins >= 22*60 || mins < 7*60 + 30;
 }
 function calcTariffWithNight(entryTs, endTs, rate){
   const duration = Math.max(0, endTs-entryTs);
   if(!duration) return {amount:0,hours:0,detail:'tarifa por tiempo',night:false,normalAmount:0,nightAmount:0};
   const base = Number(rate) === 40 ? 40 : 30;
+  const nightP = nightPrice(base);
   let cursor = new Date(entryTs);
   let normalMs = 0, nightCount = 0, nightAmount = 0, normalAmount = 0;
   while(cursor.getTime() < endTs){
     const dayStart = new Date(cursor); dayStart.setHours(0,0,0,0);
     const nightStart = new Date(dayStart); nightStart.setHours(22,0,0,0);
-    const nightEnd = new Date(dayStart); nightEnd.setDate(nightEnd.getDate()+1); nightEnd.setHours(7,0,0,0);
+    const nightEnd = new Date(dayStart); nightEnd.setDate(nightEnd.getDate()+1); nightEnd.setHours(7,30,0,0);
     let segmentEnd, isNight;
     const mins = cursor.getHours()*60 + cursor.getMinutes() + cursor.getSeconds()/60;
     if(mins >= 22*60){ segmentEnd = nightEnd; isNight = true; }
-    else if(mins < 7*60){ const todaySeven = new Date(dayStart); todaySeven.setHours(7,0,0,0); segmentEnd = todaySeven; isNight = true; }
+    else if(mins < 7*60 + 30){ const todaySeven = new Date(dayStart); todaySeven.setHours(7,30,0,0); segmentEnd = todaySeven; isNight = true; }
     else { segmentEnd = nightStart; isNight = false; }
     const actualEnd = Math.min(endTs, segmentEnd.getTime());
     if(actualEnd <= cursor.getTime()) break;
     const ms = actualEnd - cursor.getTime();
-    if(isNight){ nightCount++; nightAmount += NIGHT_PRICES[base]; }
+    if(isNight){ nightCount++; nightAmount += nightP; }
     else { normalAmount += tariffPrice(base, ms/3600000); normalMs += ms; }
     cursor = new Date(actualEnd);
   }
@@ -2132,7 +2166,7 @@ function openCheckIn(id){
     const r = db.rooms.find(x => x.id === id);
     if(!r){ toast('Pieza no encontrada'); return; }
     if(r.status !== 'libre'){ toast('Esa pieza ya está ocupada en otro dispositivo'); return; }
-    ci = { roomId: id, entryTs: Date.now(), captured: false, mode: 'hora', paidHours: 1, hourlyRate: r.price, packageEndTime: '07:00', packagePrice: Number(r.price) === 40 ? 150 : 130 };
+    ci = { roomId: id, entryTs: Date.now(), captured: false, mode: 'hora', paidHours: 1, hourlyRate: r.price, packageEndTime: '07:00', packagePrice: nightPrice(Number(r.price) === 40 ? 40 : 30) };
     renderCheckInSheet();
   });
 }
@@ -3621,9 +3655,67 @@ async function syncNow(){
   try {
     await syncToSupabase();
     await refreshRoomsFromSupabase();
+    await refreshSettingsFromSupabase();
     setSyncStatus('online', '✓ Sincronizado');
     toast('Sincronización completa');
   } catch(e){ setSyncStatus('offline', '✕ Error'); toast('Error al sincronizar'); }
+}
+
+async function refreshSettingsFromSupabase(){
+  if(!sb || !currentUser) return;
+  try {
+    const { data, error } = await sb.from('motel_settings').select('*').eq('id','app_settings').maybeSingle();
+    if(error || !data || !data.value) return;
+    if(JSON.stringify(db.settings || {}) !== JSON.stringify(data.value)){
+      db.settings = data.value;
+      if(typeof saveLocal === 'function') saveLocal();
+      if(typeof renderAll === 'function') renderAll();
+    }
+  } catch(e){ console.warn('refreshSettingsFromSupabase error:', e?.message || e); }
+}
+
+function openSettings(){
+  if(currentUser?.role !== 'admin') return;
+  const s = db.settings || seed().settings;
+  const t30 = Array.isArray(s.tariffs30) ? s.tariffs30 : seed().settings.tariffs30;
+  const t40 = Array.isArray(s.tariffs40) ? s.tariffs40 : seed().settings.tariffs40;
+  const rows30 = [1,2,3,4,5,6,7,8,9,10].map(h => `
+    <div class="field" style="margin-bottom:8px">
+      <label>${h} hora${h>1?'s':''} (Bs) — tarifa 30</label>
+      <input id="tar30_${h}" type="number" inputmode="decimal" min="0" step="1" value="${t30[h] ?? 0}">
+    </div>`).join('');
+  const rows40 = [1,2,3,4,5,6,7,8,9,10].map(h => `
+    <div class="field" style="margin-bottom:8px">
+      <label>${h} hora${h>1?'s':''} (Bs) — tarifa 40</label>
+      <input id="tar40_${h}" type="number" inputmode="decimal" min="0" step="1" value="${t40[h] ?? 0}">
+    </div>`).join('');
+  openSheet('Configuración / Tarifas', `
+    <p class="hint" style="padding:0 4px 12px">Edita la tabla de cobro por horas. Vigente de 07:30 a 21:59. Fuera de ese horario aplica el paquete nocturno.</p>
+    <div class="group-title" style="padding-left:4px">Paquete nocturno</div>
+    <div class="row2">
+      <div class="field"><label>Precio nocturno Bs 30</label><input id="tarNight30" type="number" inputmode="decimal" min="0" step="1" value="${s.nightPrice30 ?? 130}"></div>
+      <div class="field"><label>Precio nocturno Bs 40</label><input id="tarNight40" type="number" inputmode="decimal" min="0" step="1" value="${s.nightPrice40 ?? 150}"></div>
+    </div>
+    <div class="group-title" style="padding-left:4px;margin-top:8px">Tarifa base 30</div>
+    ${rows30}
+    <div class="group-title" style="padding-left:4px;margin-top:8px">Tarifa base 40</div>
+    ${rows40}
+  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveSettings()">Guardar</button>`);
+}
+
+function saveSettings(){
+  const s = {
+    tariffs30: [0], tariffs40: [0],
+    nightPrice30: Number($('#tarNight30')?.value) || 0,
+    nightPrice40: Number($('#tarNight40')?.value) || 0
+  };
+  for(let h=1; h<=10; h++){
+    s.tariffs30[h] = Number($('#tar30_'+h)?.value) || 0;
+    s.tariffs40[h] = Number($('#tar40_'+h)?.value) || 0;
+  }
+  db.settings = s;
+  save(); closeModal(); renderAll();
+  toast('Tarifas guardadas');
 }
 function renderAll(){
   updateDateDisplays();
@@ -3679,9 +3771,9 @@ document.addEventListener('keydown', e => {
   setInterval(updateTimers, 1000);
   // Sincronización periódica de piezas entre dispositivos (respaldo del tiempo real)
   if(supaReady){
-    setInterval(() => { if(currentUser) refreshRoomsFromSupabase(); }, 3000);
-    document.addEventListener('visibilitychange', () => { if(!document.hidden && currentUser) refreshRoomsFromSupabase(); });
-    window.addEventListener('focus', () => { if(currentUser) refreshRoomsFromSupabase(); });
+    setInterval(() => { if(currentUser){ refreshRoomsFromSupabase(); refreshSettingsFromSupabase(); } }, 3000);
+    document.addEventListener('visibilitychange', () => { if(!document.hidden && currentUser){ refreshRoomsFromSupabase(); refreshSettingsFromSupabase(); } });
+    window.addEventListener('focus', () => { if(currentUser){ refreshRoomsFromSupabase(); refreshSettingsFromSupabase(); } });
     // Reintentar suscripción realtime si se perdió
     setInterval(() => { if(currentUser && sb && !roomsChannel) subscribeRoomsRealtime(); }, 15000);
   }
