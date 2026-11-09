@@ -1185,12 +1185,13 @@ function unsubscribeRoomsRealtime(){
 }
 
 async function supaDelete(table, filters, retries = 2){
-  if(!sb) return;
+  if(!sb) throw new Error('Supabase no está conectado. No se confirmó la eliminación en la nube.');
   try {
     let q = sb.from(table).delete();
-    Object.entries(filters).forEach(([k,v]) => { q = q.eq(k, v); });
+    Object.entries(filters || {}).forEach(([k,v]) => { q = q.eq(k, v); });
     const { error } = await q;
     if(error) throw error;
+    return true;
   } catch(e) {
     console.error(`❌ supaDelete ${table} (intento ${3 - retries}/3):`, e);
     if(retries > 0){
@@ -1198,7 +1199,16 @@ async function supaDelete(table, filters, retries = 2){
       return supaDelete(table, filters, retries - 1);
     }
     setSyncStatus('offline', '✕ Error al borrar');
+    throw e;
   }
+}
+
+// Borrado masivo reservado para acciones explícitas del administrador.
+async function supaDeleteAll(table){
+  if(!sb) throw new Error('Supabase no está conectado.');
+  const { error } = await sb.from(table).delete().neq('id', '__none__');
+  if(error) throw new Error(`${table}: ${error.message || error}`);
+  return true;
 }
 
 function saveLocal(){ try { localStorage.setItem(KEY, JSON.stringify(db)); console.log('✅ saveLocal OK'); } catch(e){ console.warn('❌ saveLocal error', e); } }
@@ -1389,32 +1399,38 @@ function confirmLimpiarCaja(){
 }
 
 async function doLimpiarCaja(){
-  db.sales    = [];
-  db.expenses = [];
-  db.deposits = [];
-  db.shifts   = [];
-  // Liberar todas las piezas
-  db.rooms.forEach(r => {
-    Object.assign(r, {
-      status:'libre', mode:null, checkIn:null, checkOut:null,
-      paidHours:null, packageEndTime:null, packagePrice:null,
-      consumos:[], paymentStatus:'pendiente', payments:[],
-      userId:null, userName:null, periodObservation:'', hourEdits:[]
+  if(!sb){ toast('⚠ Sin conexión a Supabase. No se limpió la caja.'); return; }
+  const btn = document.querySelector('.sheet-footer .btn.danger');
+  if(btn){ btn.disabled = true; btn.textContent = 'Limpiando…'; }
+  try {
+    // Primero confirmar los borrados remotos; no anunciar éxito si alguno falla.
+    for(const table of ['motel_sales','motel_expenses','motel_deposits','motel_shifts']){
+      await supaDeleteAll(table);
+    }
+    db.sales = [];
+    db.expenses = [];
+    db.deposits = [];
+    db.shifts = [];
+    // Liberar piezas localmente y guardar su nuevo estado en la nube.
+    db.rooms.forEach(r => {
+      Object.assign(r, {
+        status:'libre', mode:null, checkIn:null, checkOut:null,
+        paidHours:null, packageEndTime:null, packagePrice:null,
+        consumos:[], paymentStatus:'pendiente', payments:[],
+        userId:null, userName:null, periodObservation:'', hourEdits:[]
+      });
     });
-  });
-  save();
-  // Borrar en Supabase si está conectado
-  if(sb){
-    await Promise.allSettled([
-      sb.from('motel_sales').delete().neq('id','__none__'),
-      sb.from('motel_expenses').delete().neq('id','__none__'),
-      sb.from('motel_deposits').delete().neq('id','__none__'),
-      sb.from('motel_shifts').delete().neq('id','__none__'),
-    ]);
+    saveLocal();
+    await syncToSupabase();
+    closeModal();
+    renderAll();
+    toast('✓ Caja limpiada y eliminaciones enviadas a Supabase.');
+  } catch(e){
+    console.error('❌ No se pudo limpiar toda la caja:', e);
+    setSyncStatus('offline', '✕ Error al limpiar');
+    toast(`⚠ No se completó la limpieza: ${e.message || e}`);
+    if(btn){ btn.disabled = false; btn.textContent = 'Sí, limpiar caja'; }
   }
-  closeModal();
-  renderAll();
-  toast('✓ Caja limpiada. Catálogo conservado.');
 }
 
 /* REINICIAR TODO — vuelve al estado de fábrica */
@@ -1445,28 +1461,26 @@ function confirmReiniciarTodo(){
 }
 
 async function doReiniciarTodo(){
-  const fresh = seed();
-  db = fresh;
-  save();
-  // Borrar en Supabase si está conectado
-  if(sb){
-    await Promise.allSettled([
-      sb.from('motel_sales').delete().neq('id','__none__'),
-      sb.from('motel_expenses').delete().neq('id','__none__'),
-      sb.from('motel_deposits').delete().neq('id','__none__'),
-      sb.from('motel_shifts').delete().neq('id','__none__'),
-      sb.from('motel_rooms').delete().neq('id','__none__'),
-      sb.from('motel_products').delete().neq('id','__none__'),
-      sb.from('motel_movements').delete().neq('id','__none__'),
-      sb.from('motel_items').delete().neq('id','__none__'),
-    ]);
+  if(!sb){ toast('⚠ Sin conexión a Supabase. No se reinició el sistema.'); return; }
+  try {
+    // Eliminar primero los datos remotos; si algo falla, detener el reinicio.
+    for(const table of ['motel_sales','motel_expenses','motel_deposits','motel_shifts','motel_rooms','motel_products','motel_movements','motel_items','motel_users']){
+      await supaDeleteAll(table);
+    }
+    const fresh = seed();
+    db = fresh;
+    saveLocal();
     await syncToSupabase();
+    sessionStorage.removeItem(SESSION_KEY);
+    currentUser = null; currentShift = null;
+    closeModal();
+    exitApp();
+    toast('✓ Sistema reiniciado y sincronizado. Usa admin / admin123');
+  } catch(e){
+    console.error('❌ Error al reiniciar todo:', e);
+    setSyncStatus('offline', '✕ Error al reiniciar');
+    toast(`⚠ Reinicio incompleto: ${e.message || e}`);
   }
-  sessionStorage.removeItem(SESSION_KEY);
-  currentUser = null; currentShift = null;
-  closeModal();
-  exitApp();
-  toast('✓ Sistema reiniciado. Usa admin / admin123');
 }
 
 /* GESTIÓN DE PIEZAS */
@@ -2852,13 +2866,22 @@ function saveNewProduct(){
 }
 async function delProduct(id){
   const p = db.products.find(x => x.id === id);
-  if(!confirm(`¿Eliminar "${p.name}"?`)) return;
-  db.products = db.products.filter(x => x.id !== id);
-  db.movements = db.movements.filter(m => m.productId !== id);
-  save(); renderAll(); toast('Producto eliminado');
-  await supaDelete('motel_products', { id });
-  await supaDelete('motel_movements', { product_id: id });
+  if(!p) return;
+  if(!confirm(`¿Eliminar \"${p.name}\"?`)) return;
+  if(!sb){ toast('⚠ Sin conexión a Supabase. No se eliminó el producto.'); return; }
+  try {
+    // Borrar movimientos dependientes antes del producto para evitar referencias huérfanas.
+    await supaDelete('motel_movements', { product_id: id });
+    await supaDelete('motel_products', { id });
+    db.products = db.products.filter(x => x.id !== id);
+    db.movements = db.movements.filter(m => m.productId !== id);
+    saveLocal(); renderAll(); toast('✓ Producto eliminado también de Supabase');
+  } catch(e){
+    console.error('❌ Error al eliminar producto:', e);
+    toast(`⚠ No se pudo eliminar en Supabase: ${e.message || e}`);
+  }
 }
+
 function openEntrada(id){
   const p = db.products.find(x => x.id === id);
   openSheet(`Entrada · ${esc(p.name)}`, `
