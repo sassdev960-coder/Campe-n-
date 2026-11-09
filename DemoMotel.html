@@ -2966,9 +2966,32 @@ function saveManualEntry(){
   toast('Venta manual registrada');
 }
 
+/* SALDO DE CAJA */
+function calcSaldoCaja(){
+  // Suma todos los pagos en EFECTIVO de todas las ventas históricas
+  const efectivoTotal = db.sales.reduce((a, s) => {
+    const payments = Array.isArray(s.payments) ? s.payments : [];
+    const ef = payments
+      .filter(p => String(p.method).toLowerCase() === 'efectivo')
+      .reduce((x, p) => x + (Number(p.amount) || 0), 0);
+    return a + ef;
+  }, 0);
+  // Suma todos los depósitos (ingresos a caja)
+  const depositoTotal = db.deposits.reduce((a, d) => a + (Number(d.amount) || 0), 0);
+  // Resta todos los gastos
+  const gastoTotal = db.expenses.reduce((a, g) => a + (Number(g.amount) || 0), 0);
+  return efectivoTotal + depositoTotal - gastoTotal;
+}
+
 /* GASTOS / DEPÓSITOS */
 function openNewExpense(){
+  const saldo = calcSaldoCaja();
+  const saldoColor = saldo >= 0 ? 'var(--green)' : 'var(--red)';
   openSheet('Nuevo gasto', `
+    <div style="background:var(--amount-bg);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;border:1px solid ${saldo >= 0 ? 'rgba(52,199,89,.35)' : 'rgba(255,59,48,.35)'}">
+      <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2)">💰 Saldo en Caja</span>
+      <b style="font-size:20px;font-weight:800;color:${saldoColor}">${money(saldo)}</b>
+    </div>
     <div class="field"><label>Descripción</label><input id="gxDesc" placeholder="Ej: Compra de hielo" autocomplete="off"></div>
     <div class="field"><label>Monto (Bs)</label><input id="gxAmt" type="number" inputmode="decimal" min="0" step="0.5" value="0"></div>
     <div class="field"><label>Categoría</label>
@@ -2989,6 +3012,12 @@ function saveExpense(){
   const amt = Number($('#gxAmt').value) || 0;
   const cat = $('#gxCat').value;
   if(!desc || amt <= 0){ toast('Completa todo'); return; }
+  // ✅ Validar saldo de caja antes de registrar el gasto
+  const saldo = calcSaldoCaja();
+  if(amt > saldo){
+    toast(`⚠ Sin saldo suficiente. En caja: ${money(saldo)}`);
+    return;
+  }
   const now = new Date().toISOString();
   db.expenses.push({ id: uid(), ts: now, day: dayKey(now), desc, amount: amt, category: cat, userId: currentUser?.id, userName: currentUser?.name });
   save(); closeModal(); renderAll(); toast('Gasto registrado');
@@ -3020,11 +3049,22 @@ function renderPanel(){
   const utilidadHoy = ingresoHoy - costoHoy - gastosHoy;
   const libres = db.rooms.filter(r => r.status === 'libre').length;
   const ocup = db.rooms.length - libres;
+  const saldoCaja = calcSaldoCaja();
   const d = new Date();
   const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
   const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   $('#panelDate').textContent = `${dias[d.getDay()]}, ${d.getDate()} de ${meses[d.getMonth()]}`;
+  const saldoColor = saldoCaja >= 0 ? 'var(--green)' : 'var(--red)';
+  const saldoBorder = saldoCaja >= 0 ? 'rgba(52,199,89,.55)' : 'rgba(255,59,48,.55)';
+  const saldoBg = saldoCaja >= 0 ? 'rgba(52,199,89,.07)' : 'rgba(255,59,48,.07)';
   $('#panelStats').innerHTML = `
+    <div class="stat" style="grid-column:1/-1;border-color:${saldoBorder};background:linear-gradient(165deg,${saldoBg},var(--surface));box-shadow:0 4px 20px ${saldoCaja >= 0 ? 'rgba(52,199,89,.12)' : 'rgba(255,59,48,.12)'}">
+      <div class="lbl">💰 Saldo en Caja (Efectivo disponible)</div>
+      <div class="val" style="font-size:32px;color:${saldoColor};letter-spacing:-.03em">${money(saldoCaja)}</div>
+      <div style="font-size:11px;color:var(--text-2);margin-top:5px;line-height:1.5">
+        Efectivo cobrado + Depósitos − Gastos
+      </div>
+    </div>
     <div class="stat"><div class="lbl">Libres</div><div class="val c-green">${libres}</div></div>
     <div class="stat"><div class="lbl">Ocupadas</div><div class="val c-red">${ocup}</div></div>
     <div class="stat"><div class="lbl">Ingresos hoy</div><div class="val c-accent" style="font-size:20px">${money(ingresoHoy)}</div></div>
