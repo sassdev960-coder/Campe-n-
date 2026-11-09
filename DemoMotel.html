@@ -1172,6 +1172,10 @@ function openUserSheet(){
       <div class="menu-item" onclick="openRoomManager()"><span class="mi-icon">🏠</span><span>Gestionar piezas</span><span class="mi-arrow">›</span></div>
       <div class="menu-item" onclick="openUsersManager()"><span class="mi-icon">👥</span><span>Usuarios</span><span class="mi-arrow">›</span></div>
       <div class="menu-item" onclick="openShiftsView()"><span class="mi-icon">📋</span><span>Historial de turnos</span><span class="mi-arrow">›</span></div>
+    </div>
+    <div class="menu-list">
+      <div class="menu-item" onclick="confirmLimpiarCaja()" style="color:var(--accent)"><span class="mi-icon" style="background:rgba(200,150,62,.18);color:var(--accent)">🗑</span><span>Limpiar caja (conservar catálogo)</span><span class="mi-arrow">›</span></div>
+      <div class="menu-item danger" onclick="confirmReiniciarTodo()"><span class="mi-icon" style="background:rgba(255,59,48,.14);color:var(--red)">⚠</span><span>Reiniciar todo desde cero</span><span class="mi-arrow">›</span></div>
     </div>` : '';
   const generalItems = `
     <div class="menu-list">
@@ -1195,6 +1199,111 @@ function openUserSheet(){
   `, `<button class="btn" onclick="closeModal()">Cerrar</button>`);
 }
 function confirmLogout(){ if(confirm('¿Cerrar turno y salir?')) doLogout(); }
+
+/* LIMPIAR CAJA — conserva piezas, productos, movimientos, artículos e inventario */
+function confirmLimpiarCaja(){
+  closeModal();
+  setTimeout(() => {
+    openSheet('🗑 Limpiar caja', `
+      <div style="text-align:center;padding:8px 0 20px">
+        <div style="font-size:48px;margin-bottom:12px">🗑</div>
+        <h3 style="font-size:18px;font-weight:800;margin-bottom:10px">¿Limpiar registros de caja?</h3>
+        <p style="font-size:14px;color:var(--text-2);line-height:1.5;margin-bottom:16px">
+          Se eliminarán permanentemente:<br>
+          <b style="color:var(--red)">Ventas · Gastos · Depósitos · Turnos</b>
+        </p>
+        <p style="font-size:14px;color:var(--text-2);line-height:1.5">
+          Se conservarán:<br>
+          <b style="color:var(--green)">Piezas · Usuarios · Productos · Movimientos de stock · Artículos de inventario</b>
+        </p>
+        <div style="margin-top:20px;padding:12px 16px;background:rgba(255,59,48,.1);border:1px solid rgba(255,59,48,.3);border-radius:12px;font-size:12px;color:var(--red);font-weight:700">
+          ⚠ Esta acción no se puede deshacer
+        </div>
+      </div>
+    `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn danger" onclick="doLimpiarCaja()">Sí, limpiar caja</button>`);
+  }, 220);
+}
+
+async function doLimpiarCaja(){
+  db.sales    = [];
+  db.expenses = [];
+  db.deposits = [];
+  db.shifts   = [];
+  // Liberar todas las piezas
+  db.rooms.forEach(r => {
+    Object.assign(r, {
+      status:'libre', mode:null, checkIn:null, checkOut:null,
+      paidHours:null, packageEndTime:null, packagePrice:null,
+      consumos:[], paymentStatus:'pendiente', payments:[],
+      userId:null, userName:null, periodObservation:'', hourEdits:[]
+    });
+  });
+  save();
+  // Borrar en Supabase si está conectado
+  if(sb){
+    await Promise.allSettled([
+      sb.from('motel_sales').delete().neq('id','__none__'),
+      sb.from('motel_expenses').delete().neq('id','__none__'),
+      sb.from('motel_deposits').delete().neq('id','__none__'),
+      sb.from('motel_shifts').delete().neq('id','__none__'),
+    ]);
+  }
+  closeModal();
+  renderAll();
+  toast('✓ Caja limpiada. Catálogo conservado.');
+}
+
+/* REINICIAR TODO — vuelve al estado de fábrica */
+function confirmReiniciarTodo(){
+  closeModal();
+  setTimeout(() => {
+    openSheet('⚠ Reiniciar todo', `
+      <div style="text-align:center;padding:8px 0 20px">
+        <div style="font-size:48px;margin-bottom:12px">⚠️</div>
+        <h3 style="font-size:18px;font-weight:800;margin-bottom:10px;color:var(--red)">¿Reiniciar todo desde cero?</h3>
+        <p style="font-size:14px;color:var(--text-2);line-height:1.5;margin-bottom:16px">
+          Se eliminarán <b>TODOS</b> los datos:
+        </p>
+        <p style="font-size:14px;color:var(--red);font-weight:700;line-height:1.8">
+          Ventas · Gastos · Depósitos · Turnos<br>
+          Piezas · Usuarios · Productos<br>
+          Movimientos de stock · Artículos
+        </p>
+        <p style="font-size:14px;color:var(--text-2);margin-top:12px">
+          El sistema quedará como recién instalado<br>con el usuario <b>admin / admin123</b>.
+        </p>
+        <div style="margin-top:20px;padding:12px 16px;background:rgba(255,59,48,.12);border:1px solid rgba(255,59,48,.4);border-radius:12px;font-size:12px;color:var(--red);font-weight:700">
+          ⚠ Esta acción no se puede deshacer. ¡Todo se perderá!
+        </div>
+      </div>
+    `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn danger" onclick="doReiniciarTodo()">⚠ Sí, reiniciar todo</button>`);
+  }, 220);
+}
+
+async function doReiniciarTodo(){
+  const fresh = seed();
+  db = fresh;
+  save();
+  // Borrar en Supabase si está conectado
+  if(sb){
+    await Promise.allSettled([
+      sb.from('motel_sales').delete().neq('id','__none__'),
+      sb.from('motel_expenses').delete().neq('id','__none__'),
+      sb.from('motel_deposits').delete().neq('id','__none__'),
+      sb.from('motel_shifts').delete().neq('id','__none__'),
+      sb.from('motel_rooms').delete().neq('id','__none__'),
+      sb.from('motel_products').delete().neq('id','__none__'),
+      sb.from('motel_movements').delete().neq('id','__none__'),
+      sb.from('motel_items').delete().neq('id','__none__'),
+    ]);
+    await syncToSupabase();
+  }
+  sessionStorage.removeItem(SESSION_KEY);
+  currentUser = null; currentShift = null;
+  closeModal();
+  exitApp();
+  toast('✓ Sistema reiniciado. Usa admin / admin123');
+}
 
 /* GESTIÓN DE PIEZAS */
 function openRoomManager(){
