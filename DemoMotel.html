@@ -1427,6 +1427,11 @@ async function doLimpiarCaja(){
     });
     saveLocal();
     await syncToSupabase();
+    // Volver a leer desde Supabase para reflejar exactamente los cambios reseteados.
+    try {
+      const refreshed = await loadFromSupabase();
+      if(refreshed){ db = mergePreferLocal(refreshed, loadLocal()); saveLocal(); }
+    } catch(e){ console.warn('No se pudo releer datos tras limpiar:', e); }
     closeModal();
     renderAll();
     toast('✓ Caja limpiada y eliminaciones enviadas a Supabase.');
@@ -1476,6 +1481,10 @@ async function doReiniciarTodo(){
     db = fresh;
     saveLocal();
     await syncToSupabase();
+    try {
+      const refreshed = await loadFromSupabase();
+      if(refreshed){ db = mergePreferLocal(refreshed, loadLocal()); saveLocal(); }
+    } catch(e){ console.warn('No se pudo releer datos tras reiniciar:', e); }
     sessionStorage.removeItem(SESSION_KEY);
     currentUser = null; currentShift = null;
     closeModal();
@@ -3820,8 +3829,7 @@ async function syncNow(){
   setSyncStatus('syncing', 'Sincronizando...');
   try {
     await syncToSupabase();
-    await refreshRoomsFromSupabase();
-    await refreshSettingsFromSupabase();
+    await refreshAllFromSupabase();
     setSyncStatus('online', '✓ Sincronizado');
     toast('Sincronización completa');
   } catch(e){ setSyncStatus('offline', '✕ Error'); toast('Error al sincronizar'); }
@@ -3838,6 +3846,30 @@ async function refreshSettingsFromSupabase(){
       if(typeof renderAll === 'function') renderAll();
     }
   } catch(e){ console.warn('refreshSettingsFromSupabase error:', e?.message || e); }
+}
+async function refreshAllFromSupabase(){
+  if(!sb || !currentUser) return;
+  try {
+    const remote = await loadFromSupabase();
+    if(remote && Array.isArray(remote.users) && remote.users.length > 0){
+      db = remote;
+      if(!Array.isArray(db.items)) db.items = [];
+      // Re-vincular usuario/turno actuales con los datos reci�n le�dos.
+      const u = db.users.find(x => x.id === currentUser.id);
+      if(u) currentUser = u;
+      const sh = db.shifts.find(x => x.id === currentShift?.id);
+      if(sh) currentShift = sh;
+      if(typeof saveLocal === 'function') saveLocal();
+      if(typeof renderAll === 'function') renderAll();
+      setSyncStatus('online', '? Sincronizado');
+    } else if (remote) {
+      // Base remota vac�a o sin usuarios: reflejar el reseteo.
+      db = remote;
+      if(!Array.isArray(db.items)) db.items = [];
+      if(typeof saveLocal === 'function') saveLocal();
+      if(typeof renderAll === 'function') renderAll();
+    }
+  } catch(e){ console.warn('refreshAllFromSupabase error:', e?.message || e); }
 }
 
 function openSettings(){
@@ -3937,10 +3969,9 @@ document.addEventListener('keydown', e => {
   setInterval(updateTimers, 1000);
   // Sincronización periódica de piezas entre dispositivos (respaldo del tiempo real)
   if(supaReady){
-    setInterval(() => { if(currentUser){ refreshRoomsFromSupabase(); refreshSettingsFromSupabase(); } }, 3000);
-    document.addEventListener('visibilitychange', () => { if(!document.hidden && currentUser){ refreshRoomsFromSupabase(); refreshSettingsFromSupabase(); } });
-    window.addEventListener('focus', () => { if(currentUser){ refreshRoomsFromSupabase(); refreshSettingsFromSupabase(); } });
-    // Reintentar suscripción realtime si se perdió
+    setInterval(() => { if(currentUser){ refreshAllFromSupabase(); } }, 5000);
+    document.addEventListener('visibilitychange', () => { if(!document.hidden && currentUser){ refreshAllFromSupabase(); } });
+    window.addEventListener('focus', () => { if(currentUser){ refreshAllFromSupabase(); } });
     setInterval(() => { if(currentUser && sb && !roomsChannel) subscribeRoomsRealtime(); }, 15000);
   }
   renderReports();
