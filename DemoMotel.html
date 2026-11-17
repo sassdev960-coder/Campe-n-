@@ -3429,6 +3429,8 @@ function saveExpense(){
   const amt = Number($('#gxAmt').value) || 0;
   const cat = $('#gxCat').value;
   if(!desc || amt <= 0){ toast('Completa todo'); return; }
+  const saldoActual = calcSaldoCaja();
+  if(amt > saldoActual){ toast('El gasto no puede superar el saldo en caja'); return; }
   // ✅ Validar saldo de caja antes de registrar el gasto
   const saldo = calcSaldoCaja();
   if(amt > saldo){
