@@ -553,7 +553,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
     <div class="stats" id="panelStats"></div>
     <div class="fab-row no-print">
       <button class="btn danger sm" onclick="openNewExpense()">− Gasto</button>
-      <button class="btn green sm" onclick="openNewDeposit()">+ Depósito</button>
+      <button class="btn blue sm" onclick="openNewDeposit()">− Depósito</button>
     </div>
     <div class="group-title">Últimos movimientos</div>
     <div class="group panel-movements-card">
@@ -595,6 +595,11 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
     <div class="fab-row"><button class="btn primary sm" onclick="openNewProduct()">＋ Nuevo producto</button></div>
     <div class="stats" id="prodCostStats" style="margin-bottom:14px"></div>
     <div class="field"><label>Buscar producto</label><input id="productSearch" type="search" placeholder="Escribe el nombre, por ejemplo: cer" oninput="renderProducts()" autocomplete="off"><p class="helper">Busca por nombre y usa Entrada, Salida o Kardex para editar sus movimientos.</p></div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+      <button type="button" class="btn sm primary" id="prodSortIngreso" onclick="setProductSort('ingreso')">Orden de ingreso</button>
+      <button type="button" class="btn sm" id="prodSortNumero" onclick="setProductSort('numero')">Por número</button>
+      <button type="button" class="btn sm" id="prodSortAlfa" onclick="setProductSort('alfa')">Alfabético</button>
+    </div>
     <div class="group">
       <div class="table-wrap">
         <table>
@@ -673,7 +678,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
     <div class="group" style="margin-bottom:20px">
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Fecha</th><th class="num">Saldo inicial</th><th class="num">Ingresos efectivo</th><th class="num">Depósitos / entradas</th><th class="num">Gastos / salidas</th><th class="num">Saldo al cierre</th></tr></thead>
+          <thead><tr><th>Fecha</th><th class="num">Saldo inicial</th><th class="num">Ingresos efectivo</th><th class="num">Depósitos / salidas</th><th class="num">Gastos / salidas</th><th class="num">Saldo al cierre</th></tr></thead>
           <tbody id="repCashDaily"></tbody>
         </table>
       </div>
@@ -2046,7 +2051,7 @@ async function openQuickProduct(roomId){
   if(!r || r.status !== 'ocupada') return;
   qp = { roomId };
 
-  const prods = db.products.filter(p => stockOf(p.id) > 0);
+  const prods = sortProducts(db.products.filter(p => stockOf(p.id) > 0));
   if(!prods.length){
     openSheet('Agregar producto', `<p class="empty">No hay productos con stock disponible.<br><br>Ve a <b>Productos</b> para agregar alguno.</p>`, `<button class="btn" onclick="closeModal()">Cerrar</button>`);
     return;
@@ -2072,7 +2077,7 @@ async function openQuickProduct(roomId){
     <div class="cons-list">${r.consumos.map((c,i) => `
       <div class="cons-item">
         <span>${esc(c.name)}</span>
-        <span class="q">×${c.qty}</span>
+        <span class="q">×${c.qty}${c.qty > 1 ? ` × ${money(c.price)} c/u` : ''}</span>
         <span class="p">${money(c.price*c.qty)}</span>
         <button onclick="rmProdFromRoom('${c.productId}')">✕</button>
       </div>`).join('')}</div>
@@ -2080,6 +2085,11 @@ async function openQuickProduct(roomId){
 
   openSheet(`Agregar producto · Pieza ${r.num}`, `
     ${consListHTML}
+    <div style="display:flex;gap:6px;margin:0 0 8px 4px;flex-wrap:wrap;">
+      <button type="button" class="btn sm ${productSortMode==='ingreso'?'primary':''}" onclick="setProductSort('ingreso')">Ingreso</button>
+      <button type="button" class="btn sm ${productSortMode==='numero'?'primary':''}" onclick="setProductSort('numero')">Número</button>
+      <button type="button" class="btn sm ${productSortMode==='alfa'?'primary':''}" onclick="setProductSort('alfa')">Alfabético</button>
+    </div>
     <div class="group-title" style="padding-left:4px">Productos disponibles</div>
     <div class="cons-list">${prodsHTML}</div>
   `, `<button class="btn primary" onclick="closeModal()">Listo${consTotal > 0 ? ` · ${money(consTotal)}` : ''}</button>`);
@@ -2464,7 +2474,7 @@ function renderCheckOutSheet(){
   const diff = grand - pagado;
 
   const consHTML = r.consumos.length
-    ? `<div class="cons-list">${r.consumos.map((c,i) => `<div class="cons-item"><span>${esc(c.name)}</span><span class="q">×${c.qty}</span><span class="p">${money(c.price*c.qty)}</span><button onclick="delConsumo(${i})">✕</button></div>`).join('')}</div>`
+    ? `<div class="cons-list">${r.consumos.map((c,i) => `<div class="cons-item"><span>${esc(c.name)}</span><span class="q">×${c.qty}${c.qty > 1 ? ` × ${money(c.price)} c/u` : ''}</span><span class="p">${money(c.price*c.qty)}</span><button onclick="delConsumo(${i})">✕</button></div>`).join('')}</div>`
     : `<p class="hint" style="margin:0 0 14px">Sin consumos.</p>`;
 
   let breakdownHTML = '';
@@ -2816,11 +2826,36 @@ function updateTimers(){
 
 /* PRODUCTOS */
 function stockOf(pid){ return db.movements.filter(m => m.productId === pid).reduce((a,m) => m.type === 'entrada' ? a + m.qty : a - m.qty, 0); }
+function sortProducts(list){
+  const arr = [...list];
+  if(productSortMode === 'alfa'){
+    arr.sort((a,b) => String(a.name||'').localeCompare(String(b.name||''), 'es', { sensitivity:'base' }));
+  } else if(productSortMode === 'numero'){
+    // Orden por número secuencial de ingreso (ascendente)
+    arr.sort((a,b) => db.products.indexOf(a) - db.products.indexOf(b));
+  } else {
+    // Ingreso: más recientes primero
+    arr.sort((a,b) => db.products.indexOf(b) - db.products.indexOf(a));
+  }
+  return arr;
+}
+function setProductSort(mode){
+  productSortMode = mode || 'ingreso';
+  ['Ingreso','Numero','Alfa'].forEach(k => {
+    const el = document.getElementById('prodSort' + k);
+    if(!el) return;
+    el.classList.toggle('primary', (k === 'Ingreso' && productSortMode === 'ingreso') || (k === 'Numero' && productSortMode === 'numero') || (k === 'Alfa' && productSortMode === 'alfa'));
+  });
+  renderProducts();
+  // Re-render modal if open
+  if(qp && qp.roomId) { try { openQuickProduct(qp.roomId); } catch(e){} }
+}
 function renderProducts(){
   const body = $('#prodBody');
   if(!db.products.length){ body.innerHTML = `<tr><td colspan="7" class="empty">Sin productos. Agrega el primero.</td></tr>`; renderProductCostStats(); return; }
   const query = ($('#productSearch')?.value || '').trim().toLocaleLowerCase('es');
-  const filtered = db.products.filter(p => p.name.toLocaleLowerCase('es').includes(query));
+  let filtered = db.products.filter(p => p.name.toLocaleLowerCase('es').includes(query));
+  filtered = sortProducts(filtered);
   if(!filtered.length){ body.innerHTML = `<tr><td colspan="7" class="empty">No se encontraron productos con “${esc(query)}”.</td></tr>`; renderProductCostStats(); return; }
   body.innerHTML = filtered.map(p => {
     const st = stockOf(p.id);
@@ -3021,6 +3056,7 @@ function saveEditProduct(id){
 
 /* INVENTARIO DE ARTÍCULOS DEL MOTEL */
 let itemFilter = '';
+let productSortMode = 'ingreso';
 function setItemFilter(f){
   itemFilter = f;
   ['All','Elec','Ropa','Amen','Otro','Baja'].forEach(k => {
@@ -3059,7 +3095,7 @@ function renderItems(){
       : `<span style="background:rgba(52,199,89,.16);color:var(--green);padding:3px 8px;border-radius:20px;font-size:10px;font-weight:700">Activo</span>`;
     const actions = item.baja
       ? `<button class="row-btn" onclick="reactivarItem('${item.id}')" style="background:rgba(52,199,89,.8);border-color:rgba(52,199,89,.5)">Reactivar</button>`
-      : `<button class="row-btn" onclick="openEditItem('${item.id}')">Editar</button> <button class="row-btn" onclick="darDeBajaItem('${item.id}')" style="background:rgba(255,59,48,.8);border-color:rgba(255,59,48,.5)">Dar baja</button>`;
+      : `<button class="row-btn" onclick="openEditItem('${item.id}')">Editar</button> <button class="row-btn" onclick="openBajaItem('${item.id}')" style="background:rgba(255,59,48,.8);border-color:rgba(255,59,48,.5)">Dar baja</button>`;
     return `<tr>
       <td><b style="font-weight:600">${esc(item.nombre)}</b>${item.descripcion ? `<br><span style="font-size:11px;color:var(--text-2)">${esc(item.descripcion)}</span>` : ''}</td>
       <td style="font-size:12px;color:var(--text-2)">${catLabel}</td>
@@ -3140,14 +3176,32 @@ function saveEditItem(id){
   item.stock = Math.max(0, Number($('#eiStock').value) || 0);
   save(); closeModal(); renderItems(); toast('Artículo actualizado');
 }
-function darDeBajaItem(id){
+function openBajaItem(id){
   const item = (db.items || []).find(x => x.id === id);
   if(!item) return;
-  if(!confirm(`¿Dar de baja "${item.nombre}"?\n\nEl artículo quedará inactivo. Puedes reactivarlo en cualquier momento desde la pestaña "De baja".`)) return;
-  item.baja = true;
-  item.fechaBaja = new Date().toISOString();
-  save(); renderItems(); toast(`${item.nombre} dado de baja`);
+  openSheet(`Dar de baja ?? ${esc(item.nombre)}`, `
+    <div class="field"><label>Cantidad a dar de baja</label><input id="biQty" type="number" inputmode="numeric" min="1" max="${item.stock}" step="1" value="${item.stock}"></div>
+    <p class="helper">Stock actual: <b>${item.stock}</b>. Si das de baja todo el stock, el art??culo se marcaro como de baja.</p>
+  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn danger" onclick="confirmBajaItem('${id}')">Dar de baja</button>`);
+  setTimeout(()=>$('#biQty').select(), 320);
 }
+function confirmBajaItem(id){
+  const item = (db.items || []).find(x => x.id === id);
+  if(!item) return;
+  const qty = Math.max(1, Number($('#biQty')?.value) || 1);
+  if(qty > item.stock){ toast('La cantidad supera el stock'); return; }
+  if(qty >= item.stock){
+    item.baja = true;
+    item.fechaBaja = new Date().toISOString();
+    item.stock = 0;
+    toast(`${item.nombre} dado de baja`);
+  } else {
+    item.stock -= qty;
+    toast(`${qty} unidad(es) dadas de baja`);
+  }
+  save(); closeModal(); renderItems();
+}
+function darDeBajaItem(id){ openBajaItem(id); }
 function reactivarItem(id){
   const item = (db.items || []).find(x => x.id === id);
   if(!item) return;
@@ -3319,7 +3373,7 @@ function calcSaldoCaja(){
   const depositoTotal = db.deposits.reduce((a, d) => a + (Number(d.amount) || 0), 0);
   // Resta todos los gastos
   const gastoTotal = db.expenses.reduce((a, g) => a + (Number(g.amount) || 0), 0);
-  return efectivoTotal + depositoTotal - gastoTotal;
+  return efectivoTotal - depositoTotal - gastoTotal;
 }
 
 /* GASTOS / DEPÓSITOS */
@@ -3466,7 +3520,7 @@ function renderPanelMovements(){
       return { ts:s.ts, day:s.day || dayKey(s.ts), label:s.detail || s.type || 'Venta', amount:Number(s.amount)||0, tipo:s.type || 'venta', tiempo };
     }),
     ...db.expenses.map(g => ({ ts:g.ts, day:g.day || dayKey(g.ts), label:`Gasto: ${g.desc || 'Sin detalle'}`, amount:-(Number(g.amount)||0), tipo:'gasto' })),
-    ...db.deposits.map(d => ({ ts:d.ts, day:d.day || dayKey(d.ts), label:`Depósito: ${d.desc || 'Sin detalle'}`, amount:Number(d.amount)||0, tipo:'deposito' }))
+    ...db.deposits.map(d => ({ ts:d.ts, day:d.day || dayKey(d.ts), label:`Depósito: ${d.desc || 'Sin detalle'}`, amount:-(Number(d.amount)||0), tipo:'deposito' }))
   ].filter(m => m.ts && m.day >= from && m.day <= to).sort((a,b) => new Date(b.ts) - new Date(a.ts));
   const preset = window.panelMovementPreset;
   const presetText = preset === 'today' ? 'Movimientos de hoy' : preset === 'week' ? 'Movimientos de la semana pasada' : preset === 'month' ? 'Movimientos del mes pasado' : 'Rango seleccionado';
@@ -3543,10 +3597,10 @@ function renderReports(){
     .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
   const cashEntries = [
     ...db.sales.filter(s => s.day < from).map(s => ({ day:s.day, ts:s.ts, kind:'sale', detail:`Venta ${s.type === 'habitacion' ? 'de pieza' : 'de producto'} · ${s.detail || ''}`, incoming:cashFromSale(s), outgoing:0 })),
-    ...db.deposits.filter(d => d.day < from).map(d => ({ day:d.day, ts:d.ts, kind:'deposit', detail:`Entrada / depósito · ${d.desc || ''}`, incoming:Number(d.amount)||0, outgoing:0 })),
+    ...db.deposits.filter(d => d.day < from).map(d => ({ day:d.day, ts:d.ts, kind:'deposit', detail:`Salida / depósito · ${d.desc || ''}`, incoming:0, outgoing:Number(d.amount)||0 })),
     ...db.expenses.filter(g => g.day < from).map(g => ({ day:g.day, ts:g.ts, kind:'expense', detail:`Gasto · ${g.desc || ''}`, incoming:0, outgoing:Number(g.amount)||0 })),
     ...sales.map(s => ({ day:s.day, ts:s.ts, kind:'sale', detail:`Venta ${s.type === 'habitacion' ? 'de pieza' : 'de producto'} · ${s.detail || ''}`, incoming:cashFromSale(s), outgoing:0 })),
-    ...deposits.map(d => ({ day:d.day, ts:d.ts, kind:'deposit', detail:`Entrada / depósito · ${d.desc || ''}`, incoming:Number(d.amount)||0, outgoing:0 })),
+    ...deposits.map(d => ({ day:d.day, ts:d.ts, kind:'deposit', detail:`Salida / depósito · ${d.desc || ''}`, incoming:0, outgoing:Number(d.amount)||0 })),
     ...expenses.map(g => ({ day:g.day, ts:g.ts, kind:'expense', detail:`Gasto · ${g.desc || ''}`, incoming:0, outgoing:Number(g.amount)||0 }))
   ].filter(x => x.day && x.day <= to && (x.incoming > 0 || x.outgoing > 0))
    .sort((a,b) => String(a.ts || a.day).localeCompare(String(b.ts || b.day)));
@@ -3558,7 +3612,7 @@ function renderReports(){
     if(!cashByDay.has(entry.day)) cashByDay.set(entry.day, { cashSales:0, deposits:0, incoming:0, outgoing:0, entries:[] });
     const day = cashByDay.get(entry.day);
     if(entry.kind === 'sale') day.cashSales += entry.incoming;
-    if(entry.kind === 'deposit') day.deposits += entry.incoming;
+    if(entry.kind === 'deposit') day.deposits += entry.outgoing;
     day.incoming += entry.incoming; day.outgoing += entry.outgoing; day.entries.push(entry);
   });
   const activityDays = new Set([...sales, ...expenses, ...deposits].map(x => x.day).filter(Boolean));
