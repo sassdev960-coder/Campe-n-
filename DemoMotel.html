@@ -1007,12 +1007,28 @@ async function loadFromSupabase(){
 let syncTimer = null;
 let syncInFlight = false;
 let syncPending = false;
+let lastLocalChangeAt = 0;
+let localChangeSeq = 0;
+let unsyncedLocalChanges = false;
+// Piezas con cambios locales recientes: el dato local tiene prioridad.
+const dirtyRooms = new Set();
+
+// Indica si hay cambios locales esperando o en proceso de guardarse.
+function localSyncBusy(){
+  return unsyncedLocalChanges || !!syncTimer || syncInFlight || syncPending;
+}
+// Margen de seguridad tras un cambio local (evita lecturas remotas con retraso).
+function hasRecentLocalChange(ms){
+  return !!lastLocalChangeAt && (Date.now() - lastLocalChangeAt) < (ms || 2000);
+}
 async function syncToSupabase(){
   console.log('☁ syncToSupabase() start', { products: db.products?.length, items: db.items?.length });
   if(!sb) return;
+  if(syncTimer){ clearTimeout(syncTimer); syncTimer = null; }
   if(syncInFlight){ syncPending = true; return; }
   syncInFlight = true;
   syncPending = false;
+  const seqAtStart = localChangeSeq;
   setSyncStatus('syncing', 'Guardando...');
   try {
     const tasks = [];
@@ -1039,6 +1055,7 @@ async function syncToSupabase(){
     const errors = results.filter(r => r.status === 'rejected' || (r.value && r.value.error));
     if(errors.length) throw (errors[0].reason || errors[0].value?.error || errors[0]);
 
+    if(localChangeSeq === seqAtStart) unsyncedLocalChanges = false;
     setSyncStatus('online', '✓ Guardado');
   } catch(e) {
     console.error('❌ syncToSupabase:', e);
@@ -1048,7 +1065,7 @@ async function syncToSupabase(){
     if(syncPending){
       syncPending = false;
       clearTimeout(syncTimer);
-      syncTimer = setTimeout(syncToSupabase, 100);
+      syncTimer = setTimeout(() => { syncTimer = null; syncToSupabase(); }, 100);
     }
   }
 }
@@ -1064,6 +1081,7 @@ function editingRoomId(){
   if(typeof ci !== 'undefined' && ci && ci.roomId) return ci.roomId;
   if(typeof co !== 'undefined' && co && co.id) return co.id;
   if(typeof qp !== 'undefined' && qp && qp.roomId) return qp.roomId;
+  if(typeof qpPay !== 'undefined' && qpPay && qpPay.id) return qpPay.id;
   return null;
 }
 
@@ -1080,6 +1098,7 @@ function scheduleRenderRooms(){
 
 function applyRemoteRoom(rr, { force = false } = {}){
   if(!rr || !rr.id) return false;
+  if(!force && localSyncBusy()) return false;
   const editId = editingRoomId();
   // Si la pieza que se está editando en este dispositivo cambió en otro, encolamos y avisamos.
   if(!force && editId && rr.id === editId){
@@ -1127,10 +1146,11 @@ function applyRemoteRoomsList(remoteList){
 
 async function refreshRoomsFromSupabase(){
   if(!sb || !currentUser) return;
-  if(typeof syncInFlight !== 'undefined' && syncInFlight) return;
+  if(localSyncBusy()) return;
   try {
     const { data, error } = await sb.from('motel_rooms').select('*');
     if(error) throw error;
+    if(localSyncBusy()) return;
     const remote = (data || []).map(fromSnakeRoom);
     applyRemoteRoomsList(remote);
   } catch(e){ console.warn('refreshRoomsFromSupabase error:', e?.message || e); }
@@ -1219,9 +1239,12 @@ function saveLocal(){ try { localStorage.setItem(KEY, JSON.stringify(db)); conso
 function save(){
   console.log('💾 save() called', { products: db.products?.length, items: db.items?.length, movements: db.movements?.length });
   saveLocal();
+  localChangeSeq++;
+  unsyncedLocalChanges = true;
+  lastLocalChangeAt = Date.now();
   if(sb){
     clearTimeout(syncTimer);
-    syncTimer = setTimeout(syncToSupabase, 500);
+    syncTimer = setTimeout(() => { syncTimer = null; syncToSupabase(); }, 500);
   }
 }
 
@@ -1321,12 +1344,14 @@ function closeModal(){
   document.body.style.overflow = '';
   ci = null; co = null; qp = null; qpPay = null;
   ciLock = false; coLock = false;
-  // Aplicar cambios remotos encolados mientras el modal estaba abierto
+  // Aplicar cambios remotos encolados mientras el modal estaba abierto.
+  // Si la pieza tuvo cambios locales, gana el dato local y se sincroniza.
   if(pendingRoomUpdates && pendingRoomUpdates.size){
     let changed = false;
     pendingRoomUpdates.forEach((rr, id) => {
+      if(dirtyRooms.has(id)) return;
       const idx = db.rooms.findIndex(r => r.id === id);
-      if(idx >= 0){ db.rooms[idx] = rr; changed = true; }
+      if(idx >= 0 && JSON.stringify(db.rooms[idx]) !== JSON.stringify(rr)){ db.rooms[idx] = rr; changed = true; }
     });
     pendingRoomUpdates.clear();
     if(changed){
@@ -1336,6 +1361,9 @@ function closeModal(){
       toast('⚠ Una pieza fue modificada en otro dispositivo');
     }
   }
+  dirtyRooms.clear();
+  // Refrescar el resto al cerrar, sin pisar lo que se acaba de guardar.
+  setTimeout(() => { if(currentUser) refreshAllFromSupabase(); }, 1200);
 }
 
 /* USER MENU */
@@ -2053,19 +2081,23 @@ async function reopenTimer(id){
 
 /* PRODUCTO RÁPIDO */
 let qp = null;
-async function openQuickProduct(roomId){
-  await ensureRoomFresh(roomId);
-  const r = db.rooms.find(x => x.id === roomId);
-  if(!r || r.status !== 'ocupada') return;
-  qp = { roomId };
 
-  const prods = sortProducts(db.products.filter(p => stockOf(p.id) > 0));
-  if(!prods.length){
-    openSheet('Agregar producto', `<p class="empty">No hay productos con stock disponible.<br><br>Ve a <b>Productos</b> para agregar alguno.</p>`, `<button class="btn" onclick="closeModal()">Cerrar</button>`);
-    return;
-  }
+function quickConsListHTML(r){
+  const qty = r.consumos.reduce((a,c) => a + (Number(c.qty) || 0), 0);
+  if(!r.consumos.length) return '';
+  return `
+    <div class="group-title" style="padding-left:4px">En la pieza (${qty} ítems)</div>
+    <div class="cons-list">${r.consumos.map(c => `
+      <div class="cons-item">
+        <span>${esc(c.name)}</span>
+        <span class="q">×${c.qty}${c.qty > 1 ? ` × ${money(c.price)} c/u` : ''}</span>
+        <span class="p">${money(c.price*c.qty)}</span>
+        <button onclick="rmProdFromRoom('${c.productId}')">✕</button>
+      </div>`).join('')}</div>`;
+}
 
-  const prodsHTML = prods.map(p => {
+function quickProductsHTML(r){
+  return sortProducts(db.products.filter(p => stockOf(p.id) > 0)).map(p => {
     const inCart = r.consumos.find(c => c.productId === p.id);
     return `
       <div class="cons-item" style="padding:14px; display:flex; align-items:center; gap:8px;">
@@ -2073,34 +2105,73 @@ async function openQuickProduct(roomId){
           <div style="font-weight:700; font-size:14px;">${esc(p.name)}</div>
           <div style="font-size:11px; color:var(--text-2);">stock ${stockOf(p.id)} · ${money(p.price)}</div>
         </div>
-        ${inCart ? `<span style="font-size:11px;font-weight:800;color:var(--accent);margin-right:4px;">×${inCart.qty}</span>` : ''}
+        <span id="qp-badge-${p.id}" style="font-size:11px;font-weight:800;color:var(--accent);margin-right:4px;display:${inCart ? 'inline' : 'none'};">×${inCart ? inCart.qty : 0}</span>
         <input type="number" id="qp-qty-${p.id}" value="1" min="1" max="${stockOf(p.id)}" style="width:55px; padding:8px; text-align:center; background:var(--input-bg); border:1px solid var(--border-input); border-radius:8px; font-weight:800; font-size:15px; color:var(--text);">
         <button onclick="addProdToRoom('${p.id}')" style="background:var(--accent); color:#fff; width:36px; height:36px; border-radius:8px; font-size:20px; font-weight:800; border:none; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 8px rgba(184,134,11,.3); flex-shrink:0;">+</button>
       </div>`;
   }).join('');
+}
 
-  const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
-  const consListHTML = r.consumos.length ? `
-    <div class="group-title" style="padding-left:4px">En la pieza (${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems)</div>
-    <div class="cons-list">${r.consumos.map((c,i) => `
-      <div class="cons-item">
-        <span>${esc(c.name)}</span>
-        <span class="q">×${c.qty}${c.qty > 1 ? ` × ${money(c.price)} c/u` : ''}</span>
-        <span class="p">${money(c.price*c.qty)}</span>
-        <button onclick="rmProdFromRoom('${c.productId}')">✕</button>
-      </div>`).join('')}</div>
-  ` : '';
+function quickDoneLabel(r){
+  const total = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
+  return 'Listo' + (total > 0 ? ` · ${money(total)}` : '');
+}
+
+async function openQuickProduct(roomId){
+  // Refresca desde Supabase solo si no hay cambios locales pendientes.
+  if(!localSyncBusy()) await ensureRoomFresh(roomId);
+  const r = db.rooms.find(x => x.id === roomId);
+  if(!r || r.status !== 'ocupada') return;
+  qp = { roomId };
+  renderQuickProductSheet();
+}
+
+function renderQuickProductSheet(){
+  if(!qp) return;
+  const r = db.rooms.find(x => x.id === qp.roomId);
+  if(!r || r.status !== 'ocupada') return;
+
+  const prods = sortProducts(db.products.filter(p => stockOf(p.id) > 0));
+  if(!prods.length){
+    openSheet('Agregar producto', `<p class="empty">No hay productos con stock disponible.<br><br>Ve a <b>Productos</b> para agregar alguno.</p>`, `<button class="btn" onclick="closeModal()">Cerrar</button>`);
+    return;
+  }
+
+  const prevBody = document.querySelector('#modalRoot .sheet-body');
+  const prevScroll = prevBody ? prevBody.scrollTop : 0;
 
   openSheet(`Agregar producto · Pieza ${r.num}`, `
-    ${consListHTML}
+    <div id="qpConsSection">${quickConsListHTML(r)}</div>
     <div style="display:flex;gap:6px;margin:0 0 8px 4px;flex-wrap:wrap;">
       <button type="button" class="btn sm ${productSortMode==='ingreso'?'primary':''}" onclick="setProductSort('ingreso')">Ingreso</button>
       <button type="button" class="btn sm ${productSortMode==='numero'?'primary':''}" onclick="setProductSort('numero')">Número</button>
       <button type="button" class="btn sm ${productSortMode==='alfa'?'primary':''}" onclick="setProductSort('alfa')">Alfabético</button>
     </div>
     <div class="group-title" style="padding-left:4px">Productos disponibles</div>
-    <div class="cons-list">${prodsHTML}</div>
-  `, `<button class="btn primary" onclick="closeModal()">Listo${consTotal > 0 ? ` · ${money(consTotal)}` : ''}</button>`);
+    <div class="cons-list" id="qpProducts">${quickProductsHTML(r)}</div>
+  `, `<button class="btn primary" id="qpDoneBtn" onclick="closeModal()">${quickDoneLabel(r)}</button>`);
+
+  const body = document.querySelector('#modalRoot .sheet-body');
+  if(body) body.scrollTop = prevScroll;
+}
+
+// Actualiza la hoja abierta sin reconsultar Supabase ni recargar la pagina.
+function updateQuickProductUI(pid){
+  if(!qp) return;
+  const r = db.rooms.find(x => x.id === qp.roomId);
+  if(!r) return;
+  const cons = document.getElementById('qpConsSection');
+  if(cons) cons.innerHTML = quickConsListHTML(r);
+  const c = r.consumos.find(x => x.productId === pid);
+  const badge = document.getElementById(`qp-badge-${pid}`);
+  if(badge){
+    badge.textContent = `×${c ? c.qty : 0}`;
+    badge.style.display = c ? 'inline' : 'none';
+  }
+  const done = document.getElementById('qpDoneBtn');
+  if(done) done.textContent = quickDoneLabel(r);
+  const input = document.getElementById(`qp-qty-${pid}`);
+  if(input) input.max = String(Math.max(1, stockOf(pid)));
 }
 
 function addProdToRoom(pid){
@@ -2110,16 +2181,20 @@ function addProdToRoom(pid){
   const p = db.products.find(x => x.id === pid);
   if(!p) return;
   const qtyInput = document.getElementById(`qp-qty-${pid}`);
-  const qty = Math.max(1, Number(qtyInput?.value) || 1);
+  const qty = Math.max(1, Math.floor(Number(qtyInput?.value) || 1));
   const stock = stockOf(pid);
   const ex = r.consumos.find(c => c.productId === pid);
-  const currentQty = ex ? ex.qty : 0;
+  const currentQty = ex ? (Number(ex.qty) || 0) : 0;
   if(currentQty + qty > stock){ toast('Stock insuficiente'); return; }
-  if(ex) ex.qty += qty;
+  if(ex) ex.qty = currentQty + qty;
   else r.consumos.push({ productId: pid, name: p.name, qty: qty, price: p.price, cost: p.cost });
-  save(); renderAll();
-  if(qp) openQuickProduct(qp.roomId);
-  toast(`${qty} ${p.name} agregado(s)`);
+  dirtyRooms.add(r.id);
+  save();
+  updateQuickProductUI(pid);
+  renderRooms();
+  renderPanel();
+  const totalEnPieza = r.consumos.find(c => c.productId === pid)?.qty || qty;
+  toast(`${qty} × ${p.name} agregado(s) · total ${totalEnPieza} en la pieza`);
 }
 
 function rmProdFromRoom(pid){
@@ -2130,8 +2205,11 @@ function rmProdFromRoom(pid){
   if(idx === -1) return;
   if(r.consumos[idx].qty > 1) r.consumos[idx].qty -= 1;
   else r.consumos.splice(idx, 1);
-  save(); renderAll();
-  if(qp) openQuickProduct(qp.roomId);
+  dirtyRooms.add(r.id);
+  save();
+  updateQuickProductUI(pid);
+  renderRooms();
+  renderPanel();
 }
 
 /* QUICK PAY */
@@ -2209,13 +2287,21 @@ let coLock = false;
 
 async function ensureRoomFresh(id){
   if(!sb || !currentUser || !id) return;
+  // No pisar cambios locales que aun no se guardaron en Supabase.
+  if(localSyncBusy() || dirtyRooms.has(id)) return;
   try {
     const { data, error } = await sb.from('motel_rooms').select('*').eq('id', id).maybeSingle();
     if(error || !data) return;
+    // Pudo ocurrir un cambio local mientras se consultaba.
+    if(localSyncBusy() || dirtyRooms.has(id)) return;
     const rr = fromSnakeRoom(data);
     const idx = db.rooms.findIndex(r => r.id === id);
-    if(idx >= 0) db.rooms[idx] = rr;
-    else db.rooms.push(rr);
+    if(idx >= 0){
+      if(JSON.stringify(db.rooms[idx]) === JSON.stringify(rr)) return;
+      db.rooms[idx] = rr;
+    } else {
+      db.rooms.push(rr);
+    }
     db.rooms.sort((a,b) => (Number(a.num)||0) - (Number(b.num)||0));
     if(typeof saveLocal === 'function') saveLocal();
   } catch(e){ console.warn('ensureRoomFresh error:', e?.message || e); }
@@ -2855,8 +2941,8 @@ function setProductSort(mode){
     el.classList.toggle('primary', (k === 'Ingreso' && productSortMode === 'ingreso') || (k === 'Numero' && productSortMode === 'numero') || (k === 'Alfa' && productSortMode === 'alfa'));
   });
   renderProducts();
-  // Re-render modal if open
-  if(qp && qp.roomId) { try { openQuickProduct(qp.roomId); } catch(e){} }
+  // Re-render solo la hoja abierta, sin consultar Supabase.
+  if(qp && qp.roomId) renderQuickProductSheet();
 }
 function renderProducts(){
   const body = $('#prodBody');
@@ -3863,7 +3949,7 @@ async function syncNow(){
   setSyncStatus('syncing', 'Sincronizando...');
   try {
     await syncToSupabase();
-    await refreshAllFromSupabase();
+    await refreshAllFromSupabase({ force: true });
     setSyncStatus('online', '✓ Sincronizado');
     toast('Sincronización completa');
   } catch(e){ setSyncStatus('offline', '✕ Error'); toast('Error al sincronizar'); }
@@ -3881,28 +3967,63 @@ async function refreshSettingsFromSupabase(){
     }
   } catch(e){ console.warn('refreshSettingsFromSupabase error:', e?.message || e); }
 }
-async function refreshAllFromSupabase(){
+async function refreshAllFromSupabase(opts){
   if(!sb || !currentUser) return;
+  const force = !!(opts && opts.force);
+  // No pisar cambios locales pendientes ni una hoja que se esta editando.
+  if(!force && (localSyncBusy() || hasRecentLocalChange(1200))) return;
+  if(!force && editingRoomId()) return;
   try {
     const remote = await loadFromSupabase();
-    if(remote && Array.isArray(remote.users) && remote.users.length > 0){
-      db = remote;
-      if(!Array.isArray(db.items)) db.items = [];
-      // Re-vincular usuario/turno actuales con los datos reci�n le�dos.
-      const u = db.users.find(x => x.id === currentUser.id);
-      if(u) currentUser = u;
-      const sh = db.shifts.find(x => x.id === currentShift?.id);
-      if(sh) currentShift = sh;
-      if(typeof saveLocal === 'function') saveLocal();
-      if(typeof renderAll === 'function') renderAll();
-      setSyncStatus('online', '? Sincronizado');
-    } else if (remote) {
-      // Base remota vac�a o sin usuarios: reflejar el reseteo.
-      db = remote;
-      if(!Array.isArray(db.items)) db.items = [];
-      if(typeof saveLocal === 'function') saveLocal();
-      if(typeof renderAll === 'function') renderAll();
+    if(!remote) return;
+    // Pudo cambiar algo localmente mientras se consultaba: descartar respuesta.
+    if(!force && (localSyncBusy() || hasRecentLocalChange(1200))) return;
+
+    const remoteUsers = Array.isArray(remote.users) ? remote.users : [];
+    const prevSettings = db.settings;
+    if(!remote.settings || typeof remote.settings !== 'object'){
+      remote.settings = prevSettings || seed().settings;
     }
+    if(!Array.isArray(remote.settings.cashIncomes)){
+      remote.settings.cashIncomes = Array.isArray(prevSettings?.cashIncomes) ? prevSettings.cashIncomes : [];
+    }
+
+    if(remoteUsers.length === 0){
+      // Base remota vacia o sin usuarios: reflejar el reseteo.
+      if(JSON.stringify(remote) === JSON.stringify(db)) return;
+      db = remote;
+      if(!Array.isArray(db.items)) db.items = [];
+      if(typeof saveLocal === 'function') saveLocal();
+      if(typeof renderAll === 'function') renderAll();
+      return;
+    }
+
+    // Si no hay cambios reales, no re-renderizar (evita el parpadeo cada 5s).
+    if(!force && JSON.stringify(remote) === JSON.stringify(db)){
+      setSyncStatus('online', '✓ Sincronizado');
+      return;
+    }
+
+    // Preservar la pieza abierta en una hoja (productos, check-in, cobro).
+    const editId = editingRoomId();
+    const localEdit = editId ? db.rooms.find(r => r.id === editId) : null;
+
+    db = remote;
+    if(!Array.isArray(db.items)) db.items = [];
+    if(localEdit){
+      const idx = db.rooms.findIndex(r => r.id === localEdit.id);
+      if(idx >= 0) db.rooms[idx] = localEdit;
+      else db.rooms.push(localEdit);
+      db.rooms.sort((a,b) => (Number(a.num)||0) - (Number(b.num)||0));
+    }
+    // Re-vincular usuario/turno actuales con los datos recien leidos.
+    const u = db.users.find(x => x.id === currentUser.id);
+    if(u) currentUser = u;
+    const sh = db.shifts.find(x => x.id === currentShift?.id);
+    if(sh) currentShift = sh;
+    if(typeof saveLocal === 'function') saveLocal();
+    if(typeof renderAll === 'function') renderAll();
+    setSyncStatus('online', '✓ Sincronizado');
   } catch(e){ console.warn('refreshAllFromSupabase error:', e?.message || e); }
 }
 
