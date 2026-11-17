@@ -554,6 +554,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
     <div class="fab-row no-print">
       <button class="btn danger sm" onclick="openNewExpense()">− Gasto</button>
       <button class="btn blue sm" onclick="openNewDeposit()">− Depósito</button>
+   <button class="btn green sm" onclick="openNewCashIncome()">+ Ingreso</button>
     </div>
     <div class="group-title">Últimos movimientos</div>
     <div class="group panel-movements-card">
@@ -682,7 +683,7 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
           <tbody id="repCashDaily"></tbody>
         </table>
       </div>
-      <p class="helper" style="padding:8px 12px;margin:0">El cierre se calcula con los movimientos registrados: efectivo cobrado + depósitos/entradas − gastos/salidas. Los pagos QR no aumentan el efectivo de caja.</p>
+        Efectivo cobrado + dep��sitos/entradas - gastos/salidas. Los pagos QR no aumentan el efectivo de caja.
     </div>
     <div class="group-title">Libro de movimientos de caja</div>
     <div class="group" style="margin-bottom:20px">
@@ -870,8 +871,8 @@ function fromSnakeRoom(r){
 }
 function toSnakeMovement(m){ return { id:m.id, product_id:m.productId, type:m.type, qty:m.qty, unit_cost:m.unitCost||0, date:m.date, note:m.note||null, user_id:m.userId||null, shift_id:m.shiftId||null, edited_at:m.editedAt||null, edited_by:m.editedBy||null }; }
 function fromSnakeMovement(m){ return { id:m.id, productId:m.product_id, type:m.type, qty:Number(m.qty), unitCost:Number(m.unit_cost)||0, date:m.date, note:m.note||'', userId:m.user_id||null, shiftId:m.shift_id||null, editedAt:m.edited_at||null, editedBy:m.edited_by||null }; }
-function toSnakeSale(s){ return { id:s.id, ts:s.ts, day:s.day, type:s.type, detail:s.detail, amount:s.amount||0, lodging_amount:s.lodgingAmount??null, total_collected:s.totalCollected??null, cost:s.cost||0, user_id:s.userId||null, user_name:s.userName||null, shift_id:s.shiftId||null, room_num:s.roomNum||null, payments:s.payments||[] }; }
-function fromSnakeSale(s){ return { id:s.id, ts:s.ts, day:typeof s.day==='string'?s.day:dayKey(s.day), type:s.type, detail:s.detail, amount:Number(s.amount)||0, lodgingAmount:s.lodging_amount!=null?Number(s.lodging_amount):null, totalCollected:s.total_collected!=null?Number(s.total_collected):null, cost:Number(s.cost)||0, userId:s.user_id||null, userName:s.user_name||null, shiftId:s.shift_id||null, roomNum:s.room_num||null, payments:Array.isArray(s.payments)?s.payments:[] }; }
+function toSnakeSale(s){ return { id:s.id, ts:s.ts, day:s.day, type:(s.type === 'ingreso' ? 'producto' : s.type), detail:s.detail, amount:s.amount||0, lodging_amount:s.lodgingAmount??null, total_collected:s.totalCollected??null, cost:s.cost||0, user_id:s.userId||null, user_name:s.userName||null, shift_id:s.shiftId||null, room_num:s.roomNum||null, payments:s.payments||[] }; }
+function fromSnakeSale(s){ return { id:s.id, ts:s.ts, day:typeof s.day==='string'?s.day:dayKey(s.day), type:(s.type === 'ingreso' ? 'producto' : s.type), detail:(s.type === 'ingreso' ? 'Ingreso manual: ' + (s.detail || '') : s.detail), amount:Number(s.amount)||0, lodgingAmount:s.lodging_amount!=null?Number(s.lodging_amount):null, totalCollected:s.total_collected!=null?Number(s.total_collected):null, cost:Number(s.cost)||0, userId:s.user_id||null, userName:s.user_name||null, shiftId:s.shift_id||null, roomNum:s.room_num||null, payments:Array.isArray(s.payments)?s.payments:[] }; }
 function toSnakeExpense(e){ return { id:e.id, ts:e.ts, day:e.day, description:e.desc, amount:e.amount||0, category:e.category||null, user_id:e.userId||null, user_name:e.userName||null }; }
 function fromSnakeExpense(e){ return { id:e.id, ts:e.ts, day:typeof e.day==='string'?e.day:dayKey(e.day), desc:e.description, amount:Number(e.amount)||0, category:e.category||'', userId:e.user_id||null, userName:e.user_name||null }; }
 function toSnakeDeposit(d){ return { id:d.id, ts:d.ts, day:d.day, description:d.desc, amount:d.amount||0, user_id:d.userId||null, user_name:d.userName||null }; }
@@ -903,7 +904,8 @@ function seed(){
       tariffs30: [0,30,60,90,115,140,165,185,200,225,250],
       tariffs40: [0,40,80,115,145,175,205,235,260,280,300],
       nightPrice30: 130,
-      nightPrice40: 150
+      nightPrice40: 150,
+      cashIncomes: []
     }
   };
 }
@@ -918,6 +920,17 @@ function loadLocal(){
       if(!d.deposits) d.deposits = [];
       if(!d.items) d.items = [];
       if(!d.settings) d.settings = seed().settings;
+      if(!Array.isArray(d.settings.cashIncomes)) d.settings.cashIncomes = [];
+      // Migrar ingresos manuales antiguos (guardados como ventas) a cashIncomes
+      if(Array.isArray(d.sales)){
+        const manual = d.sales.filter(x => x.type === 'ingreso' || (x.detail||'').startsWith('Ingreso manual:'));
+        manual.forEach(x => {
+          if(!d.settings.cashIncomes.find(c => c.id === x.id)){
+            d.settings.cashIncomes.push({ id: x.id, ts: x.ts, day: x.day, desc: (x.detail||'').replace(/^Ingreso manual: /,''), amount: x.amount, userId: x.userId, userName: x.userName });
+          }
+        });
+        d.sales = d.sales.filter(x => !(x.type === 'ingreso' || (x.detail||'').startsWith('Ingreso manual:')));
+      }
       return d;
     }
   }catch(e){ console.warn(e); }
@@ -930,6 +943,7 @@ function mergePreferLocal(remote, local){
   if(remote?.settings && typeof remote.settings === 'object') result.settings = remote.settings;
   else if(local?.settings && typeof local.settings === 'object') result.settings = local.settings;
   else result.settings = (typeof seed === 'function') ? seed().settings : result.settings;
+  if(!Array.isArray(result.settings.cashIncomes)) result.settings.cashIncomes = Array.isArray(local?.settings?.cashIncomes) ? local.settings.cashIncomes : [];
   collections.forEach(key => {
     const r = Array.isArray(remote?.[key]) ? remote[key] : [];
     const l = Array.isArray(local?.[key]) ? local[key] : [];
@@ -3382,7 +3396,8 @@ function calcSaldoCaja(){
   const depositoTotal = db.deposits.reduce((a, d) => a + (Number(d.amount) || 0), 0);
   // Resta todos los gastos
   const gastoTotal = db.expenses.reduce((a, g) => a + (Number(g.amount) || 0), 0);
-  return efectivoTotal - depositoTotal - gastoTotal;
+  const ingresoManualTotal = (db.settings?.cashIncomes || []).reduce((a, c) => a + (Number(c.amount) || 0), 0);
+  return efectivoTotal - depositoTotal - gastoTotal + ingresoManualTotal;
 }
 
 /* GASTOS / DEPÓSITOS */
@@ -3425,7 +3440,13 @@ function saveExpense(){
   save(); closeModal(); renderAll(); toast('Gasto registrado');
 }
 function openNewDeposit(){
+  const saldo = calcSaldoCaja();
+  const saldoColor = saldo >= 0 ? 'var(--green)' : 'var(--red)';
   openSheet('Nuevo depósito', `
+    <div style="background:var(--amount-bg);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(52,199,89,.35)">
+      <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2)">Saldo en Caja</span>
+      <b style="font-size:20px;font-weight:800;color:${saldoColor}">${money(saldo)}</b>
+    </div>
     <div class="field"><label>Descripción</label><input id="dpDesc" placeholder="Ej: Depósito caja fuerte" autocomplete="off"></div>
     <div class="field"><label>Monto (Bs)</label><input id="dpAmt" type="number" inputmode="decimal" min="0" step="0.5" value="0"></div>
   `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveDeposit()">Guardar</button>`);
@@ -3435,9 +3456,35 @@ function saveDeposit(){
   const desc = $('#dpDesc').value.trim();
   const amt = Number($('#dpAmt').value) || 0;
   if(!desc || amt <= 0){ toast('Completa todo'); return; }
+  const saldoActual = calcSaldoCaja();
+  if(amt > saldoActual){ toast('El depósito no puede superar el saldo en caja'); return; }
   const now = new Date().toISOString();
   db.deposits.push({ id: uid(), ts: now, day: dayKey(now), desc, amount: amt, userId: currentUser?.id, userName: currentUser?.name });
   save(); closeModal(); renderAll(); toast('Depósito registrado');
+}
+
+function openNewCashIncome(){
+  const saldo = calcSaldoCaja();
+  const saldoColor = saldo >= 0 ? 'var(--green)' : 'var(--red)';
+  openSheet('Nuevo ingreso en efectivo', `
+    <div style="background:var(--amount-bg);border-radius:12px;padding:12px 16px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;border:1px solid rgba(52,199,89,.35)">
+      <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-2)">Saldo en Caja</span>
+      <b style="font-size:20px;font-weight:800;color:${saldoColor}">${money(saldo)}</b>
+    </div>
+    <div class="field"><label>Descripción</label><input id="ciDesc" placeholder="Ej: Pago de deuda, ingreso manual" autocomplete="off"></div>
+    <div class="field"><label>Monto (Bs)</label><input id="ciAmt" type="number" inputmode="decimal" min="0" step="0.5" value="0"></div>
+  `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveCashIncome()">Guardar</button>`);
+  setTimeout(()=>$('#ciDesc').focus(), 320);
+}
+function saveCashIncome(){
+  const desc = ($('#ciDesc')?.value || '').trim();
+  const amt = Number($('#ciAmt')?.value) || 0;
+  if(!desc || amt <= 0){ toast('Completa todo'); return; }
+  if(!db.settings) db.settings = seed().settings;
+  if(!Array.isArray(db.settings.cashIncomes)) db.settings.cashIncomes = [];
+  const now = new Date().toISOString();
+  db.settings.cashIncomes.push({ id: uid(), ts: now, day: dayKey(now), desc, amount: amt, userId: currentUser?.id, userName: currentUser?.name });
+  save(); closeModal(); renderAll(); toast('Ingreso registrado');
 }
 
 /* PANEL */
@@ -3464,7 +3511,7 @@ function renderPanel(){
       <div class="lbl">💰 Saldo en Caja (Efectivo disponible)</div>
       <div class="val" style="font-size:32px;color:${saldoColor};letter-spacing:-.03em">${money(saldoCaja)}</div>
       <div style="font-size:11px;color:var(--text-2);margin-top:5px;line-height:1.5">
-        Efectivo cobrado + Depósitos − Gastos
+        Efectivo cobrado - Dep�sitos - Gastos
       </div>
     </div>
     <div class="stat"><div class="lbl">Libres</div><div class="val c-green">${libres}</div></div>
