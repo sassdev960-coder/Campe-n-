@@ -944,26 +944,11 @@ function mergePreferLocal(remote, local){
   else if(local?.settings && typeof local.settings === 'object') result.settings = local.settings;
   else result.settings = (typeof seed === 'function') ? seed().settings : result.settings;
   if(!Array.isArray(result.settings.cashIncomes)) result.settings.cashIncomes = Array.isArray(local?.settings?.cashIncomes) ? local.settings.cashIncomes : [];
+  // El remoto (Supabase) es la fuente de verdad: se reemplazan las colecciones locales
+  // para que los borrados/cambios (incluidos los resets) se reflejen en todos los dispositivos.
   collections.forEach(key => {
     const r = Array.isArray(remote?.[key]) ? remote[key] : [];
-    const l = Array.isArray(local?.[key]) ? local[key] : [];
-    if(key === 'rooms'){
-      // Las habitaciones son estado compartido: el remoto (Supabase) es la fuente de verdad.
-      // Se prefieren los datos remotos por id; las piezas locales que no existan en remoto se conservan.
-      const map = new Map();
-      l.forEach(x => { if(x && x.id != null) map.set(x.id, x); });
-      r.forEach(x => { if(x && x.id != null) map.set(x.id, x); }); // remoto sobrescribe
-      if(!r.length && !l.length) { result[key] = []; return; }
-      result[key] = map.size ? [...map.values()] : (r.length ? r : l);
-      return;
-    }
-    const map = new Map();
-    r.forEach(x => { if(x && x.id != null) map.set(x.id, x); });
-    l.forEach(x => { if(x && x.id != null) map.set(x.id, x); });
-    // If no ids, just prefer local if present
-    if(!r.length && !l.length) { result[key] = []; return; }
-    if(map.size) result[key] = [...map.values()];
-    else result[key] = l.length ? l : r;
+    result[key] = r;
   });
   if(!result.items) result.items = local?.items || [];
   return result;
