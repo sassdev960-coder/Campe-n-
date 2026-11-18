@@ -666,6 +666,16 @@ html[data-theme="dark"] .user-row .u-role.admin{color:var(--accent)}
       </div>
       <p class="helper" style="padding:8px 12px;margin:0">El total por pieza suma hospedaje y consumos. Efectivo y QR muestran los importes recibidos en el cobro de esa pieza, incluidos los consumos cobrados junto con la estadía.</p>
     </div>
+    <div class="group-title">Entradas por pieza (inicio y fin)</div>
+    <div class="group" style="margin-bottom:20px">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Pieza</th><th>Entrada</th><th>Salida</th><th class="num">Duración</th><th class="num">Cobro</th><th>Usuario</th></tr></thead>
+          <tbody id="repRoomStays"></tbody>
+        </table>
+      </div>
+      <p class="helper" style="padding:8px 12px;margin:0">Cada fila corresponde a una entrada cobrada. Las entradas anteriores sin hora guardada se calculan con la duración que figura en el detalle.</p>
+    </div>
     <div class="group-title">Resumen por día</div>
     <div class="group" style="margin-bottom:20px">
       <div class="table-wrap">
@@ -779,6 +789,49 @@ function fmtDur(ms){
   return h + 'h ' + pad(m) + 'm';
 }
 function elapsed(ms){ if(ms < 0) ms = 0; const t = Math.floor(ms/60000); const h = Math.floor(t/60); const m = t%60; if(h === 0) return m + ' min'; return h + 'h ' + pad(m) + 'm'; }
+
+/* Horas de entrada/salida de la estadía (se conservan dentro del detalle) */
+const STAY_TAG_RE = /(?:\s*·\s*)?\[(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})\s*\|\s*(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})\]\s*$/;
+const fmtDateTimeShort = iso => { const d = new Date(iso); return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+function parseStayStamp(str){
+  const m = String(str || '').match(/^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})$/);
+  if(!m) return null;
+  const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]), Number(m[4]), Number(m[5]));
+  return isNaN(d.getTime()) ? null : d;
+}
+function parseSaleStayTimes(detail){
+  const m = String(detail || '').match(STAY_TAG_RE);
+  if(!m) return null;
+  const start = parseStayStamp(m[1]), end = parseStayStamp(m[2]);
+  if(!start || !end) return null;
+  return { checkIn: start.toISOString(), checkOut: end.toISOString() };
+}
+function cleanSaleDetail(detail){
+  return String(detail || '').replace(STAY_TAG_RE, '').replace(/[\s·]+$/, '').trim();
+}
+function saleDurationMs(detail){
+  const text = cleanSaleDetail(detail);
+  let m = text.match(/(\d+)\s*h\s*(\d+)\s*m\b/i);
+  if(m) return (Number(m[1]) * 60 + Number(m[2])) * 60000;
+  m = text.match(/(\d+)\s*(?:min|m)\b/i);
+  if(m) return Number(m[1]) * 60000;
+  return null;
+}
+function saleStayTimes(sale){
+  if(!sale || sale.type !== 'habitacion') return { checkIn:null, checkOut:null };
+  const parsed = parseSaleStayTimes(sale.detail);
+  const checkOut = sale.checkOut || parsed?.checkOut || sale.ts || null;
+  let checkIn = sale.checkIn || parsed?.checkIn || null;
+  if(!checkIn && checkOut){
+    const dur = saleDurationMs(sale.detail);
+    if(dur != null) checkIn = new Date(new Date(checkOut).getTime() - dur).toISOString();
+  }
+  return { checkIn, checkOut };
+}
+function saleRoomNum(sale){
+  const raw = sale?.roomNum ?? (String(sale?.detail || '').match(/Pieza\s+([^·]+)/i)?.[1] || 'Sin pieza');
+  return String(raw).trim();
+}
 function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(()=>t.classList.remove('show'), 2200); }
 
 const TOLERANCE_MS = 10 * 60000;
@@ -872,7 +925,22 @@ function fromSnakeRoom(r){
 function toSnakeMovement(m){ return { id:m.id, product_id:m.productId, type:m.type, qty:m.qty, unit_cost:m.unitCost||0, date:m.date, note:m.note||null, user_id:m.userId||null, shift_id:m.shiftId||null, edited_at:m.editedAt||null, edited_by:m.editedBy||null }; }
 function fromSnakeMovement(m){ return { id:m.id, productId:m.product_id, type:m.type, qty:Number(m.qty), unitCost:Number(m.unit_cost)||0, date:m.date, note:m.note||'', userId:m.user_id||null, shiftId:m.shift_id||null, editedAt:m.edited_at||null, editedBy:m.edited_by||null }; }
 function toSnakeSale(s){ return { id:s.id, ts:s.ts, day:s.day, type:(s.type === 'ingreso' ? 'producto' : s.type), detail:s.detail, amount:s.amount||0, lodging_amount:s.lodgingAmount??null, total_collected:s.totalCollected??null, cost:s.cost||0, user_id:s.userId||null, user_name:s.userName||null, shift_id:s.shiftId||null, room_num:s.roomNum||null, payments:s.payments||[] }; }
-function fromSnakeSale(s){ return { id:s.id, ts:s.ts, day:typeof s.day==='string'?s.day:dayKey(s.day), type:(s.type === 'ingreso' ? 'producto' : s.type), detail:(s.type === 'ingreso' ? 'Ingreso manual: ' + (s.detail || '') : s.detail), amount:Number(s.amount)||0, lodgingAmount:s.lodging_amount!=null?Number(s.lodging_amount):null, totalCollected:s.total_collected!=null?Number(s.total_collected):null, cost:Number(s.cost)||0, userId:s.user_id||null, userName:s.user_name||null, shiftId:s.shift_id||null, roomNum:s.room_num||null, payments:Array.isArray(s.payments)?s.payments:[] }; }
+function fromSnakeSale(s){
+  const stay = s.type === 'habitacion' ? parseSaleStayTimes(s.detail) : null;
+  return {
+    id:s.id, ts:s.ts, day:typeof s.day==='string'?s.day:dayKey(s.day),
+    type:(s.type === 'ingreso' ? 'producto' : s.type),
+    detail:(s.type === 'ingreso' ? 'Ingreso manual: ' + (s.detail || '') : s.detail),
+    amount:Number(s.amount)||0,
+    lodgingAmount:s.lodging_amount!=null?Number(s.lodging_amount):null,
+    totalCollected:s.total_collected!=null?Number(s.total_collected):null,
+    cost:Number(s.cost)||0,
+    userId:s.user_id||null, userName:s.user_name||null, shiftId:s.shift_id||null,
+    roomNum:s.room_num||null, payments:Array.isArray(s.payments)?s.payments:[],
+    checkIn: s.check_in || (stay ? stay.checkIn : null),
+    checkOut: s.check_out || (stay ? stay.checkOut : (s.type === 'habitacion' ? s.ts : null))
+  };
+}
 function toSnakeExpense(e){ return { id:e.id, ts:e.ts, day:e.day, description:e.desc, amount:e.amount||0, category:e.category||null, user_id:e.userId||null, user_name:e.userName||null }; }
 function fromSnakeExpense(e){ return { id:e.id, ts:e.ts, day:typeof e.day==='string'?e.day:dayKey(e.day), desc:e.description, amount:Number(e.amount)||0, category:e.category||'', userId:e.user_id||null, userName:e.user_name||null }; }
 function toSnakeDeposit(d){ return { id:d.id, ts:d.ts, day:d.day, description:d.desc, amount:d.amount||0, user_id:d.userId||null, user_name:d.userName||null }; }
@@ -2254,6 +2322,7 @@ function registerSale(r, total, payments, refTs){
   else detailParts.push(elapsed(refTs - new Date(r.checkIn).getTime()));
   const payStr = payments.map(p => `${p.method.toUpperCase()} ${money(p.amount)}`).join(' + ');
   detailParts.push(payStr);
+  if(r.checkIn) detailParts.push(`[${fmtDateTimeShort(r.checkIn)} | ${fmtDateTimeShort(iso)}]`);
   db.sales.push({
     id: uid(), ts: iso, day: dayKey(iso), type: 'habitacion',
     detail: detailParts.join(' · '),
@@ -3637,16 +3706,13 @@ function renderPanelMovements(){
   const to = $('#panelTo')?.value || todayKey();
   const all = [
     ...db.sales.map(s => {
+      const stay = s.type === 'habitacion' ? saleStayTimes(s) : { checkIn:null, checkOut:null };
       let tiempo = null;
-      if(s.type === 'habitacion' && s.detail){
-        const m1 = String(s.detail).match(/(\d+)h\s*(\d+)?m?/);
-        if(m1){
-          const h = parseInt(m1[1]) || 0;
-          const min = parseInt(m1[2]) || 0;
-          tiempo = h > 0 && min > 0 ? `${h}h ${min}m` : h > 0 ? `${h}h` : min > 0 ? `${min}m` : null;
-        }
+      if(stay.checkIn && stay.checkOut){
+        const ms = new Date(stay.checkOut) - new Date(stay.checkIn);
+        if(ms >= 0) tiempo = fmtDur(ms);
       }
-      return { ts:s.ts, day:s.day || dayKey(s.ts), label:s.detail || s.type || 'Venta', amount:Number(s.amount)||0, tipo:s.type || 'venta', tiempo };
+      return { ts:s.ts, day:s.day || dayKey(s.ts), label:cleanSaleDetail(s.detail) || s.type || 'Venta', amount:Number(s.amount)||0, tipo:s.type || 'venta', tiempo };
     }),
     ...db.expenses.map(g => ({ ts:g.ts, day:g.day || dayKey(g.ts), label:`Gasto: ${g.desc || 'Sin detalle'}`, amount:-(Number(g.amount)||0), tipo:'gasto' })),
     ...db.deposits.map(d => ({ ts:d.ts, day:d.day || dayKey(d.ts), label:`Depósito: ${d.desc || 'Sin detalle'}`, amount:-(Number(d.amount)||0), tipo:'deposito' }))
@@ -3695,6 +3761,7 @@ function renderReports(){
   if(!from || !to) {
     $('#repStats').innerHTML = '';
     $('#repRooms').innerHTML = '<tr><td colspan="8" class="empty">Seleccione un rango de fechas para generar el reporte.</td></tr>';
+    if($('#repRoomStays')) $('#repRoomStays').innerHTML = '<tr><td colspan="6" class="empty">Seleccione un rango de fechas.</td></tr>';
     $('#repDaily').innerHTML = '<tr><td colspan="5" class="empty">Seleccione un rango de fechas.</td></tr>';
     $('#repProduct').innerHTML = '<tr><td colspan="5" class="empty">Seleccione un rango de fechas.</td></tr>';
     $('#repDetail').innerHTML = '<tr><td colspan="7" class="empty">Seleccione un rango de fechas.</td></tr>';
@@ -3725,10 +3792,10 @@ function renderReports(){
     .filter(p => String(p.method || '').trim().toLowerCase() === 'efectivo')
     .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
   const cashEntries = [
-    ...db.sales.filter(s => s.day < from).map(s => ({ day:s.day, ts:s.ts, kind:'sale', detail:`Venta ${s.type === 'habitacion' ? 'de pieza' : 'de producto'} · ${s.detail || ''}`, incoming:cashFromSale(s), outgoing:0 })),
+    ...db.sales.filter(s => s.day < from).map(s => ({ day:s.day, ts:s.ts, kind:'sale', detail:`Venta ${s.type === 'habitacion' ? 'de pieza' : 'de producto'} · ${cleanSaleDetail(s.detail) || ''}`, incoming:cashFromSale(s), outgoing:0 })),
     ...db.deposits.filter(d => d.day < from).map(d => ({ day:d.day, ts:d.ts, kind:'deposit', detail:`Salida / depósito · ${d.desc || ''}`, incoming:0, outgoing:Number(d.amount)||0 })),
     ...db.expenses.filter(g => g.day < from).map(g => ({ day:g.day, ts:g.ts, kind:'expense', detail:`Gasto · ${g.desc || ''}`, incoming:0, outgoing:Number(g.amount)||0 })),
-    ...sales.map(s => ({ day:s.day, ts:s.ts, kind:'sale', detail:`Venta ${s.type === 'habitacion' ? 'de pieza' : 'de producto'} · ${s.detail || ''}`, incoming:cashFromSale(s), outgoing:0 })),
+    ...sales.map(s => ({ day:s.day, ts:s.ts, kind:'sale', detail:`Venta ${s.type === 'habitacion' ? 'de pieza' : 'de producto'} · ${cleanSaleDetail(s.detail) || ''}`, incoming:cashFromSale(s), outgoing:0 })),
     ...deposits.map(d => ({ day:d.day, ts:d.ts, kind:'deposit', detail:`Salida / depósito · ${d.desc || ''}`, incoming:0, outgoing:Number(d.amount)||0 })),
     ...expenses.map(g => ({ day:g.day, ts:g.ts, kind:'expense', detail:`Gasto · ${g.desc || ''}`, incoming:0, outgoing:Number(g.amount)||0 }))
   ].filter(x => x.day && x.day <= to && (x.incoming > 0 || x.outgoing > 0))
@@ -3780,7 +3847,7 @@ function renderReports(){
     return roomRows.get(key);
   };
   sales.filter(s => s.type === 'habitacion').forEach(s => {
-    const row = getRoomRow(s.roomNum ?? (String(s.detail || '').match(/Pieza\s+([^·]+)/i)?.[1] || 'Sin pieza').trim());
+    const row = getRoomRow(saleRoomNum(s));
     row.stays += 1;
     row.hospedaje += Number(s.amount) || 0;
     row.cost += Number(s.cost) || 0;
@@ -3812,6 +3879,28 @@ function renderReports(){
   </tr>`).join('') + `<tr style="font-weight:800;border-top:2px solid var(--sep)">
     <td>TOTAL</td><td class="num">${roomTotals.stays}</td><td class="num">${money(roomTotals.hospedaje)}</td><td class="num">${money(roomTotals.consumos)}</td><td class="num">${money(roomTotals.total)}</td><td class="num">${money(roomTotals.efectivo)}</td><td class="num">${money(roomTotals.qr)}</td><td class="num">${money(roomTotals.util)}</td>
   </tr>` : '<tr><td colspan="8" class="empty">Sin cobros de piezas ni consumos asignados en el rango.</td></tr>';
+
+  const staySales = sales.filter(s => s.type === 'habitacion').map(s => {
+    const stay = saleStayTimes(s);
+    return { ...s, checkIn: stay.checkIn, checkOut: stay.checkOut, roomNum: saleRoomNum(s) };
+  }).sort((a,b) => String(a.checkIn || a.ts).localeCompare(String(b.checkIn || b.ts)));
+  const repRoomStays = $('#repRoomStays');
+  if(repRoomStays) repRoomStays.innerHTML = staySales.length
+    ? staySales.map(s => {
+        const start = s.checkIn ? new Date(s.checkIn) : null;
+        const end = s.checkOut ? new Date(s.checkOut) : null;
+        const durMs = start && end && end >= start ? end - start : null;
+        const cobro = s.totalCollected != null ? Number(s.totalCollected) || 0 : Number(s.amount) || 0;
+        return `<tr>
+          <td style="font-weight:700">Pieza ${esc(s.roomNum)}</td>
+          <td style="white-space:nowrap;color:var(--green);font-weight:700">${start ? fmtDateTimeShort(start) : '—'}</td>
+          <td style="white-space:nowrap;color:var(--red);font-weight:700">${end ? fmtDateTimeShort(end) : '—'}</td>
+          <td class="num">${durMs != null ? fmtDur(durMs) : '—'}</td>
+          <td class="num" style="font-weight:700">${money(cobro)}</td>
+          <td>${esc(s.userName || '—')}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="6" class="empty">Sin entradas de piezas en el rango.</td></tr>`;
 
   const byDay = {};
   sales.forEach(s => {
@@ -3877,19 +3966,22 @@ function renderReports(){
       </tr>`).join('')
     : `<tr><td colspan="5" class="empty">Sin ventas de productos en el rango.</td></tr>`;
   const all = [
-    ...sales.map(s => ({ ts: s.ts, type: s.type, detail: s.detail, amount: s.amount, util: s.amount - s.cost, userName: s.userName, checkIn: s.checkIn || null, checkOut: s.checkOut || null })),
+    ...sales.map(s => {
+      const stay = s.type === 'habitacion' ? saleStayTimes(s) : { checkIn:null, checkOut:null };
+      return { ts: s.ts, type: s.type, detail: s.detail, amount: s.amount, util: s.amount - s.cost, userName: s.userName, checkIn: stay.checkIn, checkOut: stay.checkOut };
+    }),
     ...expenses.map(g => ({ ts: g.ts, type: 'gasto', detail: `${g.desc} · ${g.category}`, amount: -g.amount, util: -g.amount, userName: g.userName })),
     ...deposits.map(d => ({ ts: d.ts, type: 'deposito', detail: d.desc, amount: 0, util: 0, userName: d.userName }))
   ].sort((a,b) => new Date(b.ts) - new Date(a.ts));
   $('#repDetail').innerHTML = all.length
     ? all.slice(0,300).map(s => {
         const tColor = s.type === 'gasto' ? 'var(--red)' : s.type === 'deposito' ? 'var(--blue)' : 'var(--accent)';
-        const entradaTd = s.type === 'habitacion' && s.checkIn ? `<span style="font-size:12px;font-weight:700;color:var(--green)">${fmtTime(s.checkIn)}</span>` : `<span style="color:var(--text-3);font-size:11px">—</span>`;
-        const salidaTd  = s.type === 'habitacion' && s.checkOut ? `<span style="font-size:12px;font-weight:700;color:var(--red)">${fmtTime(s.checkOut)}</span>` : `<span style="color:var(--text-3);font-size:11px">—</span>`;
+        const entradaTd = s.type === 'habitacion' && s.checkIn ? `<span style="font-size:11px;font-weight:700;color:var(--green)">${fmtDateTimeShort(s.checkIn)}</span>` : `<span style="color:var(--text-3);font-size:11px">—</span>`;
+        const salidaTd  = s.type === 'habitacion' && s.checkOut ? `<span style="font-size:11px;font-weight:700;color:var(--red)">${fmtDateTimeShort(s.checkOut)}</span>` : `<span style="color:var(--text-3);font-size:11px">—</span>`;
         return `<tr>
           <td style="white-space:nowrap;color:var(--text-2);font-size:12px">${fmtDT(s.ts)}${s.userName ? `<br><span style="color:var(--text-3)">${esc(s.userName)}</span>` : ''}</td>
           <td style="font-size:12px;color:${tColor};text-transform:capitalize;font-weight:700">${s.type}</td>
-          <td style="font-size:13px">${esc(s.detail)}</td>
+          <td style="font-size:13px">${esc(cleanSaleDetail(s.detail))}</td>
           <td style="text-align:center;white-space:nowrap">${entradaTd}</td>
           <td style="text-align:center;white-space:nowrap">${salidaTd}</td>
           <td class="num" style="color:${s.type === 'gasto' ? 'var(--red)' : 'inherit'}">${money(s.amount)}</td>
