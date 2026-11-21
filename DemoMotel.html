@@ -765,6 +765,7 @@ const pad = n => String(n).padStart(2,'0');
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = n => 'Bs ' + (Number(n)||0).toFixed(2);
+const roundMoney = n => Math.round((Number(n)||0) * 100) / 100;
 const dayKey = d => { const x = new Date(d); return x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(x.getDate()); };
 const todayKey = () => dayKey(new Date());
 const fmtDate = k => { const [y,m,d] = k.split('-'); return `${d}/${m}/${y}`; };
@@ -973,9 +974,44 @@ function seed(){
       tariffs40: [0,40,80,115,145,175,205,235,260,280,300],
       nightPrice30: 130,
       nightPrice40: 150,
+      discounts: [],
       cashIncomes: []
     }
   };
+}
+function normalizeDiscounts(list){
+  if(!Array.isArray(list)) return [];
+  return list
+    .map(d => ({ hours: Number(d?.hours), percent: Math.max(0, Math.min(100, Number(d?.percent))) }))
+    .filter(d => Number.isFinite(d.hours) && d.hours > 0 && Number.isFinite(d.percent) && d.percent > 0)
+    .sort((a,b) => a.hours - b.hours || a.percent - b.percent);
+}
+/* Une la configuración actual (app_settings) con la fila heredada "tariffs",
+   que es donde quedaron guardados los descuentos. */
+function settingsFromRows(rows){
+  const list = Array.isArray(rows) ? rows : [];
+  const appRow = list.find(x => x && x.id === 'app_settings' && x.value && typeof x.value === 'object');
+  const legacyRow = list.find(x => x && x.id === 'tariffs' && x.value && typeof x.value === 'object');
+  if(!appRow && !legacyRow) return null;
+  const settings = appRow ? { ...appRow.value } : {};
+  if(legacyRow){
+    const lv = legacyRow.value;
+    if(!Array.isArray(settings.discounts) && Array.isArray(lv.discounts)) settings.discounts = lv.discounts;
+    if(settings.nightPrice30 == null && lv.night30 != null) settings.nightPrice30 = Number(lv.night30);
+    if(settings.nightPrice40 == null && lv.night40 != null) settings.nightPrice40 = Number(lv.night40);
+  }
+  settings.discounts = normalizeDiscounts(settings.discounts);
+  return settings;
+}
+function discountForDuration(ms){
+  const hours = Math.max(0, Number(ms) || 0) / 3600000;
+  let best = null;
+  for(const tier of normalizeDiscounts(db?.settings?.discounts)){
+    if(hours + 1e-9 >= tier.hours && (!best || tier.percent > best.percent || (tier.percent === best.percent && tier.hours > best.hours))){
+      best = tier;
+    }
+  }
+  return best;
 }
 function loadLocal(){
   try{
@@ -989,6 +1025,7 @@ function loadLocal(){
       if(!d.items) d.items = [];
       if(!d.settings) d.settings = seed().settings;
       if(!Array.isArray(d.settings.cashIncomes)) d.settings.cashIncomes = [];
+      d.settings.discounts = normalizeDiscounts(d.settings.discounts);
       // Migrar ingresos manuales antiguos (guardados como ventas) a cashIncomes
       if(Array.isArray(d.sales)){
         const manual = d.sales.filter(x => x.type === 'ingreso' || (x.detail||'').startsWith('Ingreso manual:'));
@@ -1012,6 +1049,7 @@ function mergePreferLocal(remote, local){
   else if(local?.settings && typeof local.settings === 'object') result.settings = local.settings;
   else result.settings = (typeof seed === 'function') ? seed().settings : result.settings;
   if(!Array.isArray(result.settings.cashIncomes)) result.settings.cashIncomes = Array.isArray(local?.settings?.cashIncomes) ? local.settings.cashIncomes : [];
+  result.settings.discounts = normalizeDiscounts(result.settings.discounts);
   // El remoto (Supabase) es la fuente de verdad: se reemplazan las colecciones locales
   // para que los borrados/cambios (incluidos los resets) se reflejen en todos los dispositivos.
   collections.forEach(key => {
@@ -1051,8 +1089,7 @@ async function loadFromSupabase(){
     if(st.error) console.warn('⚠ settings load:', st.error?.message);
     let settings = null;
     if(!st.error && Array.isArray(st.data)){
-      const row = st.data.find(x => x.id === 'app_settings');
-      if(row && row.value && typeof row.value === 'object') settings = row.value;
+      settings = settingsFromRows(st.data);
     }
     return {
       users: (u.data || []).map(x => ({ id:x.id, name:x.name, username:x.username, password:x.password, role:x.role })),
@@ -1816,10 +1853,27 @@ function calcRoomAmount(r, refTs){
   }
   if(r.mode === 'corrida'){
     const firstHourMs = 3600000;
-    if(elapsedMs <= firstHourMs + TOLERANCE_MS) return { amount: rate, hours: 1, rate, detail: 'corrida' };
-    const extraMs = elapsedMs - firstHourMs;
-    const extra = calcExtraCharge(extraMs, rate);
-    return {amount:rate+extra.charge,hours:1+(extra.blocks*0.5),rate,detail:'corrida',extraBlocks:extra.blocks,extraCharge:extra.charge,tolerance:extra.tolerance};
+    let subtotal, hours, extraBlocks = 0, extraCharge = 0, extraMs = 0, tolerance = false;
+    if(elapsedMs <= firstHourMs + TOLERANCE_MS){
+      subtotal = rate; hours = 1;
+    } else {
+      extraMs = elapsedMs - firstHourMs;
+      const extra = calcExtraCharge(extraMs, rate);
+      extraBlocks = extra.blocks; extraCharge = extra.charge; tolerance = extra.tolerance;
+      subtotal = rate + extra.charge;
+      hours = 1 + (extra.blocks * 0.5);
+    }
+    const tier = discountForDuration(elapsedMs);
+    const discountAmount = tier ? roundMoney(subtotal * tier.percent / 100) : 0;
+    return {
+      amount: roundMoney(subtotal - discountAmount),
+      subtotal,
+      discountPercent: tier ? tier.percent : 0,
+      discountAmount,
+      discountHours: tier ? tier.hours : 0,
+      hours, rate, detail:'corrida',
+      extraBlocks, extraCharge, extraMs, tolerance
+    };
   }
   const paidMs = (r.paidHours || 1) * 3600000;
   const extraMs = Math.max(0, elapsedMs - paidMs);
@@ -1869,24 +1923,31 @@ function stateFor(r){
 }
 
 /* TARJETAS */
-function crAmountBox(roomAmt, consTotal, dataId){
+function crAmountBox(roomAmt, consTotal, dataId, calc){
   const grand = roomAmt + consTotal;
+  const discountAmount = Number(calc?.discountAmount) || 0;
+  const subtotal = discountAmount > 0 ? (Number(calc.subtotal) || roomAmt) : roomAmt;
   const totalEl = dataId
     ? `<span data-amount="${dataId}" style="font-size:30px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.02em">${money(grand)}</span>`
     : `<span style="font-size:30px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.02em">${money(grand)}</span>`;
   const roomRow = `<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0">
     <span style="color:var(--text-2);font-weight:700">🏠 Habitación</span>
-    <span style="font-weight:800;font-variant-numeric:tabular-nums">${money(roomAmt)}</span>
+    <span style="font-weight:800;font-variant-numeric:tabular-nums">${money(subtotal)}</span>
   </div>`;
+  const discountRow = discountAmount > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0">
+    <span style="color:var(--green);font-weight:700">Descuento ${calc.discountHours}h (${calc.discountPercent}%)</span>
+    <span style="font-weight:800;font-variant-numeric:tabular-nums;color:var(--green)">−${money(discountAmount)}</span>
+  </div>` : '';
   const consRow = consTotal > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0">
     <span style="color:var(--text-2);font-weight:700">🛍 Consumos</span>
     <span style="font-weight:800;font-variant-numeric:tabular-nums;color:var(--accent)">${money(consTotal)}</span>
   </div>` : '';
-  const sep = consTotal > 0 ? `<div style="border-top:1px solid var(--sep);margin:4px 0"></div>` : '';
+  const hasDetail = consTotal > 0 || discountAmount > 0;
+  const sep = hasDetail ? `<div style="border-top:1px solid var(--sep);margin:4px 0"></div>` : '';
   return `<div class="cr-amount-box" style="flex-direction:column;align-items:stretch;gap:0;padding:12px 14px">
-    ${roomRow}${consRow}${sep}
-    <div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:${consTotal>0?'4':'0'}px">
-      <span class="ab-lbl">${consTotal > 0 ? 'TOTAL' : 'MONTO'}</span>
+    ${roomRow}${discountRow}${consRow}${sep}
+    <div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:${hasDetail?'4':'0'}px">
+      <span class="ab-lbl">${hasDetail ? 'TOTAL' : 'MONTO'}</span>
       ${totalEl}
     </div>
   </div>`;
@@ -1993,7 +2054,7 @@ function cardRoom(r){
             <div class="cr-col hl"><span class="k">H. Pieza</span><span class="v big">${fmtHM(finalElapsed)}</span></div>
           </div>
           <div class="cr-sub" style="color:var(--purple);font-weight:700">🔒 Tiempo detenido · Pendiente de cobro</div>
-          ${crAmountBox(calc.amount, consTotal, null)}
+          ${crAmountBox(calc.amount, consTotal, null, calc)}
           <div class="stopped-actions">
             <button class="btn purple" onclick="event.stopPropagation(); reopenTimer('${r.id}')">↺ Reabrir</button>
             <button class="btn primary" onclick="event.stopPropagation(); openCheckOut('${r.id}')">💳 Cobrar</button>
@@ -2022,7 +2083,7 @@ function cardRoom(r){
           <div class="cr-col"><span class="k">H. Actu</span><span class="v live" data-now-time="${r.id}">${nowTimeStr}</span></div>
           <div class="cr-col hl"><span class="k">H. Pieza</span><span class="v big" data-elapsed="${r.id}">${elapsedStr}</span></div>
         </div>
-        ${crAmountBox(calc.amount, consTotal, r.id)}
+        ${crAmountBox(calc.amount, consTotal, r.id, calc)}
         <button class="btn-add-product" onclick="event.stopPropagation(); openQuickProduct('${r.id}')">
           <span class="pap-icon">＋</span>
           <span>Agregar producto</span>
@@ -2290,13 +2351,17 @@ async function quickPay(id, method){
   const calc = calcRoomAmount(r, refTs);
   const consTotal = r.consumos.reduce((a,c) => a + c.price * c.qty, 0);
   const total = calc.amount + consTotal;
+  const detail = [];
+  if(calc.hours) detail.push(calc.hours + ' h × ' + money(calc.rate));
+  if(calc.discountAmount > 0) detail.push('Dto. ' + calc.discountHours + 'h (' + calc.discountPercent + '%) −' + money(calc.discountAmount));
+  if(consTotal > 0) detail.push('consumos ' + money(consTotal));
   qpPay = { id, method, total, refTs };
   const label = method === 'efectivo' ? 'EFECTIVO' : 'QR';
   openSheet(`Confirmar cobro · ${label}`, `
     <div style="text-align:center;padding:10px 0 16px">
       <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--text-2);margin-bottom:8px">Pieza ${esc(r.num)}</div>
       <div style="font-size:48px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.04em;line-height:1">${money(total)}</div>
-      <div style="font-size:12.5px;color:var(--text-2);margin-top:8px">${calc.hours ? calc.hours + ' h × ' + money(calc.rate) : ''}${consTotal > 0 ? (calc.hours ? ' · ' : '') + 'consumos ' + money(consTotal) : ''}</div>
+      <div style="font-size:12.5px;color:var(--text-2);margin-top:8px">${detail.join(' · ')}</div>
     </div>
     <p class="hint" style="text-align:center;padding-bottom:6px">Al aceptar, la pieza queda <b>libre</b> y se registra el cobro en <b>${label}</b>.</p>
   `, `<button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="confirmQuickPay()">Aceptar y cobrar</button>`);
@@ -2647,8 +2712,10 @@ function renderCheckOutSheet(){
       ${consTotal > 0 ? `<div class="bd-row extra"><span>Consumos</span><span>${money(consTotal)}</span></div>` : ''}
       <div class="bd-row total-row"><span>Total</span><span>${money(grand)}</span></div>`;
   } else if(r.mode === 'corrida'){
+    const subtotal = calc.subtotal != null ? calc.subtotal : calc.amount;
     breakdownHTML = `
-      <div class="bd-row"><span>${calc.hours}h × ${money(calc.rate)}</span><span>${money(calc.amount)}</span></div>
+      <div class="bd-row"><span>${calc.hours}h × ${money(calc.rate)}</span><span>${money(subtotal)}</span></div>
+      ${calc.discountAmount > 0 ? `<div class="bd-row"><span>Descuento ${calc.discountHours}h (${calc.discountPercent}%)</span><span style="color:var(--green)">−${money(calc.discountAmount)}</span></div>` : ''}
       ${consTotal > 0 ? `<div class="bd-row extra"><span>Consumos</span><span>${money(consTotal)}</span></div>` : ''}
       <div class="bd-row total-row"><span>Total</span><span>${money(grand)}</span></div>`;
   } else {
@@ -2719,11 +2786,15 @@ function renderCheckOutSheet(){
       ${consTotal > 0 ? `<span class="pap-count">${r.consumos.reduce((a,c) => a + c.qty, 0)} ítems</span>` : ''}
     </button>`;
 
+  const chargeParts = [];
+  if(calc.hours) chargeParts.push(calc.hours + ' h × ' + money(calc.rate));
+  if(calc.discountAmount > 0) chargeParts.push('Dto. ' + calc.discountHours + 'h (' + calc.discountPercent + '%) −' + money(calc.discountAmount));
+  if(consTotal > 0) chargeParts.push('consumos ' + money(consTotal));
   const grandTotalHTML = `
     <div style="background:linear-gradient(165deg,var(--amount-bg),var(--surface));border:2px solid var(--accent);border-radius:18px;padding:18px 16px;margin-bottom:16px;text-align:center;box-shadow:0 8px 24px rgba(184,134,11,.18)">
       <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.09em;color:var(--text-2);margin-bottom:4px">Total a cobrar</div>
       <div style="font-size:44px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.04em;line-height:1">${money(grand)}</div>
-      <div style="font-size:12.5px;color:var(--text-2);margin-top:6px">${calc.hours ? calc.hours + ' h × ' + money(calc.rate) : ''}${consTotal > 0 ? (calc.hours ? ' · ' : '') + 'consumos ' + money(consTotal) : ''}</div>
+      <div style="font-size:12.5px;color:var(--text-2);margin-top:6px">${chargeParts.join(' · ')}</div>
     </div>`;
 
   const moveBtnHTML = `
@@ -4050,10 +4121,12 @@ async function syncNow(){
 async function refreshSettingsFromSupabase(){
   if(!sb || !currentUser) return;
   try {
-    const { data, error } = await sb.from('motel_settings').select('*').eq('id','app_settings').maybeSingle();
-    if(error || !data || !data.value) return;
-    if(JSON.stringify(db.settings || {}) !== JSON.stringify(data.value)){
-      db.settings = data.value;
+    const { data, error } = await sb.from('motel_settings').select('*');
+    if(error || !Array.isArray(data)) return;
+    const settings = settingsFromRows(data);
+    if(!settings) return;
+    if(JSON.stringify(db.settings || {}) !== JSON.stringify(settings)){
+      db.settings = settings;
       if(typeof saveLocal === 'function') saveLocal();
       if(typeof renderAll === 'function') renderAll();
     }
@@ -4119,11 +4192,25 @@ async function refreshAllFromSupabase(opts){
   } catch(e){ console.warn('refreshAllFromSupabase error:', e?.message || e); }
 }
 
+function discountRowHTML(hours, percent){
+  return `<div class="discount-row" style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px">
+    <div class="field"><label>Desde (horas)</label><input class="disc-hours" type="number" inputmode="decimal" min="1" step="1" value="${hours ?? ''}"></div>
+    <div class="field"><label>Descuento (%)</label><input class="disc-percent" type="number" inputmode="decimal" min="0" max="100" step="1" value="${percent ?? ''}"></div>
+    <button type="button" class="btn" style="margin-bottom:8px;padding:8px 10px" onclick="this.closest('.discount-row').remove()">✕</button>
+  </div>`;
+}
+function addDiscountRow(){
+  const wrap = $('#discountRows');
+  if(!wrap) return;
+  wrap.insertAdjacentHTML('beforeend', discountRowHTML('', ''));
+}
+
 function openSettings(){
   if(currentUser?.role !== 'admin') return;
   const s = db.settings || seed().settings;
   const t30 = Array.isArray(s.tariffs30) ? s.tariffs30 : seed().settings.tariffs30;
   const t40 = Array.isArray(s.tariffs40) ? s.tariffs40 : seed().settings.tariffs40;
+  const discountRows = normalizeDiscounts(s.discounts).map(d => discountRowHTML(d.hours, d.percent)).join('');
   const rows30 = [1,2,3,4,5,6,7,8,9,10].map(h => `
     <div class="field" style="margin-bottom:8px">
       <label>${h} hora${h>1?'s':''} (Bs) — tarifa 30</label>
@@ -4141,6 +4228,10 @@ function openSettings(){
       <div class="field"><label>Precio nocturno Bs 30</label><input id="tarNight30" type="number" inputmode="decimal" min="0" step="1" value="${s.nightPrice30 ?? 130}"></div>
       <div class="field"><label>Precio nocturno Bs 40</label><input id="tarNight40" type="number" inputmode="decimal" min="0" step="1" value="${s.nightPrice40 ?? 150}"></div>
     </div>
+    <div class="group-title" style="padding-left:4px;margin-top:8px">Descuentos por tiempo (hora corrida)</div>
+    <p class="hint" style="padding:0 4px 8px">Al alcanzar las horas indicadas se descuenta ese porcentaje del cobro de la habitación. No afecta a los consumos.</p>
+    <div id="discountRows">${discountRows}</div>
+    <button type="button" class="btn block" style="margin-bottom:12px" onclick="addDiscountRow()">＋ Agregar descuento</button>
     <div class="group-title" style="padding-left:4px;margin-top:8px">Tarifa base 30</div>
     ${rows30}
     <div class="group-title" style="padding-left:4px;margin-top:8px">Tarifa base 40</div>
@@ -4149,10 +4240,16 @@ function openSettings(){
 }
 
 function saveSettings(){
+  const prev = db.settings || {};
   const s = {
+    ...prev,
     tariffs30: [0], tariffs40: [0],
     nightPrice30: Number($('#tarNight30')?.value) || 0,
-    nightPrice40: Number($('#tarNight40')?.value) || 0
+    nightPrice40: Number($('#tarNight40')?.value) || 0,
+    discounts: normalizeDiscounts($$('.discount-row').map(row => ({
+      hours: Number(row.querySelector('.disc-hours')?.value) || 0,
+      percent: Number(row.querySelector('.disc-percent')?.value) || 0
+    })))
   };
   for(let h=1; h<=10; h++){
     s.tariffs30[h] = Number($('#tar30_'+h)?.value) || 0;
@@ -4160,7 +4257,7 @@ function saveSettings(){
   }
   db.settings = s;
   save(); closeModal(); renderAll();
-  toast('Tarifas guardadas');
+  toast('Tarifas y descuentos guardados');
 }
 function renderAll(){
   updateDateDisplays();
