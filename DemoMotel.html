@@ -974,17 +974,9 @@ function seed(){
       tariffs40: [0,40,80,115,145,175,205,235,260,280,300],
       nightPrice30: 130,
       nightPrice40: 150,
-      discounts: [],
       cashIncomes: []
     }
   };
-}
-function normalizeDiscounts(list){
-  if(!Array.isArray(list)) return [];
-  return list
-    .map(d => ({ hours: Number(d?.hours), percent: Math.max(0, Math.min(100, Number(d?.percent))) }))
-    .filter(d => Number.isFinite(d.hours) && d.hours > 0 && Number.isFinite(d.percent) && d.percent > 0)
-    .sort((a,b) => a.hours - b.hours || a.percent - b.percent);
 }
 /* Une la configuración actual (app_settings) con la fila heredada "tariffs",
    que es donde quedaron guardados los descuentos. */
@@ -996,22 +988,11 @@ function settingsFromRows(rows){
   const settings = appRow ? { ...appRow.value } : {};
   if(legacyRow){
     const lv = legacyRow.value;
-    if(!Array.isArray(settings.discounts) && Array.isArray(lv.discounts)) settings.discounts = lv.discounts;
     if(settings.nightPrice30 == null && lv.night30 != null) settings.nightPrice30 = Number(lv.night30);
     if(settings.nightPrice40 == null && lv.night40 != null) settings.nightPrice40 = Number(lv.night40);
   }
-  settings.discounts = normalizeDiscounts(settings.discounts);
+  delete settings.discounts;
   return settings;
-}
-function discountForDuration(ms){
-  const hours = Math.max(0, Number(ms) || 0) / 3600000;
-  let best = null;
-  for(const tier of normalizeDiscounts(db?.settings?.discounts)){
-    if(hours + 1e-9 >= tier.hours && (!best || tier.percent > best.percent || (tier.percent === best.percent && tier.hours > best.hours))){
-      best = tier;
-    }
-  }
-  return best;
 }
 function loadLocal(){
   try{
@@ -1025,7 +1006,7 @@ function loadLocal(){
       if(!d.items) d.items = [];
       if(!d.settings) d.settings = seed().settings;
       if(!Array.isArray(d.settings.cashIncomes)) d.settings.cashIncomes = [];
-      d.settings.discounts = normalizeDiscounts(d.settings.discounts);
+       delete d.settings.discounts;
       // Migrar ingresos manuales antiguos (guardados como ventas) a cashIncomes
       if(Array.isArray(d.sales)){
         const manual = d.sales.filter(x => x.type === 'ingreso' || (x.detail||'').startsWith('Ingreso manual:'));
@@ -1049,7 +1030,7 @@ function mergePreferLocal(remote, local){
   else if(local?.settings && typeof local.settings === 'object') result.settings = local.settings;
   else result.settings = (typeof seed === 'function') ? seed().settings : result.settings;
   if(!Array.isArray(result.settings.cashIncomes)) result.settings.cashIncomes = Array.isArray(local?.settings?.cashIncomes) ? local.settings.cashIncomes : [];
-  result.settings.discounts = normalizeDiscounts(result.settings.discounts);
+  delete result.settings.discounts;
   // El remoto (Supabase) es la fuente de verdad: se reemplazan las colecciones locales
   // para que los borrados/cambios (incluidos los resets) se reflejen en todos los dispositivos.
   collections.forEach(key => {
@@ -1635,6 +1616,7 @@ function openRoomManager(){
   const total = db.rooms.length;
   const libres = db.rooms.filter(r => r.status === 'libre').length;
   const nextNum = pad(Math.max(0, ...db.rooms.map(x => Number(x.num) || 0)) + 1);
+  db.rooms.sort((a,b) => (Number(a.num)||0) - (Number(b.num)||0));
   const rows = db.rooms.map(r => `
     <div class="room-row">
       <div class="rr-num">${esc(r.num)}</div>
@@ -1847,9 +1829,28 @@ function calcRoomAmount(r, refTs){
   const end = r.checkOut ? new Date(r.checkOut).getTime() : t;
   const elapsedMs = Math.max(0, end - entry);
   const rate = Number(r.hourlyRate || r.rate || r.price || 30);
-  if(r.mode === 'hora' && (rate === 30 || rate === 40 || Number(r.price) === 30 || Number(r.price) === 40)){
-    const calc = calcTariffWithNight(entry, end, Number(r.price) === 40 || rate === 40 ? 40 : 30);
-    return {...calc, elapsedMs, rate:Number(r.price) === 40 || rate === 40 ? 40 : 30, baseCharge:calc.normalAmount, extraCharge:0, extraBlocks:0, extraMs:0, tolerance:false};
+  const isTariff3040 = (rate === 30 || rate === 40 || Number(r.price) === 30 || Number(r.price) === 40);
+  if(isTariff3040 && (r.mode === 'hora' || r.mode === 'corrida')){
+    const base = Number(r.price) === 40 || rate === 40 ? 40 : 30;
+    const hours = Math.max(0, Math.min(10, Math.ceil(elapsedMs / 3600000)));
+    const amount = tariffPrice(base, hours);
+    return {
+      amount,
+      hours,
+      rate: base,
+      detail: 'tarifa por tiempo',
+      normalAmount: amount,
+      normalHours: hours,
+      nightAmount: 0,
+      nightCount: 0,
+      night: false,
+      elapsedMs,
+      baseCharge: amount,
+      extraCharge: 0,
+      extraBlocks: 0,
+      extraMs: 0,
+      tolerance: false
+    };
   }
   if(r.mode === 'corrida'){
     const firstHourMs = 3600000;
@@ -1863,14 +1864,9 @@ function calcRoomAmount(r, refTs){
       subtotal = rate + extra.charge;
       hours = 1 + (extra.blocks * 0.5);
     }
-    const tier = discountForDuration(elapsedMs);
-    const discountAmount = tier ? roundMoney(subtotal * tier.percent / 100) : 0;
     return {
-      amount: roundMoney(subtotal - discountAmount),
-      subtotal,
-      discountPercent: tier ? tier.percent : 0,
-      discountAmount,
-      discountHours: tier ? tier.hours : 0,
+      amount: roundMoney(subtotal),
+      subtotal: roundMoney(subtotal),
       hours, rate, detail:'corrida',
       extraBlocks, extraCharge, extraMs, tolerance
     };
@@ -1925,27 +1921,21 @@ function stateFor(r){
 /* TARJETAS */
 function crAmountBox(roomAmt, consTotal, dataId, calc){
   const grand = roomAmt + consTotal;
-  const discountAmount = Number(calc?.discountAmount) || 0;
-  const subtotal = discountAmount > 0 ? (Number(calc.subtotal) || roomAmt) : roomAmt;
   const totalEl = dataId
     ? `<span data-amount="${dataId}" style="font-size:30px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.02em">${money(grand)}</span>`
     : `<span style="font-size:30px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;letter-spacing:-.02em">${money(grand)}</span>`;
   const roomRow = `<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0">
     <span style="color:var(--text-2);font-weight:700">🏠 Habitación</span>
-    <span style="font-weight:800;font-variant-numeric:tabular-nums">${money(subtotal)}</span>
+    <span style="font-weight:800;font-variant-numeric:tabular-nums">${money(roomAmt)}</span>
   </div>`;
-  const discountRow = discountAmount > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0">
-    <span style="color:var(--green);font-weight:700">Descuento ${calc.discountHours}h (${calc.discountPercent}%)</span>
-    <span style="font-weight:800;font-variant-numeric:tabular-nums;color:var(--green)">−${money(discountAmount)}</span>
-  </div>` : '';
   const consRow = consTotal > 0 ? `<div style="display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:4px 0">
     <span style="color:var(--text-2);font-weight:700">🛍 Consumos</span>
     <span style="font-weight:800;font-variant-numeric:tabular-nums;color:var(--accent)">${money(consTotal)}</span>
   </div>` : '';
-  const hasDetail = consTotal > 0 || discountAmount > 0;
+  const hasDetail = consTotal > 0;
   const sep = hasDetail ? `<div style="border-top:1px solid var(--sep);margin:4px 0"></div>` : '';
   return `<div class="cr-amount-box" style="flex-direction:column;align-items:stretch;gap:0;padding:12px 14px">
-    ${roomRow}${discountRow}${consRow}${sep}
+    ${roomRow}${consRow}${sep}
     <div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:${hasDetail?'4':'0'}px">
       <span class="ab-lbl">${hasDetail ? 'TOTAL' : 'MONTO'}</span>
       ${totalEl}
@@ -2181,6 +2171,7 @@ function renderRooms(){
     $('#roomSummary').innerHTML = `0 piezas`;
     return;
   }
+  db.rooms.sort((a,b) => (Number(a.num)||0) - (Number(b.num)||0));
   list.innerHTML = db.rooms.map(cardRoom).join('');
   const libres = db.rooms.filter(r => r.status === 'libre').length;
   const ocup = db.rooms.length - libres;
@@ -2353,7 +2344,6 @@ async function quickPay(id, method){
   const total = calc.amount + consTotal;
   const detail = [];
   if(calc.hours) detail.push(calc.hours + ' h × ' + money(calc.rate));
-  if(calc.discountAmount > 0) detail.push('Dto. ' + calc.discountHours + 'h (' + calc.discountPercent + '%) −' + money(calc.discountAmount));
   if(consTotal > 0) detail.push('consumos ' + money(consTotal));
   qpPay = { id, method, total, refTs };
   const label = method === 'efectivo' ? 'EFECTIVO' : 'QR';
@@ -2463,7 +2453,7 @@ function renderCheckInSheet(){
   const horaBody = `
     <div class="field"><label>Tarifa de la pieza</label>
       <div class="total-box"><span>${Number(r.price) === 40 ? 'Tarifa Bs 40' : 'Tarifa Bs 30'}</span><b>${money(Number(r.price) === 40 ? 40 : 30)}/h</b></div>
-      <p class="helper">El sistema calculará automáticamente el precio según la tabla de 1 a 10 horas. Si corresponde, aplicará el paquete nocturno de 22:00 a 07:00.</p>
+      <p class="helper">El sistema calculará automáticamente el precio según la tabla de 1 a 10 horas, cobrando por hora completa transcurrida.</p>
     </div>`;
 
   const corridaBody = `
@@ -2715,7 +2705,6 @@ function renderCheckOutSheet(){
     const subtotal = calc.subtotal != null ? calc.subtotal : calc.amount;
     breakdownHTML = `
       <div class="bd-row"><span>${calc.hours}h × ${money(calc.rate)}</span><span>${money(subtotal)}</span></div>
-      ${calc.discountAmount > 0 ? `<div class="bd-row"><span>Descuento ${calc.discountHours}h (${calc.discountPercent}%)</span><span style="color:var(--green)">−${money(calc.discountAmount)}</span></div>` : ''}
       ${consTotal > 0 ? `<div class="bd-row extra"><span>Consumos</span><span>${money(consTotal)}</span></div>` : ''}
       <div class="bd-row total-row"><span>Total</span><span>${money(grand)}</span></div>`;
   } else {
@@ -2788,7 +2777,6 @@ function renderCheckOutSheet(){
 
   const chargeParts = [];
   if(calc.hours) chargeParts.push(calc.hours + ' h × ' + money(calc.rate));
-  if(calc.discountAmount > 0) chargeParts.push('Dto. ' + calc.discountHours + 'h (' + calc.discountPercent + '%) −' + money(calc.discountAmount));
   if(consTotal > 0) chargeParts.push('consumos ' + money(consTotal));
   const grandTotalHTML = `
     <div style="background:linear-gradient(165deg,var(--amount-bg),var(--surface));border:2px solid var(--accent);border-radius:18px;padding:18px 16px;margin-bottom:16px;text-align:center;box-shadow:0 8px 24px rgba(184,134,11,.18)">
@@ -4192,25 +4180,11 @@ async function refreshAllFromSupabase(opts){
   } catch(e){ console.warn('refreshAllFromSupabase error:', e?.message || e); }
 }
 
-function discountRowHTML(hours, percent){
-  return `<div class="discount-row" style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px">
-    <div class="field"><label>Desde (horas)</label><input class="disc-hours" type="number" inputmode="decimal" min="1" step="1" value="${hours ?? ''}"></div>
-    <div class="field"><label>Descuento (%)</label><input class="disc-percent" type="number" inputmode="decimal" min="0" max="100" step="1" value="${percent ?? ''}"></div>
-    <button type="button" class="btn" style="margin-bottom:8px;padding:8px 10px" onclick="this.closest('.discount-row').remove()">✕</button>
-  </div>`;
-}
-function addDiscountRow(){
-  const wrap = $('#discountRows');
-  if(!wrap) return;
-  wrap.insertAdjacentHTML('beforeend', discountRowHTML('', ''));
-}
-
 function openSettings(){
   if(currentUser?.role !== 'admin') return;
   const s = db.settings || seed().settings;
   const t30 = Array.isArray(s.tariffs30) ? s.tariffs30 : seed().settings.tariffs30;
   const t40 = Array.isArray(s.tariffs40) ? s.tariffs40 : seed().settings.tariffs40;
-  const discountRows = normalizeDiscounts(s.discounts).map(d => discountRowHTML(d.hours, d.percent)).join('');
   const rows30 = [1,2,3,4,5,6,7,8,9,10].map(h => `
     <div class="field" style="margin-bottom:8px">
       <label>${h} hora${h>1?'s':''} (Bs) — tarifa 30</label>
@@ -4222,16 +4196,12 @@ function openSettings(){
       <input id="tar40_${h}" type="number" inputmode="decimal" min="0" step="1" value="${t40[h] ?? 0}">
     </div>`).join('');
   openSheet('Configuración / Tarifas', `
-    <p class="hint" style="padding:0 4px 12px">Edita la tabla de cobro por horas. Vigente de 07:30 a 21:59. Fuera de ese horario aplica el paquete nocturno.</p>
+    <p class="hint" style="padding:0 4px 12px">Edita la tabla de cobro por horas. Se aplica a las piezas de tarifa 30 y 40, cobrando por hora completa transcurrida (máximo 10 h).</p>
     <div class="group-title" style="padding-left:4px">Paquete nocturno</div>
     <div class="row2">
       <div class="field"><label>Precio nocturno Bs 30</label><input id="tarNight30" type="number" inputmode="decimal" min="0" step="1" value="${s.nightPrice30 ?? 130}"></div>
       <div class="field"><label>Precio nocturno Bs 40</label><input id="tarNight40" type="number" inputmode="decimal" min="0" step="1" value="${s.nightPrice40 ?? 150}"></div>
     </div>
-    <div class="group-title" style="padding-left:4px;margin-top:8px">Descuentos por tiempo (hora corrida)</div>
-    <p class="hint" style="padding:0 4px 8px">Al alcanzar las horas indicadas se descuenta ese porcentaje del cobro de la habitación. No afecta a los consumos.</p>
-    <div id="discountRows">${discountRows}</div>
-    <button type="button" class="btn block" style="margin-bottom:12px" onclick="addDiscountRow()">＋ Agregar descuento</button>
     <div class="group-title" style="padding-left:4px;margin-top:8px">Tarifa base 30</div>
     ${rows30}
     <div class="group-title" style="padding-left:4px;margin-top:8px">Tarifa base 40</div>
@@ -4245,11 +4215,7 @@ function saveSettings(){
     ...prev,
     tariffs30: [0], tariffs40: [0],
     nightPrice30: Number($('#tarNight30')?.value) || 0,
-    nightPrice40: Number($('#tarNight40')?.value) || 0,
-    discounts: normalizeDiscounts($$('.discount-row').map(row => ({
-      hours: Number(row.querySelector('.disc-hours')?.value) || 0,
-      percent: Number(row.querySelector('.disc-percent')?.value) || 0
-    })))
+    nightPrice40: Number($('#tarNight40')?.value) || 0
   };
   for(let h=1; h<=10; h++){
     s.tariffs30[h] = Number($('#tar30_'+h)?.value) || 0;
@@ -4257,7 +4223,7 @@ function saveSettings(){
   }
   db.settings = s;
   save(); closeModal(); renderAll();
-  toast('Tarifas y descuentos guardados');
+  toast('Tarifas guardadas');
 }
 function renderAll(){
   updateDateDisplays();
